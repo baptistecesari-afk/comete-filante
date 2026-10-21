@@ -800,6 +800,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'tempete', name: 'Tempête d\'étoiles', desc: 'Une pluie d\'étoiles traverse l\'écran et frappe tous les ennemis.', dur: 3, cd: 13 },
     { id: 'clone', name: 'Clones', desc: 'Deux copies de ta fusée tirent à tes côtés.', dur: 8, cd: 16 },
     { id: 'trounoir', name: 'Trou noir', desc: 'Aspire et broie les ennemis et leurs tirs.', dur: 4, cd: 16 },
+    { id: 'foudre', name: 'Foudre en chaîne', desc: 'Des éclairs sautent d\'un ennemi à l\'autre.', dur: 4, cd: 14 },
+    { id: 'missiles', name: 'Missiles chercheurs', desc: 'Une salve de missiles qui suivent les ennemis.', dur: 4, cd: 14 },
+    { id: 'miroir', name: 'Bouclier miroir', desc: 'Invincible, et les tirs ennemis repartent sur eux.', dur: 5, cd: 15 },
+    { id: 'dragon', name: 'Souffle du dragon', desc: 'Un grand jet de feu brûle tout devant toi.', dur: 3, cd: 12 },
+    { id: 'gel', name: 'Gel cosmique', desc: 'Tout gèle sur place et tes tirs font double dégâts.', dur: 3, cd: 16 },
     { id: 'supernova', name: 'Supernova divine', desc: 'Invincible, anneaux de tirs, cadence ×3 et munitions infinies.', dur: 6, cd: 24 },
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
@@ -841,7 +846,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     trail: { etincelles: 400, bulles: 300, pixels: 300, coeurs: 500, comete: 700 },
     flame: { plasma: 600, toxique: 600, rose: 900 },
     gun: { double: 2000, eventail: 3000 },
-    power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000 },
+    power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000, miroir: 2000, gel: 2200, dragon: 2800, foudre: 3000, missiles: 3500 },
     shot: {},
   };
   const CATS = [
@@ -1700,6 +1705,61 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         i % 2 ? actAlien(k, 0, 0, 9) : actRock(k, 0, 0, 9, a); k.restore();
       }
       drawRocket(k, px, py + 6, sc, me, t, 0, 0);
+    } else if (id === 'foudre') {
+      // un éclair saute d'un ennemi à l'autre
+      const foes = [[60, 30], [120, 18], [185, 36], [150, 70]];
+      const n = Math.floor(P * 6) % 5;
+      foes.forEach(([x, y], i) => (i < n ? actBoom(k, x, y, (P * 6 % 1), '#bfe6ff') : actAlien(k, x, y, 9)));
+      if (n > 0) {
+        k.strokeStyle = '#bfe6ff'; k.lineWidth = 2.5; k.shadowColor = '#7ad8ff'; k.shadowBlur = 8; k.beginPath(); k.moveTo(px, py - 20);
+        for (let i = 0; i < n; i++) { const [x, y] = foes[i]; k.lineTo((x + (i ? foes[i - 1][0] : px)) / 2 + Math.sin(T * 40 + i) * 8, (y + (i ? foes[i - 1][1] : py - 20)) / 2); k.lineTo(x, y); }
+        k.stroke(); k.shadowBlur = 0;
+      }
+      drawRocket(k, px, py, sc, me, t, 0, 0);
+    } else if (id === 'missiles') {
+      // des missiles tournent et filent vers les ennemis
+      const tg = [[50, 25], [190, 25]];
+      tg.forEach(([x, y], i) => (P < .7 ? actAlien(k, x, y, 9) : actBoom(k, x, y, (P - .7) / .3)));
+      for (const [i, [x, y]] of tg.entries()) {
+        const q = Math.min(1, P / .7), sx = px + (i ? 14 : -14), cx = px + (i ? 90 : -90);
+        if (P >= .7) continue;
+        const bx = (1 - q) * (1 - q) * sx + 2 * (1 - q) * q * cx + q * q * x, by = (1 - q) * (1 - q) * py + 2 * (1 - q) * q * (py - 10) + q * q * y;
+        k.fillStyle = 'rgba(201, 195, 234, .5)'; for (let j = 1; j < 5; j++) { const qq = Math.max(0, q - j * .04); k.beginPath(); k.arc((1 - qq) * (1 - qq) * sx + 2 * (1 - qq) * qq * cx + qq * qq * x, (1 - qq) * (1 - qq) * py + 2 * (1 - qq) * qq * (py - 10) + qq * qq * y, 2.5 - j * .4, 0, 7); k.fill(); }
+        k.fillStyle = '#ff4f6d'; k.beginPath(); k.arc(bx, by, 3.5, 0, 7); k.fill();
+      }
+      drawRocket(k, px, py, sc, me, t, 0, 0);
+    } else if (id === 'miroir') {
+      // les tirs ennemis rebondissent sur le bouclier
+      actAlien(k, px, 18, 10);
+      const q = P * 2 % 1, down = P < .5, y = down ? 28 + q * (py - 80) : py - 52 - q * (py - 80);
+      k.fillStyle = down ? '#7dff8a' : '#ffd86b'; k.beginPath(); k.arc(px + (down ? 0 : q * 10), y, 4, 0, 7); k.fill();
+      k.strokeStyle = '#e6fbff'; k.lineWidth = 2.5;
+      for (let i = 0; i < 6; i++) { const a = T * 2 + i * Math.PI / 3; k.beginPath(); k.arc(px, py - 4, 36, a, a + .6); k.stroke(); }
+      k.fillStyle = 'rgba(191, 244, 255, .15)'; k.beginPath(); k.arc(px, py - 4, 36, 0, 7); k.fill();
+      drawRocket(k, px, py, sc, me, t, 0, 0);
+    } else if (id === 'dragon') {
+      // un cône de feu brûle tout devant la fusée
+      [[90, 30], [150, 40]].forEach(([x, y], i) => (P < .3 + i * .15 ? actRock(k, x, y, 9, T + i) : actBoom(k, x, y, Math.min(1, (P - .3 - i * .15) * 3), '#ffb020')));
+      for (let i = 0; i < 26; i++) {
+        const q = (T * 2 + i / 26) % 1, a = Math.sin(i * 7.3) * .35, d = q * 95;
+        k.globalAlpha = 1 - q; k.fillStyle = ['#fff2b0', '#ffb020', '#ff5a1f'][i % 3];
+        k.beginPath(); k.arc(px + Math.sin(a) * d, py - 24 - Math.cos(a) * d, 3 + q * 7, 0, 7); k.fill();
+      }
+      k.globalAlpha = 1;
+      drawRocket(k, px, py, sc, me, t, 0, 0);
+    } else if (id === 'gel') {
+      // tout est gelé, avec du givre sur les bords
+      [[50, 28], [120, 50], [190, 25]].forEach(([x, y], i) => {
+        i === 1 ? actRock(k, x, y, 10, .4) : actAlien(k, x, y, 9, '#a8e6ff');
+        k.strokeStyle = 'rgba(255, 255, 255, .9)'; k.lineWidth = 1.2;
+        for (let j = 0; j < 6; j++) { const a = j * Math.PI / 3; k.beginPath(); k.moveTo(x, y); k.lineTo(x + Math.cos(a) * 15, y + Math.sin(a) * 15); k.stroke(); }
+      });
+      const fg = k.createRadialGradient(AW / 2, AH / 2, 30, AW / 2, AH / 2, 140);
+      fg.addColorStop(0, 'rgba(220, 245, 255, 0)'); fg.addColorStop(1, 'rgba(220, 245, 255, .5)');
+      k.fillStyle = fg; k.fillRect(0, 0, AW, AH);
+      for (let n = 0; n < 4; n++) actBullet(k, px, py - 22 - ((T * 220 + n * 30) % 100));
+      drawRocket(k, px, py, sc, me, t, 0, 0);
+      k.fillStyle = '#e6fbff'; k.font = '700 11px Outfit, sans-serif'; k.fillText('×2', 8, 16);
     } else if (id === 'supernova') {
       // invincible, anneaux de tirs dans toutes les directions
       for (let ring = 0; ring < 2; ring++) {
@@ -1932,6 +1992,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
+  let zapT = 0, missT = 0, zaps = [];
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
@@ -1943,7 +2004,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -3697,6 +3758,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       reload = null; ammo = gun.mag; ringT = 0; flash = .6; flashColor = '255, 230, 150'; shake = .4;
       beep(220, .9, 'sawtooth', .14, 660); setTimeout(() => beep(990, .5, 'triangle', .12), 200);
     }
+    else if (d.id === 'foudre') { zapT = 0; beep(1400, .4, 'sawtooth', .08, -1200); flash = .2; flashColor = '200, 230, 255'; }
+    else if (d.id === 'missiles') { missT = 0; beep(300, .4, 'square', .07, 500); }
+    else if (d.id === 'miroir') { beep(700, .5, 'triangle', .12, 700); flash = .2; flashColor = '200, 240, 255'; }
+    else if (d.id === 'dragon') { beep(120, .9, 'sawtooth', .16, 60); shake = .2; }
+    else if (d.id === 'gel') { beep(1800, .6, 'sine', .1, -1500); flash = .45; flashColor = '190, 240, 255'; }
     else if (d.id === 'nova') {
       const before = score;
       for (const it of items) if (it.kind === 'rock' || it.kind === 'alien') damage(it, it.boss ? 10 : 99);
@@ -3882,10 +3948,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const on = power.active > 0;
     if (power.active > 0) power.active = Math.max(0, power.active - dt);
     if (power.cd > 0) power.cd = Math.max(0, power.cd - dt);
-    const slow = on && pid === 'temps' ? .35 : 1;
+    const slow = on && pid === 'gel' ? .03 : on && pid === 'temps' ? .35 : 1;
     const hyper = on && pid === 'hyper';
     const nova = on && pid === 'supernova';
-    const invincible = hyper || nova || shield > 0;
+    const invincible = hyper || nova || (on && pid === 'miroir') || shield > 0;
 
     // déplacement de la fusée
     const ax = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
@@ -3955,6 +4021,49 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       }
     }
     if (!on) bh = null;
+    // ennemis visibles à l'écran
+    const foes = () => items.filter(it => !it.dead && (it.kind === 'rock' || it.kind === 'alien') && it.y > 0 && it.y < H);
+    // foudre : un éclair part de la fusée et rebondit sur 4 ennemis
+    if (on && pid === 'foudre') {
+      zapT -= dt;
+      if (zapT <= 0) {
+        zapT = .3;
+        let from = { x: player.x, y: player.y - 20 };
+        const pts = [[from.x, from.y]], left = foes();
+        for (let i = 0; i < 4 && left.length; i++) {
+          left.sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y));
+          const it = left.shift();
+          pts.push([it.x, it.y]); burst(it.x, it.y, '#bfe6ff', 6, 160, 3);
+          damage(it, it.boss ? 4 : 99); from = it;
+        }
+        if (pts.length > 1) { zaps.push({ pts, life: .2 }); beep(1800 + Math.random() * 600, .06, 'sawtooth', .04, -1400); }
+      }
+    }
+    for (const z of zaps) z.life -= dt;
+    zaps = zaps.filter(z => z.life > 0);
+    // missiles chercheurs
+    if (on && pid === 'missiles') {
+      missT -= dt;
+      if (missT <= 0) {
+        missT = .2;
+        for (const sd of [-1, 1]) shots.push({ x: player.x + sd * 14, y: player.y, vx: sd * 260, vy: -260, dmg: 3 * (1 + .25 * up('puissance')), missile: true });
+        beep(500, .05, 'square', .03, -200);
+      }
+    }
+    // souffle du dragon : un cône de feu devant la fusée
+    if (on && pid === 'dragon') {
+      const reach = 300;
+      for (let i = 0; i < (reduce ? 2 : 6); i++) {
+        const a = (Math.random() - .5) * .7, v = 500 + Math.random() * 300;
+        parts.push({ x: player.x, y: player.y - 26, vx: Math.sin(a) * v, vy: -Math.cos(a) * v, life: .5 + Math.random() * .15, color: ['#fff2b0', '#ffb020', '#ff5a1f'][i % 3], size: 6 + Math.random() * 5 });
+      }
+      for (const it of items) {
+        if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
+        const dy = player.y - it.y, dx = Math.abs(it.x - player.x);
+        if (dy > 0 && dy < reach + it.r && dx < dy * .4 + 24 + it.r) damage(it, (it.boss ? 9 : 40) * dt);
+      }
+      for (const b of ebullets) { const dy = player.y - b.y; if (dy > 0 && dy < reach && Math.abs(b.x - player.x) < dy * .4 + 24) b.dead = true; }
+    }
     if (nova) {
       ringT -= dt;
       if (ringT <= 0) {
@@ -3963,14 +4072,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         beep(1200, .1, 'triangle', .05, -400);
       }
     }
+    const missTargets = shots.some(s => s.missile) ? foes() : [];
     for (const s of shots) {
+      if (s.missile) {
+        if (!s.tg || s.tg.dead) s.tg = missTargets.reduce((m, it) => !m || Math.hypot(it.x - s.x, it.y - s.y) < Math.hypot(m.x - s.x, m.y - s.y) ? it : m, null);
+        const tx = s.tg ? s.tg.x : s.x, ty = s.tg ? s.tg.y : -100, d = Math.hypot(tx - s.x, ty - s.y) || 1;
+        const k = Math.min(1, dt * 6);
+        s.vx += (( tx - s.x) / d * 640 - s.vx) * k; s.vy += ((ty - s.y) / d * 640 - s.vy) * k;
+        if (!reduce && Math.random() < .6) parts.push({ x: s.x, y: s.y, vx: -s.vx * .1, vy: -s.vy * .1, life: .3, color: '#c9c3ea', size: 3 });
+      }
       s.x += s.vx * dt; s.y += s.vy * dt;
       if (s.y < -20 || s.y > H + 40 || s.x < -20 || s.x > W + 20) { s.dead = true; continue; }
       for (const it of items) {
         if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
         const hr = it.boss ? it.r + 10 : it.r + 4;
         if (Math.abs(s.x - it.x) < hr && Math.abs(s.y - it.y) < hr && Math.hypot(s.x - it.x, (s.y - it.y) * (it.flat ? 1.6 : 1)) < hr) {
-          s.dead = true; damage(it, s.dmg);
+          s.dead = true; damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1));
           if (s.last && it.dead && !s.bonus) {
             s.bonus = true; score += 25;
             pop(it.x, it.y - 44, 'Dernière balle ! +25', '#ffd86b');
@@ -4079,6 +4196,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       }
       if (b.y > H + 20 || b.y < -40 || b.x < -20 || b.x > W + 20) { b.dead = true; continue; }
       if (on && pid === 'laser' && Math.abs(b.x - player.x) < 16 && b.y < player.y) { b.dead = true; continue; }
+      if (on && pid === 'miroir' && Math.hypot(b.x - player.x, b.y - player.y) < 64) {
+        b.dead = true; burst(b.x, b.y, '#bff4ff', 5, 120, 3);
+        const sp = Math.max(500, Math.hypot(b.vx, b.vy) * 2);
+        shots.push({ x: b.x, y: b.y, vx: (b.x - player.x) * 3, vy: -sp, dmg: 3, gold: true });
+        beep(1500, .05, 'triangle', .05, 300);
+        continue;
+      }
       if (Math.hypot(b.x - player.x, b.y - player.y) < player.r + (b.s || 5) - 1) {
         if (invincible) { b.dead = true; burst(b.x, b.y, '#7ad8ff', 6, 120, 3); }
         else if (player.hurt <= 0) { b.dead = true; hitPlayer(); if (state !== 'play') return; }
@@ -5306,7 +5430,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const playing = inGame;
     const on = playing && power.active > 0;
     const pid = power.def.id;
-    const slow = on && pid === 'temps' ? .35 : 1;
+    const slow = on && pid === 'gel' ? .03 : on && pid === 'temps' ? .35 : 1;
 
     // étoiles de fond
     const drift = playing ? time * 40 * speed : t * .01;
@@ -5361,10 +5485,54 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         ctx.strokeStyle = '#c86bff'; ctx.lineWidth = 2; ctx.stroke();
         ctx.restore();
       }
+      // foudre
+      for (const z of zaps) {
+        ctx.save(); ctx.globalAlpha = Math.min(1, z.life * 7); ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 16;
+        for (const [w, c] of [[5, '#7ad8ff'], [2, '#ffffff']]) {
+          ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(z.pts[0][0], z.pts[0][1]);
+          for (let i = 1; i < z.pts.length; i++) {
+            const [x0, y0] = z.pts[i - 1], [x1, y1] = z.pts[i];
+            for (let j = 1; j <= 5; j++) { const k = j / 5, jit = j < 5 ? (Math.sin(t / 20 + i * 7 + j * 3) * 12) : 0; ctx.lineTo(x0 + (x1 - x0) * k + jit, y0 + (y1 - y0) * k + jit * .5); }
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      // bouclier miroir
+      if (on && pid === 'miroir') {
+        const pulse = 60 + Math.sin(t / 90) * 3;
+        const mg = ctx.createRadialGradient(player.x, player.y, pulse * .6, player.x, player.y, pulse);
+        mg.addColorStop(0, 'rgba(191, 244, 255, 0)'); mg.addColorStop(1, 'rgba(191, 244, 255, .35)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(player.x, player.y, pulse, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#e6fbff'; ctx.lineWidth = 2.5;
+        for (let i = 0; i < 6; i++) { const a = t / 400 + i * Math.PI / 3; ctx.beginPath(); ctx.arc(player.x, player.y, pulse, a, a + .6); ctx.stroke(); }
+      }
+      // gel cosmique : givre sur les bords de l'écran
+      if (on && pid === 'gel') {
+        const fade = Math.min(1, power.active * 2);
+        ctx.save(); ctx.globalAlpha = fade;
+        ctx.fillStyle = 'rgba(160, 225, 255, .12)'; ctx.fillRect(0, 0, W, H);
+        const fg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75);
+        fg.addColorStop(0, 'rgba(220, 245, 255, 0)'); fg.addColorStop(1, 'rgba(220, 245, 255, .55)');
+        ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(255, 255, 255, .8)'; ctx.lineWidth = 1.5;
+        for (const it of items) {
+          if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
+          for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.beginPath(); ctx.moveTo(it.x, it.y); ctx.lineTo(it.x + Math.cos(a) * (it.r + 6), it.y + Math.sin(a) * (it.r + 6)); ctx.stroke(); }
+        }
+        ctx.restore();
+      }
       // tirs de la fusée
       for (const s of shots) {
         const a = Math.atan2(s.vx, -s.vy);
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
+        if (s.missile) {
+          ctx.fillStyle = '#e8e8f0'; ctx.fillRect(-2.5, -8, 5, 14);
+          ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.moveTo(-2.5, -8); ctx.lineTo(0, -13); ctx.lineTo(2.5, -8); ctx.fill();
+          ctx.fillRect(-5, 3, 3, 4); ctx.fillRect(2, 3, 3, 4);
+          ctx.fillStyle = '#ffb020'; ctx.fillRect(-1.5, 6, 3, 4 + Math.random() * 4);
+          ctx.restore(); continue;
+        }
         if (s.star) {
           ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff2b0';
           ctx.beginPath();
