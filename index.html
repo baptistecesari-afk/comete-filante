@@ -216,6 +216,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .bossitem.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
 .bossitem.won b { color: var(--star); }
 
+/* Trophées */
+#trophies .wallet, #trophies .opt { grid-column: 1 / -1; }
+.tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.tcard { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
+.tcard b { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--muted); }
+.tcard span { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.tcard em { font-style: normal; font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tcard.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
+.tcard.won b { color: var(--star); }
+.tcard.won em { color: var(--star); }
+.tbar { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 30%, transparent); overflow: hidden; }
+.tbar i { display: block; height: 100%; background: var(--star); }
+.shiptitle { font-size: 13px; color: var(--star); text-align: center; min-height: 1em; }
+.toast {
+  position: fixed; left: 50%; top: calc(86px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -12px);
+  max-width: calc(100% - 32px); box-sizing: border-box; pointer-events: none;
+  padding: 10px 16px; border-radius: 14px; background: var(--panel); border: 2px solid var(--star);
+  text-align: center; font-size: 15px; opacity: 0; transition: opacity .3s, transform .3s;
+}
+.toast b { display: block; font-family: var(--display); font-weight: 400; font-size: 13px; color: var(--star); letter-spacing: .08em; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
 /* Histoire */
 .story { max-width: 34rem; gap: 22px; }
 .kicker { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--tail); }
@@ -330,6 +353,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 </div>
 
 <div class="banner" id="banner"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="panel" id="menu">
   <div class="card">
@@ -341,6 +365,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     </div>
     <div class="row">
       <button class="toggle" id="storyBtn">Histoire</button>
+      <button class="toggle" id="trophyBtn">Trophées</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="soundBtn">Son : activé</button>
     </div>
@@ -353,6 +378,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="preview" id="persoPreview">
       <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
       <div class="shipname" id="pvName"></div>
+      <div class="shiptitle" id="pvTitle"></div>
       <div class="powername" id="pvPower"></div>
       <div class="powername" id="pvPoints"></div>
     </div>
@@ -433,6 +459,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   </div>
 </div>
 
+<div class="panel" id="trophies" hidden>
+  <div class="hangar atelier">
+    <h2>Trophées</h2>
+    <p class="wallet" id="trophySummary"></p>
+    <div class="opt" id="titleOpt">
+      <span>Titre affiché sous le nom de ta fusée</span>
+      <div class="chips" id="optTitle"></div>
+    </div>
+    <div class="upsec" id="trophyList"></div>
+    <div class="row">
+      <button class="play" id="trophyBack">Retour</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="over" hidden>
   <div class="card">
     <p id="overTitle">Ta fusée s'est écrasée</p>
@@ -483,12 +524,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'violet', name: 'Violet', hex: '#b48cff' },
     { id: 'orange', name: 'Orange', hex: '#ff9a3c' },
     { id: 'blanc', name: 'Blanc', hex: '#eef0ff' },
+    // couleurs exclusives : elles se gagnent avec un trophée
+    { id: 'vertalien', name: 'Vert alien', hex: '#7dff8a' },
+    { id: 'chrome', name: 'Chrome', hex: '#a8b8d8' },
   ];
   const FLAMES = [
     { id: 'feu', name: 'Feu', c: ['#fff2b0', '#ff9a3c', '#ff3c3c'] },
     { id: 'plasma', name: 'Plasma', c: ['#e6f9ff', '#7ad8ff', '#6a5cff'] },
     { id: 'toxique', name: 'Toxique', c: ['#f0ffd0', '#b6ff6b', '#2fbf71'] },
     { id: 'rose', name: 'Bonbon', c: ['#fff0f7', '#ffc2e0', '#ff7aa8'] },
+    { id: 'fantome', name: 'Fantôme', c: ['#ffffff', '#d9d0ff', '#8a7cc8'] },
   ];
   // canons : [x, y, angle] dans le repère de la fusée
   const GUNS = [
@@ -505,7 +550,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', gun: 'blaster', power: 'laser' };
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', gun: 'blaster', power: 'laser', title: '' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -515,6 +560,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (FLAMES.some(m => m.id === saved.flame)) cfg.flame = saved.flame;
     if (GUNS.some(m => m.id === saved.gun)) cfg.gun = saved.gun;
     if (POWERS.some(m => m.id === saved.power)) cfg.power = saved.power;
+    if (typeof saved.title === 'string') cfg.title = saved.title;
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
 
@@ -545,6 +591,55 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { key: 'power', label: 'Super-pouvoir', list: POWERS },
   ];
   const price = (key, id) => PRICES[key][id] || 0;
+
+  // --- trophées : récompenses quand on atteint des paliers (compteurs gardés d'une partie à l'autre) ---
+  const STATS = {
+    aliens: 'aliens détruits',
+    gardiens: 'boss différents battus',
+    etoiles: 'étoiles attrapées',
+    rochers: 'astéroïdes détruits',
+    parfaites: 'recharges parfaites',
+  };
+  const TROPHY_GROUPS = [
+    { id: 'aliens', name: 'Chasseur d\'aliens' },
+    { id: 'gardiens', name: 'Collection de gardiens' },
+    { id: 'pilote', name: 'Pilote' },
+    { id: 'exploits', name: 'Exploits', desc: 'À réussir pendant une seule partie.' },
+  ];
+  // item = objet exclusif débloqué, title = titre affiché sous le nom de la fusée
+  const TROPHIES = [
+    { id: 'aliens1', group: 'aliens', name: 'Chasseur d\'aliens · Bronze', stat: 'aliens', goal: 50, pts: 200 },
+    { id: 'aliens2', group: 'aliens', name: 'Chasseur d\'aliens · Argent', stat: 'aliens', goal: 250, pts: 600 },
+    { id: 'aliens3', group: 'aliens', name: 'Chasseur d\'aliens · Or', stat: 'aliens', goal: 1000, pts: 1500, item: 'color:vertalien' },
+    { id: 'aliens4', group: 'aliens', name: 'Chasseur d\'aliens · Diamant', stat: 'aliens', goal: 5000, pts: 4000, title: 'Fléau des aliens' },
+    { id: 'gardiens1', group: 'gardiens', name: 'Premiers gardiens', stat: 'gardiens', goal: 3, pts: 500 },
+    { id: 'gardiens2', group: 'gardiens', name: 'Mi-chemin', stat: 'gardiens', goal: 6, pts: 1200 },
+    { id: 'gardiens3', group: 'gardiens', name: 'Tous les gardiens', stat: 'gardiens', goal: 10, pts: 0, item: 'color:chrome', title: 'Libératrice des étoiles' },
+    { id: 'etoiles1', group: 'pilote', name: 'Attrape-étoiles · Bronze', stat: 'etoiles', goal: 100, pts: 150 },
+    { id: 'etoiles2', group: 'pilote', name: 'Attrape-étoiles · Argent', stat: 'etoiles', goal: 500, pts: 500 },
+    { id: 'etoiles3', group: 'pilote', name: 'Attrape-étoiles · Or', stat: 'etoiles', goal: 2000, pts: 1500 },
+    { id: 'rochers1', group: 'pilote', name: 'Casse-cailloux · Bronze', stat: 'rochers', goal: 100, pts: 200 },
+    { id: 'rochers2', group: 'pilote', name: 'Casse-cailloux · Argent', stat: 'rochers', goal: 500, pts: 800 },
+    { id: 'parfaites1', group: 'pilote', name: 'Gâchette d\'or · Bronze', stat: 'parfaites', goal: 25, pts: 200 },
+    { id: 'parfaites2', group: 'pilote', name: 'Gâchette d\'or · Argent', stat: 'parfaites', goal: 100, pts: 600 },
+    { id: 'parfaites3', group: 'pilote', name: 'Gâchette d\'or · Or', stat: 'parfaites', goal: 500, pts: 1500 },
+    { id: 'niveau10', group: 'exploits', name: 'Endurance', desc: 'Atteindre le niveau 10.', pts: 500 },
+    { id: 'sansfaute', group: 'exploits', name: 'Sans une égratignure', desc: 'Battre un boss sans perdre de vie pendant le combat.', pts: 800 },
+    { id: 'combo10', group: 'exploits', name: 'Combo ×10', desc: 'Attraper 10 étoiles à la suite sans casser le combo.', pts: 400 },
+    { id: 'intouchable', group: 'exploits', name: 'Intouchable', desc: 'Arriver au secteur 5 sans perdre une seule vie.', pts: 2000, item: 'flame:fantome' },
+    { id: 'zorg', group: 'exploits', name: 'Chute de l\'Empire', desc: 'Battre l\'Empereur Zorg.', pts: 3000, title: 'Héroïne de la galaxie' },
+  ];
+  let tro = { v: 1, stats: {}, got: [] };
+  try {
+    const saved = JSON.parse(localStorage.getItem('comete-trophees') || '{}');
+    if (saved.stats && typeof saved.stats === 'object') for (const k in STATS) if (Number.isFinite(saved.stats[k])) tro.stats[k] = Math.max(0, Math.floor(saved.stats[k]));
+    if (Array.isArray(saved.got)) tro.got = saved.got.filter(id => TROPHIES.some(t => t.id === id));
+  } catch (e) {}
+  function saveTro() { try { localStorage.setItem('comete-trophees', JSON.stringify(tro)); } catch (e) {} }
+  const trophyOf = (key, id) => TROPHIES.find(t => t.item === key + ':' + id);
+  const titles = () => TROPHIES.filter(t => t.title && tro.got.includes(t.id)).map(t => t.title);
+  if (!titles().includes(cfg.title)) cfg.title = '';
+
   let shop = { v: 3, credits: 0, up: {}, owned: [] };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-atelier') || '{}');
@@ -555,13 +650,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // avant la boutique, tout était gratuit : on garde ce que le joueur avait déjà équipé
     if ((saved.v || 0) < 3) for (const c of CATS) if (price(c.key, cfg[c.key]) && !shop.owned.includes(c.key + ':' + cfg[c.key])) shop.owned.push(c.key + ':' + cfg[c.key]);
   } catch (e) {}
-  const owns = (key, id) => !price(key, id) || shop.owned.includes(key + ':' + id);
+  const owns = (key, id) => {
+    const t = trophyOf(key, id);
+    return t ? tro.got.includes(t.id) : !price(key, id) || shop.owned.includes(key + ':' + id);
+  };
+  // ce qu'il faut pour débloquer un objet : son prix, ou le trophée qui le donne
+  const lockText = (key, id) => { const t = trophyOf(key, id); return t ? '🏆 ' + t.name : price(key, id) + ' pts'; };
   for (const c of CATS) if (!owns(c.key, cfg[c.key])) cfg[c.key] = DEFAULT[c.key];
   function saveShop() { try { localStorage.setItem('comete-atelier', JSON.stringify(shop)); } catch (e) {} }
   saveShop();
   function buyItem(key, id) {
     const p = price(key, id);
-    if (owns(key, id) || shop.credits < p) return false;
+    if (trophyOf(key, id) || owns(key, id) || shop.credits < p) return false;
     shop.credits -= p; shop.owned.push(key + ':' + id);
     cfg[key] = id; saveShop(); saveCfg();
     beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .1, 'triangle', .1), 70); setTimeout(() => beep(1046, .18, 'triangle', .1), 140);
@@ -617,6 +717,76 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
   function initAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
   $('soundBtn').onclick = () => { soundOn = !soundOn; $('soundBtn').textContent = 'Son : ' + (soundOn ? 'activé' : 'coupé'); };
+
+  // --- trophées : gain, annonce et panneau ---
+  let runTrophies = [];
+  const statOf = k => k === 'gardiens' ? beaten.length : tro.stats[k] || 0;
+  function rewardText(t) {
+    const r = [];
+    if (t.pts) r.push(`+${t.pts} pts`);
+    if (t.item) {
+      const [key, id] = t.item.split(':'), c = CATS.find(x => x.key === key);
+      r.push(`${c.label.toLowerCase()} ${byId(c.list, id).name}`);
+    }
+    if (t.title) r.push(`titre « ${t.title} »`);
+    return r.join(' + ');
+  }
+  function award(t) {
+    if (tro.got.includes(t.id)) return;
+    tro.got.push(t.id); saveTro();
+    if (t.pts) { shop.credits += t.pts; saveShop(); renderAtelier(); }
+    if (state === 'play') runTrophies.push(t);
+    toast(t);
+  }
+  function checkTrophies() { for (const t of TROPHIES) if (t.stat && statOf(t.stat) >= t.goal) award(t); }
+  function addStat(k) { tro.stats[k] = (tro.stats[k] || 0) + 1; saveTro(); checkTrophies(); }
+  const exploit = id => award(TROPHIES.find(t => t.id === id));
+
+  // les annonces passent l'une après l'autre
+  const toastQ = [];
+  let toastBusy = false;
+  function toast(t) { toastQ.push(t); if (!toastBusy) nextToast(); }
+  function nextToast() {
+    const t = toastQ.shift(), el = $('toast');
+    if (!t) { toastBusy = false; return; }
+    toastBusy = true;
+    const b = document.createElement('b'); b.textContent = '🏆 Trophée débloqué';
+    el.replaceChildren(b, `${t.name} · ${rewardText(t)}`);
+    el.classList.add('show');
+    beep(784, .1, 'triangle', .1); setTimeout(() => beep(1046, .1, 'triangle', .1), 90); setTimeout(() => beep(1318, .22, 'triangle', .1), 180);
+    setTimeout(() => { el.classList.remove('show'); setTimeout(nextToast, 350); }, 2800);
+  }
+
+  function renderTrophies() {
+    $('trophySummary').innerHTML = `<b>${tro.got.length}</b> trophées gagnés sur ${TROPHIES.length}. Les points gagnés vont directement dans le Hangar.`;
+    const own = titles();
+    $('titleOpt').hidden = !own.length;
+    const ot = $('optTitle'); ot.innerHTML = '';
+    for (const ti of ['', ...own]) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = ti || 'Aucun';
+      b.setAttribute('aria-pressed', cfg.title === ti);
+      b.onclick = () => { cfg.title = ti; saveCfg(); renderTrophies(); beep(700, .06, 'triangle', .08); };
+      ot.appendChild(b);
+    }
+    const el = $('trophyList'); el.innerHTML = '';
+    for (const g of TROPHY_GROUPS) {
+      const h = document.createElement('h3'); h.className = 'subhead'; h.textContent = g.name; el.appendChild(h);
+      if (g.desc) { const p = document.createElement('p'); p.className = 'wallet'; p.textContent = g.desc; el.appendChild(p); }
+      const list = document.createElement('div'); list.className = 'tlist';
+      for (const t of TROPHIES.filter(x => x.group === g.id)) {
+        const won = tro.got.includes(t.id);
+        const goal = t.stat ? t.goal : 1, v = t.stat ? Math.min(statOf(t.stat), goal) : won ? 1 : 0;
+        const card = document.createElement('div');
+        card.className = 'tcard' + (won ? ' won' : '');
+        card.innerHTML = `<b>${won ? '🏆 ' : ''}${t.name}</b><span>${t.desc || `${t.goal} ${STATS[t.stat]}`}</span>
+          <div class="tbar"><i style="width:${(v / goal * 100).toFixed(1)}%"></i></div>
+          <em>${won ? 'Gagné · ' : t.stat ? `${v} / ${goal} · ` : ''}${rewardText(t)}</em>`;
+        list.appendChild(card);
+      }
+      el.appendChild(list);
+    }
+  }
 
   // --- dessin de la fusée ---
   function shade(hex, k) {
@@ -712,11 +882,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       b.setAttribute('aria-pressed', shown(key) === it.id);
       if (swatch) {
         b.style.background = it.hex || `linear-gradient(180deg, ${it.c[0]}, ${it.c[1]} 45%, ${it.c[2]})`;
-        const label = it.name + (locked ? ` · ${price(key, it.id)} pts` : '');
+        const label = it.name + (locked ? ` · ${lockText(key, it.id)}` : '');
         b.setAttribute('aria-label', label); b.title = label;
       } else {
         b.textContent = it.name;
-        if (locked) { const sm = document.createElement('small'); sm.textContent = price(key, it.id) + ' pts'; b.appendChild(sm); }
+        if (locked) { const sm = document.createElement('small'); sm.textContent = lockText(key, it.id); b.appendChild(sm); }
       }
       b.onclick = () => pick(key, it.id);
       el.appendChild(b);
@@ -729,7 +899,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const locked = !owns(key, p.id);
       b.type = 'button'; b.className = 'pcard' + (locked ? ' locked' : ''); b.id = `opt-${key}-${p.id}`;
       b.setAttribute('aria-pressed', shown(key) === p.id);
-      b.innerHTML = `<b>${p.name}</b><span>${p.desc}</span><em>${locked ? 'À débloquer · ' + price(key, p.id) + ' pts' : info(p)}</em>`;
+      b.innerHTML = `<b>${p.name}</b><span>${p.desc}</span><em>${locked ? 'À débloquer · ' + lockText(key, p.id) : info(p)}</em>`;
       b.onclick = () => pick(key, p.id);
       el.appendChild(b);
     }
@@ -741,16 +911,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     buildCards($('optGun'), GUNS, 'gun', g => `Chargeur ${g.mag} · recharge ${String(g.reload).replace('.', ',')} s · ${g.info}`);
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
     $('pvName').textContent = cfg.name;
+    $('pvTitle').textContent = cfg.title;
     $('pvPower').textContent = byId(GUNS, shown('gun')).name + ' · ' + byId(POWERS, shown('power')).name;
     $('pvPoints').textContent = `Tes points : ${shop.credits}`;
     const bar = $('buybar');
     bar.hidden = !preview;
     if (preview) {
       const c = CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
-      $('buyText').textContent = `${c.label} ${it.name} · ${p} pts`;
-      const miss = p - shop.credits;
-      $('buyBtn').textContent = miss > 0 ? `Il te manque ${miss} pts` : 'Acheter et équiper';
-      $('buyBtn').disabled = miss > 0;
+      const t = trophyOf(preview.key, preview.id);
+      if (t) {
+        $('buyText').textContent = `${c.label} ${it.name} · à gagner avec le trophée « ${t.name} »`;
+        $('buyBtn').textContent = 'Réservé aux trophées';
+        $('buyBtn').disabled = true;
+      } else {
+        $('buyText').textContent = `${c.label} ${it.name} · ${p} pts`;
+        const miss = p - shop.credits;
+        $('buyBtn').textContent = miss > 0 ? `Il te manque ${miss} pts` : 'Acheter et équiper';
+        $('buyBtn').disabled = miss > 0;
+      }
     }
   }
   $('buyBtn').onclick = () => { if (preview && buyItem(preview.key, preview.id)) { preview = null; refreshHangar(); renderAtelier(); } };
@@ -771,7 +949,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { $('hangar').hidden = true; $('help').hidden = true; $('trophies').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  $('trophyBtn').onclick = () => { renderTrophies(); state = 'hangar'; $('menu').hidden = true; $('trophies').hidden = false; };
+  $('trophyBack').onclick = closeHangar;
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   $('hangarBtn').onclick = openHangar;
@@ -787,6 +967,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
+  // pour les exploits : aucune vie perdue dans la partie / pendant le combat de boss en cours
+  let runClean = true, bossClean = false;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -795,6 +977,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    runClean = true; bossClean = false; runTrophies = [];
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -871,6 +1054,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   let beaten = [];
   try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => BOSSES.some(d => d.id === x)); } catch (e) {}
+  // les boss déjà battus avant les trophées comptent pour la collection
+  checkTrophies();
   // couleur du fond selon le secteur traversé
   const SECTOR_BG = ['#1a1240', '#12301f', '#2a0f24', '#2e1c10', '#0f2a3a', '#1c0f30', '#22223a', '#2a2610', '#331208', '#163018'];
 
@@ -954,6 +1139,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
+    bossClean = true;
     // cinématique : on nettoie l'écran, alerte, carte du boss
     for (const it of items) if (it !== boss && (it.kind === 'rock' || it.kind === 'alien')) { it.dead = true; burst(it.x, it.y, '#8f86b8', 6, 120, 3); }
     ebullets = [];
@@ -1372,7 +1558,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     it.hp -= dmg; it.hitT = .08;
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     it.dead = true;
-    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); return; }
+    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); addStat('rochers'); return; }
     score += it.pts;
     pop(it.x, it.y - 20, '+' + it.pts, '#7dff8a');
     if (it.boss) {
@@ -1382,9 +1568,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ebullets = [];
       const bonus = lives < maxLives();
       if (bonus) lives++;
-      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} }
+      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
       sector++;
+      if (bossClean) exploit('sansfaute');
+      if (sector >= 4 && runClean) exploit('intouchable');
+      if (it.def.id === 'zorg') exploit('zorg');
       if (it.def.id === 'zorg') setTimeout(() => { if (state === 'play') showStory('ending'); }, 1800);
       // boss vaincu : on passe au niveau suivant 2,5 secondes plus tard
       lvT = 17.5; newSector = true;
@@ -1393,13 +1582,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const col = { kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
       burst(it.x, it.y, col, 22, 260);
       beep(it.type === 'saucer' ? 260 : 420, .18, 'square', .08, -200);
+      addStat('aliens');
       // la gélatine se divise en deux petites bestioles
       if (it.type === 'splitter') for (const s of [-1, 1]) items.push({ kind: 'alien', type: 'chaser', mini: true, x: it.x + s * 12, y: it.y, r: 10, hp: 1, pts: 10, vy: 120, t: Math.random() * 9, hitT: 0 });
     }
   }
 
   function hitPlayer() {
-    lives--; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
+    lives--; runClean = false; bossClean = false; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
     pop(player.x, player.y - 34, lives > 0 ? '−1 vie' : 'Plus de vie !');
     burst(player.x, player.y, '#ff7aa8', 16);
     beep(120, .35, 'sawtooth', .18, -60);
@@ -1432,7 +1622,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function finishReload(perfect) {
     ammo = gun.mag; reload = null; golden = perfect;
     if (perfect) {
-      score += 20;
+      score += 20; addStat('parfaites');
       pop(player.x, player.y - 40, 'Recharge parfaite !', '#ffd86b');
       burst(player.x, player.y, '#ffd86b', 18, 180, 3);
       beep(660, .1, 'triangle', .12); setTimeout(() => beep(990, .18, 'triangle', .12), 80);
@@ -1523,6 +1713,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('finalScore').textContent = score;
     shop.credits += score; saveShop(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${score} points pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
+    if (runTrophies.length) {
+      const n = runTrophies.length, pts = runTrophies.reduce((s, t) => s + t.pts, 0);
+      $('finalInfo').innerHTML += `<br>🏆 ${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${pts} points bonus` : '');
+    }
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
   }
@@ -1580,6 +1774,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (!boss) lvT += dt;
     if (lvT >= 20) {
       lvT = 0; level++; updateHud();
+      if (level >= 10) exploit('niveau10');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       if (level % 3 === 0 && !boss) spawnBoss();
@@ -1708,6 +1903,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         if (it.kind === 'star') {
           it.dead = true; combo++; comboT = 2.2;
           score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
+          addStat('etoiles'); if (combo >= 10) exploit('combo10');
           beep(520 + Math.min(combo, 16) * 40, .1, 'triangle', .12);
           updateHud();
         } else if (it.kind === 'shield') {

@@ -23,6 +23,7 @@ An 2187. L'Empereur Zorg a volé les étoiles de la galaxie et placé 10 gardien
 - 7 espèces d'aliens avec chacune son pouvoir (poursuite, tirs, charge, division, téléportation, visée, mines).
 - 10 boss différents, un tous les 3 niveaux : Vaisseau-mère, Reine Gluante, Œil Suprême, Crabe Cosmique, Méduse Ionique, Pieuvre Noire, Le Spectre, Forteresse Mécanique, Dragon Stellaire et Empereur Zorg.
 - Une caisse de tirs illimités tous les 2 niveaux.
+- Des **trophées** : 20 récompenses (aliens détruits, boss différents battus, étoiles, astéroïdes, recharges parfaites, exploits) qui donnent des points, des couleurs et flammes exclusives et des titres.
 
 ## Commandes
 
