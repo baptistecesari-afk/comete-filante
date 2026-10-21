@@ -250,6 +250,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 }
 
 /* Trophées */
+.shiptitle { font-size: 13px; color: var(--star); text-align: center; min-height: 1em; }
 .tcol { display: flex; flex-direction: column; gap: 10px; }
 .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .tier { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
@@ -384,6 +385,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="preview" id="persoPreview">
       <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
       <div class="shipname" id="pvName"></div>
+      <div class="shiptitle" id="pvTitle"></div>
       <div class="powername" id="pvPower"></div>
       <div class="powername" id="pvPoints"></div>
     </div>
@@ -447,6 +449,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   <div class="hangar atelier">
     <h2>Trophées</h2>
     <p class="wallet" id="trophyCount"></p>
+    <div class="opt" id="titleOpt">
+      <span>Titre affiché sous le nom de ta fusée</span>
+      <div class="chips" id="optTitle"></div>
+    </div>
     <div class="tcol" id="trophyList"></div>
     <div class="row">
       <button class="play" id="trophyBack">Retour</button>
@@ -541,6 +547,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'amethyste', name: 'Améthyste néon', hex: '#b14dff', grad: ['#f0c8ff', '#b14dff', '#4a1580'] },
     { id: 'chrome', name: 'Chrome doré', hex: '#ffd86b', grad: ['#fffaf0', '#ffd86b', '#a8742a', '#fff2b0', '#c4902a'] },
     { id: 'blinde', name: 'Blindé', hex: '#8f9bb0', grad: ['#e6ecf5', '#8f9bb0', '#3a4252', '#b8c2d4'] },
+    { id: 'vertalien', name: 'Vert alien', hex: '#7dff8a' },
+    { id: 'argent', name: 'Chrome argenté', hex: '#a8b8d8', grad: ['#ffffff', '#a8b8d8', '#4a5a78', '#dfe8f8'] },
   ];
   const FLAMES = [
     { id: 'feu', name: 'Feu', c: ['#fff2b0', '#ff9a3c', '#ff3c3c'] },
@@ -549,6 +557,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'rose', name: 'Bonbon', c: ['#fff0f7', '#ffc2e0', '#ff7aa8'] },
     { id: 'aurore', name: 'Aurore', c: ['#e6fff4', '#4fe0c8', '#b14dff'] },
     { id: 'combo', name: 'Combo', c: ['#fff0f7', '#ff4fa0', '#ff9a3c'] },
+    { id: 'fantome', name: 'Fantôme', c: ['#ffffff', '#d9d0ff', '#8a7cc8'] },
     { id: 'arcenciel', name: 'Arc-en-ciel', rainbow: true, c: ['#ffffff', '#ff4f6d', '#7ad8ff'] },
   ];
   // couleur des tirs ('flamme' = comme la flamme du vaisseau)
@@ -585,7 +594,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', shot: 'flamme', gun: 'blaster', power: 'laser' };
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', shot: 'flamme', gun: 'blaster', power: 'laser', title: '' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -596,6 +605,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (GUNS.some(m => m.id === saved.gun)) cfg.gun = saved.gun;
     if (POWERS.some(m => m.id === saved.power)) cfg.power = saved.power;
     if (SHOTS.some(m => m.id === saved.shot)) cfg.shot = saved.shot;
+    if (typeof saved.title === 'string') cfg.title = saved.title;
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
 
@@ -628,32 +638,62 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { key: 'shot', label: 'Tirs', list: SHOTS },
   ];
 
-  // ===== Trophées : 4 collections, 4 paliers, des récompenses exclusives =====
+  // ===== Trophées : 5 collections, médailles bronze → diamant, récompenses exclusives =====
   const TIERS = [
     { name: 'Bronze', col: '#e09a5a' },
     { name: 'Argent', col: '#d6dcea' },
     { name: 'Or', col: '#ffd86b' },
     { name: 'Diamant', col: '#7ae8ff' },
   ];
+  const STAT_UNITS = { gardiens: 'gardiens différents battus', aliens: 'aliens détruits', stars: 'étoiles attrapées', rochers: 'astéroïdes détruits', parfaites: 'recharges parfaites' };
+  // chaque trophée : un palier (tier), un objectif (stat + goal, ou un exploit), des points bonus,
+  // des objets exclusifs (rewards) et parfois un titre à afficher sous le nom de la fusée
   const COLLECTIONS = [
-    { id: 'gardiens', name: 'Gardiens', desc: 'Bats les boss gardiens.', stat: 'bosses', unit: 'boss vaincus', tiers: [1, 3, 6, 10],
-      rewards: [[['power', 'tempete']], [['power', 'clone']], [['power', 'trounoir']], [['power', 'supernova']]] },
-    { id: 'chasseur', name: 'Chasseur d\'aliens', desc: 'Détruis des aliens.', stat: 'aliens', unit: 'aliens détruits', tiers: [25, 100, 300, 750],
-      rewards: [[['color', 'emeraude']], [['color', 'amethyste']], [['color', 'chrome']], [['model', 'predateur']]] },
-    { id: 'etoiles', name: 'Attrape-étoiles', desc: 'Attrape des étoiles.', stat: 'stars', unit: 'étoiles attrapées', tiers: [100, 400, 1000, 3000],
-      rewards: [[['shot', 'emeraude']], [['flame', 'aurore']], [['shot', 'electrique']], [['flame', 'arcenciel'], ['shot', 'arcenciel']]] },
-    { id: 'exploits', name: 'Exploits', desc: 'Réussis des défis difficiles.', feats: [
-        { id: 'intact', text: 'Bats un boss sans perdre de vie' },
-        { id: 'combo15', text: 'Fais un combo ×15' },
-        { id: 'parfait5', text: 'Fais 5 recharges parfaites dans une partie' },
-        { id: 'zorg', text: 'Bats l\'Empereur Zorg' }],
-      rewards: [[['color', 'blinde']], [['flame', 'combo']], [['shot', 'dore']], [['model', 'legende']]] },
+    { id: 'gardiens', name: 'Collection de gardiens', desc: 'Bats des boss différents : chaque gardien ne compte qu\'une fois.', items: [
+      { tier: 0, stat: 'gardiens', goal: 1, pts: 200, rewards: [['power', 'tempete']] },
+      { tier: 1, stat: 'gardiens', goal: 3, pts: 500, rewards: [['power', 'clone']] },
+      { tier: 2, stat: 'gardiens', goal: 6, pts: 1200, rewards: [['power', 'trounoir']] },
+      { tier: 3, stat: 'gardiens', goal: 10, pts: 3000, rewards: [['power', 'supernova']], title: 'Libératrice des étoiles' },
+    ] },
+    { id: 'chasseur', name: 'Chasseur d\'aliens', desc: 'Détruis des aliens, boss compris.', items: [
+      { tier: 0, stat: 'aliens', goal: 50, pts: 200, rewards: [['color', 'vertalien']] },
+      { tier: 1, stat: 'aliens', goal: 250, pts: 600, rewards: [['color', 'emeraude']] },
+      { tier: 2, stat: 'aliens', goal: 1000, pts: 1500, rewards: [['color', 'amethyste'], ['color', 'chrome']] },
+      { tier: 3, stat: 'aliens', goal: 3000, pts: 4000, rewards: [['model', 'predateur']], title: 'Fléau des aliens' },
+    ] },
+    { id: 'etoiles', name: 'Attrape-étoiles', desc: 'Rattrape les étoiles volées par Zorg.', items: [
+      { tier: 0, stat: 'stars', goal: 100, pts: 150, rewards: [['shot', 'emeraude']] },
+      { tier: 1, stat: 'stars', goal: 500, pts: 500, rewards: [['flame', 'aurore']] },
+      { tier: 2, stat: 'stars', goal: 2000, pts: 1500, rewards: [['shot', 'electrique']] },
+      { tier: 3, stat: 'stars', goal: 5000, pts: 4000, rewards: [['flame', 'arcenciel'], ['shot', 'arcenciel']], title: 'Comète vivante' },
+    ] },
+    { id: 'pilote', name: 'Pilote', desc: 'Ton adresse aux commandes.', items: [
+      { tier: 0, name: 'Casse-cailloux', stat: 'rochers', goal: 100, pts: 200 },
+      { tier: 1, name: 'Casse-cailloux', stat: 'rochers', goal: 500, pts: 800 },
+      { tier: 0, name: 'Gâchette d\'or', stat: 'parfaites', goal: 25, pts: 200 },
+      { tier: 1, name: 'Gâchette d\'or', stat: 'parfaites', goal: 100, pts: 600 },
+      { tier: 2, name: 'Gâchette d\'or', stat: 'parfaites', goal: 500, pts: 1500, rewards: [['shot', 'dore']] },
+    ] },
+    { id: 'exploits', name: 'Exploits', desc: 'À réussir pendant une seule partie.', items: [
+      { tier: 0, name: 'Endurance', feat: 'niveau10', text: 'Atteins le niveau 10', pts: 500 },
+      { tier: 0, name: 'Combo ×10', feat: 'combo10', text: 'Attrape 10 étoiles à la suite sans casser le combo', pts: 400 },
+      { tier: 1, name: 'Sans une égratignure', feat: 'intact', text: 'Bats un boss sans perdre de vie pendant le combat', pts: 800, rewards: [['color', 'blinde']] },
+      { tier: 1, name: 'Combo ×15', feat: 'combo15', text: 'Fais un combo ×15', pts: 600, rewards: [['flame', 'combo']] },
+      { tier: 2, name: 'Tireur parfait', feat: 'parfait5', text: 'Fais 5 recharges parfaites dans une partie', pts: 800, rewards: [['color', 'argent']] },
+      { tier: 2, name: 'Intouchable', feat: 'intouchable', text: 'Arrive au secteur 5 sans perdre une seule vie', pts: 2000, rewards: [['flame', 'fantome']] },
+      { tier: 3, name: 'Chute de l\'Empire', feat: 'zorg', text: 'Bats l\'Empereur Zorg', pts: 3000, rewards: [['model', 'legende']], title: 'Héroïne de la galaxie' },
+    ] },
   ];
+  // liste à plat : chaque trophée a un identifiant « collection:numéro »
+  const TROPHIES = [];
+  for (const col of COLLECTIONS) col.items.forEach((it, i) => { it.id = col.id + ':' + i; it.col = col; it.rewards = it.rewards || []; TROPHIES.push(it); });
+  const trophyName = t => `${t.name || t.col.name} · ${TIERS[t.tier].name}`;
   const EXCL = {};
-  for (const col of COLLECTIONS) col.rewards.forEach((list, i) => list.forEach(([k, id]) => { EXCL[k + ':' + id] = { col, i }; }));
+  for (const t of TROPHIES) for (const [k, id] of t.rewards) EXCL[k + ':' + id] = t;
   const rewardName = ([k, id]) => { const c = CATS.find(x => x.key === k); return `${c.label} « ${byId(c.list, id).name} »`; };
   const trophyOf = (key, id) => EXCL[key + ':' + id];
-  const lockLabel = (key, id) => { const e = trophyOf(key, id); return e ? `Trophée ${e.col.name} ${TIERS[e.i].name}` : `${price(key, id)} pts`; };
+  const lockLabel = (key, id) => { const t = trophyOf(key, id); return t ? `Trophée ${trophyName(t)}` : `${price(key, id)} pts`; };
+  const rewardText = t => [t.pts ? `+${t.pts} pts` : '', ...t.rewards.map(rewardName), t.title ? `titre « ${t.title} »` : ''].filter(Boolean).join(' + ');
   const price = (key, id) => PRICES[key][id] || 0;
   let shop = { v: 3, credits: 0, up: {}, owned: [] };
   try {
@@ -671,63 +711,89 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   saveShop();
 
   // statistiques gardées d'une partie à l'autre
-  let stats = { stars: 0, aliens: 0, bosses: 0, feats: [], won: [] };
+  let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, feats: [], won: [] };
+  let firstCheck = false;
   try {
     const sv = JSON.parse(localStorage.getItem('comete-stats') || '{}');
-    for (const k of ['stars', 'aliens', 'bosses']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
+    for (const k of ['stars', 'aliens', 'rochers', 'parfaites']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
     if (Array.isArray(sv.feats)) stats.feats = sv.feats.filter(x => typeof x === 'string');
-    if (Array.isArray(sv.won)) stats.won = sv.won.filter(x => typeof x === 'string');
+    // les numéros de trophées ont changé avec la fusion : on recalcule sans redonner les points
+    if (sv.v === 2 && Array.isArray(sv.won)) stats.won = sv.won.filter(id => TROPHIES.some(t => t.id === id));
+    else firstCheck = true;
+    // progression gagnée avec l'autre version des trophées
+    const old = JSON.parse(localStorage.getItem('comete-trophees') || '{}');
+    if (old.stats) {
+      for (const [a, b] of [['aliens', 'aliens'], ['etoiles', 'stars'], ['rochers', 'rochers'], ['parfaites', 'parfaites']]) if (Number.isFinite(old.stats[a])) stats[b] = Math.max(stats[b], Math.floor(old.stats[a]));
+      const featMap = { niveau10: 'niveau10', sansfaute: 'intact', combo10: 'combo10', intouchable: 'intouchable', zorg: 'zorg' };
+      if (Array.isArray(old.got)) for (const g of old.got) if (featMap[g] && !stats.feats.includes(featMap[g])) stats.feats.push(featMap[g]);
+      firstCheck = true;
+    }
   } catch (e) {}
   let statsDirty = false;
   function saveStats() { statsDirty = false; try { localStorage.setItem('comete-stats', JSON.stringify(stats)); } catch (e) {} }
   setInterval(() => { if (statsDirty) saveStats(); }, 2000);
+  const statOf = k => k === 'gardiens' ? beaten.length : stats[k] || 0;
   function bump(key) { stats[key]++; statsDirty = true; checkTrophies(); }
   function feat(id) { if (!stats.feats.includes(id)) { stats.feats.push(id); statsDirty = true; checkTrophies(); } }
-  function checkTrophies() {
-    for (const col of COLLECTIONS) for (let i = 0; i < 4; i++) {
-      const id = col.id + ':' + i;
-      if (stats.won.includes(id)) continue;
-      const ok = col.stat ? stats[col.stat] >= col.tiers[i] : stats.feats.includes(col.feats[i].id);
-      if (!ok) continue;
-      stats.won.push(id);
-      for (const [k, item] of col.rewards[i]) if (!shop.owned.includes(k + ':' + item)) shop.owned.push(k + ':' + item);
-      saveShop(); saveStats(); updateTrophyBtn();
-      queueToast(col, i);
+  let runTrophies = [];
+  // silent : débloque sans points ni annonce (progression déjà faite avant)
+  function checkTrophies(silent) {
+    for (const t of TROPHIES) {
+      if (stats.won.includes(t.id)) continue;
+      if (!(t.feat ? stats.feats.includes(t.feat) : statOf(t.stat) >= t.goal)) continue;
+      stats.won.push(t.id);
+      for (const [k, item] of t.rewards) if (!shop.owned.includes(k + ':' + item)) shop.owned.push(k + ':' + item);
+      if (!silent) {
+        if (t.pts) shop.credits += t.pts;
+        if (state === 'play') runTrophies.push(t);
+        queueToast(t);
+      }
+      saveShop(); saveStats(); updateTrophyBtn(); renderAtelier();
     }
   }
+  const titles = () => TROPHIES.filter(t => t.title && stats.won.includes(t.id)).map(t => t.title);
   function updateTrophyBtn() {
-    const txt = `Trophées · ${stats.won.length}/${COLLECTIONS.length * 4}`;
+    const txt = `Trophées · ${stats.won.length}/${TROPHIES.length}`;
     $('trophyBtn').textContent = txt; $('overTrophyBtn').textContent = txt;
   }
   const toastQ = [];
   let toastBusy = false;
-  function queueToast(col, i) { toastQ.push([col, i]); if (!toastBusy) nextToast(); }
+  function queueToast(t) { toastQ.push(t); if (!toastBusy) nextToast(); }
   function nextToast() {
-    const n = toastQ.shift(), el = $('toast');
-    if (!n) { toastBusy = false; el.hidden = true; return; }
+    const t = toastQ.shift(), el = $('toast');
+    if (!t) { toastBusy = false; el.hidden = true; return; }
     toastBusy = true;
-    const [col, i] = n;
-    el.style.setProperty('--tier', TIERS[i].col);
-    $('toastTitle').textContent = `${col.name} · ${TIERS[i].name}`;
-    $('toastReward').textContent = 'Débloqué : ' + col.rewards[i].map(rewardName).join(' + ');
+    el.style.setProperty('--tier', TIERS[t.tier].col);
+    $('toastTitle').textContent = trophyName(t);
+    $('toastReward').textContent = rewardText(t);
     el.hidden = true; void el.offsetWidth; el.hidden = false;
     beep(660, .12, 'triangle', .1); setTimeout(() => beep(880, .12, 'triangle', .1), 110); setTimeout(() => beep(1320, .3, 'triangle', .1), 220);
     setTimeout(nextToast, toastQ.length > 2 ? 2200 : 3500);
   }
   function renderTrophies() {
-    $('trophyCount').textContent = `${stats.won.length} trophées sur ${COLLECTIONS.length * 4}. Les récompenses des trophées ne s'achètent pas : il faut les gagner.`;
+    $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Leurs objets ne s'achètent pas : il faut les gagner. Les points bonus vont dans le Hangar.`;
+    const own = titles();
+    $('titleOpt').hidden = !own.length;
+    const ot = $('optTitle'); ot.innerHTML = '';
+    for (const ti of ['', ...own]) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = ti || 'Aucun';
+      b.setAttribute('aria-pressed', cfg.title === ti);
+      b.onclick = () => { cfg.title = ti; saveCfg(); renderTrophies(); beep(700, .06, 'triangle', .08); };
+      ot.appendChild(b);
+    }
     $('trophyList').innerHTML = COLLECTIONS.map(col => `<section class="tcol"><h3 class="subhead">${col.name}</h3>
-      <p class="wallet">${col.desc}${col.stat ? ` Total : <b>${stats[col.stat]}</b> ${col.unit}.` : ''}</p>
-      <div class="tiers">${TIERS.map((tr, i) => {
-        const won = stats.won.includes(col.id + ':' + i);
-        const goal = col.stat ? col.tiers[i] : 1;
-        const val = col.stat ? Math.min(goal, stats[col.stat]) : (stats.feats.includes(col.feats[i].id) ? 1 : 0);
-        const cond = col.stat ? `${col.tiers[i]} ${col.unit}` : col.feats[i].text;
-        return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${tr.name}</b></div>
+      <p class="wallet">${col.desc}</p>
+      <div class="tiers">${col.items.map(t => {
+        const tr = TIERS[t.tier], won = stats.won.includes(t.id);
+        const goal = t.feat ? 1 : t.goal, val = t.feat ? (stats.feats.includes(t.feat) ? 1 : 0) : Math.min(goal, statOf(t.stat));
+        const cond = t.feat ? t.text : `${t.goal} ${STAT_UNITS[t.stat]}`;
+        return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${t.name ? t.name + ' · ' : ''}${tr.name}</b></div>
           <span>${cond}</span><div class="bar"><i style="width:${(val / goal * 100).toFixed(0)}%"></i></div>
-          <em>${won ? 'Débloqué : ' : 'Récompense : '}${col.rewards[i].map(rewardName).join(' + ')}</em></div>`;
+          <em>${won ? 'Gagné : ' : t.feat ? '' : `${val} / ${goal} · `}${rewardText(t)}</em></div>`;
       }).join('')}</div></section>`).join('');
   }
+
   function buyItem(key, id) {
     const p = price(key, id);
     if (owns(key, id) || shop.credits < p) return false;
@@ -978,15 +1044,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('pvName').textContent = cfg.name;
     $('pvPower').textContent = byId(GUNS, shown('gun')).name + ' · ' + byId(POWERS, shown('power')).name;
     $('pvPoints').textContent = `Tes points : ${shop.credits}`;
+    $('pvTitle').textContent = cfg.title;
     const bar = $('buybar');
     bar.hidden = !preview;
     if (preview) {
       const c = CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
       const tro = trophyOf(preview.key, preview.id);
       if (tro) {
-        const col = tro.col, goal = col.stat ? col.tiers[tro.i] : 0;
-        $('buyText').textContent = `${c.label} ${it.name} · exclusif, gagne le trophée ${col.name} ${TIERS[tro.i].name}` +
-          (col.stat ? ` (${Math.min(goal, stats[col.stat])}/${goal} ${col.unit})` : ` : ${col.feats[tro.i].text}`);
+        $('buyText').textContent = `${c.label} ${it.name} · exclusif, gagne le trophée ${trophyName(tro)}` +
+          (tro.feat ? ` : ${tro.text}` : ` (${Math.min(tro.goal, statOf(tro.stat))}/${tro.goal} ${STAT_UNITS[tro.stat]})`);
         $('buyBtn').textContent = 'Trophée requis'; $('buyBtn').disabled = true;
       } else {
         $('buyText').textContent = `${c.label} ${it.name} · ${p} pts`;
@@ -1033,7 +1099,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
-  let run = { perfect: 0, bossHit: false }, bh = null, starT = 0, cloneT = 0, ringT = 0;
+  let run = { perfect: 0, bossHit: false, clean: true }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
@@ -1042,7 +1108,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false }; bh = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true }; runTrophies = []; bh = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -1619,11 +1685,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     it.hp -= dmg; it.hitT = .08;
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     it.dead = true;
-    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); return; }
+    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); bump('rochers'); return; }
     score += it.pts;
     pop(it.x, it.y - 20, '+' + it.pts, '#7dff8a');
     bump('aliens');
-    if (it.boss) { bump('bosses'); if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); }
+    if (it.boss) { if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); }
     if (it.boss) {
       boss = null;
       burst(it.x, it.y, it.def.col, 60, 380, 5); burst(it.x, it.y, '#ffd86b', 40, 300, 5);
@@ -1631,9 +1697,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ebullets = [];
       const bonus = lives < maxLives();
       if (bonus) lives++;
-      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} }
+      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
       sector++;
+      if (sector >= 4 && run.clean) feat('intouchable');
       if (it.def.id === 'zorg') setTimeout(() => { if (state === 'play') showStory('ending'); }, 1800);
       // boss vaincu : on passe au niveau suivant 2,5 secondes plus tard
       lvT = 17.5; newSector = true;
@@ -1648,6 +1715,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function hitPlayer() {
+    run.clean = false;
     if (boss) run.bossHit = true;
     lives--; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
     pop(player.x, player.y - 34, lives > 0 ? '−1 vie' : 'Plus de vie !');
@@ -1683,7 +1751,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ammo = gun.mag; reload = null; golden = perfect;
     if (perfect) {
       score += 20;
-      run.perfect++; if (run.perfect >= 5) feat('parfait5');
+      run.perfect++; bump('parfaites'); if (run.perfect >= 5) feat('parfait5');
       pop(player.x, player.y - 40, 'Recharge parfaite !', '#ffd86b');
       burst(player.x, player.y, '#ffd86b', 18, 180, 3);
       beep(660, .1, 'triangle', .12); setTimeout(() => beep(990, .18, 'triangle', .12), 80);
@@ -1780,6 +1848,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('finalScore').textContent = score;
     shop.credits += score; saveShop(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${score} points pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
+    if (runTrophies.length) {
+      const n = runTrophies.length, pts = runTrophies.reduce((a, t) => a + t.pts, 0);
+      $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${pts} points bonus` : '');
+    }
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
   }
@@ -1850,6 +1922,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (!boss) lvT += dt;
     if (lvT >= 20) {
       lvT = 0; level++; updateHud(); setTheme(level);
+      if (level >= 10) feat('niveau10');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       if (level % 3 === 0 && !boss) spawnBoss();
@@ -2009,7 +2082,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       if (d < it.r + player.r - 3) {
         if (it.kind === 'star') {
           it.dead = true; combo++; comboT = 2.2;
-          bump('stars'); if (combo >= 15) feat('combo15');
+          bump('stars'); if (combo >= 10) feat('combo10'); if (combo >= 15) feat('combo15');
           score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
           beep(520 + Math.min(combo, 16) * 40, .1, 'triangle', .12);
           updateHud();
@@ -2901,6 +2974,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
   reset();
   resetScenery(false);
+  if (firstCheck) checkTrophies(true);
   renderAtelier();
   updateTrophyBtn();
   requestAnimationFrame(loop);
