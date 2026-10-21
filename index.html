@@ -245,6 +245,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .wcard:disabled .wicon { filter: none; }
 @media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
 
+/* Sauvegarde */
+.savesum { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.savesum div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--night); }
+.savesum b { font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--star); font-variant-numeric: tabular-nums; }
+.savesum span { font-size: 12px; color: var(--muted); }
+#savePanel textarea {
+  width: 100%; box-sizing: border-box; resize: vertical; font: 12px/1.4 ui-monospace, monospace; color: var(--ink);
+  background: var(--night); border: 2px solid color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 12px; padding: 10px;
+  user-select: text; -webkit-user-select: text; word-break: break-all;
+}
+
 /* Histoire */
 .storytitle {
   margin: -10px 0 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 46px); line-height: 1.05; text-wrap: balance;
@@ -443,6 +454,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="row">
       <button class="toggle" id="storyBtn">Histoire</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
+      <button class="toggle" id="saveBtn">Sauvegarde</button>
       <button class="toggle" id="soundBtn">Son : activé</button>
     </div>
   </div>
@@ -554,6 +566,29 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   </div>
 </div>
 
+<div class="panel" id="savePanel" hidden>
+  <div class="hangar atelier">
+    <h2>Sauvegarde</h2>
+    <p class="wallet">Ta partie est enregistrée <strong>automatiquement</strong> sur cet appareil, même si tu fermes le jeu en pleine partie : tes points, vaisseaux, couleurs, compétences, trophées et mondes sont gardés.</p>
+    <div class="savesum" id="saveSum"></div>
+    <div class="opt">
+      <span>Mon code de sauvegarde</span>
+      <p class="wallet">Pour retrouver ta partie sur un autre appareil ou un autre lien du jeu : copie ce code, puis colle-le là-bas dans « Charger un code ».</p>
+      <textarea id="saveCode" readonly rows="3"></textarea>
+      <button type="button" class="ghost small" id="copySave">Copier le code</button>
+    </div>
+    <div class="opt">
+      <label for="loadCode">Charger un code</label>
+      <textarea id="loadCode" rows="3" placeholder="Colle ici un code de sauvegarde (il commence par CF1-)"></textarea>
+      <button type="button" class="ghost small" id="loadSave">Charger cette sauvegarde</button>
+      <p class="wallet" id="saveMsg" role="status"></p>
+    </div>
+    <div class="row">
+      <button class="play" id="saveBack">Retour</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="help" hidden>
   <div class="hangar atelier">
     <h2>Comment jouer</h2>
@@ -572,6 +607,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>◆</span><span>Bouclier pendant 5 secondes</span>
       <span>⚡</span><span>Recharge ton super-pouvoir tout de suite</span>
       <span>♥</span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
+      <span>Sauvegarde</span><span>Tout est enregistré automatiquement, même si tu fermes le jeu en pleine partie. Le menu « Sauvegarde » donne un code pour retrouver ta partie ailleurs.</span>
       <span>1UP</span><span>Tous les 2 500 points, tu gagnes une vie bonus.</span>
       <span>∞</span><span>Caisse orange : tirs illimités et plus rapides pendant 30 secondes. Elle tombe une fois tous les 2 niveaux (niveaux 1, 3, 5…).</span>
       <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
@@ -1667,7 +1703,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -1686,7 +1722,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
-  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
+  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
@@ -1697,7 +1733,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500 }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -1738,10 +1774,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   // --- apparitions ---
   function spawn() {
-    // les objets tombent de plus en plus souvent : on limite aussi le nombre d'aliens par seconde,
-    // qui ne grimpe plus que doucement après le niveau 6
-    const perSec = .7 + Math.max(0, level - 6) * .02;
-    const pAlien = boss ? 0 : Math.min(.26, .05 + level * .03, perSec * Math.max(.18, .7 / speed));
+    const pAlien = boss ? 0 : Math.min(.3, .06 + level * .035);
     if (Math.random() < pAlien) { spawnAlien(); return; }
     const r = Math.random();
     const x = 30 + Math.random() * (W - 60);
@@ -3448,11 +3481,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function gameOver() {
     saveStats();
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
-    const record = score > best;
-    if (record) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
+    const record = score > run.bestBefore;
+    saveRecord();
     $('overTitle').textContent = `${cfg.name} s'est écrasée`;
     $('finalScore').textContent = score;
-    shop.credits += score; saveShop(); renderAtelier();
+    creditRun(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${score} points pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
     if (runTrophies.length) {
       const n = runTrophies.length, pts = runTrophies.reduce((a, t) => a + t.pts, 0);
@@ -3485,10 +3518,74 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
   // quitter depuis la pause : on garde les points et on revient au menu
+  // ===== Sauvegarde automatique =====
+  // verse dans le Hangar les points pas encore comptés de la partie en cours
+  function creditRun() {
+    const add = score - run.credited;
+    if (add > 0) { shop.credits += add; run.credited = score; saveShop(); }
+  }
+  function saveRecord() {
+    if (score > best) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
+  }
+  let loadingSave = false;
+  function saveNow() {
+    // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
+    if (loadingSave) return;
+    if (['play', 'pause', 'story', 'launch'].includes(state)) { creditRun(); saveRecord(); }
+    saveStats(); saveCfg(); saveShop();
+  }
+  // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
+  addEventListener('pagehide', saveNow);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveNow(); });
+  setInterval(() => { if (state === 'play') { creditRun(); saveRecord(); } }, 10000);
+
+  // code de sauvegarde à copier ou coller
+  const SAVE_KEYS = () => { const k = []; try { for (let i = 0; i < localStorage.length; i++) { const n = localStorage.key(i); if (n && n.startsWith('comete-')) k.push(n); } } catch (e) {} return k; };
+  function makeSaveCode() {
+    saveNow();
+    const data = {};
+    try { for (const k of SAVE_KEYS()) data[k] = localStorage.getItem(k); } catch (e) {}
+    return 'CF1-' + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+  }
+  function openSave() {
+    initAudio();
+    const owned = MODELS.filter(m => owns('model', m.id)).length;
+    $('saveSum').innerHTML = [
+      [shop.credits, 'points à dépenser'], [best, 'record'], [`${owned}/${MODELS.length}`, 'vaisseaux'],
+      [`${stats.won.length}/${TROPHIES.length}`, 'trophées'], [`${worldsOpen}/${WORLDS.length}`, 'mondes ouverts'],
+    ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
+    $('saveCode').value = makeSaveCode();
+    $('saveMsg').textContent = ''; $('loadCode').value = '';
+    state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('savePanel').hidden = false;
+  }
+  $('saveBtn').onclick = openSave;
+  $('saveBack').onclick = () => { $('savePanel').hidden = true; closeHangar(); };
+  $('copySave').onclick = () => {
+    const ta = $('saveCode');
+    const done = () => { $('copySave').textContent = 'Code copié ✓'; setTimeout(() => { $('copySave').textContent = 'Copier le code'; }, 2000); };
+    try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.focus(); ta.select(); $('copySave').textContent = 'Code sélectionné : fais Copier'; }); }
+    catch (e) { ta.focus(); ta.select(); }
+  };
+  $('loadSave').onclick = () => {
+    const code = $('loadCode').value.trim(), msg = $('saveMsg');
+    try {
+      if (!code.startsWith('CF1-')) throw new Error();
+      const data = JSON.parse(decodeURIComponent(escape(atob(code.slice(4)))));
+      const keys = Object.keys(data).filter(k => k.startsWith('comete-') && typeof data[k] === 'string');
+      if (!keys.length) throw new Error();
+      loadingSave = true;
+      for (const k of SAVE_KEYS()) localStorage.removeItem(k);
+      for (const k of keys) localStorage.setItem(k, data[k]);
+      msg.textContent = 'Sauvegarde chargée ! Le jeu redémarre…';
+      setTimeout(() => location.reload(), 900);
+    } catch (e) {
+      msg.textContent = 'Ce code ne marche pas. Vérifie que tu as bien copié tout le code, en commençant par CF1-.';
+    }
+  };
+
   $('quitBtn').onclick = () => {
     if (state !== 'pause') return;
-    shop.credits += score; saveShop();
-    if (score > best) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
+    creditRun(); saveRecord();
     state = 'menu';
     for (const id of ['paused', 'pauseBtn', 'powerBtn', 'weapons', 'cine']) $(id).hidden = true;
     $('banner').classList.remove('show');
