@@ -401,6 +401,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   border: 2px solid color-mix(in srgb, var(--muted) 35%, transparent); border-radius: 14px; padding: 10px 12px;
   display: flex; flex-direction: column; gap: 4px;
 }
+.pcard canvas { width: 100%; height: 76px; border-radius: 10px; background: radial-gradient(circle at 50% 80%, var(--deep), #05040f); margin-bottom: 4px; }
+.pcard.locked canvas { opacity: .75; }
 .pcard b { font-family: var(--display); font-weight: 400; font-size: 15px; }
 .pcard span { font-size: 13px; color: var(--muted); line-height: 1.4; }
 .pcard em { font-style: normal; font-size: 12px; color: var(--star); font-variant-numeric: tabular-nums; }
@@ -784,20 +786,20 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
   // canons : [x, y, angle] dans le repère de la fusée
   const GUNS = [
-    { id: 'blaster', name: 'Blaster', desc: 'Un seul canon qui tire très vite.', info: 'cadence rapide', rate: .16, mag: 14, reload: 1.4, barrels: [[0, -24, 0]] },
-    { id: 'double', name: 'Double canon', desc: 'Deux canons sur les côtés, tirs parallèles.', info: 'cadence moyenne', rate: .24, mag: 10, reload: 1.7, barrels: [[-10.5, -10, 0], [10.5, -10, 0]] },
-    { id: 'eventail', name: 'Éventail', desc: 'Trois tirs qui s\'écartent, pour toucher large.', info: 'cadence lente', rate: .34, mag: 7, reload: 2, barrels: [[0, -24, -.22], [0, -24, 0], [0, -24, .22]] },
+    { id: 'blaster', name: 'Blaster', desc: 'Tir rapide, droit devant.', info: 'cadence rapide', rate: .16, mag: 14, reload: 1.4, barrels: [[0, -24, 0]] },
+    { id: 'double', name: 'Double canon', desc: 'Deux tirs côte à côte.', info: 'cadence moyenne', rate: .24, mag: 10, reload: 1.7, barrels: [[-10.5, -10, 0], [10.5, -10, 0]] },
+    { id: 'eventail', name: 'Éventail', desc: 'Trois tirs en éventail.', info: 'cadence lente', rate: .34, mag: 7, reload: 2, barrels: [[0, -24, -.22], [0, -24, 0], [0, -24, .22]] },
   ];
   const POWERS = [
-    { id: 'hyper', name: 'Hyperpropulsion', desc: 'Tu deviens invincible et tu pulvérises tout ce que tu touches.', dur: 1.8, cd: 9 },
-    { id: 'temps', name: 'Ralenti', desc: 'Tout ralentit autour de toi, sauf ta fusée et tes tirs.', dur: 4, cd: 12 },
-    { id: 'aimant', name: 'Aimant', desc: 'Les étoiles proches foncent vers toi.', dur: 6, cd: 11 },
-    { id: 'laser', name: 'Laser', desc: 'Un rayon détruit tout ce qui est devant toi.', dur: 1.4, cd: 7 },
-    { id: 'nova', name: 'Nova', desc: 'Une explosion efface astéroïdes, aliens et tirs ennemis.', dur: .7, cd: 18 },
-    { id: 'tempete', name: 'Tempête d\'étoiles', desc: 'Une pluie d\'étoiles traverse l\'écran et frappe tous les ennemis.', dur: 3, cd: 13 },
-    { id: 'clone', name: 'Clones', desc: 'Deux copies de ta fusée tirent à tes côtés.', dur: 8, cd: 16 },
-    { id: 'trounoir', name: 'Trou noir', desc: 'Aspire et broie les ennemis et leurs tirs.', dur: 4, cd: 16 },
-    { id: 'supernova', name: 'Supernova divine', desc: 'Invincible, anneaux de tirs, cadence ×3 et munitions infinies.', dur: 6, cd: 24 },
+    { id: 'hyper', name: 'Hyperpropulsion', desc: 'Invincible, tu fonces dans tout.', dur: 1.8, cd: 9 },
+    { id: 'temps', name: 'Ralenti', desc: 'Tout ralentit, sauf toi.', dur: 4, cd: 12 },
+    { id: 'aimant', name: 'Aimant', desc: 'Attire les étoiles.', dur: 6, cd: 11 },
+    { id: 'laser', name: 'Laser', desc: 'Un rayon qui détruit tout.', dur: 1.4, cd: 7 },
+    { id: 'nova', name: 'Nova', desc: 'Une explosion vide l\'écran.', dur: .7, cd: 18 },
+    { id: 'tempete', name: 'Tempête d\'étoiles', desc: 'Une pluie d\'étoiles sur les ennemis.', dur: 3, cd: 13 },
+    { id: 'clone', name: 'Clones', desc: 'Deux fusées tirent avec toi.', dur: 8, cd: 16 },
+    { id: 'trounoir', name: 'Trou noir', desc: 'Aspire les ennemis.', dur: 4, cd: 16 },
+    { id: 'supernova', name: 'Supernova divine', desc: 'Invincible, tirs en anneaux, munitions ∞.', dur: 6, cd: 24 },
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
 
@@ -1480,6 +1482,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   // --- hangar ---
   // objet regardé dans le hangar mais pas encore acheté
   let preview = null;
+  // mini-aperçus animés des cartes pistolet et super-pouvoir
+  let demos = [];
   const shown = key => preview && preview.key === key ? preview.id : cfg[key];
   function pick(key, id) {
     if (owns(key, id)) { preview = null; cfg[key] = id; saveCfg(); beep(700, .06, 'triangle', .08); }
@@ -1512,14 +1516,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
   function buildCards(el, list, key, info) {
     el.innerHTML = '';
+    demos = demos.filter(d => d.key !== key);
     for (const p of list) {
       const b = document.createElement('button');
       const locked = !owns(key, p.id);
       b.type = 'button'; b.className = 'pcard' + (locked ? ' locked' : ''); b.id = `opt-${key}-${p.id}`;
       b.setAttribute('aria-pressed', shown(key) === p.id);
-      b.innerHTML = `<b>${p.name}</b><span>${p.desc}</span><em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + price(key, p.id) + ' pts') : info(p)}</em>`;
+      b.innerHTML = `<canvas width="360" height="128" aria-hidden="true"></canvas><b>${p.name}</b><span>${p.desc}</span><em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + price(key, p.id) + ' pts') : info(p)}</em>`;
       b.onclick = () => pick(key, p.id);
       el.appendChild(b);
+      demos.push({ cv: b.firstChild, key, id: p.id });
     }
   }
   // 3 emplacements pour garder ses looks préférés
@@ -5329,6 +5335,158 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
   }
 
+  // ===== Mini-aperçus animés des pistolets et super-pouvoirs =====
+  const demoShot = (conf, t) => {
+    const sh = byId(SHOTS, conf.shot);
+    if (sh.rainbow) return `hsl(${(t / 6) % 360}, 100%, 65%)`;
+    return sh.c ? sh.c[1] : flameColsOf(conf.flame, t)[1];
+  };
+  function demoRock(k, x, y, r, a = 1) {
+    k.save(); k.globalAlpha *= a; k.fillStyle = '#8a7f9e'; k.beginPath(); k.arc(x, y, r, 0, 7); k.fill();
+    k.fillStyle = '#5f5672'; k.beginPath(); k.arc(x - r * .3, y - r * .2, r * .3, 0, 7); k.arc(x + r * .35, y + r * .3, r * .22, 0, 7); k.fill(); k.restore();
+  }
+  function demoAlien(k, x, y, a = 1, hit = 0) {
+    k.save(); k.globalAlpha *= a; k.fillStyle = hit ? '#ffffff' : '#7dff8a';
+    k.beginPath(); k.ellipse(x, y, 13, 10, 0, 0, 7); k.fill();
+    k.fillStyle = '#0b0820'; k.beginPath(); k.arc(x - 4.5, y - 1, 2.6, 0, 7); k.arc(x + 4.5, y - 1, 2.6, 0, 7); k.fill(); k.restore();
+  }
+  function demoStar(k, x, y, r, col = '#ffd86b') {
+    k.fillStyle = col; k.beginPath();
+    for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, d = i % 2 ? r * .45 : r; k.lineTo(x + Math.cos(a) * d, y + Math.sin(a) * d); }
+    k.fill();
+  }
+  function demoBolt(k, x, y, ang, col) {
+    k.save(); k.translate(x, y); k.rotate(ang); k.fillStyle = col; k.shadowColor = col; k.shadowBlur = 8;
+    k.fillRect(-2, -8, 4, 16); k.restore();
+  }
+  function drawDemo(k, W, H, key, id, conf, t) {
+    const rx = W / 2, ry = H - 30, s = 1.2, col = demoShot(conf, t);
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, W, H);
+    // petites étoiles du fond qui défilent
+    k.fillStyle = 'rgba(255, 255, 255, .5)';
+    for (let i = 0; i < 18; i++) k.fillRect((i * 97) % W, ((i * 53) + t / 30) % H, 2, 2);
+    if (key === 'gun') {
+      const g = byId(GUNS, id), per = g.rate * 1000 * 1.4, sp = .14;
+      // les tirs montent à la cadence du pistolet
+      for (let n = 0; n < 20; n++) {
+        const age = (t % per) + n * per, y0 = ry - 24 * s;
+        if (age * sp > ry + 20) break;
+        for (const [bx, by, ba] of g.barrels) {
+          const d = age * sp;
+          demoBolt(k, rx + bx * s + Math.sin(ba) * d, ry + by * s - Math.cos(ba) * d, ba, col);
+        }
+      }
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+      return;
+    }
+    const P = 2600, f = (t % P) / P;
+    if (id === 'hyper') {
+      // traits de vitesse et une aura dorée : la fusée traverse l'astéroïde
+      k.strokeStyle = 'rgba(255, 216, 107, .55)'; k.lineWidth = 2;
+      for (let i = 0; i < 9; i++) { const x = (i * 41 + 17) % W, y = ((i * 37) + t / 2) % (H + 40) - 40; k.beginPath(); k.moveTo(x, y); k.lineTo(x, y + 30); k.stroke(); }
+      const ay = -20 + f * 2.2 * H;
+      if (ay < ry - 18) demoRock(k, rx, ay, 15);
+      else if (ay < ry + 50) for (let i = 0; i < 6; i++) { const a = i * 1.05, d = (ay - ry + 18) * .9; demoRock(k, rx + Math.cos(a) * d, ry - 10 + Math.sin(a) * d * .6, 4, 1 - (ay - ry + 18) / 70); }
+      const gl = k.createRadialGradient(rx, ry - 6, 4, rx, ry - 6, 44);
+      gl.addColorStop(0, 'rgba(255, 216, 107, .55)'); gl.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      k.fillStyle = gl; k.beginPath(); k.arc(rx, ry - 6, 44, 0, 7); k.fill();
+      drawRocket(k, rx, ry, s, conf, t, 0, 1);
+    } else if (id === 'temps') {
+      // un voile bleu, les ennemis rampent pendant que tes tirs filent
+      k.fillStyle = 'rgba(122, 216, 255, .12)'; k.fillRect(0, 0, W, H);
+      for (let i = 0; i < 3; i++) { const x = 60 + i * 120, y = 18 + ((t / 90 + i * 9) % 30); demoRock(k, x, y, 11, .35); demoRock(k, x, y + 4, 11); }
+      for (let n = 0; n < 6; n++) { const d = ((t % 300) + n * 300) * .4; demoBolt(k, rx, ry - 24 - d, 0, col); }
+      k.strokeStyle = '#7ad8ff'; k.lineWidth = 2.5; k.beginPath(); k.arc(W - 26, 24, 13, 0, 7); k.stroke();
+      k.beginPath(); k.moveTo(W - 26, 24); k.lineTo(W - 26 + Math.cos(t / 900) * 9, 24 + Math.sin(t / 900) * 9); k.moveTo(W - 26, 24); k.lineTo(W - 26, 17); k.stroke();
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'aimant') {
+      // les étoiles plongent en courbe vers la fusée
+      for (let i = 0; i < 6; i++) {
+        const q = (f + i / 6) % 1, sx = (i * 61 + 20) % W, sy = 10 + (i % 3) * 18, e = q * q;
+        const x = sx + (rx - sx) * e, y = sy + (ry - 8 - sy) * e;
+        if (q < .95) demoStar(k, x, y, 7 * (1 - q * .4));
+      }
+      k.strokeStyle = 'rgba(255, 79, 109, .5)'; k.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { const r = 20 + ((t / 25 + i * 16) % 48); k.globalAlpha = 1 - (r - 20) / 48; k.beginPath(); k.arc(rx, ry - 6, r, 0, 7); k.stroke(); }
+      k.globalAlpha = 1;
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'laser') {
+      // un rayon allumé par moments qui fait fondre l'astéroïde
+      const on = f > .25 && f < .75;
+      const hp = on ? Math.max(0, 1 - (f - .25) / .3) : f >= .75 ? 0 : 1;
+      if (hp > 0) demoRock(k, rx, 30, 6 + 12 * hp);
+      if (on) {
+        const lg = k.createLinearGradient(rx - 10, 0, rx + 10, 0);
+        lg.addColorStop(0, 'rgba(255, 255, 255, 0)'); lg.addColorStop(.5, '#ffffff'); lg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        k.fillStyle = col; k.globalAlpha = .55; k.fillRect(rx - 9, 0, 18, ry - 24); k.globalAlpha = 1;
+        k.fillStyle = lg; k.fillRect(rx - 5, 0, 10, ry - 24);
+      }
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'nova') {
+      // un anneau d'explosion qui balaie tout autour
+      const r = f * 230;
+      const gone = (x, y) => Math.hypot(x - rx, y - ry) < r && f < .85;
+      for (const [x, y] of [[50, 26], [300, 34], [110, 60], [262, 74]]) if (!gone(x, y)) demoRock(k, x, y, 11);
+      for (const [x, y] of [[180, 20], [40, 90], [322, 96]]) if (!gone(x, y)) demoAlien(k, x, y);
+      if (f < .85) {
+        k.strokeStyle = '#fff2b0'; k.lineWidth = 6 * (1 - f); k.shadowColor = '#ffd86b'; k.shadowBlur = 16;
+        k.beginPath(); k.arc(rx, ry, r, 0, 7); k.stroke(); k.shadowBlur = 0;
+        k.fillStyle = `rgba(255, 216, 107, ${.25 * (1 - f)})`; k.beginPath(); k.arc(rx, ry, r, 0, 7); k.fill();
+      }
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'tempete') {
+      // une pluie d'étoiles qui tombe sur les aliens
+      const al = [[70, 40], [180, 30], [290, 45]];
+      al.forEach(([x, y], i) => demoAlien(k, x, y, 1, Math.sin(t / 90 + i) > .6));
+      for (let i = 0; i < 10; i++) {
+        const q = ((t / 900) + i / 10) % 1, x = (i * 47) % (W + 80) - 40 + q * 80, y = -10 + q * (H + 20);
+        k.strokeStyle = 'rgba(255, 216, 107, .35)'; k.lineWidth = 2; k.beginPath(); k.moveTo(x, y); k.lineTo(x - 14, y - 22); k.stroke();
+        demoStar(k, x, y, 6, '#fff2b0');
+      }
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'clone') {
+      // deux fusées fantômes qui tirent avec toi
+      for (const dx of [-70, 0, 70]) {
+        for (let n = 0; n < 6; n++) { const d = ((t % 260) + n * 260) * .36; demoBolt(k, rx + dx, ry - 24 - d, 0, col); }
+      }
+      for (const dx of [-70, 70]) { k.save(); k.globalAlpha = .55; drawRocket(k, rx + dx, ry + 4, s * .85, conf, t, 0, 0); k.restore(); }
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'trounoir') {
+      // un tourbillon noir avale les ennemis
+      const hx = rx, hy = 38;
+      for (let i = 0; i < 4; i++) {
+        const q = (f + i / 4) % 1, a = i * 1.6 + q * 7, d = 120 * (1 - q);
+        const x = hx + Math.cos(a) * d * 1.3, y = hy + Math.sin(a) * d * .45;
+        if (i % 2) demoAlien(k, x, y, 1 - q * .8); else demoRock(k, x, y, 10 * (1 - q * .6), 1 - q * .8);
+      }
+      for (let i = 0; i < 3; i++) {
+        k.strokeStyle = `rgba(200, 107, 255, ${.6 - i * .15})`; k.lineWidth = 3;
+        k.beginPath(); k.ellipse(hx, hy, 34 - i * 7, 13 - i * 2.5, 0, t / (300 - i * 60), t / (300 - i * 60) + 4.4); k.stroke();
+      }
+      k.fillStyle = '#000'; k.beginPath(); k.arc(hx, hy, 12, 0, 7); k.fill();
+      drawRocket(k, rx, ry, s, conf, t, 0, 0);
+    } else if (id === 'supernova') {
+      // aura divine et anneaux de tirs dans toutes les directions
+      for (let ring = 0; ring < 3; ring++) {
+        const q = (f * 3 + ring / 3) % 1, d = 20 + q * 150;
+        for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6 + ring * .26; k.globalAlpha = 1 - q; demoBolt(k, rx + Math.cos(a) * d, ry - 6 + Math.sin(a) * d, a + Math.PI / 2, col); }
+      }
+      k.globalAlpha = 1;
+      const gl = k.createRadialGradient(rx, ry - 6, 4, rx, ry - 6, 50);
+      gl.addColorStop(0, 'rgba(255, 255, 255, .7)'); gl.addColorStop(.5, 'rgba(255, 216, 107, .35)'); gl.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      k.fillStyle = gl; k.beginPath(); k.arc(rx, ry - 6, 50, 0, 7); k.fill();
+      drawRocket(k, rx, ry, s, conf, t, 0, 1);
+    }
+  }
+  function drawDemos(t) {
+    const conf = preview ? { ...cfg, [preview.key]: preview.id } : cfg;
+    const tt = reduce ? 1100 : t;
+    for (const d of demos) {
+      if (!d.cv.isConnected) continue;
+      drawDemo(d.cv.getContext('2d'), d.cv.width, d.cv.height, d.key, d.id, conf, tt);
+    }
+  }
+
   function drawPreview(t) {
     pctx.setTransform(1, 0, 0, 1, 0, 0);
     pctx.clearRect(0, 0, pv.width, pv.height);
@@ -5344,7 +5502,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (state === 'launch') updateLaunch(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
     draw(t);
-    if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); }
+    if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); drawDemos(t); }
     requestAnimationFrame(loop);
   }
   reset();
