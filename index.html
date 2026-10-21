@@ -244,6 +244,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 @media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
 
 /* Histoire */
+.storytitle {
+  margin: -10px 0 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 46px); line-height: 1.05; text-wrap: balance;
+  background: linear-gradient(90deg, var(--w1, var(--star)), var(--w2, var(--tail))); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.storytext .guards { font-size: 14px; color: var(--muted); border-top: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); padding-top: 12px; }
 .story { max-width: 34rem; gap: 22px; }
 .kicker { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--tail); }
 .storytext { display: flex; flex-direction: column; gap: 14px; text-align: left; }
@@ -518,6 +523,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 <div class="panel" id="story" hidden>
   <div class="card story">
     <small class="kicker" id="storyKicker">Prologue</small>
+    <h2 class="storytitle" id="storyTitle" hidden></h2>
     <div class="storytext" id="storyText"></div>
     <div class="row">
       <button class="ghost" id="storySkip">Passer</button>
@@ -2683,35 +2689,90 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       `Quelque chose s'y réveille. Quelque chose de très affamé. ${n} n'a pas peur.`,
       '<b>Monde 5 : Le Néant.</b> Le Dévoreur d\'étoiles t\'attend au bout du vide.'],
   ];
-  function showStory(mode) {
-    storyMode = mode;
-    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
-    const lines = mode === 'intro' ? [
+  // un prologue pour chacun des 5 mondes (n = nom de la fusée)
+  const PROLOGUES = [
+    n => [
       'An 2187. L\'<b>Empereur Zorg</b> a volé les étoiles de la galaxie, une par une. Le ciel de la Terre s\'éteint.',
       'Pour garder son trésor, il a placé <b>10 gardiens</b> dans 10 secteurs de l\'espace, de l\'orbite terrestre jusqu\'à son palais.',
       `Une seule fusée est encore prête à décoller : ${n}.`,
-      'Ta mission : rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
-    ] : mode === 'world' ? WORLD_STORY[world + 1](n) : [
+      '<b>Mission :</b> rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
+    ],
+    n => [
+      'Au-delà de la Voie lactée s\'étend le <b>Royaume de Givre</b>, un océan d\'étoiles gelées où plus rien ne bouge.',
+      'Son impératrice, <b>Glacia</b>, enferme les étoiles volées dans des blocs de glace éternelle pour les offrir à son maître.',
+      'Pingouins blindés, yétis des comètes et mammouths cosmiques patrouillent sur ses banquises.',
+      `${n} pousse ses réacteurs à fond : il va falloir faire fondre tout ça.`,
+      '<b>Mission :</b> briser les 10 gardiens de glace et libérer les étoiles prisonnières.',
+    ],
+    n => [
+      'Au cœur d\'une planète en fusion gronde la <b>Forge Volcanique</b>. Le ciel y est rouge et l\'air brûle.',
+      'Le <b>Seigneur Magmor</b> y fait fondre les étoiles volées pour forger des armes et des armures de feu.',
+      'Salamandres de lave, phénix et une hydre à trois têtes gardent ses rivières de feu.',
+      `La coque de ${n} commence déjà à chauffer…`,
+      '<b>Mission :</b> éteindre la forge et sauver les étoiles avant qu\'elles ne fondent.',
+    ],
+    n => [
+      'Entre deux galaxies pousse une <b>jungle géante</b>. Ses lianes avalent des planètes entières.',
+      'La <b>Reine-Ruche</b> s\'y est bâti un nid avec les étoiles volées : leur lumière nourrit ses millions de larves.',
+      'Fleurs carnivores, mantes stellaires et caméléons fantômes se cachent dans les feuillages.',
+      `${n} se glisse sous la canopée. Ici, tout ce qui bouge a faim.`,
+      '<b>Mission :</b> traverser la jungle et détrôner la Reine-Ruche.',
+    ],
+    n => [
+      'Au bout de l\'univers, il n\'y a plus rien. Ni étoile, ni lumière, ni bruit. C\'est le <b>Néant</b>.',
+      'Là dort le <b>Dévoreur d\'étoiles</b>, le maître de Zorg, de Glacia, de Magmor et de la Reine-Ruche. Toutes les étoiles volées finissent dans son ventre.',
+      'Ses gardiens sont étranges : un miroir noir, une horloge brisée, un glitch qui déforme l\'espace…',
+      `${n} allume tous ses phares. C\'est le dernier voyage.`,
+      '<b>Mission :</b> vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.',
+    ],
+  ];
+  let seenPrologues = [];
+  try { const sp = JSON.parse(localStorage.getItem('comete-prologues') || '[]'); if (Array.isArray(sp)) seenPrologues = sp.filter(Number.isInteger); } catch (e) {}
+  const prologueSeen = w => w === 0 ? seenIntro : seenPrologues.includes(w);
+  function markPrologue(w) {
+    if (w === 0) { seenIntro = true; try { localStorage.setItem('comete-intro', '1'); } catch (e) {} return; }
+    if (!seenPrologues.includes(w)) { seenPrologues.push(w); try { localStorage.setItem('comete-prologues', JSON.stringify(seenPrologues)); } catch (e) {} }
+  }
+  let storyWorld = 0;
+  // titre du monde avec ses couleurs
+  function setStoryTitle(w) {
+    const t = $('storyTitle');
+    if (w < 0) { t.hidden = true; return; }
+    const W0 = WORLDS[w];
+    t.hidden = false; t.textContent = W0.name;
+    t.style.setProperty('--w1', W0.col[1]); t.style.setProperty('--w2', '#ffffff');
+  }
+  function showStory(mode) {
+    storyMode = mode;
+    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
+    if (mode === 'intro') { mode = 'prologue'; storyMode = mode; storyWorld = 0; }
+    const lines = mode === 'prologue' ? PROLOGUES[storyWorld](n) : mode === 'world' ? WORLD_STORY[world + 1](n) : [
       'Le Dévoreur d\'étoiles pousse un dernier cri et explose en une pluie de lumière.',
       'Toutes les étoiles qu\'il avait avalées reviennent : les cinq mondes brillent à nouveau.',
       `Dans toutes les galaxies, on raconte maintenant la légende de ${n}.`,
       '<b>Victoire totale !</b> La partie continue : les gardiens du Néant reviennent, plus forts.',
     ];
-    $('storyKicker').textContent = mode === 'intro' ? 'Prologue' : mode === 'world' ? `Monde ${world + 2}` : 'Épilogue';
-    $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .9).toFixed(1)}s">${l}</p>`).join('');
-    $('storySkip').hidden = mode !== 'intro';
-    $('storyGo').textContent = mode === 'intro' ? 'Décoller' : mode === 'world' ? 'En route !' : 'Continuer à jouer';
+    $('storyKicker').textContent = mode === 'prologue' ? `Prologue · Monde ${storyWorld + 1}` : mode === 'world' ? `Monde ${world + 2}` : 'Épilogue';
+    setStoryTitle(mode === 'prologue' ? storyWorld : mode === 'world' ? world + 1 : -1);
+    // les gardiens du monde, pour donner envie
+    if (mode === 'prologue') {
+      const gs = WORLDS[storyWorld].bosses;
+      lines.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
+    }
+    $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
+    $('storySkip').hidden = mode !== 'prologue';
+    $('storyGo').textContent = mode === 'prologue' ? 'Décoller' : mode === 'world' ? 'En route !' : 'Continuer à jouer';
     for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
     $('story').hidden = false;
-    if (mode !== 'intro') { state = 'story'; $('pauseBtn').hidden = true; }
+    if (mode !== 'prologue') { state = 'story'; $('pauseBtn').hidden = true; }
     else state = 'hangar';
   }
   function closeStory() {
     $('story').hidden = true;
-    if (storyMode === 'intro') { seenIntro = true; try { localStorage.setItem('comete-intro', '1'); } catch (e) {} start(); }
+    if (storyMode === 'prologue') { markPrologue(storyWorld); start(); }
     else {
       state = 'play'; $('pauseBtn').hidden = false; last = performance.now();
-      if (storyMode === 'world') enterWorld(world + 1);
+      if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); }
     }
   }
   // arrivée dans un nouveau monde en pleine partie : le niveau repart à 1
@@ -3397,9 +3458,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; last = performance.now(); }
   }
 
-  const play = () => { if (seenIntro || startWorld > 0) start(); else { initAudio(); showStory('intro'); } };
+  const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); storyWorld = startWorld; showStory('prologue'); } };
   $('startBtn').onclick = play;
-  $('storyBtn').onclick = () => { initAudio(); showStory('intro'); };
+  $('storyBtn').onclick = () => { initAudio(); storyWorld = startWorld; showStory('prologue'); };
   $('storyGo').onclick = closeStory;
   $('storySkip').onclick = closeStory;
   $('againBtn').onclick = start;

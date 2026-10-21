@@ -15,6 +15,8 @@ An 2187. L'Empereur Zorg a volé les étoiles de la galaxie et placé 10 gardien
 
 ## Ce qu'il y a dans le jeu
 
+- Un prologue pour chacun des 5 mondes, qui se joue la première fois que tu y entres (et qu'on peut revoir avec « Histoire »).
+
 - Un prologue, **5 mondes** de 10 secteurs chacun, une cinématique à l'arrivée de chaque boss, une histoire à chaque nouveau monde et un épilogue après le Dévoreur d'étoiles.
 - Battre le 10e boss d'un monde ouvre le suivant pour toujours : on peut ensuite choisir son monde de départ dans le menu.
 
