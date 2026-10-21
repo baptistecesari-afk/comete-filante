@@ -790,6 +790,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'blaster', name: 'Blaster', desc: 'Un seul canon qui tire très vite.', info: 'cadence rapide', rate: .16, mag: 14, reload: 1.4, barrels: [[0, -24, 0]] },
     { id: 'double', name: 'Double canon', desc: 'Deux canons sur les côtés, tirs parallèles.', info: 'cadence moyenne', rate: .24, mag: 10, reload: 1.7, barrels: [[-10.5, -10, 0], [10.5, -10, 0]] },
     { id: 'eventail', name: 'Éventail', desc: 'Trois tirs qui s\'écartent, pour toucher large.', info: 'cadence lente', rate: .34, mag: 7, reload: 2, barrels: [[0, -24, -.22], [0, -24, 0], [0, -24, .22]] },
+    { id: 'mitrailleuse', name: 'Mitrailleuse', desc: 'Un déluge de balles, un peu dans tous les sens.', info: 'cadence folle', rate: .07, mag: 30, reload: 2.6, jitter: .09, barrels: [[0, -24, 0]] },
+    { id: 'vague', name: 'Canon à ondes', desc: 'Deux tirs qui ondulent en serpent et s\'entrecroisent.', info: 'dégâts ×1,5', rate: .2, mag: 12, reload: 1.8, dmg: 1.5, wave: true, barrels: [[-6, -20, 0], [6, -20, 0]] },
+    { id: 'plasma', name: 'Canon à plasma', desc: 'Une grosse boule qui traverse tous les ennemis.', info: 'dégâts ×4 · traverse', rate: .45, mag: 6, reload: 1.8, dmg: 4, pierce: true, big: 2, barrels: [[0, -26, 0]] },
+    { id: 'ricochet', name: 'Ricochet', desc: 'Des tirs en biais qui rebondissent sur les bords.', info: '2 rebonds · dégâts ×1,5', rate: .26, mag: 10, reload: 2, dmg: 1.5, bounce: 2, barrels: [[-8, -14, -.45], [8, -14, .45]] },
+    { id: 'quintuple', name: 'Tempête de feu', desc: 'Cinq canons en éventail qui couvrent tout l\'écran.', info: 'cadence moyenne', rate: .28, mag: 9, reload: 2.1, barrels: [[0, -24, -.4], [0, -24, -.2], [0, -24, 0], [0, -24, .2], [0, -24, .4]] },
   ];
   const POWERS = [
     { id: 'hyper', name: 'Hyperpropulsion', desc: 'Tu deviens invincible et tu pulvérises tout ce que tu touches.', dur: 1.8, cd: 9 },
@@ -845,7 +850,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     glass: { cyan: 150, or: 200, rouge: 150, vert: 150, miroir: 300 },
     trail: { etincelles: 400, bulles: 300, pixels: 300, coeurs: 500, comete: 700 },
     flame: { plasma: 600, toxique: 600, rose: 900 },
-    gun: { double: 2000, eventail: 3000 },
+    gun: { double: 2000, eventail: 3000, mitrailleuse: 4500, vague: 5500, plasma: 6000, ricochet: 7500, quintuple: 9000 },
     power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000, miroir: 2000, gel: 2200, dragon: 2800, foudre: 3000, missiles: 3500 },
     shot: {},
   };
@@ -1209,6 +1214,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.save(); c.translate(0, -14);
       for (const a of [-.35, .35]) { c.save(); c.rotate(a); c.fillRect(-1.5, -12, 3, 10); c.restore(); }
       c.restore();
+    } else if (conf.gun === 'mitrailleuse') {
+      // trois tubes qui tournent
+      c.fillRect(-13, -6, 6, 14); c.fillRect(7, -6, 6, 14);
+      c.fillStyle = '#8a84b8'; const ph = (t / 40) % 3;
+      for (const sx of [-13, 7]) for (let i = 0; i < 3; i++) c.fillRect(sx + i * 2, -10 + ((i + ph) % 3), 1.6, 5);
+    } else if (conf.gun === 'vague') {
+      c.fillRect(-11, -8, 4, 13); c.fillRect(7, -8, 4, 13);
+      c.fillStyle = '#7ad8ff'; c.beginPath(); c.arc(-9, -9, 2.5, 0, 7); c.arc(9, -9, 2.5, 0, 7); c.fill();
+    } else if (conf.gun === 'plasma') {
+      c.fillRect(-12, -4, 6, 12); c.fillRect(6, -4, 6, 12);
+      c.fillStyle = '#c86bff'; c.shadowColor = '#c86bff'; c.shadowBlur = 8;
+      c.beginPath(); c.arc(-9, -1, 2.5 + Math.sin(t / 120), 0, 7); c.arc(9, -1, 2.5 + Math.sin(t / 120), 0, 7); c.fill(); c.shadowBlur = 0;
+    } else if (conf.gun === 'ricochet') {
+      for (const [x, a] of [[-10, -.5], [10, .5]]) { c.save(); c.translate(x, -4); c.rotate(a); c.fillRect(-1.8, -12, 3.6, 12); c.restore(); }
+    } else if (conf.gun === 'quintuple') {
+      c.save(); c.translate(0, -12);
+      for (const a of [-.6, -.3, .3, .6]) { c.save(); c.rotate(a); c.fillRect(-1.5, -13, 3, 11); c.restore(); }
+      c.restore();
+      c.fillStyle = '#ff7b2a'; c.fillRect(-14, 0, 4, 3); c.fillRect(10, 0, 4, 3);
     }
 
     c.shadowColor = body; c.shadowBlur = 10 + boost * 20;
@@ -1610,15 +1634,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       for (let n = 0; n < fired; n++) {
         const age = c - n * g.rate;
         if (age < 0 || age > .55) continue;
-        for (const [bx, by, a] of g.barrels) {
-          const d = age * 190;
-          actBullet(k, px + bx * sc * .9 + Math.sin(a) * d, py + by * sc * .9 - Math.cos(a) * d, a);
-        }
+        g.barrels.forEach(([bx, by, a0], bi) => {
+          const a = a0 + (g.jitter ? Math.sin(n * 7.3) * g.jitter : 0), d = age * (g.big ? 140 : 190);
+          let x = px + bx * sc * .9 + Math.sin(a) * d;
+          const y = py + by * sc * .9 - Math.cos(a) * d;
+          if (g.wave) x += Math.sin(age * 13 + bi * Math.PI) * 9;
+          if (g.bounce) { if (x < 0) x = -x; if (x > AW) x = 2 * AW - x; }
+          if (g.big) {
+            const pg = k.createRadialGradient(x, y, 1, x, y, 10);
+            pg.addColorStop(0, '#ffffff'); pg.addColorStop(.4, '#d78bff'); pg.addColorStop(1, 'rgba(162, 75, 255, 0)');
+            k.fillStyle = pg; k.beginPath(); k.arc(x, y, 10, 0, 7); k.fill();
+          } else actBullet(k, x, y, a);
+        });
       }
       drawRocket(k, px, py, sc, me, t, 0, 0);
       // munitions restantes
       const left = firing ? g.mag - fired : 0;
-      for (let i = 0; i < g.mag; i++) { k.fillStyle = i < left ? '#ffd86b' : 'rgba(255, 255, 255, .15)'; k.fillRect(8, AH - 10 - i * 6, 8, 4); }
+      const step = Math.min(6, (AH - 20) / g.mag);
+      for (let i = 0; i < g.mag; i++) { k.fillStyle = i < left ? '#ffd86b' : 'rgba(255, 255, 255, .15)'; k.fillRect(8, AH - 10 - i * step, 8, Math.max(2, step - 2)); }
       if (!firing) {
         const f = (c - g.mag * g.rate) / g.reload;
         k.fillStyle = 'rgba(255, 255, 255, .15)'; k.fillRect(26, AH - 14, 60, 6);
@@ -3991,9 +4024,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova) ammo--;
       const cs = Math.cos(player.tilt), sn = Math.sin(player.tilt);
-      for (const [lx, ly, a] of gun.barrels) {
-        shots.push({ x: player.x + lx * cs - ly * sn, y: player.y + lx * sn + ly * cs, vx: Math.sin(a) * 720, vy: -Math.cos(a) * 720, dmg: (golden ? 2 : 1) * (1 + .25 * up('puissance')), gold: golden, inf: infinite > 0, last: !infinite && !nova && ammo === 0 });
-      }
+      gun.barrels.forEach(([lx, ly, a0], bi) => {
+        const a = a0 + (gun.jitter ? (Math.random() - .5) * 2 * gun.jitter : 0);
+        const sp = gun.big ? 520 : 720, x = player.x + lx * cs - ly * sn;
+        shots.push({ x, y: player.y + lx * sn + ly * cs, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, dmg: (golden ? 2 : 1) * (1 + .25 * up('puissance')) * (gun.dmg || 1), gold: golden, inf: infinite > 0, last: !infinite && !nova && ammo === 0,
+          big: gun.big, pierce: gun.pierce ? [] : null, bounce: gun.bounce || 0, wave: gun.wave ? { bx: x, t: 0, ph: bi * Math.PI } : null });
+      });
       beep(golden ? 1100 : 1500, .05, 'square', .03, -700);
       player.vy += 40;
       if (!infinite && !nova && ammo === 0) startReload();
@@ -4081,13 +4117,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         s.vx += (( tx - s.x) / d * 640 - s.vx) * k; s.vy += ((ty - s.y) / d * 640 - s.vy) * k;
         if (!reduce && Math.random() < .6) parts.push({ x: s.x, y: s.y, vx: -s.vx * .1, vy: -s.vy * .1, life: .3, color: '#c9c3ea', size: 3 });
       }
-      s.x += s.vx * dt; s.y += s.vy * dt;
+      if (s.wave) { s.wave.t += dt; s.wave.bx += s.vx * dt; s.x = s.wave.bx + Math.sin(s.wave.t * 13 + s.wave.ph) * 26; }
+      else s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      if (s.bounce > 0 && (s.x < 4 || s.x > W - 4)) { s.vx = -s.vx; s.x = Math.max(4, Math.min(W - 4, s.x)); s.bounce--; }
       if (s.y < -20 || s.y > H + 40 || s.x < -20 || s.x > W + 20) { s.dead = true; continue; }
       for (const it of items) {
         if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
+        if (s.pierce && s.pierce.includes(it)) continue;
         const hr = it.boss ? it.r + 10 : it.r + 4;
         if (Math.abs(s.x - it.x) < hr && Math.abs(s.y - it.y) < hr && Math.hypot(s.x - it.x, (s.y - it.y) * (it.flat ? 1.6 : 1)) < hr) {
-          s.dead = true; damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1));
+          if (s.pierce) { s.pierce.push(it); burst(s.x, s.y, '#d78bff', 8, 160, 3); } else s.dead = true;
+          damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1));
           if (s.last && it.dead && !s.bonus) {
             s.bonus = true; score += 25;
             pop(it.x, it.y - 44, 'Dernière balle ! +25', '#ffd86b');
@@ -5526,6 +5567,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       for (const s of shots) {
         const a = Math.atan2(s.vx, -s.vy);
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
+        if (s.big) {
+          const pr = 9 + Math.sin(t / 60) * 1.5;
+          const pg = ctx.createRadialGradient(0, 0, 1, 0, 0, pr * 1.8);
+          pg.addColorStop(0, '#ffffff'); pg.addColorStop(.35, '#e2a6ff'); pg.addColorStop(.7, '#a24bff'); pg.addColorStop(1, 'rgba(162, 75, 255, 0)');
+          ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.8, 0, 7); ctx.fill();
+          ctx.restore(); continue;
+        }
         if (s.missile) {
           ctx.fillStyle = '#e8e8f0'; ctx.fillRect(-2.5, -8, 5, 14);
           ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.moveTo(-2.5, -8); ctx.lineTo(0, -13); ctx.lineTo(2.5, -8); ctx.fill();
