@@ -215,6 +215,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .bossitem span { font-size: 13px; color: var(--muted); line-height: 1.4; }
 .bossitem.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
 .bossitem.won b { color: var(--star); }
+.worldhead { grid-column: 1 / -1; margin: 10px 0 0; font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--tail); }
+.worldlock { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+/* Choix du monde de départ, dans le menu */
+.worldpick { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.worldpick > b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--star); letter-spacing: .04em; }
+.worlds { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+.wcard {
+  position: relative; width: 88px; padding: 10px 6px 8px; box-sizing: border-box; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font: inherit; color: var(--ink); border-radius: 16px;
+  background: linear-gradient(160deg, var(--w1), color-mix(in srgb, var(--w2) 35%, var(--night)));
+  border: 2px solid color-mix(in srgb, var(--w2) 55%, transparent);
+  transition: transform .15s, box-shadow .15s;
+}
+.wcard .wicon { font-size: 30px; line-height: 1.1; filter: drop-shadow(0 0 8px var(--w2)); }
+.wcard .wnum { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
+.wcard .wname { font-family: var(--display); font-size: 12px; line-height: 1.1; min-height: 2.2em; display: grid; place-items: center; }
+.wcard .wprog { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wcard[aria-pressed="true"] { border-color: var(--star); box-shadow: 0 0 0 2px var(--star), 0 0 22px color-mix(in srgb, var(--w2) 70%, transparent); transform: translateY(-3px) scale(1.04); }
+.wcard[aria-pressed="true"]::after {
+  content: 'Départ'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  font-family: var(--display); font-size: 10px; color: var(--night); background: var(--star); border-radius: 999px; padding: 2px 8px;
+}
+.wcard:not(:disabled):hover { transform: translateY(-3px); }
+.wcard:disabled { cursor: not-allowed; filter: grayscale(.85); opacity: .5; }
+.wcard:disabled .wicon { filter: none; }
+@media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
 
 /* Histoire */
 .story { max-width: 34rem; gap: 22px; }
@@ -369,7 +396,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <span class="combo" id="combo"></span>
   </div>
   <div class="stat mid">
-    <small>Niveau</small>
+    <small id="levelLabel">Niveau</small>
     <b id="level">1</b>
   </div>
   <div class="stat right">
@@ -397,6 +424,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   <div class="card">
     <h1>Comète<br>Filante</h1>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
+    <div class="worldpick" id="worldPick">
+      <b>Choisis ton monde</b>
+      <div class="worlds" id="worldChips"></div>
+    </div>
     <div class="row">
       <button class="play" id="startBtn">Jouer</button>
       <button class="ghost" id="hangarBtn">Hangar</button>
@@ -526,7 +557,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>Hangar</span><span>Tous les points que tu marques servent à débloquer des objets et acheter des améliorations dans le Hangar.</span>
       <span>Aliens</span><span>7 espèces, avec de nouvelles qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
       <span>Trophées</span><span>4 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
-      <span>Boss</span><span>Tous les 3 niveaux, un des 10 boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
+      <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
+      <span>Mondes</span><span>5 mondes de 10 boss : Voie lactée, Royaume de Givre, Forge Volcanique, Jungle Cosmique et Néant. Bats le 10e boss d'un monde pour passer au suivant et le débloquer : tu pourras ensuite le choisir comme départ dans le menu.</span>
       <span>Pouvoir</span><span>Espace, ou le bouton en bas à droite. Il se recharge tout seul.</span>
       <span>★</span><span>+10 points, multiplié par ton combo</span>
       <span>◆</span><span>Bouclier pendant 5 secondes</span>
@@ -535,7 +567,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
       <span>Niv.</span><span>Toutes les 20 secondes, le niveau monte et le jeu accélère. Quand un boss arrive, tu restes au même niveau tant que tu ne l'as pas battu.</span>
     </div>
-    <h3 class="subhead">Les 10 boss</h3>
+    <h3 class="subhead">Les boss des 5 mondes</h3>
     <div class="bosslist" id="bossList"></div>
     <div class="row">
       <button class="play" id="helpBack">Compris</button>
@@ -1636,6 +1668,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let run = { perfect: 0, bossHit: false, clean: true }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
+  // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
+  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -1643,7 +1677,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true }; runTrophies = []; bh = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -1661,6 +1695,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function updateHud() {
     $('score').textContent = score;
     $('level').textContent = level;
+    $('levelLabel').textContent = `Monde ${world + 1} · Niveau`;
     $('combo').textContent = combo > 1 ? 'combo ×' + combo : '';
     $('lives').innerHTML = Array.from({ length: maxLives() }, (_, i) => `<i class="${i < lives ? '' : 'lost'}"></i>`).join('');
   }
@@ -1716,15 +1751,938 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'spectre', place: 'Cimetière d\'étoiles', quote: 'Tu ne peux pas toucher ce que tu ne vois pas…', name: 'Le Spectre', col: '#d9d0ff', r: 40, desc: 'Se téléporte et tire dès qu\'il réapparaît.' },
     { id: 'forteresse', place: 'Mur de fer', quote: 'PROTOCOLE ÉLIMINATION ACTIVÉ. AUCUNE ISSUE.', name: 'Forteresse Mécanique', col: '#ffd86b', r: 48, desc: 'Murs de tirs : passe par le trou !' },
     { id: 'dragon', place: 'Soleil rouge', quote: 'Je vais réduire ta fusée en cendres !', name: 'Dragon Stellaire', col: '#ff9a3c', r: 46, desc: 'Souffle de feu en rafale.' },
-    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé quelques étoiles. Je vais toutes les éteindre !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le dernier boss. Devient furieux à mi-vie.' },
+    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé quelques étoiles. Je vais toutes les éteindre !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le maître de la Voie lactée. Devient furieux à mi-vie.' },
   ];
+
+  // ===== Mondes 2 à 5 : chaque boss a ses attaques (move) et son dessin (draw) =====
+  // petits outils de dessin
+  function ell(x, y, rx, ry, c, rot = 0) { ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, 7); ctx.fill(); }
+  function poly(c, pts) { ctx.fillStyle = c; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); }
+  function strokeLine(c, w, pts) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
+  // tirs avec options : ax/ay (accélération), pre puis wait (avance, s'arrête, repart), fuse/fn/fs/fc (explose en anneau), sq (carré)
+  function shot(x, y, vx, vy, c, s, o) { const b = { x, y, vx, vy, c, s, ...o }; ebullets.push(b); return b; }
+  function aimed(x, y, sp, c, s, o, spread = 0) { const a = Math.atan2(player.y - y, player.x - x) + spread; return shot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s, o); }
+  function ringO(x, y, n, sp, off, c, s, o) { for (let i = 0; i < n; i++) { const a = off + i / n * Math.PI * 2; shot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s, o); } }
+  function wall(y, gaps, sp, c, step = 34, o) {
+    const n = Math.floor(W / step);
+    const holes = gaps.map(() => Math.floor(Math.random() * Math.max(1, n - 3)));
+    for (let i = 0; i < n; i++) if (!holes.some(g => i >= g && i <= g + 2)) shot(step / 2 + i * step, y, 0, sp, c, 6, o);
+  }
+  function minions(it, n, gap = 34) { for (let i = 0; i < n; i++) items.push({ kind: 'alien', type: 'chaser', mini: true, x: it.x + (i - (n - 1) / 2) * gap, y: it.y + 30, r: 10, hp: 1, pts: 10, vy: 125, t: Math.random() * 9, hitT: 0 }); }
+  function enrage(it, title, sub = 'Il attaque encore plus') {
+    if (it.rage || it.hp >= it.maxHp / 2) return;
+    it.rage = true; showBanner(title, sub); shake = .4; beep(80, 1, 'sawtooth', .18, 30);
+  }
+  function spiral(it, arms, sp, c, every = .09) {
+    if (it.aimT > 0) return;
+    it.spin += .38;
+    for (let k = 0; k < arms; k++) { const a = it.spin + k / arms * Math.PI * 2; shot(it.x, it.y, Math.cos(a) * sp, Math.sin(a) * sp, c, 5); }
+    it.aimT = every;
+  }
+  const clampX = x => Math.max(60, Math.min(W - 60, x));
+  const playerAng = (x, y) => Math.atan2(player.y - y, player.x - x);
+  // la cinématique dessine le boss en (0, 0) : on n'y dessine pas ce qui dépend de sa vraie position
+  const inCine = it => it.x === 0 && it.y === 0;
+  const HYDRA_HEADS = [[-42, -14], [0, -36], [42, -14]];
+  const PRISM = ['#ff4f6d', '#ff9a3c', '#ffd86b', '#7dff8a', '#4fe0c8', '#7ad8ff', '#c86bff'];
+
+  // --- Monde 2 : Royaume de Givre ---
+  const WORLD2 = [
+    { id: 'pingouin', name: 'Pingouin Blindé', place: 'Banquise d\'Orion', col: '#9fe8ff', r: 40,
+      quote: 'Glisse avec moi… jusqu\'au fond du gouffre !', desc: 'Glisse d\'un bord à l\'autre, puis fonce sur toi à plat ventre.',
+      move(it, sp, bs) {
+        if (it.slide > 0) {
+          it.slide -= sp; it.y += (it.slide > .8 ? 380 : -380) * sp;
+          if (it.slide <= 0) it.y = 150;
+          return;
+        }
+        it.vx = it.vx || 150;
+        it.x += it.vx * bs * sp;
+        if (it.x < 60 || it.x > W - 60) { it.vx *= -1; it.x = clampX(it.x); }
+        if (it.fireT <= 0) { for (const s of [-.25, 0, .25]) aimed(it.x, it.y + 20, 240 * bs, '#ffffff', 6, null, s); it.fireT = 1.3; beep(420, .08, 'square', .05); }
+        if (it.altT <= 0) { it.slide = 1.6; it.altT = 4.5; ringO(it.x, it.y, 10, 150 * bs, 0, '#9fe8ff', 5); beep(250, .4, 'sine', .08, 300); }
+      },
+      draw(it) {
+        ell(0, 4, 34, 42, '#1f2a4a'); ctx.shadowBlur = 0;
+        ell(0, 14, 22, 28, '#eef6ff');
+        for (const s of [-1, 1]) ell(s * 34, 10, 9, 22, '#1f2a4a', s * .5);
+        ctx.fillStyle = '#8fa3c8'; ctx.beginPath(); ctx.arc(0, -16, 30, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#5a6c90'; ctx.fillRect(-31, -18, 62, 6);
+        eyeAt(it, -11, -6, 6); eyeAt(it, 11, -6, 6);
+        poly('#ff9a3c', [[-8, 3], [8, 3], [0, 13]]);
+        ell(-14, 46, 11, 5, '#ff9a3c'); ell(14, 46, 11, 5, '#ff9a3c');
+      } },
+    { id: 'yeti', name: 'Yéti des Comètes', place: 'Pics de Cryo', col: '#e8f4ff', r: 46,
+      quote: 'GRAAAH ! Je vais te transformer en glaçon !', desc: 'Lance d\'énormes boules de neige qui éclatent en morceaux.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.5);
+        if (it.fireT <= 0) { aimed(it.x, it.y - 40, 170 * bs, '#e8f4ff', 13, { fuse: 1.1, fn: 8, fs: 190 * bs, fc: '#bfe9ff' }); it.fireT = 1.9; beep(150, .3, 'sine', .1, -60); }
+        if (it.aimT <= 0) { for (const s of [-1, 1]) aimed(it.x + s * 44, it.y, 260 * bs, '#bfe9ff', 5); it.aimT = .9; }
+      },
+      draw(it) {
+        const raise = it.fireT < .5;
+        for (const s of [-1, 1]) ell(s * 44, raise ? -20 : 20, 12, 26, '#dfe9f5', s * (raise ? -.5 : .3));
+        ell(0, 4, 46, 44, '#eef4fb'); ctx.shadowBlur = 0;
+        for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; ell(Math.cos(a) * 40, 4 + Math.sin(a) * 38, 9, 9, '#ffffff'); }
+        ell(0, 0, 24, 22, '#7aa6d8');
+        eyeAt(it, -9, -6, 5); eyeAt(it, 9, -6, 5);
+        ell(0, 10, 11, raise ? 9 : 6, '#1a2a4a');
+        poly('#ffffff', [[-7, 6], [-3, 6], [-5, 13]]); poly('#ffffff', [[7, 6], [3, 6], [5, 13]]);
+        if (raise) ell(0, -44, 14, 14, '#ffffff');
+      } },
+    { id: 'flocon', name: 'Flocon Géant', place: 'Tempête de cristal', col: '#bfe9ff', r: 42,
+      quote: 'Chaque flocon est unique… et chacun de mes tirs aussi.', desc: 'Tourne sur lui-même en lançant six jets de glace.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 90);
+        if (it.fireT <= 0) { it.burstT = 2.4; it.fireT = 3.8; beep(900, .3, 'sine', .05, -400); }
+        if (it.burstT > 0) {
+          it.burstT -= sp; it.spin += sp * 1.4;
+          if (it.aimT <= 0) { for (let k = 0; k < 6; k++) { const a = it.spin + k * Math.PI / 3; shot(it.x, it.y, Math.cos(a) * 170 * bs, Math.sin(a) * 170 * bs, '#bfe9ff', 4); } it.aimT = .16; }
+        } else if (it.altT <= 0) { aimed(it.x, it.y, 300 * bs, '#ffffff', 6); it.altT = .7; }
+      },
+      draw(it) {
+        ctx.save(); ctx.rotate(it.spin);
+        ctx.strokeStyle = '#dff4ff'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        for (let k = 0; k < 6; k++) {
+          ctx.save(); ctx.rotate(k * Math.PI / 3);
+          ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -48);
+          for (const d of [18, 32]) { ctx.moveTo(0, -d); ctx.lineTo(-11, -d - 10); ctx.moveTo(0, -d); ctx.lineTo(11, -d - 10); }
+          ctx.stroke(); ctx.restore();
+        }
+        ctx.shadowBlur = 0;
+        poly('#9fd8ff', Array.from({ length: 6 }, (_, k) => [Math.cos(k * Math.PI / 3) * 18, Math.sin(k * Math.PI / 3) * 18]));
+        ctx.restore();
+        eyeAt(it, -6, -2, 4); eyeAt(it, 6, -2, 4);
+      } },
+    { id: 'morse', name: 'Morse Spatial', place: 'Mer gelée de Titan', col: '#c8a888', r: 46,
+      quote: 'Mes défenses ont percé des lunes entières.', desc: 'Crache des jets par ses défenses et fait tomber des stalactites.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.55);
+        if (it.fireT <= 0) { it.jet = 1.2; it.fireT = 2.6; it.side = -(it.side || 1); beep(200, .5, 'square', .06, 100); }
+        if (it.jet > 0) { it.jet -= sp; if (it.aimT <= 0) { shot(it.x + it.side * 18, it.y + 56, it.side * 40, 320 * bs, '#ffffff', 5); it.aimT = .07; } }
+        if (it.altT <= 0) { for (let i = 0; i < 6; i++) shot(30 + Math.random() * (W - 60), -10, 0, 40, '#bfe9ff', 5, { ay: 260 * bs }); it.altT = 2.4; beep(1200, .2, 'triangle', .04, -800); }
+      },
+      draw(it) {
+        ell(0, 0, 50, 40, '#8a6a58'); ctx.shadowBlur = 0;
+        for (const s of [-1, 1]) poly(it.jet > 0 && it.side === s ? '#bfe9ff' : '#fff6e0', [[s * 8, 18], [s * 20, 18], [s * 18, 60]]);
+        ell(0, 14, 30, 18, '#b08a72');
+        for (const s of [-1, 1]) ell(s * 13, 12, 14, 11, '#c8a888');
+        ctx.fillStyle = '#5a4030';
+        for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(s * (8 + i * 6), 10 + (i % 2) * 4, 1.6, 0, 7); ctx.fill(); }
+        strokeLine('#e8d8c8', 1.5, [[-20, 12], [-42, 6]]); strokeLine('#e8d8c8', 1.5, [[20, 12], [42, 6]]);
+        eyeAt(it, -16, -16, 5); eyeAt(it, 16, -16, 5);
+      } },
+    { id: 'golemglace', name: 'Golem de Glace', place: 'Glacier sans fin', col: '#7ad8ff', r: 48,
+      quote: 'Tes tirs ne feront que me rafraîchir.', desc: 'Se cache dans une carapace de glace : tire quand elle a fondu.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.25, 90);
+        it.shellT = (it.shellT ?? 3) - sp;
+        if (it.shellT <= 0) { it.invuln = !it.invuln; it.shellT = it.invuln ? 1.8 : 3.4; if (it.invuln) { ringO(it.x, it.y, 16, 130 * bs, it.t, '#7ad8ff', 5); beep(600, .3, 'triangle', .07, -300); } }
+        if (!it.invuln && it.fireT <= 0) { for (const s of [-.3, 0, .3]) aimed(it.x, it.y + 20, 230 * bs, '#bfe9ff', 7, null, s); it.fireT = 1.2; }
+        if (it.invuln && it.aimT <= 0) { ringO(it.x, it.y, 8, 160 * bs, it.t * 3, '#ffffff', 4); it.aimT = .6; }
+      },
+      draw(it) {
+        for (const s of [-1, 1]) poly('#4a78a8', [[s * 40, -6], [s * 62, 6], [s * 58, 34], [s * 40, 26]]);
+        poly('#5f8fc0', [[-44, -20], [-20, -44], [22, -42], [46, -16], [40, 30], [-38, 32]]); ctx.shadowBlur = 0;
+        poly('#86b6e0', [[-30, -14], [-10, -32], [16, -30], [30, -10], [24, 16], [-24, 18]]);
+        ell(0, 2, 9, 9, '#ffffff'); ell(0, 2, 5, 5, '#7ad8ff');
+        eyeAt(it, -14, -16, 5, '#0b0820', '#dff4ff'); eyeAt(it, 14, -16, 5, '#0b0820', '#dff4ff');
+        if (it.invuln) {
+          ctx.save(); ctx.globalAlpha *= .6; ctx.strokeStyle = '#dff4ff'; ctx.lineWidth = 4; ctx.fillStyle = 'rgba(160, 220, 255, .35)';
+          ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + .5; ctx.lineTo(Math.cos(a) * 66, Math.sin(a) * 60); } ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      } },
+    { id: 'hibou', name: 'Hibou des Neiges', place: 'Forêt de stalagmites', col: '#f3eefe', r: 40,
+      quote: 'Hou hou… je te vois, même dans la nuit polaire.', desc: 'Vole en forme de huit et lance des plumes tranchantes.',
+      move(it, sp, bs) {
+        it.fly = (it.fly || 0) + sp * .8 * bs;
+        it.x = W / 2 + Math.sin(it.fly) * Math.max(0, W / 2 - 80); it.y = 165 + Math.sin(it.fly * 2) * 50;
+        if (it.fireT <= 0) { fan(it.x, it.y + 20, 5, .8, 230 * bs, '#f3eefe', 5); it.fireT = 1.1; beep(700, .1, 'triangle', .05, -300); }
+        if (it.altT <= 0) { ringO(it.x, it.y, 14, 120 * bs, Math.random(), '#bfe9ff', 5); it.altT = 3; beep(300, .3, 'sine', .08, -100); }
+      },
+      draw(it, t, wob) {
+        const f = Math.sin(it.t * 8) * .4 * wob;
+        for (const s of [-1, 1]) ell(s * 38, 8, 14, 30, '#dcd6ea', s * (.6 + f));
+        ell(0, 4, 36, 40, '#f8f6ff'); ctx.shadowBlur = 0;
+        for (const [x, y] of [[-12, 22], [8, 28], [-2, 14], [14, 16], [-16, 32]]) poly('#b8b0d0', [[x - 4, y], [x + 4, y], [x, y + 4]]);
+        for (const s of [-1, 1]) poly('#f8f6ff', [[s * 16, -28], [s * 30, -50], [s * 30, -22]]);
+        ell(-13, -8, 13, 13, '#ffffff'); ell(13, -8, 13, 13, '#ffffff');
+        eyeAt(it, -13, -8, 10, '#0b0820', '#ffd86b'); eyeAt(it, 13, -8, 10, '#0b0820', '#ffd86b');
+        poly('#ff9a3c', [[-5, 4], [5, 4], [0, 13]]);
+      } },
+    { id: 'serpent', name: 'Serpent de Givre', place: 'Anneaux de glace', col: '#4fe0c8', r: 30,
+      quote: 'Sssens-tu le froid qui monte ? C\'est moi.', desc: 'Ondule dans tout le ciel et sème des éclats de glace.',
+      move(it, sp, bs) {
+        it.fly = (it.fly || 0) + sp;
+        it.x = W / 2 + Math.sin(it.fly * 1.1 * bs) * Math.max(0, W / 2 - 60); it.y = 150 + Math.sin(it.fly * 2.3) * 60;
+        it.trail.unshift({ x: it.x, y: it.y }); if (it.trail.length > 60) it.trail.pop();
+        if (it.altT <= 0 && it.trail.length > 20) { const p = it.trail[10 + Math.floor(Math.random() * (it.trail.length - 10))]; shot(p.x, p.y, 0, 110 * bs, '#9fe8ff', 5, { ay: 120 }); it.altT = .35; }
+        if (it.fireT <= 0) { for (const s of [-.2, 0, .2]) aimed(it.x, it.y, 270 * bs, '#4fe0c8', 5, null, s); it.fireT = 1.4; beep(500, .15, 'sawtooth', .05, -200); }
+      },
+      draw(it) {
+        ctx.shadowBlur = 0;
+        for (let i = it.trail.length - 1; i > 0; i -= 4) { const p = it.trail[i], r = Math.max(6, 20 - i * .2); ell(p.x - it.x, p.y - it.y, r, r, (i >> 2) % 2 ? '#2a9d8a' : '#4fe0c8'); }
+        ctx.shadowColor = '#4fe0c8'; ctx.shadowBlur = 18;
+        ell(0, 0, 26, 22, '#4fe0c8'); ctx.shadowBlur = 0;
+        for (const s of [-1, 1]) poly('#dff4ff', [[s * 8, -18], [s * 18, -40], [s * 22, -16]]);
+        eyeAt(it, -10, -4, 6, '#0b0820', '#dff4ff'); eyeAt(it, 10, -4, 6, '#0b0820', '#dff4ff');
+        strokeLine('#ff4f6d', 2, [[0, 18], [0, 28], [-4, 33]]); strokeLine('#ff4f6d', 2, [[0, 28], [4, 33]]);
+      } },
+    { id: 'sorciere', name: 'Sorcière Blizzard', place: 'Tour des vents glacés', col: '#b48cff', r: 40,
+      quote: 'Que le vent glacé t\'emporte au bout de l\'univers !', desc: 'Déclenche des blizzards qui poussent les tirs sur le côté et invoque des lutins.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.5);
+        if (it.altT <= 0) { it.blizz = 2.6; it.wind = Math.random() < .5 ? -1 : 1; it.altT = 5; showBanner('Blizzard !', it.wind > 0 ? 'Le vent souffle vers la droite' : 'Le vent souffle vers la gauche'); beep(200, 1, 'sawtooth', .05, 200); }
+        if (it.blizz > 0) { it.blizz -= sp; if (it.aimT <= 0) { shot(Math.random() * W, -10, 0, 110 * bs, '#e8f4ff', 4, { ax: it.wind * 170 }); it.aimT = .07; } }
+        if (it.fireT <= 0) { minions(it, 2, 60); fan(it.x, it.y + 30, 3, .4, 220 * bs, '#b48cff', 6); it.fireT = 2.4; }
+      },
+      draw(it) {
+        poly('#3a2a6a', [[0, -10], [-40, 46], [40, 46]]); ctx.shadowBlur = 0;
+        poly('#5b3a9e', [[0, -6], [-26, 46], [26, 46]]);
+        ell(0, -16, 15, 16, '#bfd8ff');
+        poly('#3a2a6a', [[-30, -26], [30, -26], [6, -72], [-2, -60]]);
+        ell(4, -48, 3, 3, '#ffd86b');
+        eyeAt(it, -6, -16, 4); eyeAt(it, 6, -16, 4);
+        strokeLine('#8a6a58', 4, [[30, 40], [36, -30]]);
+        ctx.shadowColor = '#bfe9ff'; ctx.shadowBlur = 18; ell(36, -34, 7, 9, '#bfe9ff');
+      } },
+    { id: 'mammouth', name: 'Mammouth Cosmique', place: 'Toundra stellaire', col: '#c4844e', r: 50,
+      quote: 'BWAAAAH ! La toundra tremble sous mes pas !', desc: 'Charge d\'un bout à l\'autre du ciel et barrit des anneaux de tirs : trouve le trou.',
+      move(it, sp, bs) {
+        it.vx = it.vx || 70;
+        if (it.charge) {
+          it.x += it.cdir * 480 * sp;
+          if (it.aimT <= 0) { shot(it.x, it.y + 30, 0, 170 * bs, '#ffd8a8', 5); it.aimT = .06; }
+          if ((it.cdir > 0 && it.x > W - 70) || (it.cdir < 0 && it.x < 70)) { it.charge = false; it.x = clampX(it.x); }
+          return;
+        }
+        it.x += it.vx * sp; if (it.x < 70 || it.x > W - 70) { it.vx *= -1; it.x = clampX(it.x); }
+        if (it.altT <= 0) { it.charge = true; it.cdir = it.x < W / 2 ? 1 : -1; it.altT = 4.5; beep(90, .8, 'sawtooth', .12, 60); shake = .25; }
+        if (it.fireT <= 0) {
+          const hole = Math.PI / 2 + (Math.random() - .5) * 1.6;
+          for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2; if (Math.abs(Math.atan2(Math.sin(a - hole), Math.cos(a - hole))) > .4) shot(it.x, it.y, Math.cos(a) * 150 * bs, Math.sin(a) * 150 * bs, '#ffd8a8', 5); }
+          it.fireT = 2.4; beep(300, .5, 'square', .07, 300);
+        }
+      },
+      draw(it) {
+        ctx.scale(it.charge ? it.cdir : Math.sign(it.vx || 1), 1);
+        ell(0, 0, 52, 40, '#7a4a2a'); ctx.shadowBlur = 0;
+        for (let i = 0; i < 9; i++) strokeLine('#a8703e', 3, [[-44 + i * 10, -20], [-46 + i * 10, 34 + (i % 2) * 4]]);
+        for (const x of [-30, -10, 14]) ell(x, 38, 9, 8, '#5a3a20');
+        ell(34, -6, 26, 26, '#8a5a34');
+        strokeLine('#8a5a34', 12, [[44, 10], [52, 34], [44, 50], [36, 46]]);
+        ctx.strokeStyle = '#fff6e0'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(30, 8); ctx.quadraticCurveTo(20, 40, 46, 46); ctx.stroke();
+        eyeAt(it, 38, -14, 4);
+        ell(-44, -24, 10, 8, '#dff4ff'); ell(10, -32, 12, 7, '#dff4ff');
+      } },
+    { id: 'glacia', name: 'Impératrice Glacia', place: 'Palais de cristal', col: '#dff4ff', r: 46,
+      quote: 'Zorg n\'était qu\'un pion. Moi, je vais geler ton cœur.', desc: 'Son reflet attaque avec elle. Devient furieuse à mi-vie.',
+      move(it, sp, bs, dt, sweep) {
+        enrage(it, 'Glacia est furieuse !', 'Le palais gèle tout entier');
+        sweep(it.rage ? .8 : .45);
+        const mx = W - it.x;
+        if (it.fireT <= 0) {
+          it.pat = ((it.pat || 0) + 1) % 3;
+          if (it.pat === 0) it.burstT = 2;
+          else if (it.pat === 1) for (const x of [it.x, mx]) fan(x, it.y + 30, 5, .7, 220 * bs, '#dff4ff', 5);
+          else { for (let i = 0; i < 8; i++) shot(30 + Math.random() * (W - 60), -10, 0, 50, '#9fe8ff', 6, { ay: 240 * bs }); aimed(mx, it.y, 300 * bs, '#ffffff', 7); }
+          it.fireT = (it.pat === 0 ? 2.6 : 1.5) * (it.rage ? .7 : 1); beep(800, .25, 'triangle', .06, -300);
+        }
+        if (it.burstT > 0 || it.rage) { if (it.aimT <= 0) it.burstT -= .1; spiral(it, 2, 170 * bs, '#bfe9ff', .1); }
+      },
+      draw(it, t, wob) {
+        const body = () => {
+          poly('#9fd8ff', [[0, -8], [-44, 50], [44, 50]]);
+          poly('#dff4ff', [[0, -4], [-22, 50], [22, 50]]);
+          ell(0, -18, 17, 19, it.rage ? '#ffd0e0' : '#eef8ff');
+          poly('#bfe9ff', [[-22, -30], [-28, -62], [-12, -44], [0, -72], [12, -44], [28, -62], [22, -30]]);
+          ell(0, -46, 4, 4, '#4fe0c8');
+          eyeAt(it, -7, -18, 4.5, it.rage ? '#ff4f6d' : '#3a6ab0'); eyeAt(it, 7, -18, 4.5, it.rage ? '#ff4f6d' : '#3a6ab0');
+          for (const s of [-1, 1]) strokeLine('#dff4ff', 5, [[s * 12, 0], [s * 34, 18 + Math.sin(it.t * 3) * 6 * wob]]);
+        };
+        body(); ctx.shadowBlur = 0;
+        if (!inCine(it)) { ctx.save(); ctx.translate(W - 2 * it.x, 0); ctx.globalAlpha *= .35; body(); ctx.restore(); }
+      } },
+  ];
+
+  // --- Monde 3 : Forge Volcanique ---
+  const WORLD3 = [
+    { id: 'salamandre', name: 'Salamandre de Lave', place: 'Rivières de feu', col: '#ff7b2a', r: 38,
+      quote: 'Sssplash ! Tu vas prendre un bain de lave !', desc: 'Zigzague très vite et lance des boules de lave en cloche.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(1.3, 60); it.y = 150 + Math.sin(it.t * 3) * 25;
+        if (it.fireT <= 0) { for (let i = 0; i < 3; i++) shot(it.x, it.y, (player.x - it.x) * (.35 + i * .15) + (Math.random() - .5) * 60, -230, '#ff7b2a', 7, { ay: 380 * bs }); it.fireT = 1.3; beep(180, .2, 'sine', .08, 200); }
+        if (it.aimT <= 0) { aimed(it.x, it.y + 20, 280 * bs, '#ffd86b', 4); it.aimT = .6; }
+      },
+      draw(it, t, wob) {
+        const w = Math.sin(it.t * 10) * .3 * wob;
+        strokeLine('#c4401a', 10, [[0, 20], [Math.sin(it.t * 4) * 14, 44], [Math.sin(it.t * 4 + 1) * 20, 64]]);
+        for (const s of [-1, 1]) for (const y of [-10, 18]) { ctx.save(); ctx.translate(s * 18, y); ctx.rotate(s * (.6 + (y > 0 ? -w : w))); ell(s * 12, 0, 12, 4, '#c4401a'); ctx.restore(); }
+        ell(0, 4, 20, 30, '#ff7b2a'); ctx.shadowBlur = 0;
+        ell(0, -28, 18, 14, '#ff7b2a');
+        for (const [x, y] of [[-6, 0], [7, 10], [-4, 18], [5, -10]]) ell(x, y, 3.5, 3.5, '#ffd86b');
+        eyeAt(it, -9, -32, 5, '#0b0820', '#ffd86b'); eyeAt(it, 9, -32, 5, '#0b0820', '#ffd86b');
+      } },
+    { id: 'magmagolem', name: 'Golem de Magma', place: 'Cratère grondant', col: '#ff4f1a', r: 50,
+      quote: 'BOUM. BOUM. Je suis la montagne qui marche.', desc: 'Fait jaillir des fontaines de lave et frappe le sol.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.2, 90);
+        if (it.fireT <= 0) { for (let i = 0; i < 12; i++) shot(it.x, it.y - 30, (Math.random() - .5) * 280, -240 - Math.random() * 140, Math.random() < .5 ? '#ff4f1a' : '#ff9a3c', 6, { ay: 360 * bs }); it.fireT = 2.3; beep(90, .6, 'sawtooth', .12, 60); shake = .2; }
+        if (it.altT <= 0) { fan(it.x, it.y + 40, 13, 2.6, 160 * bs, '#ffd86b', 5, false); it.altT = 3.2; }
+        if (it.aimT <= 0) { aimed(it.x, it.y, 250 * bs, '#ff9a3c', 6); it.aimT = 1.1; }
+      },
+      draw(it, t) {
+        for (const s of [-1, 1]) poly('#2a1a16', [[s * 46, -20], [s * 72, -4], [s * 70, 34], [s * 48, 28]]);
+        poly('#3a2420', [[-50, -10], [-30, -46], [28, -48], [52, -8], [44, 40], [-42, 42]]); ctx.shadowBlur = 0;
+        ctx.save(); ctx.globalAlpha *= .6 + .4 * Math.sin(t / 200);
+        strokeLine('#ff7b2a', 3, [[-30, -30], [-12, -10], [-20, 14], [-6, 30]]);
+        strokeLine('#ff7b2a', 3, [[24, -36], [10, -14], [26, 8], [16, 34]]);
+        strokeLine('#ffd86b', 2, [[60, 0], [58, 24]]); strokeLine('#ffd86b', 2, [[-60, 0], [-58, 24]]);
+        ctx.restore();
+        ell(-14, -22, 7, 5, '#ffd86b'); ell(14, -22, 7, 5, '#ffd86b');
+        ell(0, 0, 16, 6, '#ff4f1a');
+      } },
+    { id: 'phenix', name: 'Phénix', place: 'Ciel embrasé', col: '#ffb020', r: 42, revive: true,
+      quote: 'Tu peux m\'abattre… je renaîtrai toujours de mes cendres !', desc: 'Renaît une fois de ses cendres, encore plus rapide.',
+      move(it, sp, bs, dt, sweep) {
+        const k = it.revived ? 1.4 : 1;
+        sweep(.9 * k);
+        if (it.fireT <= 0) { fan(it.x, it.y + 10, 5, .9, 240 * bs * k, it.revived ? '#7ad8ff' : '#ffb020', 6); it.fireT = 1.1 / k; beep(600, .12, 'triangle', .06, 300); }
+        if (it.altT <= 0) { ringO(it.x, it.y, 12, 150 * bs * k, it.t, it.revived ? '#bfe9ff' : '#ff4f1a', 5); it.altT = 2.8 / k; }
+      },
+      draw(it, t, wob) {
+        const c1 = it.revived ? '#7ad8ff' : '#ff9a3c', c2 = it.revived ? '#dff4ff' : '#ffd86b', f = Math.sin(it.t * 7) * .25 * wob;
+        ctx.shadowColor = c1;
+        for (const s of [-1, 1]) { ctx.save(); ctx.rotate(s * f); poly(c1, [[s * 10, -6], [s * 70, -36], [s * 58, -12], [s * 66, 0], [s * 46, 6], [s * 50, 18], [s * 14, 14]]); ctx.restore(); }
+        poly(c1, [[-10, 16], [0, 64 + Math.sin(it.t * 9) * 6 * wob], [10, 16]]);
+        poly(c2, [[-6, 16], [0, 50], [6, 16]]);
+        ell(0, 0, 16, 24, c2); ctx.shadowBlur = 0;
+        ell(0, -24, 12, 12, c1);
+        poly(c2, [[-4, -34], [0, -52], [4, -34]]); poly(c2, [[-10, -32], [-12, -46], [-2, -34]]); poly(c2, [[10, -32], [12, -46], [2, -34]]);
+        poly('#ffd86b', [[-4, -20], [4, -20], [0, -12]]);
+        eyeAt(it, -5, -26, 3); eyeAt(it, 5, -26, 3);
+      } },
+    { id: 'ver', name: 'Ver des Cendres', place: 'Désert de braise', col: '#a89080', r: 42,
+      quote: 'Sous tes pieds… partout… je creuse.', desc: 'S\'enfouit pour être intouchable et ressort en crachant un cercle de tirs.',
+      move(it, sp, bs) {
+        if (it.burrow > 0) {
+          it.burrow -= sp;
+          if (it.burrow <= 0) { it.invuln = false; it.alpha = 0; it.x = 70 + Math.random() * Math.max(0, W - 140); it.y = 120 + Math.random() * 120; burst(it.x, it.y, '#a89080', 24, 260); ringO(it.x, it.y, 16, 160 * bs, Math.random(), '#ff9a3c', 5); beep(120, .4, 'sawtooth', .1, 100); shake = .2; }
+          return;
+        }
+        it.alpha = Math.min(1, it.alpha + sp * 3);
+        it.x = clampX(it.x + Math.sin(it.t * 2) * 60 * sp);
+        if (it.fireT <= 0) { for (const s of [-.2, 0, .2]) aimed(it.x, it.y + 20, 250 * bs, '#ff9a3c', 6, null, s); it.fireT = 1.1; }
+        if (it.altT <= 0) { it.burrow = 1; it.invuln = true; it.altT = 3.4; burst(it.x, it.y, '#a89080', 18, 200); it.y = -300; beep(80, .5, 'sawtooth', .08, -30); }
+      },
+      draw(it, t, wob) {
+        ctx.globalAlpha *= it.alpha;
+        for (let i = 4; i > 0; i--) ell(Math.sin(it.t * 3 - i) * 8 * wob, i * 16, 30 - i * 3, 14, i % 2 ? '#6a5a50' : '#8a7a6a');
+        ell(0, 0, 38, 34, '#8a7a6a'); ctx.shadowBlur = 0;
+        ell(0, 4, 22, 20, '#2a0a0a');
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; poly('#fff2d0', [[Math.cos(a) * 22, 4 + Math.sin(a) * 20], [Math.cos(a + .2) * 22, 4 + Math.sin(a + .2) * 20], [Math.cos(a + .1) * 12, 4 + Math.sin(a + .1) * 11]]); }
+        ell(0, 4, 8, 8, '#ff7b2a');
+        for (const s of [-1, 1]) eyeAt(it, s * 26, -20, 5, '#0b0820', '#ffd86b');
+      } },
+    { id: 'cyclope', name: 'Forgeron Cyclope', place: 'Grande Forge', col: '#ff5a3c', r: 46,
+      quote: 'Je forge les armes de Magmor… et ta défaite !', desc: 'Frappe l\'enclume : une onde de choc balaie le ciel.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.35, 80);
+        if (it.fireT <= 0) {
+          for (let i = 0; i < 7; i++) for (const s of [-1, 1]) shot(it.x, it.y + 40, s * (90 + i * 45) * bs, 60 + i * 12, '#ffd86b', 5);
+          it.fireT = 2.6; shake = .3; beep(110, .4, 'square', .12, -40); beep(1400, .15, 'triangle', .05);
+        }
+        if (it.aimT <= 0) { aimed(it.x, it.y - 10, 300 * bs, '#ff9a3c', 4, null, (Math.random() - .5) * .3); it.aimT = .3; }
+      },
+      draw(it) {
+        const lift = Math.max(0, 1 - it.fireT / .8);
+        ell(0, 4, 40, 42, '#d8503a'); ctx.shadowBlur = 0;
+        ell(0, 30, 26, 16, '#ff9a3c'); ell(0, 34, 18, 10, '#ffd86b');
+        eyeAt(it, 0, -10, 15, '#0b0820', '#ffffff');
+        strokeLine('#5a2a20', 4, [[-18, -32], [-6, -27]]); strokeLine('#5a2a20', 4, [[18, -32], [6, -27]]);
+        ctx.save(); ctx.translate(40, -4); ctx.rotate(-.4 - lift * 1.4);
+        strokeLine('#8a6a58', 6, [[0, 0], [0, -46]]); ctx.fillStyle = '#5a5478'; ctx.fillRect(-16, -60, 32, 18);
+        ctx.restore();
+        ctx.fillStyle = '#3a3062'; ctx.fillRect(-30, 46, 60, 10);
+      } },
+    { id: 'scorpion', name: 'Scorpion de Braise', place: 'Dunes rougeoyantes', col: '#ff4f6d', r: 42,
+      quote: 'Un seul coup de dard, et tu brûles pour toujours.', desc: 'Vise avec son dard (sors de la ligne rouge !) et pince avec ses deux pinces.',
+      move(it, sp, bs, dt, sweep) {
+        if (it.aiming > 0) { it.aiming -= sp; if (it.aiming <= 0) it.stream = 10; return; }
+        if (it.stream > 0) {
+          if (it.aimT <= 0) { const x = it.x - 12, y = it.y - 62, dx = it.tx - x, dy = it.ty - y, d = Math.hypot(dx, dy) || 1; shot(x, y, dx / d * 430 * bs, dy / d * 430 * bs, '#ff4f6d', 5); it.stream--; it.aimT = .05; }
+          return;
+        }
+        sweep(.7);
+        if (it.altT <= 0) { it.aiming = .9; it.tx = player.x; it.ty = player.y; it.altT = 2.8; beep(1000, .5, 'sine', .04, 300); }
+        if (it.fireT <= 0) { for (const s of [-1, 1]) fan(it.x + s * 46, it.y + 22, 3, .3, 220 * bs, '#ff9a3c', 5); it.fireT = 1.6; }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        if (it.aiming > 0 && !inCine(it)) {
+          ctx.save(); ctx.strokeStyle = `rgba(255, 79, 109, ${.3 + .5 * (1 - it.aiming / .9)})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+          ctx.beginPath(); ctx.moveTo(-12, -62); ctx.lineTo(it.tx - it.x, it.ty - it.y); ctx.stroke(); ctx.restore();
+        }
+        for (const s of [-1, 1]) for (let i = 0; i < 3; i++) strokeLine('#8a1a2a', 4, [[s * 18, 6 + i * 8], [s * (40 + i * 4), 22 + i * 10 + Math.sin(it.t * 9 + i) * 3 * wob]]);
+        for (const s of [-1, 1]) { strokeLine('#c42a3a', 7, [[s * 20, -4], [s * 40, 14]]); ell(s * 46, 22, 12, 9, '#ff4f6d'); poly('#0b0820', [[s * 40, 30], [s * 54, 30], [s * 47, 18]]); }
+        strokeLine('#c42a3a', 10, [[0, 10], [0, -20], [6, -42], [0, -60], [-12, -62]]);
+        ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 16; poly(it.aiming > 0 ? '#ffffff' : '#ffd86b', [[-12, -70], [-24, -56], [-8, -56]]); ctx.shadowBlur = 0;
+        ell(0, 6, 24, 20, '#ff4f6d');
+        eyeAt(it, -8, 12, 4); eyeAt(it, 8, 12, 4);
+      } },
+    { id: 'chauvesouris', name: 'Chauve-souris Infernale', place: 'Grottes de soufre', col: '#c86bff', r: 40,
+      quote: 'Iiiiik ! Mes petites vont te dévorer !', desc: 'Lâche des nuées de bestioles et pousse des cris en double anneau.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.9); it.y = 150 + Math.sin(it.t * 5) * 18;
+        if (it.altT <= 0) { minions(it, 3, 30); it.altT = 3.2; beep(1500, .15, 'square', .04, -900); }
+        if (it.fireT <= 0) { ringO(it.x, it.y, 10, 150 * bs, 0, '#c86bff', 5); ringO(it.x, it.y, 10, 150 * bs, Math.PI / 10, '#ff4f6d', 5, { wait: .35 }); it.fireT = 1.9; beep(1800, .2, 'sine', .04, -1200); }
+      },
+      draw(it, t, wob) {
+        const f = Math.sin(it.t * 12) * .35 * wob;
+        for (const s of [-1, 1]) { ctx.save(); ctx.scale(s, 1); ctx.rotate(f); poly('#3a1a4a', [[8, -8], [40, -30], [70, -20], [62, 0], [70, 18], [50, 10], [40, 26], [26, 10], [10, 12]]); ctx.restore(); }
+        ell(0, 0, 18, 24, '#5a2a6a'); ctx.shadowBlur = 0;
+        for (const s of [-1, 1]) poly('#5a2a6a', [[s * 6, -18], [s * 14, -36], [s * 16, -14]]);
+        eyeAt(it, -7, -6, 5, '#0b0820', '#ff4f6d'); eyeAt(it, 7, -6, 5, '#0b0820', '#ff4f6d');
+        poly('#ffffff', [[-5, 8], [-2, 8], [-3.5, 14]]); poly('#ffffff', [[5, 8], [2, 8], [3.5, 14]]);
+      } },
+    { id: 'volcan', name: 'Volcan Vivant', place: 'Chaîne de feu', col: '#ff9a3c', r: 50,
+      quote: 'Je suis en éruption depuis mille ans. Et je n\'ai pas fini.', desc: 'Fait pleuvoir des météores et projette des bombes de lave.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.15, 100);
+        if (it.aimT <= 0) { shot(30 + Math.random() * (W - 60), -10, (Math.random() - .5) * 40, 80, '#ff4f1a', 8, { ay: 200 * bs }); it.aimT = .32; }
+        if (it.fireT <= 0) { for (const s of [-1, 0, 1]) shot(it.x, it.y - 50, s * 120, -260, '#ffd86b', 10, { ay: 300, fuse: 1.1, fn: 10, fs: 170 * bs, fc: '#ff9a3c' }); it.fireT = 3; beep(70, .9, 'sawtooth', .14, 40); shake = .3; }
+      },
+      draw(it, t) {
+        poly('#4a2a20', [[-60, 44], [-18, -34], [18, -34], [60, 44]]); ctx.shadowBlur = 0;
+        poly('#6a3a28', [[-40, 44], [-10, -30], [10, -30], [40, 44]]);
+        ell(0, -34, 20, 7, '#ff4f1a'); ell(0, -35, 12, 4, '#ffd86b');
+        strokeLine('#ff7b2a', 4, [[-8, -30], [-14, -6], [-10, 10]]); strokeLine('#ff7b2a', 3, [[10, -30], [16, -12]]);
+        for (let i = 0; i < 3; i++) { const k = (t / 1400 + i / 3) % 1; ctx.save(); ctx.globalAlpha *= (1 - k) * .5; ell(Math.sin(i * 2 + k * 4) * 10, -46 - k * 60, 10 + k * 14, 8 + k * 10, '#8f86b8'); ctx.restore(); }
+        ell(-14, 6, 6, 8, '#ffd86b'); ell(14, 6, 6, 8, '#ffd86b'); ell(-14, 8, 3, 4, '#0b0820'); ell(14, 8, 3, 4, '#0b0820');
+        strokeLine('#0b0820', 3, [[-12, 26], [0, 22], [12, 26]]);
+      } },
+    { id: 'hydre', name: 'Hydre à Trois Têtes', place: 'Lac de magma', col: '#ffd86b', r: 48,
+      quote: 'Trois têtes, trois fois plus de feu !', desc: 'Chaque tête attaque à sa façon. Toutes ensemble quand elle est furieuse.',
+      move(it, sp, bs, dt, sweep) {
+        enrage(it, 'L\'Hydre est furieuse !', 'Les trois têtes attaquent ensemble');
+        sweep(.4);
+        if (it.fireT <= 0) {
+          const heads = it.rage ? [0, 1, 2] : [it.head = ((it.head ?? -1) + 1) % 3];
+          for (const h of heads) {
+            const x = it.x + HYDRA_HEADS[h][0], y = it.y + HYDRA_HEADS[h][1];
+            if (h === 0) for (const s of [-.15, 0, .15]) aimed(x, y, 280 * bs, '#ff4f1a', 5, null, s);
+            else if (h === 1) ringO(x, y, 10, 150 * bs, it.t, '#ffd86b', 5);
+            else for (let i = 0; i < 4; i++) shot(x, y, (player.x - x) * (.3 + i * .12), -220, '#ff9a3c', 7, { ay: 380 * bs });
+          }
+          it.fireT = it.rage ? 1.3 : .75; beep(260, .15, 'sawtooth', .06, -100);
+        }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        HYDRA_HEADS.forEach(([hx, hy], h) => {
+          const c = ['#ff4f1a', '#ffd86b', '#ff9a3c'][h], x = hx + Math.sin(it.t * 3 + h) * 5 * wob;
+          strokeLine('#a8401a', 14, [[hx * .3, 10], [x * .7, hy * .5 + 10], [x, hy]]);
+          ctx.shadowColor = c; ctx.shadowBlur = it.head === h || it.rage ? 20 : 0;
+          ell(x, hy, 16, 13, c); ctx.shadowBlur = 0;
+          eyeAt(it, x - 6, hy - 3, 3.5); eyeAt(it, x + 6, hy - 3, 3.5);
+          poly('#ffffff', [[x - 6, hy + 8], [x - 3, hy + 8], [x - 4.5, hy + 13]]); poly('#ffffff', [[x + 6, hy + 8], [x + 3, hy + 8], [x + 4.5, hy + 13]]);
+        });
+        ell(0, 22, 40, 26, '#c4502e');
+        for (let i = -2; i <= 2; i++) ell(i * 14, 30, 5, 4, '#ffd86b');
+      } },
+    { id: 'magmor', name: 'Seigneur Magmor', place: 'Trône de lave', col: '#ff4f1a', r: 52,
+      quote: 'Glacia a fondu. Toi aussi, tu vas fondre.', desc: 'Murs de lave, fontaines et spirales. Devient furieux à mi-vie.',
+      move(it, sp, bs, dt, sweep) {
+        enrage(it, 'Magmor est furieux !', 'La lave déborde');
+        sweep(it.rage ? .8 : .4);
+        if (it.fireT <= 0) {
+          it.pat = ((it.pat || 0) + 1) % 3;
+          if (it.pat === 0) wall(it.y + 50, [0], 140 * bs, '#ff4f1a');
+          else if (it.pat === 1) for (let i = 0; i < 14; i++) shot(it.x, it.y - 40, (Math.random() - .5) * 320, -260 - Math.random() * 120, '#ff9a3c', 6, { ay: 360 * bs });
+          else it.burstT = 2;
+          it.fireT = 1.8 * (it.rage ? .65 : 1); beep(100, .5, 'sawtooth', .12, 40);
+        }
+        if (it.burstT > 0 || it.rage) { if (it.aimT <= 0) it.burstT -= .09; spiral(it, 2, 175 * bs, '#ffd86b'); }
+      },
+      draw(it, t) {
+        poly('#2a1410', [[-64, 50], [-34, 10], [34, 10], [64, 50]]);
+        ell(0, -6, 42, 46, it.rage ? '#5a1a10' : '#3a2018'); ctx.shadowBlur = 0;
+        ctx.save(); ctx.globalAlpha *= .6 + .4 * Math.sin(t / 180);
+        strokeLine('#ff7b2a', 3, [[-26, -30], [-10, -8], [-22, 18]]); strokeLine('#ff7b2a', 3, [[24, -26], [8, 0], [20, 26]]);
+        ctx.restore();
+        for (const s of [-1, 1]) poly('#1a0a08', [[s * 26, -40], [s * 50, -84], [s * 38, -36]]);
+        ell(-16, -12, 9, 6, it.rage ? '#ffffff' : '#ffd86b', .3); ell(16, -12, 9, 6, it.rage ? '#ffffff' : '#ffd86b', -.3);
+        poly('#ff4f1a', [[-14, 16], [14, 16], [0, 26]]);
+        for (let i = -2; i <= 2; i++) { const h = 14 + Math.sin(t / 120 + i) * 6; poly(i % 2 ? '#ffd86b' : '#ff9a3c', [[i * 10 - 6, -48], [i * 10, -48 - h], [i * 10 + 6, -48]]); }
+      } },
+  ];
+
+  // --- Monde 4 : Jungle Cosmique ---
+  const WORLD4 = [
+    { id: 'fleur', name: 'Fleur Carnivore', place: 'Clairière d\'Eden-7', col: '#ff7aa8', r: 42,
+      quote: 'Miam… une petite fusée bien croustillante !', desc: 'Crache des graines qui éclatent et fait tourner ses pétales.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 80);
+        if (it.fireT <= 0) { for (const s of [-.4, -.13, .13, .4]) aimed(it.x, it.y + 10, 170 * bs, '#b6ff6b', 7, { fuse: .9, fn: 5, fs: 170 * bs, fc: '#ffd86b' }, s); it.fireT = 1.8; beep(300, .15, 'square', .06, 200); }
+        if (it.altT <= 0) { it.petal = 1.2; it.altT = 3.2; }
+        if (it.petal > 0) { it.petal -= sp; if (it.aimT <= 0) { it.spin += .5; for (let k = 0; k < 4; k++) { const a = it.spin + k * Math.PI / 2; shot(it.x, it.y, Math.cos(a) * 160 * bs, Math.sin(a) * 160 * bs, '#ff7aa8', 5); } it.aimT = .1; } }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0; strokeLine('#2fbf71', 8, [[0, 30], [Math.sin(it.t * 2) * 8 * wob, 70], [0, 110]]);
+        ell(-20, 70, 16, 7, '#2fbf71', -.5); ell(20, 86, 16, 7, '#2fbf71', .5);
+        ctx.shadowColor = '#ff7aa8'; ctx.shadowBlur = 18;
+        for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + it.spin * .3; ell(Math.cos(a) * 34, Math.sin(a) * 34, 18, 10, k % 2 ? '#ff7aa8' : '#ff4f6d', a); }
+        ctx.shadowBlur = 0;
+        const open = .3 + .7 * Math.max(0, 1 - it.fireT / .5);
+        ell(0, 0, 28, 26, '#7dff8a');
+        ell(0, 4, 20, 4 + open * 12, '#5a0a2a');
+        for (let i = -3; i <= 3; i++) { poly('#ffffff', [[i * 5 - 2, 4 - open * 10], [i * 5 + 2, 4 - open * 10], [i * 5, 4 - open * 4]]); poly('#ffffff', [[i * 5 - 2, 4 + open * 10], [i * 5 + 2, 4 + open * 10], [i * 5, 4 + open * 4]]); }
+        eyeAt(it, -10, -14, 4.5); eyeAt(it, 10, -14, 4.5);
+      } },
+    { id: 'mante', name: 'Mante Stellaire', place: 'Herbes géantes', col: '#7dff8a', r: 40,
+      quote: 'Je suis plus rapide que la lumière. Presque.', desc: 'Se téléporte et tranche en croix avec ses deux faux.',
+      move(it, sp, bs) {
+        it.alpha = Math.min(1, it.alpha + sp * 3);
+        if (it.altT <= 0) {
+          burst(it.x, it.y, '#7dff8a', 14, 200, 3);
+          it.x = 70 + Math.random() * Math.max(0, W - 140); it.y = 110 + Math.random() * 120; it.alpha = .2;
+          for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const a = Math.PI / 2 + s * (.2 + i * .18); shot(it.x + s * 30, it.y, Math.cos(a) * 260 * bs, Math.sin(a) * 260 * bs, '#b6ff6b', 5, { wait: .25 }); }
+          it.altT = 2.2; beep(1100, .2, 'sine', .06, -800);
+        }
+        if (it.fireT <= 0) { aimed(it.x, it.y, 320 * bs, '#ffffff', 5); it.fireT = .9; }
+      },
+      draw(it) {
+        ctx.globalAlpha *= it.alpha;
+        ell(0, 20, 12, 30, '#4fd27a'); ctx.shadowBlur = 0;
+        for (const s of [-1, 1]) { ell(s * 14, 26, 14, 26, 'rgba(180, 255, 200, .35)', s * .3); strokeLine('#2fbf71', 5, [[s * 6, 0], [s * 30, -16], [s * 34, 16]]); strokeLine('#dfffe0', 3, [[s * 34, 16], [s * 22, 30]]); }
+        poly('#7dff8a', [[-22, -26], [22, -26], [0, -2]]);
+        eyeAt(it, -14, -24, 7, '#0b0820', '#dfffe0'); eyeAt(it, 14, -24, 7, '#0b0820', '#dfffe0');
+        strokeLine('#7dff8a', 2, [[-6, -30], [-14, -50]]); strokeLine('#7dff8a', 2, [[6, -30], [14, -50]]);
+      } },
+    { id: 'champignon', name: 'Champignon Spore', place: 'Sous-bois luminescent', col: '#d9a6ff', r: 46,
+      quote: 'Respire un grand coup… atchoum !', desc: 'Lâche des spores lentes qui éclatent en nuages de tirs.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 80);
+        if (it.fireT <= 0) { for (let i = 0; i < 3; i++) shot(it.x + (i - 1) * 30, it.y + 20, (Math.random() - .5) * 80, 60 + Math.random() * 30, '#d9a6ff', 10, { fuse: 2 + Math.random() * .6, fn: 7, fs: 140 * bs, fc: '#c86bff' }); it.fireT = 1.3; beep(200, .3, 'sine', .06, 100); }
+        if (it.altT <= 0) { ringO(it.x, it.y, 16, 110 * bs, it.t, '#b6ff6b', 5); it.altT = 3.4; beep(500, .4, 'sine', .06, -300); }
+      },
+      draw(it) {
+        const squish = Math.max(0, 1 - it.altT / .4) * .2;
+        ell(0, 20, 16, 26, '#f3eefe'); ctx.shadowBlur = 0;
+        eyeAt(it, -6, 14, 4); eyeAt(it, 6, 14, 4);
+        ctx.strokeStyle = '#0b0820'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 24, 4, .2, Math.PI - .2); ctx.stroke();
+        ctx.shadowColor = '#c86bff'; ctx.shadowBlur = 20;
+        ctx.fillStyle = '#9a3ad8'; ctx.beginPath(); ctx.ellipse(0, 0, 50 * (1 + squish), 34 * (1 - squish), 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+        ctx.shadowBlur = 0;
+        for (const [x, y, r] of [[-28, -8, 7], [-6, -24, 9], [20, -14, 6], [34, -4, 4], [-38, -2, 3]]) ell(x, y, r, r * .8, '#f3eefe');
+      } },
+    { id: 'araignee', name: 'Araignée Tisseuse', place: 'Toile de la canopée', col: '#c86bff', r: 40,
+      quote: 'Viens donc dans ma toile… je t\'ai gardé une place.', desc: 'Descend sur son fil et tend des toiles de tirs : passe par le trou.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.5); it.y = 120 + (Math.sin(it.t * .8) + 1) * 70;
+        if (it.fireT <= 0) { wall(it.y + 30, [0], 95 * bs, '#e8e2ff', 30); it.fireT = 2.8; beep(1300, .3, 'sine', .03, -600); }
+        if (it.aimT <= 0) { aimed(it.x, it.y + 20, 260 * bs, '#7dff8a', 6); it.aimT = 1.1; }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        if (!inCine(it)) strokeLine('rgba(232, 226, 255, .6)', 1.5, [[0, -30], [0, -it.y]]);
+        for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const w = Math.sin(it.t * 6 + i) * 4 * wob; strokeLine('#3a1a4a', 4, [[s * 10, -8 + i * 6], [s * (34 + i * 2), -24 + i * 12 + w], [s * (46 + i * 3), 6 + i * 14]]); }
+        ctx.shadowColor = '#c86bff'; ctx.shadowBlur = 16;
+        ell(0, 12, 24, 28, '#3a1a4a'); ctx.shadowBlur = 0;
+        poly('#ff4f6d', [[-6, 4], [6, 4], [0, 14], [6, 24], [-6, 24], [0, 14]]);
+        ell(0, -16, 16, 14, '#5a2a6a');
+        for (const [x, y, r] of [[-7, -18, 4], [7, -18, 4], [-12, -10, 2.5], [12, -10, 2.5], [-3, -8, 2], [3, -8, 2]]) eyeAt(it, x, y, r, '#0b0820', '#ff4f6d');
+      } },
+    { id: 'cameleon', name: 'Caméléon Fantôme', place: 'Jungle miroir', col: '#4fe0c8', r: 38,
+      quote: 'Tu me vois ? … Et maintenant ?', desc: 'Presque invisible : il ne se montre que pour lancer sa langue.',
+      move(it, sp, bs) {
+        if (it.lick > 0) it.lick -= sp;
+        const show = it.fireT < .7 || it.lick > 0;
+        it.alpha += ((show ? 1 : .12) - it.alpha) * Math.min(1, sp * 5);
+        if (it.altT <= 0) { it.goal = 70 + Math.random() * Math.max(0, W - 140); it.altT = 2.5; }
+        it.x += ((it.goal ?? it.x) - it.x) * Math.min(1, sp * 1.5);
+        if (it.fireT <= 0) { const a = playerAng(it.x, it.y); for (let i = 0; i < 7; i++) shot(it.x, it.y + 10, Math.cos(a) * 460 * bs, Math.sin(a) * 460 * bs, '#ff7aa8', 6, { wait: i * .04 }); it.lick = .5; it.fireT = 1.6; beep(700, .15, 'sine', .07, -500); }
+        if (it.aimT <= 0) { ringO(it.x, it.y, 6, 130 * bs, Math.random(), '#4fe0c8', 4); it.aimT = 1.3; }
+      },
+      draw(it, t) {
+        ctx.globalAlpha *= Math.max(.12, it.alpha);
+        const hue = `hsl(${Math.floor(t / 20) % 360}, 70%, 60%)`;
+        ctx.shadowColor = hue;
+        ctx.strokeStyle = hue; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(30, 20, 14, Math.PI, Math.PI * 2.6); ctx.stroke();
+        ell(0, 4, 34, 24, hue); ctx.shadowBlur = 0;
+        poly(hue, [[-30, -6], [-18, -30], [-6, -10]]);
+        eyeAt(it, -14, -6, 9, '#0b0820', '#dfffe0'); eyeAt(it, 8, -8, 7, '#0b0820', '#dfffe0');
+        for (const s of [-1, 1]) strokeLine(hue, 5, [[s * 16, 20], [s * 22, 36]]);
+      } },
+    { id: 'scarabee', name: 'Scarabée Cuirassé', place: 'Racines de cristal', col: '#4fe0c8', r: 44,
+      quote: 'Ma carapace a résisté à une supernova.', desc: 'Rebondit partout. Carapace fermée : intouchable. Ouverte : vise !',
+      move(it, sp, bs) {
+        it.vx = it.vx || 140; it.vy2 = it.vy2 || 90;
+        const bottom = Math.max(140, Math.min(300, H * .45));
+        it.x += it.vx * bs * sp; it.y += it.vy2 * bs * sp;
+        if (it.x < 60 || it.x > W - 60) { it.vx *= -1; it.x = clampX(it.x); }
+        if (it.y < 100 || it.y > bottom) { it.vy2 *= -1; it.y = Math.max(100, Math.min(bottom, it.y)); }
+        it.shellT = (it.shellT ?? 2.5) - sp;
+        if (it.shellT <= 0) { it.invuln = !it.invuln; it.shellT = it.invuln ? 2 : 2.6; beep(it.invuln ? 300 : 600, .15, 'square', .06); }
+        if (it.invuln) { if (it.aimT <= 0) { ringO(it.x, it.y, 8, 150 * bs, it.t, '#4fe0c8', 5); it.aimT = .7; } }
+        else if (it.fireT <= 0) { for (const s of [-.1, .1]) aimed(it.x, it.y - 20, 300 * bs, '#ffd86b', 5, null, s); it.fireT = .6; }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        for (const s of [-1, 1]) for (let i = 0; i < 3; i++) strokeLine('#1a3a3a', 4, [[s * 20, -6 + i * 12], [s * 42, -10 + i * 16 + Math.sin(it.t * 10 + i) * 3 * wob]]);
+        if (!it.invuln) { ell(0, 10, 16, 28, '#0f5a50'); for (const s of [-1, 1]) ell(s * 30, 6, 28, 12, 'rgba(200, 255, 240, .35)', s * .5); }
+        ctx.shadowColor = '#4fe0c8'; ctx.shadowBlur = 18;
+        const o = it.invuln ? 0 : 14;
+        for (const s of [-1, 1]) {
+          ctx.save(); ctx.translate(s * o, 0); ctx.rotate(s * (it.invuln ? 0 : .3));
+          ell(s * 13, 8, 15, 30, '#1f8a7a'); ctx.shadowBlur = 0; ell(s * 10, -2, 4, 12, 'rgba(255, 255, 255, .35)');
+          ctx.restore();
+        }
+        ctx.shadowBlur = 0;
+        ell(0, -24, 16, 12, '#0f5a50');
+        strokeLine('#ffd86b', 4, [[0, -32], [0, -50], [-6, -56]]);
+        eyeAt(it, -8, -24, 4); eyeAt(it, 8, -24, 4);
+      } },
+    { id: 'liane', name: 'Liane Géante', place: 'Jungle suspendue', col: '#2fbf71', r: 44,
+      quote: 'Mes racines entourent des planètes entières.', desc: 'Ses lianes balaient le ciel de deux rideaux de tirs qui se croisent.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.2, 100);
+        it.whip = (it.whip ?? 1.5) - sp;
+        if (it.whip <= 0) { it.lash = 2.2; it.whip = 4; beep(150, .6, 'sawtooth', .06, 100); }
+        if (it.lash > 0) { it.lash -= sp; if (it.aimT <= 0) { const x = 30 + (2.2 - it.lash) / 2.2 * (W - 60); shot(x, it.y + 40, 0, 230 * bs, '#7dff8a', 5); shot(W - x, it.y + 40, 0, 230 * bs, '#2fbf71', 5); it.aimT = .06; } }
+        if (it.fireT <= 0) { fan(it.x, it.y + 20, 5, .9, 210 * bs, '#ffd86b', 5); it.fireT = 1.7; }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < 6; i++) { const x0 = -30 + i * 12, w = Math.sin(it.t * 2 + i) * 20 * wob; strokeLine(i % 2 ? '#2fbf71' : '#1f8a4a', 7, [[x0, 10], [x0 * 2 + w, 50], [x0 * 2.6 - w, 90]]); }
+        ctx.shadowColor = '#2fbf71'; ctx.shadowBlur = 18;
+        ell(0, 0, 40, 36, '#1f8a4a'); ctx.shadowBlur = 0;
+        for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2 + .3; ell(Math.cos(a) * 36, Math.sin(a) * 32 - 6, 16, 8, '#7dff8a', a); }
+        ell(0, 4, 20, 14, '#5a0a2a');
+        eyeAt(it, -12, -12, 5, '#0b0820', '#ffd86b'); eyeAt(it, 12, -12, 5, '#0b0820', '#ffd86b');
+      } },
+    { id: 'grenouille', name: 'Grenouille Cosmique', place: 'Nénuphars d\'étoiles', col: '#b6ff6b', r: 44,
+      quote: 'Croâ ! Je saute plus haut que les comètes !', desc: 'Bondit d\'un bout à l\'autre et fait trembler le ciel en atterrissant.',
+      move(it, sp, bs) {
+        if (it.jump > 0) {
+          it.jump -= sp / .9; const p = 1 - Math.max(0, it.jump);
+          it.x = it.jx0 + (it.jx1 - it.jx0) * p; it.y = 160 - Math.sin(p * Math.PI) * 90;
+          if (it.jump <= 0) { it.y = 160; ringO(it.x, it.y + 30, 14, 160 * bs, Math.random(), '#b6ff6b', 5); shake = .25; beep(90, .3, 'square', .1, -30); it.fireT = Math.min(it.fireT, .35); }
+          return;
+        }
+        if (it.fireT <= 0) { for (let i = 0; i < 2; i++) aimed(it.x, it.y + 10, 380 * bs, '#ff7aa8', 7, { wait: i * .1 }); it.fireT = 1.5; beep(500, .1, 'sine', .06, -300); }
+        if (it.altT <= 0) { it.jump = 1; it.jx0 = it.x; it.jx1 = 70 + Math.random() * Math.max(0, W - 140); it.altT = 1.9; }
+      },
+      draw(it) {
+        const air = it.jump > 0;
+        for (const s of [-1, 1]) { if (air) strokeLine('#4fd27a', 9, [[s * 26, 20], [s * 34, 46], [s * 30, 64]]); else ell(s * 34, 28, 16, 10, '#4fd27a'); }
+        ell(0, 6, 44, 34, '#7dff8a'); ctx.shadowBlur = 0;
+        ell(0, 16, 28, 18, '#e8ffd0');
+        for (const s of [-1, 1]) { ell(s * 20, -26, 13, 13, '#7dff8a'); eyeAt(it, s * 20, -27, 9, '#0b0820', '#ffffff'); }
+        ctx.strokeStyle = '#1f6a3a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, -6, 22, .3, Math.PI - .3); ctx.stroke();
+        for (const [x, y] of [[-30, -4], [28, 2], [-20, 14]]) ell(x, y, 4, 3, '#4fd27a');
+      } },
+    { id: 'essaim', name: 'L\'Essaim', place: 'Ruche abandonnée', col: '#ffd86b', r: 44,
+      quote: 'Bzzzz… nous sommes des milliers… bzzzz…', desc: 'Un nuage d\'abeilles autour d\'un cœur : il lâche des bestioles et pique de partout.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.6); it.y = 160 + Math.sin(it.t * 1.7) * 40;
+        if (it.altT <= 0) { minions(it, 2, 60); it.altT = 2; }
+        if (it.aimT <= 0) { const a = Math.random() * Math.PI * 2; aimed(it.x + Math.cos(a) * 46, it.y + Math.sin(a) * 30, 300 * bs, '#ffd86b', 4); it.aimT = .35; }
+        if (it.fireT <= 0) { ringO(it.x, it.y, 18, 130 * bs, it.t, '#ffb020', 4); it.fireT = 3; beep(220, .8, 'sawtooth', .04, 20); }
+      },
+      draw(it) {
+        ell(0, 0, 18, 18, '#ffb020'); ctx.shadowBlur = 0;
+        eyeAt(it, 0, 0, 9, '#0b0820', '#fff2b0');
+        for (let i = 0; i < 16; i++) {
+          const a = i * 2.4 + it.t * (1 + i % 3 * .4), r = 28 + (i % 4) * 7, x = Math.cos(a) * r, y = Math.sin(a) * r * .7;
+          ell(x, y - 5, 4, 2.5, 'rgba(255, 255, 255, .6)');
+          ell(x, y, 6, 4.5, '#ffd86b'); ctx.fillStyle = '#0b0820'; ctx.fillRect(x - 1, y - 4.5, 2, 9);
+        }
+      } },
+    { id: 'ruche', name: 'Reine-Ruche', place: 'Cœur de la jungle', col: '#ffb020', r: 50,
+      quote: 'Ma jungle a dévoré Magmor. Mes larves vont te dévorer.', desc: 'Pond des larves et lance des bombes de miel. Devient furieuse à mi-vie.',
+      move(it, sp, bs, dt, sweep) {
+        enrage(it, 'La Reine-Ruche est furieuse !', 'Le miel déborde de partout');
+        sweep(it.rage ? .8 : .4);
+        if (it.altT <= 0) { minions(it, 3); it.altT = 3.5 * (it.rage ? .7 : 1); }
+        if (it.fireT <= 0) {
+          it.pat = ((it.pat || 0) + 1) % 2;
+          if (it.pat) for (const s of [-.35, 0, .35]) aimed(it.x, it.y + 30, 190 * bs, '#ffb020', 9, { fuse: 1, fn: 8, fs: 170 * bs, fc: '#ffd86b' }, s);
+          else fan(it.x, it.y + 40, 9, 1.6, 200 * bs, '#ffd86b', 5, false);
+          it.fireT = 1.7 * (it.rage ? .65 : 1); beep(250, .3, 'sawtooth', .07, 60);
+        }
+        if (it.rage) spiral(it, 1, 180 * bs, '#ffb020', .07);
+      },
+      draw(it, t, wob) {
+        const f = Math.sin(it.t * 20) * .3 * wob;
+        for (const s of [-1, 1]) { ctx.save(); ctx.rotate(s * f); ell(s * 40, -24, 34, 16, 'rgba(255, 255, 255, .4)', -s * .5); ctx.restore(); }
+        ell(0, 28, 32, 34, '#ffb020'); ctx.shadowBlur = 0;
+        ctx.fillStyle = '#2a1a0a'; for (const y of [16, 34, 50]) ctx.fillRect(-30, y, 60, 7);
+        poly('#2a1a0a', [[-6, 60], [6, 60], [0, 74]]);
+        ell(0, -10, 22, 18, '#2a1a0a');
+        ell(0, -30, 18, 15, '#ffb020');
+        eyeAt(it, -8, -30, 6, it.rage ? '#ff4f6d' : '#2a1a0a', '#fff2b0'); eyeAt(it, 8, -30, 6, it.rage ? '#ff4f6d' : '#2a1a0a', '#fff2b0');
+        poly('#ffd86b', [[-16, -42], [-20, -62], [-8, -52], [0, -68], [8, -52], [20, -62], [16, -42]]);
+      } },
+  ];
+
+  // --- Monde 5 : Le Néant ---
+  const WORLD5 = [
+    { id: 'sentinelle', name: 'Sentinelle du Vide', place: 'Porte du Néant', col: '#4fe0c8', r: 42,
+      quote: 'ACCÈS REFUSÉ. LE NÉANT NE S\'OUVRE PAS AUX VIVANTS.', desc: 'Tourne en crachant des tirs carrés dans quatre directions.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 90); it.spin += sp * (it.burstT > 0 ? 1.6 : .4);
+        if (it.fireT <= 0) { it.burstT = 2.6; it.fireT = 3.8; beep(440, .3, 'square', .05, 440); }
+        if (it.burstT > 0) { it.burstT -= sp; if (it.aimT <= 0) { for (let k = 0; k < 4; k++) { const a = it.spin + k * Math.PI / 2; shot(it.x, it.y, Math.cos(a) * 180 * bs, Math.sin(a) * 180 * bs, '#4fe0c8', 5, { sq: true }); } it.aimT = .11; } }
+        else if (it.altT <= 0) { aimed(it.x, it.y, 320 * bs, '#ffffff', 6, { sq: true }); it.altT = .6; }
+      },
+      draw(it) {
+        ctx.save(); ctx.rotate(it.spin);
+        ctx.fillStyle = '#0a1a24'; ctx.fillRect(-34, -34, 68, 68);
+        ctx.shadowBlur = 0; ctx.strokeStyle = '#4fe0c8'; ctx.lineWidth = 3; ctx.strokeRect(-34, -34, 68, 68); ctx.strokeRect(-22, -22, 44, 44);
+        ctx.fillStyle = '#4fe0c8'; for (let k = 0; k < 4; k++) { ctx.rotate(Math.PI / 2); ctx.fillRect(-5, -46, 10, 12); }
+        ctx.restore();
+        eyeAt(it, 0, 0, 11, '#ff4f6d', '#dff4ff');
+      } },
+    { id: 'miroir', name: 'Miroir Noir', place: 'Galerie des reflets', col: '#d9d0ff', r: 42,
+      quote: 'Je suis toi, à l\'envers. Je sais déjà où tu vas.', desc: 'Se place toujours à l\'opposé de toi et fait pleuvoir des tirs au-dessus de ta tête.',
+      move(it, sp, bs) {
+        it.x += (clampX(W - player.x) - it.x) * Math.min(1, sp * 2.2 * bs);
+        if (it.fireT <= 0) { for (const s of [-.25, 0, .25]) aimed(it.x, it.y + 20, 260 * bs, '#d9d0ff', 5, null, s); it.fireT = 1.1; beep(900, .1, 'triangle', .05, -200); }
+        if (it.altT <= 0) { for (let i = 0; i < 6; i++) shot(player.x + (i - 2.5) * 26, -10, 0, 220 * bs, '#ffffff', 5, { wait: .3 }); ringO(it.x, it.y, 12, 150 * bs, it.t, '#8a7cc8', 5); it.altT = 3; beep(300, .4, 'sine', .06, 300); }
+      },
+      draw(it, t) {
+        ell(0, 0, 36, 46, '#c8c0e8'); ctx.shadowBlur = 0;
+        ell(0, 0, 29, 39, '#0a0612');
+        ctx.save(); ctx.beginPath(); ctx.ellipse(0, 0, 29, 39, 0, 0, 7); ctx.clip();
+        const k = (t / 15) % 120 - 60;
+        poly('rgba(217, 208, 255, .25)', [[k - 20, -40], [k, -40], [k - 30, 40], [k - 50, 40]]);
+        ctx.restore();
+        eyeAt(it, -10, -10, 6, '#0b0820', '#d9d0ff'); eyeAt(it, 10, -10, 6, '#0b0820', '#d9d0ff');
+        ctx.strokeStyle = '#d9d0ff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 14, 9, Math.PI + .3, -.3); ctx.stroke();
+        ctx.fillStyle = '#c8c0e8'; ctx.fillRect(-4, 44, 8, 14);
+      } },
+    { id: 'horloge', name: 'Horloge Brisée', place: 'Couloir du temps', col: '#ffd86b', r: 44,
+      quote: 'Tic… tac… ton temps est écoulé.', desc: 'Gèle ses tirs dans le temps avant de les relâcher d\'un coup.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.4); it.spin += sp * 2;
+        if (it.fireT <= 0) {
+          for (let r = 0; r < 2; r++) ringO(it.x, it.y, 14, (130 + r * 50) * bs, r * .22 + it.t, r ? '#ffd86b' : '#f3eefe', 5, { pre: .45, wait: .9 });
+          it.fireT = 2.4; beep(1200, .05, 'square', .05); setTimeout(() => beep(600, .3, 'square', .07, -300), 1300);
+        }
+        if (it.altT <= 0) { for (let i = 0; i < 5; i++) aimed(it.x, it.y, 320 * bs, '#ff4f6d', 5, { wait: .6 - i * .1 }); it.altT = 1.7; }
+      },
+      draw(it) {
+        ell(0, 0, 44, 44, '#f3e6c8'); ctx.shadowBlur = 0;
+        const pend = Math.sin(it.t * 3) * .5, px = Math.sin(pend) * 30, py = 44 + Math.cos(pend) * 30;
+        strokeLine('#8a6a58', 3, [[0, 44], [px, py]]); ell(px, py, 8, 8, '#ffd86b');
+        ctx.strokeStyle = '#8a6a58'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 44, 0, 7); ctx.stroke();
+        ctx.fillStyle = '#3a3062'; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; ctx.fillRect(Math.cos(a) * 36 - 2, Math.sin(a) * 36 - 2, 4, 4); }
+        strokeLine('#0b0820', 2, [[8, -40], [2, -18], [14, -4], [6, 10]]);
+        strokeLine('#3a3062', 4, [[0, 0], [Math.cos(it.spin) * 26, Math.sin(it.spin) * 26]]);
+        strokeLine('#ff4f6d', 3, [[0, 0], [Math.cos(it.spin * 12) * 34, Math.sin(it.spin * 12) * 34]]);
+        ell(0, 0, 4, 4, '#ffd86b');
+        eyeAt(it, -14, -14, 5); eyeAt(it, 14, -14, 5);
+      } },
+    { id: 'glitch', name: 'Glitch', place: 'Zone corrompue', col: '#ff4f6d', r: 40,
+      quote: 'ERR0R… T0I… DÉTRU1RE… 01001…', desc: 'Saute d\'un endroit à l\'autre en crachant des pixels.',
+      move(it, sp, bs) {
+        if (it.altT <= 0) { it.x = clampX(it.x + (Math.random() - .5) * 220); it.y = Math.max(100, Math.min(260, it.y + (Math.random() - .5) * 100)); it.altT = .7; beep(200 + Math.random() * 800, .05, 'square', .04); }
+        if (it.fireT <= 0) { ringO(it.x, it.y, 8, 160 * bs, Math.random() * 6, Math.random() < .5 ? '#ff4f6d' : '#4fe0c8', 6, { sq: true }); it.fireT = .9; }
+        if (it.aimT <= 0) { for (let i = 0; i < 4; i++) aimed(it.x, it.y, 340 * bs, '#ffffff', 5, { sq: true, wait: i * .12 }); it.aimT = 2.2; }
+      },
+      draw(it) {
+        ctx.shadowBlur = 0;
+        for (const [c, ox] of [['rgba(255, 79, 109, .7)', -4], ['rgba(79, 224, 200, .7)', 4], ['#f3eefe', 0]]) {
+          ctx.fillStyle = c;
+          for (const [x, y, w, h] of [[-30, -30, 60, 16], [-36, -14, 72, 18], [-24, 4, 48, 14], [-30, 18, 20, 14], [10, 18, 20, 14]]) ctx.fillRect(x + ox + (!reduce && Math.random() < .1 ? (Math.random() - .5) * 18 : 0), y, w, h);
+        }
+        ctx.fillStyle = '#0b0820'; ctx.fillRect(-18, -12, 10, 10); ctx.fillRect(8, -12, 10, 10);
+      } },
+    { id: 'prisme', name: 'Gardien Prisme', place: 'Cathédrale de lumière', col: '#f3eefe', r: 42,
+      quote: 'Toute lumière passe par moi. Même la tienne.', desc: 'Lance des éventails arc-en-ciel, puis un rayon (sors de la ligne !).',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.5);
+        if (it.fireT <= 0) { const a0 = playerAng(it.x, it.y); PRISM.forEach((c, i) => { const a = a0 + (i - 3) * .18; shot(it.x, it.y + 20, Math.cos(a) * 230 * bs, Math.sin(a) * 230 * bs, c, 5); }); it.fireT = 1.4; beep(1000, .2, 'triangle', .05, 400); }
+        if (it.altT <= 0) { it.warn = .6; it.ba = playerAng(it.x, it.y + 20); it.altT = 3.2; beep(1500, .6, 'sine', .04, -1000); }
+        if (it.warn > 0) { it.warn -= sp; if (it.warn <= 0) it.beam = .7; }
+        if (it.beam > 0) { it.beam -= sp; if (it.aimT <= 0) { shot(it.x, it.y + 20, Math.cos(it.ba) * 460 * bs, Math.sin(it.ba) * 460 * bs, PRISM[Math.floor(it.t * 20) % 7], 6); it.aimT = .035; } }
+      },
+      draw(it, t) {
+        if (it.warn > 0 && !inCine(it)) { ctx.save(); ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(255, 255, 255, .5)'; ctx.setLineDash([6, 6]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 20); ctx.lineTo(Math.cos(it.ba) * 1400, 20 + Math.sin(it.ba) * 1400); ctx.stroke(); ctx.restore(); }
+        poly('rgba(220, 230, 255, .55)', [[0, -46], [42, 30], [-42, 30]]);
+        ctx.shadowBlur = 0; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3; ctx.stroke();
+        ctx.save(); ctx.globalAlpha *= .7; PRISM.forEach((c, i) => { ctx.fillStyle = c; ctx.fillRect(-21 + i * 6, 30, 6, 10 + Math.sin(t / 150 + i) * 4); }); ctx.restore();
+        eyeAt(it, 0, 4, 9, '#5b3a9e', '#ffffff');
+      } },
+    { id: 'jumelles', name: 'Ombres Jumelles', place: 'Pont des deux lunes', col: '#c86bff', r: 30,
+      quote: 'Nous sommes deux. Toi, tu es seule.', desc: 'Deux ombres tournent autour d\'un cœur : c\'est lui qu\'il faut toucher.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.45); it.spin += sp * 2 * bs;
+        if (it.fireT <= 0) { it.tw = 1 - (it.tw || 0); const a = it.spin + it.tw * Math.PI, x = it.x + Math.cos(a) * 70, y = it.y + Math.sin(a) * 26; for (const s of [-.15, 0, .15]) aimed(x, y, 270 * bs, it.tw ? '#c86bff' : '#4fe0c8', 5, null, s); it.fireT = .7; }
+        if (it.altT <= 0) { ringO(it.x, it.y, 12, 140 * bs, it.t, '#ffffff', 4); it.altT = 2.8; }
+      },
+      draw(it, t) {
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(200, 107, 255, .4)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(0, 0, 70, 26, 0, 0, 7); ctx.stroke();
+        for (const k of [0, 1]) {
+          const a = it.spin + k * Math.PI, x = Math.cos(a) * 70, y = Math.sin(a) * 26, c = k ? '#c86bff' : '#4fe0c8';
+          ctx.shadowColor = c; ctx.shadowBlur = 16;
+          ctx.fillStyle = '#140a24'; ctx.beginPath(); ctx.arc(x, y - 4, 20, Math.PI, 0); for (let i = 0; i <= 4; i++) ctx.lineTo(x + 20 - i * 10, y + 18 + (i % 2 ? -5 : 0)); ctx.closePath(); ctx.fill();
+          ctx.shadowBlur = 0; ell(x - 7, y - 6, 4, 5, c); ell(x + 7, y - 6, 4, 5, c);
+        }
+        ctx.shadowColor = '#ff4f6d'; ctx.shadowBlur = 24;
+        const b = 1 + Math.sin(t / 120) * .1;
+        ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.moveTo(0, 14 * b); ctx.bezierCurveTo(-28 * b, -6 * b, -12 * b, -26 * b, 0, -10 * b); ctx.bezierCurveTo(12 * b, -26 * b, 28 * b, -6 * b, 0, 14 * b); ctx.fill();
+      } },
+    { id: 'trounoirv', name: 'Trou Noir Vivant', place: 'Horizon des événements', col: '#ff9a3c', r: 44,
+      quote: 'Tout ce qui s\'approche de moi… ne revient jamais.', desc: 'Ses anneaux de tirs repartent en arrière comme des boomerangs.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.25, 90); it.spin += sp;
+        if (it.fireT <= 0) { for (let i = 0; i < 16; i++) { const a = it.t + i / 16 * Math.PI * 2; shot(it.x, it.y, Math.cos(a) * 240 * bs, Math.sin(a) * 240 * bs, '#ff9a3c', 5, { ax: -Math.cos(a) * 210, ay: -Math.sin(a) * 210 }); } it.fireT = 2.4; beep(60, .8, 'sine', .15, 30); }
+        if (it.aimT <= 0) { for (const s of [-.2, .2]) aimed(it.x, it.y, 260 * bs, '#c86bff', 6, null, s); it.aimT = 1.2; }
+      },
+      draw(it) {
+        ctx.shadowBlur = 0;
+        ctx.save(); ctx.rotate(-.3); ctx.scale(1, .35); ctx.globalAlpha *= .8;
+        for (let i = 0; i < 3; i++) { ctx.strokeStyle = ['#ffd86b', '#ff9a3c', '#c86bff'][i]; ctx.lineWidth = 6 - i; ctx.beginPath(); ctx.arc(0, 0, 54 + i * 10, it.spin + i, it.spin + i + 4.5); ctx.stroke(); }
+        ctx.restore();
+        ctx.shadowColor = '#ff9a3c'; ctx.shadowBlur = 30; ell(0, 0, 32, 32, '#000000'); ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 33, 0, 7); ctx.stroke();
+        eyeAt(it, -10, -4, 5, '#ff9a3c', '#1a1028'); eyeAt(it, 10, -4, 5, '#ff9a3c', '#1a1028');
+      } },
+    { id: 'architecte', name: 'L\'Architecte', place: 'Chantier du Néant', col: '#7ad8ff', r: 44,
+      quote: 'J\'ai construit le Néant brique par brique. Tu seras la dernière.', desc: 'Construit des murs de briques : trouve un des deux passages.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 90);
+        if (it.fireT <= 0) { wall(it.y + 50, [0, 1], 100 * bs, '#7ad8ff', 32, { sq: true }); it.fireT = 2.6; beep(180, .2, 'square', .08); setTimeout(() => beep(180, .2, 'square', .08), 150); }
+        if (it.altT <= 0) { for (const s of [-1, 1]) aimed(it.x + s * 44, it.y, 280 * bs, '#ffd86b', 6, { sq: true }); it.altT = 1.3; }
+      },
+      draw(it, t) {
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(122, 216, 255, .25)'; ctx.lineWidth = 1; ctx.beginPath();
+        for (let i = -3; i <= 3; i++) { ctx.moveTo(i * 14, -50); ctx.lineTo(i * 14, 50); ctx.moveTo(-50, i * 14); ctx.lineTo(50, i * 14); }
+        ctx.stroke();
+        ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 16; ctx.fillStyle = '#16304a'; ctx.fillRect(-30, -34, 60, 50); ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 3; ctx.strokeRect(-30, -34, 60, 50);
+        ctx.fillStyle = '#7ad8ff'; ctx.fillRect(-20, -22, 12, 8); ctx.fillRect(8, -22, 12, 8);
+        ctx.fillStyle = '#ffd86b'; ctx.fillRect(-14, 0, 28, 4);
+        strokeLine('#7ad8ff', 4, [[-30, 0], [-50, 20], [-44, 40]]); strokeLine('#7ad8ff', 4, [[30, 0], [50, 20], [44, 40]]);
+        strokeLine('#ffd86b', 3, [[-44, 40], [-52, 50]]); strokeLine('#ffd86b', 3, [[-44, 40], [-36, 50]]);
+        ctx.fillStyle = '#ffd86b'; ctx.fillRect(40, 36, 18, 6);
+        strokeLine('#7ad8ff', 3, [[0, -34], [0, -46]]); ell(0, -48, 4, 4, Math.floor(t / 300) % 2 ? '#ff4f6d' : '#7ad8ff');
+      } },
+    { id: 'oeilneant', name: 'Œil du Néant', place: 'Abîme sans fond', col: '#c86bff', r: 46,
+      quote: 'Je t\'observe depuis le début. Depuis la Terre.', desc: 'Balaie le ciel d\'un rayon et tire avec ses tentacules.',
+      move(it, sp, bs, dt, sweep) {
+        sweep(.3, 90);
+        if (it.altT <= 0) { it.pre = .6; it.dir = Math.random() < .5 ? -1 : 1; it.altT = 4.2; beep(120, 2.2, 'sawtooth', .07, 100); }
+        if (it.pre > 0) { it.pre -= sp; if (it.pre <= 0) it.sweepT = 1.8; }
+        if (it.sweepT > 0) { it.sweepT -= sp; if (it.aimT <= 0) { const a = Math.PI / 2 + it.dir * (1.1 - (1.8 - it.sweepT) / 1.8 * 2.2); shot(it.x, it.y + 20, Math.cos(a) * 420 * bs, Math.sin(a) * 420 * bs, '#c86bff', 6); it.aimT = .03; } }
+        else if (it.fireT <= 0) { for (let k = 0; k < 3; k++) aimed(it.x + (k - 1) * 50, it.y + 50, 250 * bs, '#4fe0c8', 5); it.fireT = 1.3; }
+      },
+      draw(it, t, wob) {
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, w = Math.sin(it.t * 3 + i) * 10 * wob; strokeLine(i % 2 ? '#3a1a5a' : '#5b3a9e', 7, [[Math.cos(a) * 34, Math.sin(a) * 30], [Math.cos(a) * 56 + w, Math.sin(a) * 52 - w], [Math.cos(a + .3) * 74, Math.sin(a + .3) * 66]]); }
+        ctx.shadowColor = '#c86bff'; ctx.shadowBlur = it.pre > 0 ? 40 : 24; ell(0, 0, 40, 34, '#1a0a2a'); ctx.shadowBlur = 0;
+        ell(0, 0, 32, 26, '#e8e2ff');
+        const dx = player.x - it.x, dy = player.y - it.y, dd = Math.hypot(dx, dy) || 1;
+        ell(dx / dd * 9, dy / dd * 7, 15, 15, '#c86bff'); ell(dx / dd * 9, dy / dd * 7, 6, it.pre > 0 || it.sweepT > 0 ? 13 : 6, '#0b0820');
+      } },
+    { id: 'devoreur', name: 'Le Dévoreur d\'étoiles', place: 'Cœur du Néant', col: '#ff4f6d', r: 56,
+      quote: 'J\'ai mangé mille galaxies. La tienne sera mon dessert.', desc: 'Utilise les attaques des quatre seigneurs. Devient furieux à mi-vie.',
+      move(it, sp, bs, dt, sweep) {
+        enrage(it, 'Le Dévoreur est furieux !', 'Le Néant se déchaîne');
+        sweep(it.rage ? .7 : .35, 90);
+        if (it.fireT <= 0) {
+          it.pat = ((it.pat || 0) + 1) % 4;
+          if (it.pat === 0) it.burstT = 2;
+          else if (it.pat === 1) wall(it.y + 60, [0], 140 * bs, '#ff4f1a');
+          else if (it.pat === 2) for (const s of [-.4, 0, .4]) aimed(it.x, it.y + 30, 190 * bs, '#ffb020', 9, { fuse: 1, fn: 8, fs: 170 * bs, fc: '#ffd86b' }, s);
+          else ringO(it.x, it.y, 18, 150 * bs, it.t, '#f3eefe', 5, { pre: .4, wait: .8 });
+          it.fireT = 1.9 * (it.rage ? .65 : 1); beep(70, .6, 'sawtooth', .14, 30);
+        }
+        if (it.burstT > 0 || it.rage) { if (it.aimT <= 0) it.burstT -= .1; spiral(it, 3, 170 * bs, it.rage ? '#ff4f6d' : '#bfe9ff', .1); }
+      },
+      draw(it, t, wob) {
+        for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + it.t * .3, h = 18 + Math.sin(it.t * 3 + i) * 6 * wob; poly('#2a0a3a', [[Math.cos(a - .15) * 52, Math.sin(a - .15) * 52], [Math.cos(a) * (52 + h), Math.sin(a) * (52 + h)], [Math.cos(a + .15) * 52, Math.sin(a + .15) * 52]]); }
+        ell(0, 0, 56, 56, '#0a0414'); ctx.shadowBlur = 0;
+        ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 54, 0, 7); ctx.clip();
+        for (let i = 0; i < 26; i++) { const a = i * 2.39, r = (i * 7) % 50; ctx.globalAlpha = .4 + .6 * Math.abs(Math.sin(t / 300 + i)); ell(Math.cos(a) * r, Math.sin(a) * r, 1.6, 1.6, i % 3 ? '#ffffff' : '#ffd86b'); }
+        ctx.restore();
+        const open = 10 + Math.sin(it.t * 2) * 4 + (it.rage ? 6 : 0);
+        ell(0, 22, 30, open, '#000000');
+        for (let i = -4; i <= 4; i++) { poly('#f3eefe', [[i * 6.5 - 3, 24 - open], [i * 6.5 + 3, 24 - open], [i * 6.5, 32 - open]]); poly('#f3eefe', [[i * 6.5 - 3, 20 + open], [i * 6.5 + 3, 20 + open], [i * 6.5, 12 + open]]); }
+        for (const [x, y, r] of [[-22, -18, 8], [22, -18, 8], [0, -32, 6], [-36, 2, 4], [36, 2, 4]]) eyeAt(it, x, y, r, it.rage ? '#ffffff' : '#0b0820', it.rage ? '#ff4f6d' : '#ffd86b');
+      } },
+  ];
+
+  const WORLDS = [
+    { name: 'Voie lactée', icon: '🌌', col: ['#5b3a9e', '#ff7aa8'], bosses: BOSSES },
+    { name: 'Royaume de Givre', icon: '❄️', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 13, 14, 15] },
+    { name: 'Forge Volcanique', icon: '🌋', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 17, 18, 19] },
+    { name: 'Jungle Cosmique', icon: '🌿', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 21, 22, 23] },
+    { name: 'Le Néant', icon: '🕳️', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 25, 26, 27] },
+  ];
+  const ALL_BOSSES = WORLDS.flatMap(w => w.bosses);
+
   let beaten = [];
-  try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => BOSSES.some(d => d.id === x)); } catch (e) {}
+  try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => ALL_BOSSES.some(d => d.id === x)); } catch (e) {}
+
+  // --- mondes débloqués : battre le 10e boss d'un monde ouvre le suivant ---
+  let worldsOpen = 1, startWorld = 0;
+  try {
+    const m = JSON.parse(localStorage.getItem('comete-mondes') || '{}');
+    worldsOpen = Math.max(1, Math.min(WORLDS.length, m.open | 0));
+    startWorld = m.pick | 0;
+  } catch (e) {}
+  WORLDS.forEach((w, i) => { if (i < WORLDS.length - 1 && beaten.includes(w.bosses[9].id)) worldsOpen = Math.max(worldsOpen, i + 2); });
+  startWorld = Math.max(0, Math.min(worldsOpen - 1, startWorld));
+  function saveWorlds() { try { localStorage.setItem('comete-mondes', JSON.stringify({ open: worldsOpen, pick: startWorld })); } catch (e) {} }
+  // cartes des 5 mondes : les mondes fermés restent visibles, avec ce qu'il faut faire pour les ouvrir
+  function renderWorldPick() {
+    const el = $('worldChips'); el.innerHTML = '';
+    WORLDS.forEach((w, i) => {
+      const b = document.createElement('button'), open = i < worldsOpen;
+      const won = w.bosses.filter(d => beaten.includes(d.id)).length;
+      b.type = 'button'; b.className = 'wcard'; b.disabled = !open;
+      b.style.setProperty('--w1', w.col[0]); b.style.setProperty('--w2', w.col[1]);
+      b.innerHTML = `<span class="wicon">${open ? w.icon : '🔒'}</span><span class="wnum">Monde ${i + 1}</span>`
+        + `<span class="wname">${open ? w.name : '???'}</span><span class="wprog">${open ? `${won}/10 boss` : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span>`;
+      b.setAttribute('aria-pressed', i === startWorld);
+      b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
+      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
+      el.appendChild(b);
+    });
+    $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
+  }
+  renderWorldPick();
 
   // --- histoire ---
   let seenIntro = false;
   try { seenIntro = localStorage.getItem('comete-intro') === '1'; } catch (e) {}
   let storyMode = 'intro';
+  // texte affiché en arrivant dans le monde w (1 à 4), puis la fin après le dernier boss du Néant
+  const WORLD_STORY = [
+    null,
+    n => ['L\'Empereur Zorg s\'écrase dans les ruines de son palais. Les étoiles de la Voie lactée se rallument.',
+      'Dans les débris, tu trouves une carte : Zorg n\'était qu\'un serviteur. Quatre royaumes gardent la route vers le <b>Néant</b>, où dort le <b>Dévoreur d\'étoiles</b>.',
+      `Une porte de glace s'ouvre devant ${n}…`,
+      '<b>Monde 2 : Royaume de Givre.</b> L\'Impératrice Glacia et ses gardiens t\'attendent.'],
+    n => ['Glacia se brise en mille éclats de cristal.',
+      'Sous la glace, le sol se met à trembler : une chaleur terrible monte des profondeurs.',
+      `${n} plonge vers une planète en fusion…`,
+      '<b>Monde 3 : Forge Volcanique.</b> Le Seigneur Magmor y forge une armée de feu.'],
+    n => ['Magmor s\'effondre et sa forge s\'éteint.',
+      'Plus loin, une jungle géante pousse entre les étoiles. Elle avance, et dévore tout sur son passage.',
+      `${n} se faufile entre les lianes…`,
+      '<b>Monde 4 : Jungle Cosmique.</b> La Reine-Ruche règne sur ses gardiens.'],
+    n => ['La Reine-Ruche tombe, et la jungle se fane.',
+      'Derrière elle, il n\'y a plus rien : ni étoile, ni lumière. Seulement le <b>Néant</b>.',
+      `Quelque chose s'y réveille. Quelque chose de très affamé. ${n} n'a pas peur.`,
+      '<b>Monde 5 : Le Néant.</b> Le Dévoreur d\'étoiles t\'attend au bout du vide.'],
+  ];
   function showStory(mode) {
     storyMode = mode;
     const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
@@ -1733,31 +2691,46 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       'Pour garder son trésor, il a placé <b>10 gardiens</b> dans 10 secteurs de l\'espace, de l\'orbite terrestre jusqu\'à son palais.',
       `Une seule fusée est encore prête à décoller : ${n}.`,
       'Ta mission : rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
-    ] : [
-      'L\'Empereur Zorg s\'écrase dans les ruines de son palais.',
-      `Une à une, les étoiles volées reprennent leur place. Sur Terre, tout le monde lève les yeux vers ${n}.`,
-      'Mais dans l\'ombre, l\'armée de Zorg se reforme déjà…',
-      '<b>Mission accomplie.</b> La partie continue : les gardiens reviennent, plus forts.',
+    ] : mode === 'world' ? WORLD_STORY[world + 1](n) : [
+      'Le Dévoreur d\'étoiles pousse un dernier cri et explose en une pluie de lumière.',
+      'Toutes les étoiles qu\'il avait avalées reviennent : les cinq mondes brillent à nouveau.',
+      `Dans toutes les galaxies, on raconte maintenant la légende de ${n}.`,
+      '<b>Victoire totale !</b> La partie continue : les gardiens du Néant reviennent, plus forts.',
     ];
-    $('storyKicker').textContent = mode === 'intro' ? 'Prologue' : 'Épilogue';
+    $('storyKicker').textContent = mode === 'intro' ? 'Prologue' : mode === 'world' ? `Monde ${world + 2}` : 'Épilogue';
     $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .9).toFixed(1)}s">${l}</p>`).join('');
     $('storySkip').hidden = mode !== 'intro';
-    $('storyGo').textContent = mode === 'intro' ? 'Décoller' : 'Continuer à jouer';
+    $('storyGo').textContent = mode === 'intro' ? 'Décoller' : mode === 'world' ? 'En route !' : 'Continuer à jouer';
     for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
     $('story').hidden = false;
-    if (mode === 'ending') { state = 'story'; $('pauseBtn').hidden = true; }
+    if (mode !== 'intro') { state = 'story'; $('pauseBtn').hidden = true; }
     else state = 'hangar';
   }
   function closeStory() {
     $('story').hidden = true;
     if (storyMode === 'intro') { seenIntro = true; try { localStorage.setItem('comete-intro', '1'); } catch (e) {} start(); }
-    else { state = 'play'; $('pauseBtn').hidden = false; last = performance.now(); }
+    else {
+      state = 'play'; $('pauseBtn').hidden = false; last = performance.now();
+      if (storyMode === 'world') enterWorld(world + 1);
+    }
+  }
+  // arrivée dans un nouveau monde en pleine partie : le niveau repart à 1
+  function enterWorld(w) {
+    world = w; bossInWorld = 0; level = 1; lvT = 0; newSector = false;
+    for (const it of items) if (it.kind === 'rock' || it.kind === 'alien') it.dead = true;
+    ebullets = [];
+    setTheme(1); updateHud();
+    showBanner(`Monde ${w + 1}`, WORLDS[w].name);
+    beep(440, .15, 'triangle'); setTimeout(() => beep(660, .15, 'triangle'), 120); setTimeout(() => beep(880, .3, 'triangle'), 240);
   }
 
   function renderBossList() {
-    $('bossList').innerHTML = BOSSES.map((d, i) => {
-      const ok = beaten.includes(d.id);
-      return `<div class="bossitem${ok ? ' won' : ''}"><b>${i + 1}. ${ok ? d.name : '???'}</b><span>${ok ? d.desc + ' · Vaincu' : 'Pas encore vaincu'}</span></div>`;
+    $('bossList').innerHTML = WORLDS.map((w, wi) => {
+      if (wi >= worldsOpen) return `<h4 class="worldhead">Monde ${wi + 1} · 🔒</h4><p class="worldlock">Bats le dernier boss du monde ${wi} pour l'ouvrir.</p>`;
+      return `<h4 class="worldhead">Monde ${wi + 1} · ${w.name}</h4>` + w.bosses.map((d, i) => {
+        const ok = beaten.includes(d.id);
+        return `<div class="bossitem${ok ? ' won' : ''}"><b>${i + 1}. ${ok ? d.name : '???'}</b><span>${ok ? d.desc + ' · Vaincu' : 'Pas encore vaincu'}</span></div>`;
+      }).join('');
     }).join('');
   }
 
@@ -1772,10 +2745,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function spawnAlien() {
-    const pool = ALIEN_TYPES.filter(a => level >= a.from);
+    const pool = ALIEN_TYPES.filter(a => level + world * 6 >= a.from);
     let r = Math.random() * pool.reduce((s, a) => s + a.w, 0);
     const kind = (pool.find(a => (r -= a.w) < 0) || pool[0]).type;
-    const lvHp = Math.floor(level / 4);
+    const lvHp = Math.floor(level / 4) + world;
     const base = { kind: 'alien', type: kind, x: 30 + Math.random() * (W - 60), y: -30, t: 0, hitT: 0 };
     if (kind === 'chaser') items.push({ ...base, y: -20, r: 15, hp: level > 4 ? 2 : 1, pts: 25, vy: 85 + Math.random() * 40, t: Math.random() * 9 });
     else if (kind === 'saucer') {
@@ -1795,10 +2768,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   const CINE_DUR = reduce ? 2.4 : 3.4;
   function spawnBoss() {
-    const idx = bossCount % BOSSES.length, def = BOSSES[idx], cycle = Math.floor(bossCount / BOSSES.length);
+    const idx = bossInWorld % 10, def = WORLDS[world].bosses[idx];
     bossCount++;
-    const hp = Math.round((28 + idx * 10 + level * 4) * (1 + cycle * .5));
-    boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100,
+    const hp = Math.round((28 + idx * 10 + level * 4) * (1 + world * .6) * (1 + cycle * .5));
+    boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100 + world * 400,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
     run.bossHit = false;
@@ -1808,7 +2781,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     cineT = CINE_DUR;
     const c = $('cine');
     c.style.setProperty('--boss', def.col);
-    $('cineNum').textContent = `Boss ${idx + 1} sur 10 · ${def.place}`;
+    $('cineNum').textContent = `Monde ${world + 1} · Boss ${idx + 1} sur 10 · ${def.place}`;
     $('cineName').textContent = def.name;
     $('cinePlace').textContent = cycle ? `Il revient, plus fort (${cycle + 1}e fois).` : '';
     $('cineQuote').textContent = def.quote;
@@ -1895,11 +2868,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function updateBoss(it, dt, slow) {
-    const d = it.def, sp = slow * dt, bs = 1 + level * .03;
+    const d = it.def, sp = slow * dt, bs = 1 + level * .03 + world * .06;
     if (it.contactT > 0) it.contactT -= dt;
     if (!it.entered) { it.y += 70 * sp; if (it.y >= 150) it.entered = true; else return; }
     const sweep = (k, m = 70) => { it.x = W / 2 + Math.sin(it.t * k) * Math.max(0, W / 2 - m); };
     it.fireT -= sp; it.aimT -= sp; it.altT -= sp;
+    if (d.move) { d.move(it, sp, bs, dt, sweep); return; }
     switch (d.id) {
       case 'mere':
         sweep(.7);
@@ -2071,6 +3045,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.save(); ctx.translate(it.x, it.y);
     ctx.shadowColor = d.col; ctx.shadowBlur = 20;
     const wob = reduce ? 0 : 1;
+    if (d.draw) { d.draw(it, t, wob); ctx.restore(); return; }
     switch (d.id) {
       case 'reine': {
         ctx.fillStyle = '#4fd27a';
@@ -2217,8 +3192,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   // dégâts sur un astéroïde ou un alien
   function damage(it, dmg) {
     if (it.dead) return;
+    // carapace ou boss enfoui : les tirs ricochent
+    if (it.invuln) { if (dmg >= 1) burst(it.x, it.y, '#ffffff', 3, 100, 2); return; }
     it.hp -= dmg; it.hitT = .08;
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
+    // le Phénix renaît une fois
+    if (it.boss && it.def.revive && !it.revived) {
+      it.revived = true; it.hp = it.maxHp * .5;
+      burst(it.x, it.y, '#7ad8ff', 50, 340, 5); shake = .4; ebullets = [];
+      showBanner(`${it.def.name} renaît !`, 'Encore plus rapide');
+      beep(300, .8, 'triangle', .14, 900);
+      return;
+    }
     it.dead = true;
     if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); bump('rochers'); return; }
     score += it.pts;
@@ -2232,11 +3217,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ebullets = [];
       const bonus = lives < maxLives();
       if (bonus) lives++;
-      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
+      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
-      sector++;
+      sector++; bossInWorld++;
       if (sector >= 4 && run.clean) feat('intouchable');
-      if (it.def.id === 'zorg') setTimeout(() => { if (state === 'play') showStory('ending'); }, 1800);
+      // 10e boss du monde : histoire puis monde suivant (ou fin après le Néant)
+      if (bossInWorld >= 10) {
+        if (world < WORLDS.length - 1) {
+          if (worldsOpen < world + 2) { worldsOpen = world + 2; saveWorlds(); renderWorldPick(); }
+          storyNext = 'world';
+        } else { bossInWorld = 0; cycle++; storyNext = 'ending'; }
+        storyAt = time + 1.8;
+      }
       // boss vaincu : on passe au niveau suivant 2,5 secondes plus tard
       lvT = 17.5; newSector = true;
       beep(200, .9, 'sawtooth', .18, -150); setTimeout(() => beep(660, .3, 'triangle', .14, 400), 250);
@@ -2405,7 +3397,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; last = performance.now(); }
   }
 
-  const play = () => { if (seenIntro) start(); else { initAudio(); showStory('intro'); } };
+  const play = () => { if (seenIntro || startWorld > 0) start(); else { initAudio(); showStory('intro'); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); showStory('intro'); };
   $('storyGo').onclick = closeStory;
@@ -2453,6 +3445,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   // --- boucle ---
   function update(dt) {
     time += dt;
+    if (storyAt && time >= storyAt) { storyAt = 0; showStory(storyNext); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss) lvT += dt;
     if (lvT >= 20) {
@@ -2461,11 +3454,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       if (level % 3 === 0 && !boss) spawnBoss();
-      else showBanner('Niveau ' + level, newSector ? `Secteur ${sector + 1} · ${BOSSES[sector % BOSSES.length].place}` : `${themeOf(level).name} · ça accélère !`);
+      else showBanner('Niveau ' + level, newSector ? `Secteur ${bossInWorld + 1} · ${WORLDS[world].bosses[bossInWorld].place}` : `${themeOf(level).name} · ça accélère !`);
       newSector = false;
       beep(660, .12, 'triangle'); setTimeout(() => beep(880, .18, 'triangle'), 110);
     }
-    speed = 1 + (level - 1) * .22 + lvT / 200;
+    speed = 1 + (level - 1) * .22 + world * .25 + lvT / 200;
 
     const pid = power.def.id;
     const on = power.active > 0;
@@ -2650,10 +3643,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
     // tirs ennemis
     for (const b of ebullets) {
-      b.x += b.vx * slow * dt; b.y += b.vy * slow * dt;
+      // pre : avance un peu, wait : reste figé, puis repart (ax/ay : accélération)
+      if (b.pre > 0 || !(b.wait > 0)) {
+        if (b.ax) b.vx += b.ax * slow * dt;
+        if (b.ay) b.vy += b.ay * slow * dt;
+        b.x += b.vx * slow * dt; b.y += b.vy * slow * dt;
+        if (b.pre > 0) b.pre -= slow * dt;
+      } else b.wait -= slow * dt;
       if (b.fuse !== undefined) {
         b.fuse -= slow * dt;
-        if (b.fuse <= 0) { b.dead = true; ring(b.x, b.y, 8, 170, Math.random(), '#ff9a3c', 5); burst(b.x, b.y, '#ff9a3c', 10, 160, 3); beep(180, .15, 'square', .05, -80); continue; }
+        if (b.fuse <= 0) { const fc = b.fc || '#ff9a3c'; b.dead = true; ring(b.x, b.y, b.fn || 8, b.fs || 170, Math.random(), fc, 5); burst(b.x, b.y, fc, 10, 160, 3); beep(180, .15, 'square', .05, -80); continue; }
       }
       if (b.y > H + 20 || b.y < -40 || b.x < -20 || b.x > W + 20) { b.dead = true; continue; }
       if (on && pid === 'laser' && Math.abs(b.x - player.x) < 16 && b.y < player.y) { b.dead = true; continue; }
@@ -2939,7 +3938,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // la fusée arrive par le bas de l'écran
     player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
     last = performance.now();
-    showBanner('Secteur 1', BOSSES[0].place);
+    showBanner(world ? `Monde ${world + 1} · ${WORLDS[world].name}` : 'Secteur 1', WORLDS[world].bosses[0].place);
   }
   function updateLaunch(dt) {
     launchT += dt;
@@ -3733,11 +4732,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { name: 'Champ doré', top: '#100c02', bottom: '#2a2610', neb: ['#ffd86b', '#ff9a3c'], feature: 'belt' },
     { name: 'Galaxie jumelle', top: '#020a0a', bottom: '#163018', neb: ['#b6ff6b', '#4fe0c8'], feature: 'galaxy' },
     { name: 'Cœur de la nuit', top: '#000000', bottom: '#120820', neb: ['#ff4f6d', '#5b3a9e'], feature: 'blackhole' },
+    // monde 2 : Royaume de Givre
+    { name: 'Banquise d\'étoiles', top: '#06121f', bottom: '#173a55', neb: ['#9fe8ff', '#e8f4ff'], feature: 'snow' },
+    { name: 'Aurore glacée', top: '#041018', bottom: '#0f2f3a', neb: ['#4fe0c8', '#9fb8ff'], feature: 'aurora' },
+    { name: 'Cristaux bleus', top: '#080a20', bottom: '#1d2a5a', neb: ['#7ad8ff', '#c8b8ff'], feature: 'snow' },
+    { name: 'Nuit polaire', top: '#020610', bottom: '#0d1d33', neb: ['#d9f2ff', '#5b7ad8'], feature: 'pulsar' },
+    // monde 3 : Forge Volcanique
+    { name: 'Rivière de lave', top: '#120302', bottom: '#3a0d05', neb: ['#ff4f1a', '#ff9a3c'], feature: 'embers' },
+    { name: 'Ciel de cendres', top: '#0e0a0a', bottom: '#2a1a14', neb: ['#8f6a5a', '#ff7b4a'], feature: 'embers' },
+    { name: 'Étoile en fusion', top: '#1a0505', bottom: '#401205', neb: ['#ffd86b', '#ff4f1a'], feature: 'sun' },
+    { name: 'Forge noire', top: '#050202', bottom: '#24100a', neb: ['#ff9a3c', '#c4502e'], feature: 'belt' },
+    // monde 4 : Jungle Cosmique
+    { name: 'Canopée cosmique', top: '#03120a', bottom: '#0f3a1c', neb: ['#7dff8a', '#ffd86b'], feature: 'spores' },
+    { name: 'Marais fluo', top: '#061008', bottom: '#1d3a10', neb: ['#b6ff6b', '#c86bff'], feature: 'spores' },
+    { name: 'Fleurs géantes', top: '#140818', bottom: '#2a1036', neb: ['#ff7aa8', '#7dff8a'], feature: 'galaxy' },
+    { name: 'Lianes d\'étoiles', top: '#020c08', bottom: '#0e2a24', neb: ['#4fe0c8', '#b6ff6b'], feature: 'aurora' },
+    // monde 5 : Le Néant
+    { name: 'Le Vide', top: '#000000', bottom: '#0a0612', neb: ['#5b3a9e', '#1a1028'], feature: 'glitch' },
+    { name: 'Horizon brisé', top: '#020208', bottom: '#140a24', neb: ['#7ad8ff', '#ff4f6d'], feature: 'blackhole' },
+    { name: 'Faille', top: '#040008', bottom: '#1a0624', neb: ['#c86bff', '#4fe0c8'], feature: 'glitch' },
+    { name: 'Dernière étoile', top: '#000000', bottom: '#100818', neb: ['#ffd86b', '#5b3a9e'], feature: 'pulsar' },
   ];
   let bgIdx = 0, bgPrev = 0, bgStart = -1e9;
-  const themeOf = lv => THEMES[(lv - 1) % THEMES.length];
+  // le monde 1 parcourt les 12 premiers décors, chaque autre monde a les siens
+  const themeIndex = lv => { const l = WORLDS[world].themes; return l ? l[(lv - 1) % l.length] : (lv - 1) % 12; };
+  const themeOf = lv => THEMES[themeIndex(lv)];
   function setTheme(lv, instant) {
-    const i = (lv - 1) % THEMES.length;
+    const i = themeIndex(lv);
     if (i === bgIdx) return;
     bgPrev = instant ? i : bgIdx; bgIdx = i; bgStart = instant ? -1e9 : performance.now();
   }
@@ -3755,6 +4776,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   // éléments de décor fixes, calculés une fois
   const BELT = Array.from({ length: 140 }, () => ({ u: Math.random(), v: (Math.random() - .5) * 2, r: .8 + Math.random() * 2.6 }));
   const GALAXY = Array.from({ length: 360 }, (_, i) => ({ arm: i % 2, d: Math.random(), j: (Math.random() - .5) * .5 }));
+  const FX = Array.from({ length: 80 }, () => ({ u: Math.random(), v: Math.random(), s: .5 + Math.random() * 1.5, p: Math.random() * 6 }));
 
   function drawFeature(f, th, t, a) {
     if (a <= 0 || f === 'none') return;
@@ -3818,6 +4840,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         ctx.restore();
       }
       ctx.globalAlpha = a; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 4 + Math.abs(Math.sin(t / 150)) * 2, 0, 7); ctx.fill();
+    } else if (f === 'snow') {
+      ctx.fillStyle = '#ffffff';
+      for (const p of FX) {
+        const y = ((p.v + t / 9000 * p.s) % 1) * (H + 20) - 10, x = ((p.u * W + Math.sin(t / 1500 + p.p) * 20) % W + W) % W;
+        ctx.globalAlpha = a * (.25 + p.s * .3); ctx.beginPath(); ctx.arc(x, y, 1 + p.s * 1.6, 0, 7); ctx.fill();
+      }
+    } else if (f === 'embers') {
+      for (const p of FX) {
+        const k = (p.v + t / 7000 * p.s) % 1, y = H + 10 - k * (H + 20), x = p.u * W + Math.sin(t / 700 + p.p) * 14;
+        ctx.globalAlpha = a * (1 - k) * .8; ctx.fillStyle = p.s > 1 ? c1 : c2; ctx.fillRect(x, y, 2 + p.s, 2 + p.s);
+      }
+    } else if (f === 'spores') {
+      for (const p of FX) {
+        const x = p.u * W + Math.sin(t / 3000 + p.p) * 40, y = p.v * H + Math.cos(t / 2500 + p.p * 2) * 30;
+        ctx.globalAlpha = a * (.2 + .3 * Math.abs(Math.sin(t / 900 + p.p))); ctx.fillStyle = p.s > 1 ? c1 : c2;
+        ctx.beginPath(); ctx.arc(x, y, 2 + p.s * 1.5, 0, 7); ctx.fill();
+      }
+    } else if (f === 'glitch') {
+      // bandes qui sautent de place quelques fois par seconde
+      const seed = Math.floor(t / 140);
+      for (let i = 0; i < 6; i++) {
+        const r = Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453, k = r - Math.floor(r);
+        if (k > .55) continue;
+        ctx.globalAlpha = a * .18; ctx.fillStyle = i % 2 ? c1 : c2; ctx.fillRect(0, (k * H * 1.8) % H, W, 2 + (k * 97) % 10);
+      }
+      ctx.fillStyle = c2;
+      for (const p of FX) { ctx.globalAlpha = a * .5 * Math.abs(Math.sin(t / 400 + p.p * 3)); ctx.fillRect(p.u * W, p.v * H, 3, 3); }
     }
     ctx.restore();
   }
@@ -3953,6 +5002,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       for (const b of ebullets) {
         const c = b.c || '#7dff8a', sz = b.s || 5;
         ctx.shadowColor = c; ctx.shadowBlur = 12; ctx.fillStyle = c;
+        if (b.sq) { ctx.fillRect(b.x - sz, b.y - sz, sz * 2, sz * 2); ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff'; ctx.fillRect(b.x - sz * .4, b.y - sz * .4, sz * .8, sz * .8); continue; }
         ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, 7); ctx.fill();
         ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.arc(b.x, b.y, sz * .4, 0, 7); ctx.fill();
