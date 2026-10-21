@@ -17,7 +17,7 @@ An 2187. L'Empereur Zorg a volé les étoiles de la galaxie et placé 10 gardien
 
 - Un prologue, 10 secteurs à traverser, une cinématique à l'arrivée de chaque boss et un épilogue après l'Empereur Zorg.
 
-- Le **Hangar** : personnalisation (nom, modèle, couleur, flamme, pistolet, super-pouvoir, à débloquer avec tes points) et **compétences** (chargeur, recharge, dégâts, vies…).
+- Le **Hangar** : 8 modèles de vaisseau (+ 2 vaisseaux de trophée), 25 couleurs, couleur secondaire, motif peint, hublot, flamme, traînée, couleur des tirs, pistolet et super-pouvoir, 3 emplacements « Mes styles » et un bouton « Style au hasard ». Plus les **compétences** (chargeur, recharge, dégâts, vies…).
 - 3 pistolets avec chargeur limité, et la **recharge parfaite** qui donne des balles dorées.
 - 5 super-pouvoirs : Hyperpropulsion, Ralenti, Aimant, Laser, Nova.
 - 7 espèces d'aliens avec chacune son pouvoir (poursuite, tirs, charge, division, téléportation, visée, mines).

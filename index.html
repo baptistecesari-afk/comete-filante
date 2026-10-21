@@ -249,6 +249,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   .hazard, .cinecard, .cinecard q, .storytext p { animation: none; opacity: 1; }
 }
 
+/* Styles enregistrés */
+.slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.slot { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border-radius: 14px; background: var(--night); border: 2px solid color-mix(in srgb, var(--muted) 35%, transparent); }
+.slot canvas { width: 56px; height: 56px; }
+.slot b { font-family: var(--display); font-weight: 400; font-size: 12px; }
+.slot .chip { font-size: 12px; padding: 5px 10px; width: 100%; }
+.slot .chip:disabled { opacity: .4; cursor: default; }
+.ghost.small { font-size: 14px; padding: 9px 16px; align-self: flex-start; }
+
 /* Trophées */
 #optTrophyShips { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .shipcard { flex-direction: row !important; align-items: center; gap: 12px !important; }
@@ -399,10 +408,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         <label for="shipName">Nom de la fusée</label>
         <input id="shipName" maxlength="16" autocomplete="off" spellcheck="false">
       </div>
+      <div class="opt">
+        <span>Mes styles</span>
+        <div class="slots" id="optSlots"></div>
+        <button type="button" class="ghost small" id="randomBtn">Style au hasard</button>
+      </div>
       <div class="opt"><span>Modèle</span><div class="chips" id="optModel"></div></div>
       <div class="opt"><span>Vaisseaux de trophée</span><div class="powers" id="optTrophyShips"></div></div>
       <div class="opt"><span>Couleur</span><div class="chips" id="optColor"></div></div>
+      <div class="opt"><span>Couleur secondaire</span><div class="chips" id="optAccent"></div></div>
+      <div class="opt"><span>Motif</span><div class="chips" id="optMotif"></div></div>
+      <div class="opt"><span>Hublot</span><div class="chips" id="optGlass"></div></div>
       <div class="opt"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
+      <div class="opt"><span>Traînée</span><div class="chips" id="optTrail"></div></div>
       <div class="opt"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
       <div class="opt"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
       <div class="opt"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
@@ -539,6 +557,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'classique', name: 'Classique' },
     { id: 'navette', name: 'Navette' },
     { id: 'eclair', name: 'Éclair' },
+    { id: 'aile', name: 'Aile delta' },
+    { id: 'ovni', name: 'Ovni rétro' },
+    { id: 'tie', name: 'Intercepteur' },
+    { id: 'faucon', name: 'Faucon' },
+    { id: 'requin', name: 'Requin' },
     { id: 'predateur', name: 'Prédateur', desc: 'Chasseur à armure noire, visière rouge, deux réacteurs et canons latéraux.' },
     { id: 'legende', name: 'Légende', desc: 'Vaisseau blanc et or avec auréole, cockpit diamant et étincelles.' },
   ];
@@ -549,6 +572,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'violet', name: 'Violet', hex: '#b48cff' },
     { id: 'orange', name: 'Orange', hex: '#ff9a3c' },
     { id: 'blanc', name: 'Blanc', hex: '#eef0ff' },
+    { id: 'bleunuit', name: 'Bleu électrique', hex: '#3a6bff' },
+    { id: 'rosebonbon', name: 'Rose bonbon', hex: '#ff7ad9' },
+    { id: 'citron', name: 'Citron', hex: '#e8ff5a' },
+    { id: 'corail', name: 'Corail', hex: '#ff7b6b' },
+    { id: 'menthe', name: 'Menthe', hex: '#6bffc4' },
+    { id: 'noir', name: 'Noir mat', hex: '#3a3450', grad: ['#5a5070', '#2a2438', '#14101e', '#3a3450'] },
+    { id: 'lave', name: 'Lave', hex: '#ff7b2a', grad: ['#fff2b0', '#ff7b2a', '#a81f1f'] },
+    { id: 'ocean', name: 'Océan', hex: '#3ac8e0', grad: ['#c8fbff', '#3ac8e0', '#1f4fa8'] },
+    { id: 'galaxie', name: 'Galaxie', hex: '#7a5cff', grad: ['#ff7ad9', '#7a5cff', '#1f2a8a', '#7ad8ff'] },
+    { id: 'neon', name: 'Néon', hex: '#ff4fd8', grad: ['#ff4fd8', '#b14dff', '#7ad8ff'] },
     { id: 'emeraude', name: 'Émeraude', hex: '#1fd18b', grad: ['#9dffd6', '#1fd18b', '#0a6b45'] },
     { id: 'amethyste', name: 'Améthyste néon', hex: '#b14dff', grad: ['#f0c8ff', '#b14dff', '#4a1580'] },
     { id: 'chrome', name: 'Chrome doré', hex: '#ffd86b', grad: ['#fffaf0', '#ffd86b', '#a8742a', '#fff2b0', '#c4902a'] },
@@ -565,6 +598,46 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'combo', name: 'Combo', c: ['#fff0f7', '#ff4fa0', '#ff9a3c'] },
     { id: 'fantome', name: 'Fantôme', c: ['#ffffff', '#d9d0ff', '#8a7cc8'] },
     { id: 'arcenciel', name: 'Arc-en-ciel', rainbow: true, c: ['#ffffff', '#ff4f6d', '#7ad8ff'] },
+  ];
+  // couleur secondaire (ailerons, détails, motif) ; 'auto' = une teinte plus sombre de la couleur
+  const ACCENTS = [
+    { id: 'auto', name: 'Automatique' },
+    { id: 'noir', name: 'Noir', hex: '#1a1626' },
+    { id: 'blanc', name: 'Blanc', hex: '#f3eefe' },
+    { id: 'or', name: 'Or', hex: '#ffd86b' },
+    { id: 'cyan', name: 'Cyan', hex: '#4fe0f0' },
+    { id: 'rose', name: 'Rose', hex: '#ff7ad9' },
+    { id: 'vert', name: 'Vert', hex: '#5aff8a' },
+    { id: 'violet', name: 'Violet', hex: '#9a5cff' },
+    { id: 'rouge', name: 'Rouge', hex: '#ff3b55' },
+  ];
+  const GLASSES = [
+    { id: 'nuit', name: 'Nuit', hex: '#1a1240' },
+    { id: 'cyan', name: 'Cyan', hex: '#7ad8ff' },
+    { id: 'or', name: 'Or', hex: '#ffd86b' },
+    { id: 'rouge', name: 'Rouge', hex: '#ff4f6d' },
+    { id: 'vert', name: 'Vert', hex: '#7dff8a' },
+    { id: 'miroir', name: 'Miroir', hex: '#d6dcea', grad: ['#ffffff', '#a8b8d8', '#4a5a78'] },
+  ];
+  // motif peint sur la coque
+  const MOTIFS = [
+    { id: 'aucun', name: 'Aucun' },
+    { id: 'rayures', name: 'Rayures' },
+    { id: 'etoiles', name: 'Étoiles' },
+    { id: 'damier', name: 'Damier' },
+    { id: 'eclair', name: 'Éclair' },
+    { id: 'camo', name: 'Camouflage' },
+    { id: 'flammes', name: 'Flammes peintes' },
+    { id: 'course', name: 'Numéro de course' },
+  ];
+  // traînée laissée par le réacteur
+  const TRAILS = [
+    { id: 'classique', name: 'Classique' },
+    { id: 'etincelles', name: 'Étincelles', shape: 'star', col: '#fff2b0' },
+    { id: 'bulles', name: 'Bulles', shape: 'bubble', col: '#c8fbff', size: 5 },
+    { id: 'pixels', name: 'Pixels', shape: 'pixel', size: 4 },
+    { id: 'coeurs', name: 'Cœurs', shape: 'heart', col: '#ff7aa8', size: 5 },
+    { id: 'comete', name: 'Queue de comète', shape: 'glow', size: 7, life: 1.8 },
   ];
   // couleur des tirs ('flamme' = comme la flamme du vaisseau)
   const SHOTS = [
@@ -600,7 +673,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', shot: 'flamme', gun: 'blaster', power: 'laser', title: '' };
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', accent: 'auto', motif: 'aucun', glass: 'nuit', flame: 'feu', trail: 'classique', shot: 'flamme', gun: 'blaster', power: 'laser', title: '' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -612,6 +685,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (POWERS.some(m => m.id === saved.power)) cfg.power = saved.power;
     if (SHOTS.some(m => m.id === saved.shot)) cfg.shot = saved.shot;
     if (typeof saved.title === 'string') cfg.title = saved.title;
+    for (const [k, list] of [['accent', ACCENTS], ['motif', MOTIFS], ['glass', GLASSES], ['trail', TRAILS]]) if (list.some(m => m.id === saved[k])) cfg[k] = saved[k];
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
 
@@ -628,8 +702,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 1500, eclair: 3000 },
-    color: { or: 300, turquoise: 300, violet: 500, orange: 500, blanc: 800 },
+    model: { navette: 1500, eclair: 3000, aile: 1200, ovni: 1800, tie: 2000, faucon: 2500, requin: 3500 },
+    color: { or: 300, turquoise: 300, violet: 500, orange: 500, blanc: 800, bleunuit: 300, rosebonbon: 300, citron: 300, corail: 300, menthe: 300, noir: 600, lave: 800, ocean: 800, galaxie: 1000, neon: 900 },
+    accent: { noir: 150, blanc: 150, or: 250, cyan: 250, rose: 250, vert: 250, violet: 250, rouge: 250 },
+    motif: { rayures: 300, etoiles: 400, damier: 500, eclair: 600, camo: 600, flammes: 700, course: 800 },
+    glass: { cyan: 150, or: 200, rouge: 150, vert: 150, miroir: 300 },
+    trail: { etincelles: 400, bulles: 300, pixels: 300, coeurs: 500, comete: 700 },
     flame: { plasma: 600, toxique: 600, rose: 900 },
     gun: { double: 2000, eventail: 3000 },
     power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000 },
@@ -638,7 +716,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   const CATS = [
     { key: 'model', label: 'Modèle', list: MODELS },
     { key: 'color', label: 'Couleur', list: COLORS },
+    { key: 'accent', label: 'Couleur secondaire', list: ACCENTS },
+    { key: 'motif', label: 'Motif', list: MOTIFS },
+    { key: 'glass', label: 'Hublot', list: GLASSES },
     { key: 'flame', label: 'Flamme', list: FLAMES },
+    { key: 'trail', label: 'Traînée', list: TRAILS },
     { key: 'gun', label: 'Pistolet', list: GUNS },
     { key: 'power', label: 'Super-pouvoir', list: POWERS },
     { key: 'shot', label: 'Tirs', list: SHOTS },
@@ -871,7 +953,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const fl = flameColsOf(conf.flame, t);
     let bodyFill = body;
     if (colDef.grad) { bodyFill = c.createLinearGradient(-16, -26, 16, 22); colDef.grad.forEach((h, i) => bodyFill.addColorStop(i / (colDef.grad.length - 1), h)); }
-    const dark = shade(body, -.45), light = shade(body, .45);
+    const acc = byId(ACCENTS, conf.accent), gl = byId(GLASSES, conf.glass);
+    const dark = acc.hex || shade(body, -.45), light = shade(body, .45);
+    let glass = gl.hex;
+    if (gl.grad) { glass = c.createLinearGradient(-4, -10, 4, 0); gl.grad.forEach((h, i) => glass.addColorStop(i / (gl.grad.length - 1), h)); }
     c.save();
     c.translate(x, y); c.rotate(tilt); c.scale(s, s);
 
@@ -910,7 +995,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.beginPath(); c.moveTo(5, 1); c.lineTo(17, 11); c.lineTo(5, 9); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(-5, 1); c.lineTo(-17, 11); c.lineTo(-5, 9); c.closePath(); c.fill();
       c.fillStyle = light; c.fillRect(-1, -14, 2, 22);
-      c.fillStyle = '#1a1240'; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.4;
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.4;
       c.beginPath(); c.ellipse(0, -7, 3, 4.5, 0, 0, 7); c.fill(); c.stroke();
     } else if (conf.model === 'eclair') {
       c.fillStyle = dark;
@@ -922,8 +1007,73 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.fillStyle = dark; c.fillRect(-1.2, 6, 2.4, 12);
       c.strokeStyle = light; c.lineWidth = 1.5;
       c.beginPath(); c.moveTo(-3, -2); c.lineTo(1, -6); c.lineTo(-1, -1); c.lineTo(3, -5); c.stroke();
-      c.fillStyle = '#1a1240'; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.2;
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.2;
       c.beginPath(); c.arc(0, -12, 2.6, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'aile') {
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(0, -27); c.lineTo(21, 14); c.lineTo(8, 10); c.lineTo(0, 16); c.lineTo(-8, 10); c.lineTo(-21, 14); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = dark;
+      c.beginPath(); c.moveTo(21, 14); c.lineTo(14, 3); c.lineTo(12, 12); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(-21, 14); c.lineTo(-14, 3); c.lineTo(-12, 12); c.closePath(); c.fill();
+      c.strokeStyle = light; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -20); c.lineTo(0, 12); c.stroke();
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.2;
+      c.beginPath(); c.ellipse(0, -7, 3, 6, 0, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'ovni') {
+      c.fillStyle = glass; c.globalAlpha = .75;
+      c.beginPath(); c.ellipse(0, -5, 10, 11, 0, Math.PI, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+      c.fillStyle = '#7dff8a'; c.beginPath(); c.arc(0, -7, 4.5, 0, 7); c.fill();
+      c.fillStyle = '#0b0820'; c.beginPath(); c.ellipse(-1.8, -8, 1.2, 1.8, -.3, 0, 7); c.ellipse(1.8, -8, 1.2, 1.8, .3, 0, 7); c.fill();
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.ellipse(0, 1, 23, 8, 0, 0, 7); c.fill();
+      c.shadowBlur = 0;
+      c.strokeStyle = dark; c.lineWidth = 2; c.stroke();
+      for (let i = 0; i < 6; i++) { c.fillStyle = (Math.floor(t / 150) + i) % 2 ? '#ffffff' : dark; c.beginPath(); c.arc(-15 + i * 6, 2, 1.6, 0, 7); c.fill(); }
+      c.fillStyle = dark; c.beginPath(); c.ellipse(0, 8, 10, 3.5, 0, 0, Math.PI); c.fill();
+    } else if (conf.model === 'tie') {
+      c.fillStyle = dark; c.fillRect(-15, -2, 30, 4);
+      for (const sd of [-1, 1]) {
+        c.fillStyle = bodyFill;
+        c.beginPath(); c.moveTo(sd * 13, -20); c.lineTo(sd * 19, -12); c.lineTo(sd * 19, 12); c.lineTo(sd * 13, 20); c.lineTo(sd * 15, 0); c.closePath(); c.fill();
+        c.strokeStyle = dark; c.lineWidth = 1; c.beginPath();
+        for (let k = -12; k <= 12; k += 6) { c.moveTo(sd * 14.5, k); c.lineTo(sd * 19, k); }
+        c.stroke();
+      }
+      c.shadowBlur = 0;
+      c.fillStyle = bodyFill; c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill();
+      c.strokeStyle = dark; c.lineWidth = 1.5; c.stroke();
+      c.fillStyle = glass; c.beginPath(); c.arc(0, -1, 5, 0, 7); c.fill();
+      c.strokeStyle = '#eef0ff'; c.lineWidth = .8; c.beginPath();
+      for (let k = 0; k < 4; k++) { const a = k * Math.PI / 4; c.moveTo(Math.cos(a) * -5, -1 + Math.sin(a) * -5); c.lineTo(Math.cos(a) * 5, -1 + Math.sin(a) * 5); }
+      c.stroke();
+    } else if (conf.model === 'faucon') {
+      c.fillStyle = bodyFill;
+      c.fillRect(-10, -27, 6, 16); c.fillRect(4, -27, 6, 16);
+      c.beginPath(); c.arc(0, 0, 17, 0, 7); c.fill();
+      c.shadowBlur = 0;
+      c.strokeStyle = dark; c.lineWidth = 1.2;
+      c.beginPath(); c.arc(0, 0, 10, 0, 7); c.moveTo(-17, 0); c.lineTo(17, 0); c.moveTo(0, -17); c.lineTo(0, 17); c.stroke();
+      c.fillStyle = dark; c.fillRect(-10, -27, 6, 3); c.fillRect(4, -27, 6, 3);
+      c.fillStyle = 'rgba(122, 216, 255, .8)'; c.fillRect(-10, 13, 20, 3);
+      c.fillStyle = bodyFill; c.beginPath(); c.arc(15, -9, 5, 0, 7); c.fill();
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1;
+      c.beginPath(); c.arc(16, -10, 3, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'requin') {
+      c.fillStyle = dark;
+      c.beginPath(); c.moveTo(-6, -2); c.lineTo(-19, 9); c.lineTo(-7, 8); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(6, -2); c.lineTo(19, 9); c.lineTo(7, 8); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(-4, 12); c.lineTo(-12, 20); c.lineTo(0, 16); c.lineTo(12, 20); c.lineTo(4, 12); c.closePath(); c.fill();
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(0, -29); c.bezierCurveTo(10, -20, 9, 4, 4, 15); c.lineTo(-4, 15); c.bezierCurveTo(-9, 4, -10, -20, 0, -29); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = '#f3eefe';
+      c.beginPath(); c.moveTo(-6, -17); for (let k = 0; k < 6; k++) c.lineTo(-6 + k * 2.4 + 1.2, -17 + (k % 2 ? -2.5 : 2.5)); c.lineTo(6, -17); c.lineTo(0, -12); c.closePath(); c.fill();
+      c.fillStyle = '#0b0820'; c.beginPath(); c.arc(-4.5, -20, 1.3, 0, 7); c.arc(4.5, -20, 1.3, 0, 7); c.fill();
+      c.strokeStyle = dark; c.lineWidth = 1; c.beginPath();
+      for (let k = 0; k < 3; k++) { c.moveTo(-6 + k * .6, -6 + k * 3); c.lineTo(-3.5 + k * .6, -5 + k * 3); c.moveTo(6 - k * .6, -6 + k * 3); c.lineTo(3.5 - k * .6, -5 + k * 3); }
+      c.stroke();
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1;
+      c.beginPath(); c.ellipse(0, -2, 2.5, 4, 0, 0, 7); c.fill(); c.stroke();
     } else if (conf.model === 'predateur') {
       // armure sombre avec liserés lumineux de la couleur choisie
       const ar = c.createLinearGradient(0, -28, 0, 20);
@@ -989,8 +1139,48 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.fillStyle = light;
       c.beginPath(); c.moveTo(0, -22); c.bezierCurveTo(4, -18, 5.5, -14, 6.5, -11); c.lineTo(-6.5, -11); c.bezierCurveTo(-5.5, -14, -4, -18, 0, -22); c.closePath(); c.fill();
       c.fillStyle = dark; c.fillRect(-7, 10, 14, 4);
-      c.fillStyle = '#1a1240'; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.6;
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.6;
       c.beginPath(); c.arc(0, -3, 4, 0, 7); c.fill(); c.stroke();
+    }
+    drawMotif(c, conf, t, acc.hex || '#ffffff');
+    c.restore();
+  }
+
+  // motif peint sur la coque (en bas du vaisseau, sous le hublot)
+  function drawMotif(c, conf, t, col) {
+    const m = conf.motif;
+    if (!m || m === 'aucun') return;
+    c.save();
+    c.shadowBlur = 0;
+    c.beginPath(); c.ellipse(0, -1, 7.5, 15, 0, 0, 7); c.clip();
+    c.fillStyle = col; c.strokeStyle = col; c.globalAlpha = .85;
+    if (m === 'rayures') { c.fillRect(-6, -18, 1.8, 34); c.fillRect(4.2, -18, 1.8, 34); }
+    else if (m === 'etoiles') {
+      for (const [x, y, r] of [[-3.5, 5, 2.2], [3.5, 5, 2.2], [0, 10.5, 2.6]]) {
+        c.beginPath();
+        for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+        c.closePath(); c.fill();
+      }
+    } else if (m === 'damier') {
+      for (let gx = -6; gx < 6; gx += 2.5) for (let gy = 3; gy < 15; gy += 2.5) if ((Math.round(gx / 2.5) + Math.round(gy / 2.5)) % 2) c.fillRect(gx, gy, 2.5, 2.5);
+    } else if (m === 'eclair') {
+      c.beginPath(); c.moveTo(1.5, 1); c.lineTo(-3, 8); c.lineTo(0, 8); c.lineTo(-1.5, 15); c.lineTo(3.5, 6.5); c.lineTo(.5, 6.5); c.closePath(); c.fill();
+    } else if (m === 'camo') {
+      c.globalAlpha = .6;
+      for (const [x, y, rx, ry, k] of [[-4, 4, 3, 2, 0], [3, 7, 3.5, 2.2, 1], [-2, 11, 3, 2, 2], [4, 12, 2.2, 1.6, 0], [0, 2, 2, 1.4, 1]]) {
+        c.fillStyle = ['#2f4a24', '#6b5a3a', '#1f2a18'][k]; c.beginPath(); c.ellipse(x, y, rx, ry, .5, 0, 7); c.fill();
+      }
+    } else if (m === 'flammes') {
+      c.globalAlpha = .9;
+      for (const [x, h, k] of [[-4.5, 9, 0], [0, 13, 1], [4.5, 9, 0]]) {
+        c.fillStyle = k ? '#ffd86b' : '#ff7b2a';
+        c.beginPath(); c.moveTo(x - 2.4, 16); c.quadraticCurveTo(x - 2.4, 16 - h * .6, x, 16 - h); c.quadraticCurveTo(x + 2.4, 16 - h * .6, x + 2.4, 16); c.closePath(); c.fill();
+      }
+    } else if (m === 'course') {
+      c.fillRect(-1, -18, 2, 34);
+      c.beginPath(); c.arc(0, 8, 4.2, 0, 7); c.fill();
+      c.globalAlpha = 1; c.fillStyle = '#0b0820'; c.font = '700 6px Outfit, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('7', 0, 8.4);
     }
     c.restore();
   }
@@ -1041,6 +1231,37 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
   }
   // vaisseaux gagnés avec les trophées : une carte avec aperçu, trophée à gagner et progression
+  // 3 emplacements pour garder ses looks préférés
+  const STYLE_KEYS = ['model', 'color', 'accent', 'motif', 'glass', 'flame', 'trail', 'shot'];
+  let slots = [null, null, null];
+  try { const sv = JSON.parse(localStorage.getItem('comete-styles') || '[]'); if (Array.isArray(sv)) slots = [0, 1, 2].map(i => sv[i] && typeof sv[i] === 'object' ? sv[i] : null); } catch (e) {}
+  function buildSlots() {
+    const el = $('optSlots'); el.innerHTML = '';
+    slots.forEach((st, i) => {
+      const box = document.createElement('div'); box.className = 'slot';
+      const cvs = document.createElement('canvas'); cvs.width = 112; cvs.height = 112;
+      const name = document.createElement('b'); name.textContent = `Style ${i + 1}`;
+      const use = document.createElement('button'); use.type = 'button'; use.className = 'chip'; use.textContent = 'Équiper'; use.disabled = !st;
+      use.onclick = () => { for (const k of STYLE_KEYS) if (st[k] && owns(k, st[k])) cfg[k] = st[k]; preview = null; saveCfg(); refreshHangar(); beep(700, .08, 'triangle', .08); };
+      const save = document.createElement('button'); save.type = 'button'; save.className = 'chip'; save.textContent = st ? 'Remplacer' : 'Enregistrer';
+      save.onclick = () => {
+        slots[i] = Object.fromEntries(STYLE_KEYS.map(k => [k, cfg[k]]));
+        try { localStorage.setItem('comete-styles', JSON.stringify(slots)); } catch (e) {}
+        buildSlots(); beep(880, .1, 'triangle', .08);
+      };
+      box.append(cvs, name, use, save);
+      el.appendChild(box);
+      if (st) drawRocket(cvs.getContext('2d'), 56, 50, 2.1, { ...DEFAULT, ...st }, 0, 0, 0);
+      else { const k = cvs.getContext('2d'); k.fillStyle = '#5a5478'; k.font = '600 34px Outfit, sans-serif'; k.textAlign = 'center'; k.textBaseline = 'middle'; k.fillText('+', 56, 56); }
+    });
+  }
+  $('randomBtn').onclick = () => {
+    for (const k of STYLE_KEYS) {
+      const c = CATS.find(x => x.key === k), mine = c.list.filter(it => owns(k, it.id));
+      cfg[k] = mine[Math.floor(Math.random() * mine.length)].id;
+    }
+    preview = null; saveCfg(); refreshHangar(); beep(520, .08, 'square', .05, 400);
+  };
   function buildShipCards() {
     const el = $('optTrophyShips'); el.innerHTML = '';
     for (const m of MODELS.filter(x => trophyOf('model', x.id))) {
@@ -1063,7 +1284,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     buildChips($('optModel'), MODELS.filter(m => !trophyOf('model', m.id)), 'model');
     buildShipCards();
     buildChips($('optColor'), COLORS, 'color', true);
+    buildChips($('optAccent'), ACCENTS, 'accent', true);
+    buildChips($('optMotif'), MOTIFS, 'motif');
+    buildChips($('optGlass'), GLASSES, 'glass', true);
+    buildSlots();
     buildChips($('optFlame'), FLAMES, 'flame', true);
+    buildChips($('optTrail'), TRAILS, 'trail');
     buildChips($('optShot'), SHOTS, 'shot', true);
     buildCards($('optGun'), GUNS, 'gun', g => `Chargeur ${g.mag} · recharge ${String(g.reload).replace('.', ',')} s · ${g.info}`);
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
@@ -1984,10 +2210,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
     // particules de réacteur
     const fl = flameColsOf(cfg.flame, performance.now());
-    const n = reduce ? 1 : (hyper ? 4 : 2);
+    const n = reduce ? 1 : (hyper ? 4 : 2), tr = byId(TRAILS, cfg.trail);
     for (let i = 0; i < n; i++) {
       const ex = player.x - Math.sin(player.tilt) * 18, ey = player.y + Math.cos(player.tilt) * 18;
-      parts.push({ x: ex + (Math.random() - .5) * 6, y: ey, vx: (Math.random() - .5) * 40 - player.vx * .1, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
+      parts.push({ x: ex + (Math.random() - .5) * 6, y: ey, vx: (Math.random() - .5) * 40 - player.vx * .1, vy: 160 + Math.random() * 120, life: (.3 + Math.random() * .2) * (tr.life || 1),
+        color: tr.col || fl[1 + (Math.random() < .5 ? 1 : 0)], size: tr.size || 3, shape: tr.shape });
     }
 
     // tir manuel avec chargeur limité
@@ -2906,8 +3133,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
       // particules
       for (const p of parts) {
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.color;
-        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.color; ctx.strokeStyle = p.color;
+        const z = p.size;
+        if (!p.shape) ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z);
+        else if (p.shape === 'pixel') ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, z, z);
+        else if (p.shape === 'bubble') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.x, p.y, z * (1.4 - p.life), 0, 7); ctx.stroke(); }
+        else if (p.shape === 'glow') { ctx.globalAlpha *= .5; ctx.beginPath(); ctx.arc(p.x, p.y, z * Math.min(1, p.life), 0, 7); ctx.fill(); }
+        else if (p.shape === 'heart') {
+          ctx.beginPath(); ctx.moveTo(p.x, p.y + z * .6);
+          ctx.bezierCurveTo(p.x - z, p.y - z * .2, p.x - z * .5, p.y - z, p.x, p.y - z * .35);
+          ctx.bezierCurveTo(p.x + z * .5, p.y - z, p.x + z, p.y - z * .2, p.x, p.y + z * .6); ctx.fill();
+        } else {
+          ctx.beginPath();
+          for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? z * .25 : z; ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); }
+          ctx.closePath(); ctx.fill();
+        }
       }
       ctx.globalAlpha = 1;
 
