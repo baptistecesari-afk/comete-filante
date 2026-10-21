@@ -244,6 +244,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .wcard:disabled { cursor: not-allowed; filter: grayscale(.85); opacity: .5; }
 .wcard:disabled .wicon { filter: none; }
 @media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
+.wbosses { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wbosses > span { font-size: 13px; color: var(--muted); }
+.wbosses > span b { color: var(--star); font-weight: 600; }
+.bgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 76px)); gap: 6px; justify-content: center; width: 100%; }
+.btile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; background: var(--night); border: 2px solid color-mix(in srgb, var(--w2) 45%, transparent); }
+.btile img { width: 52px; height: 52px; }
+.btile i { font-style: normal; font-size: 10px; line-height: 1.15; text-align: center; color: var(--ink); min-height: 2.3em; display: grid; place-items: center; }
+.btile.hide { border-style: dashed; border-color: color-mix(in srgb, var(--muted) 35%, transparent); }
+.btile.hide img { filter: brightness(0) drop-shadow(0 0 1.5px #b3a9e0); }
+.btile.hide i { color: var(--muted); font-family: var(--display); }
+@media (max-width: 440px) { .bgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .btile img { width: 40px; height: 40px; } }
 
 /* Sauvegarde */
 .savesum { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
@@ -445,6 +456,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="worldpick" id="worldPick">
       <b>Choisis ton monde</b>
       <div class="worlds" id="worldChips"></div>
+      <div class="wbosses" id="worldBosses"></div>
     </div>
     <div class="row">
       <button class="play" id="startBtn">Jouer</button>
@@ -646,7 +658,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 <script>
 (() => {
   const cv = document.getElementById('game');
-  const ctx = cv.getContext('2d');
+  let ctx = cv.getContext('2d');
   const pv = document.getElementById('preview');
   const pctx = pv.getContext('2d');
   const $ = id => document.getElementById(id);
@@ -2716,6 +2728,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       el.appendChild(b);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
+    renderWorldBosses();
+  }
+  // collection du monde choisi : les boss vaincus en portrait, les autres en silhouette « ??? »
+  function renderWorldBosses() {
+    const w = WORLDS[startWorld], el = $('worldBosses');
+    const won = w.bosses.filter(d => beaten.includes(d.id)).length;
+    el.style.setProperty('--w2', w.col[1]);
+    el.innerHTML = `<span>${w.icon} ${w.name} · <b>${won}/10</b> boss vaincus</span><div class="bgrid">` + w.bosses.map((d, i) => {
+      const ok = beaten.includes(d.id);
+      return `<div class="btile${ok ? '' : ' hide'}" title="${ok ? `${d.name} · ${d.place}` : `Boss ${i + 1} : pas encore vaincu`}">`
+        + `<img src="${bossPortrait(d)}" alt="${ok ? d.name : 'Boss inconnu'}"><i>${ok ? d.name : '???'}</i></div>`;
+    }).join('') + '</div>';
+  }
+  // portrait d'un boss : on le dessine une seule fois dans une petite image
+  const portraits = {};
+  function bossPortrait(d) {
+    if (portraits[d.id]) return portraits[d.id];
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const main = ctx, p = player;
+    ctx = c.getContext('2d'); player = { x: 0, y: 400 };
+    try {
+      ctx.translate(64, 66); ctx.scale(.85, .85);
+      drawBoss({ kind: 'alien', type: 'boss', boss: true, def: d, x: 0, y: 0, r: d.r, flat: !!d.flat, hp: 1, maxHp: 1,
+        t: 0, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: true, trail: [], breath: 0, burstT: 0, claw: 0, invuln: 0 }, 0);
+    } catch (e) {}
+    ctx = main; player = p;
+    return (portraits[d.id] = c.toDataURL());
   }
   renderWorldPick();
 
