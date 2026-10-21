@@ -449,6 +449,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   <div class="card">
     <h1 style="font-size:56px">Pause</h1>
     <button class="play" id="resumeBtn">Reprendre</button>
+    <button class="ghost" id="quitBtn">Quitter la partie</button>
+    <p>Si tu quittes, les points de cette partie sont quand même ajoutés au Hangar.</p>
   </div>
 </div>
 
@@ -1547,6 +1549,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('againBtn').onclick = start;
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
+  // quitter depuis la pause : on garde les points et on revient au menu
+  $('quitBtn').onclick = () => {
+    if (state !== 'pause') return;
+    shop.credits += score; saveShop();
+    if (score > best) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
+    state = 'menu';
+    for (const id of ['paused', 'pauseBtn', 'powerBtn', 'weapons', 'cine']) $(id).hidden = true;
+    $('banner').classList.remove('show');
+    reset(); resetScenery(false); renderAtelier();
+    $('menu').hidden = false;
+  };
 
   // --- contrôles ---
   addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); });
