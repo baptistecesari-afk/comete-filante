@@ -217,11 +217,31 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .bossitem.won b { color: var(--star); }
 .worldhead { grid-column: 1 / -1; margin: 10px 0 0; font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--tail); }
 .worldlock { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
-.worldpick { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.worldpick > span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.worldpick .chips { justify-content: center; }
-.worldpick .chip { font-size: 14px; padding: 6px 12px; }
-.worldpick .chip:disabled { opacity: .45; cursor: not-allowed; }
+/* Choix du monde de départ, dans le menu */
+.worldpick { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.worldpick > b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--star); letter-spacing: .04em; }
+.worlds { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+.wcard {
+  position: relative; width: 88px; padding: 10px 6px 8px; box-sizing: border-box; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  font: inherit; color: var(--ink); border-radius: 16px;
+  background: linear-gradient(160deg, var(--w1), color-mix(in srgb, var(--w2) 35%, var(--night)));
+  border: 2px solid color-mix(in srgb, var(--w2) 55%, transparent);
+  transition: transform .15s, box-shadow .15s;
+}
+.wcard .wicon { font-size: 30px; line-height: 1.1; filter: drop-shadow(0 0 8px var(--w2)); }
+.wcard .wnum { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
+.wcard .wname { font-family: var(--display); font-size: 12px; line-height: 1.1; min-height: 2.2em; display: grid; place-items: center; }
+.wcard .wprog { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.wcard[aria-pressed="true"] { border-color: var(--star); box-shadow: 0 0 0 2px var(--star), 0 0 22px color-mix(in srgb, var(--w2) 70%, transparent); transform: translateY(-3px) scale(1.04); }
+.wcard[aria-pressed="true"]::after {
+  content: 'Départ'; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+  font-family: var(--display); font-size: 10px; color: var(--night); background: var(--star); border-radius: 999px; padding: 2px 8px;
+}
+.wcard:not(:disabled):hover { transform: translateY(-3px); }
+.wcard:disabled { cursor: not-allowed; filter: grayscale(.85); opacity: .5; }
+.wcard:disabled .wicon { filter: none; }
+@media (prefers-reduced-motion: reduce) { .wcard { transition: none; } }
 
 /* Histoire */
 .story { max-width: 34rem; gap: 22px; }
@@ -387,9 +407,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   <div class="card">
     <h1>Comète<br>Filante</h1>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
-    <div class="worldpick" id="worldPick" hidden>
-      <span>Monde de départ</span>
-      <div class="chips" id="worldChips"></div>
+    <div class="worldpick" id="worldPick">
+      <b>Choisis ton monde</b>
+      <div class="worlds" id="worldChips"></div>
     </div>
     <div class="row">
       <button class="play" id="startBtn">Jouer</button>
@@ -2477,11 +2497,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
 
   const WORLDS = [
-    { name: 'Voie lactée', bosses: BOSSES },
-    { name: 'Royaume de Givre', bosses: WORLD2, themes: [12, 13, 14, 15] },
-    { name: 'Forge Volcanique', bosses: WORLD3, themes: [16, 17, 18, 19] },
-    { name: 'Jungle Cosmique', bosses: WORLD4, themes: [20, 21, 22, 23] },
-    { name: 'Le Néant', bosses: WORLD5, themes: [24, 25, 26, 27] },
+    { name: 'Voie lactée', icon: '🌌', col: ['#5b3a9e', '#ff7aa8'], bosses: BOSSES },
+    { name: 'Royaume de Givre', icon: '❄️', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 13, 14, 15] },
+    { name: 'Forge Volcanique', icon: '🌋', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 17, 18, 19] },
+    { name: 'Jungle Cosmique', icon: '🌿', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 21, 22, 23] },
+    { name: 'Le Néant', icon: '🕳️', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 25, 26, 27] },
   ];
   const ALL_BOSSES = WORLDS.flatMap(w => w.bosses);
 
@@ -2498,18 +2518,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   WORLDS.forEach((w, i) => { if (i < WORLDS.length - 1 && beaten.includes(w.bosses[9].id)) worldsOpen = Math.max(worldsOpen, i + 2); });
   startWorld = Math.max(0, Math.min(worldsOpen - 1, startWorld));
   function saveWorlds() { try { localStorage.setItem('comete-mondes', JSON.stringify({ open: worldsOpen, pick: startWorld })); } catch (e) {} }
+  // cartes des 5 mondes : les mondes fermés restent visibles, avec ce qu'il faut faire pour les ouvrir
   function renderWorldPick() {
-    $('worldPick').hidden = worldsOpen < 2;
     const el = $('worldChips'); el.innerHTML = '';
     WORLDS.forEach((w, i) => {
       const b = document.createElement('button'), open = i < worldsOpen;
-      b.type = 'button'; b.className = 'chip'; b.disabled = !open;
-      b.textContent = open ? `${i + 1}. ${w.name}` : `${i + 1}. 🔒`;
-      if (!open) b.title = `Bats le dernier boss du monde ${i} pour l'ouvrir`;
+      const won = w.bosses.filter(d => beaten.includes(d.id)).length;
+      b.type = 'button'; b.className = 'wcard'; b.disabled = !open;
+      b.style.setProperty('--w1', w.col[0]); b.style.setProperty('--w2', w.col[1]);
+      b.innerHTML = `<span class="wicon">${open ? w.icon : '🔒'}</span><span class="wnum">Monde ${i + 1}</span>`
+        + `<span class="wname">${open ? w.name : '???'}</span><span class="wprog">${open ? `${won}/10 boss` : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span>`;
       b.setAttribute('aria-pressed', i === startWorld);
-      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(700, .06, 'triangle', .08); };
+      b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
+      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
       el.appendChild(b);
     });
+    $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
   }
   renderWorldPick();
 
@@ -3071,7 +3095,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ebullets = [];
       const bonus = lives < maxLives();
       if (bonus) lives++;
-      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
+      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
       sector++; bossInWorld++;
       if (sector >= 4 && run.clean) feat('intouchable');
