@@ -1508,11 +1508,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
     $('cine').hidden = true;
     resetScenery(true);
-    setTimeout(() => { if (state === 'play' && time < 3) showBanner('Secteur 1', BOSSES[0].place); }, 400);
-    $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
     updateAmmoUi();
     lastPowerUi = ''; updatePowerUi();
-    beep(440, .1, 'triangle'); setTimeout(() => beep(660, .15, 'triangle'), 90);
+    beginLaunch();
   }
 
   function gameOver() {
@@ -1551,7 +1549,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('resumeBtn').onclick = togglePause;
 
   // --- contrôles ---
+  addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); });
   addEventListener('keydown', e => {
+    if (state === 'launch') { if (!e.repeat) finishLaunch(); return; }
     if (e.target.tagName === 'INPUT') return;
     keys[e.key.toLowerCase()] = true;
     if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault();
@@ -2013,6 +2013,145 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.globalAlpha = 1;
   }
 
+  // ===== Cinématique de décollage depuis la station spatiale =====
+  const LAUNCH_DUR = 3.3;
+  let launchT = 0, lparts = [], launchBeeps = 0;
+  const easeIn = p => p * p * p;
+
+  function beginLaunch() {
+    state = 'launch'; launchT = 0; lparts = []; launchBeeps = 0;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
+  }
+  function finishLaunch() {
+    state = 'play';
+    lparts = [];
+    $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
+    // la fusée arrive par le bas de l'écran
+    player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
+    last = performance.now();
+    showBanner('Secteur 1', BOSSES[0].place);
+  }
+  function updateLaunch(dt) {
+    launchT += dt;
+    // compte à rebours sonore
+    const step = Math.floor(launchT / .4);
+    if (step > launchBeeps && step <= 3) { launchBeeps = step; beep(step < 3 ? 520 : 880, step < 3 ? .12 : .25, 'square', .08); }
+    if (launchT > 1.2 && launchBeeps === 3) { launchBeeps = 4; beep(70, 1.4, 'sawtooth', .2, 60); beep(140, 1, 'square', .06, 300); }
+    // fumée et flammes au décollage
+    if (launchT > 1.2 && launchT < 2.8) {
+      const { rx, ry } = launchRocket();
+      const n = reduce ? 1 : 5;
+      for (let i = 0; i < n; i++) {
+        const smoke = launchT < 1.7;
+        lparts.push({ x: rx + (Math.random() - .5) * 14, y: ry + 30, vx: (Math.random() - .5) * (smoke ? 320 : 60), vy: smoke ? 40 + Math.random() * 80 : 220 + Math.random() * 120,
+          life: smoke ? 1 + Math.random() * .6 : .4, r: smoke ? 8 + Math.random() * 10 : 3 + Math.random() * 3, smoke });
+      }
+    }
+    for (const p of lparts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; p.life -= dt; if (p.smoke) p.r += 14 * dt; }
+    lparts = lparts.filter(p => p.life > 0);
+    if (launchT >= LAUNCH_DUR) finishLaunch();
+  }
+  // position de la station et de la fusée selon le moment de la cinématique
+  function launchRocket() {
+    const padY = H * .6;
+    const lift = Math.max(0, launchT - 1.4) / 1.2;                 // 0 → 1 pendant la montée
+    const fall = easeIn(Math.min(1, Math.max(0, launchT - 1.6) / 1.4)); // la station s'éloigne vers le bas
+    return { rx: W / 2, ry: padY - 30 - easeIn(Math.min(1, lift)) * (padY + 120), stationY: padY + fall * H * .7, lift };
+  }
+
+  function drawStation(cx, top, t) {
+    const w = Math.min(W * .92, 420), half = w / 2;
+    ctx.save();
+    // panneaux solaires
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#6a6290'; ctx.fillRect(cx + s * (half - 10) - (s < 0 ? 30 : 0), top + 34, 30, 6);
+      ctx.fillStyle = '#1f3f8a'; ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 1;
+      const px = s < 0 ? cx - half - 70 : cx + half + 10;
+      ctx.fillRect(px, top + 16, 60, 40); ctx.strokeRect(px, top + 16, 60, 40);
+      ctx.beginPath();
+      for (let i = 1; i < 4; i++) { ctx.moveTo(px + i * 15, top + 16); ctx.lineTo(px + i * 15, top + 56); }
+      ctx.moveTo(px, top + 36); ctx.lineTo(px + 60, top + 36); ctx.stroke();
+    }
+    // coque principale
+    const g = ctx.createLinearGradient(0, top + 20, 0, top + 110);
+    g.addColorStop(0, '#9a92c4'); g.addColorStop(.5, '#5a5478'); g.addColorStop(1, '#2a2350');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.roundRect(cx - half, top + 20, w, 70, 18); ctx.fill();
+    ctx.strokeStyle = '#3a3062'; ctx.lineWidth = 2; ctx.stroke();
+    // dôme du dessous et hublots
+    ctx.fillStyle = '#4a4270'; ctx.beginPath(); ctx.ellipse(cx, top + 90, w * .25, 28, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 18; i++) { const x = cx - half + 24 + i * (w - 48) / 17; if (i % 4 !== 1) ctx.fillRect(x - 3, top + 62, 6, 5); }
+    ctx.fillStyle = '#7ad8ff';
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(cx - w * .16 + i * w * .08, top + 104, 3, 0, 7); ctx.fill(); }
+    // antennes avec voyants
+    for (const s of [-1, 1]) {
+      const ax = cx + s * (half - 34);
+      ctx.strokeStyle = '#8f86b8'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ax, top + 20); ctx.lineTo(ax, top - 26); ctx.stroke();
+      ctx.fillStyle = Math.floor(t / 300 + (s > 0 ? 1 : 0)) % 2 ? '#ff4f6d' : '#5a2030';
+      ctx.beginPath(); ctx.arc(ax, top - 28, 4, 0, 7); ctx.fill();
+    }
+    // pas de tir
+    ctx.fillStyle = '#3a3062';
+    ctx.beginPath(); ctx.moveTo(cx - 54, top + 20); ctx.lineTo(cx - 34, top); ctx.lineTo(cx + 34, top); ctx.lineTo(cx + 54, top + 20); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 5; i++) { ctx.globalAlpha = (Math.floor(t / 150) + i) % 5 === 0 ? 1 : .35; ctx.fillRect(cx - 28 + i * 13, top + 6, 5, 3); }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawLaunch(t) {
+    const { rx, ry, stationY, lift } = launchRocket();
+    ctx.save();
+    if (!reduce && launchT > 1.2 && launchT < 2.4) ctx.translate((Math.random() - .5) * 8, (Math.random() - .5) * 8);
+    // traînées d'étoiles pendant la montée
+    if (lift > 0 && !reduce) {
+      ctx.strokeStyle = 'rgba(217, 208, 255, .5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 97.3) % W, y = ((i * 211.7) + launchT * 1400) % H, len = 20 + lift * 80;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - len); ctx.stroke();
+      }
+    }
+    drawStation(W / 2, stationY, t);
+    // pinces qui retiennent la fusée, elles s'ouvrent à l'allumage
+    const open = Math.min(1, Math.max(0, launchT - 1.1) / .25);
+    if (stationY < H + 40) {
+      ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(W / 2 + s * 30, stationY + 2);
+        ctx.lineTo(W / 2 + s * (16 + open * 20), stationY - 18 - open * 6); ctx.stroke();
+      }
+    }
+    // fumée et flammes
+    for (const p of lparts) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
+      ctx.fillStyle = p.smoke ? '#d9d0ff' : byId(FLAMES, cfg.flame).c[1];
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    drawRocket(ctx, rx, ry, 1.35, cfg, t, 0, launchT > 1.2 ? 1.6 : 0);
+    ctx.restore();
+
+    // compte à rebours puis « Décollage ! »
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (launchT < 1.2) {
+      const n = 3 - Math.floor(launchT / .4), k = (launchT % .4) / .4;
+      ctx.globalAlpha = 1 - k * .6;
+      ctx.font = `${Math.round(110 - k * 30)}px Bungee, Impact, sans-serif`;
+      ctx.fillStyle = '#ffd86b'; ctx.fillText(String(n), W / 2, H * .32);
+    } else if (launchT < 2.3) {
+      ctx.globalAlpha = Math.min(1, (2.3 - launchT) * 2);
+      ctx.font = `${Math.round(Math.min(46, W / 9))}px Bungee, Impact, sans-serif`;
+      ctx.fillStyle = '#ff7aa8'; ctx.fillText('Décollage !', W / 2, H * .3);
+    }
+    ctx.globalAlpha = .7; ctx.font = '600 13px Outfit, system-ui, sans-serif'; ctx.fillStyle = '#d9d0ff';
+    ctx.fillText('Touche l\'écran pour passer', W / 2, H - 30);
+    ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+    // éclair blanc final
+    if (launchT > 2.9) { ctx.fillStyle = `rgba(255, 255, 255, ${((launchT - 2.9) / .4 * .8).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+  }
+
   function draw(t) {
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
@@ -2037,6 +2176,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
     ctx.globalAlpha = 1;
     drawScenery(t, inGame ? sector : 0);
+    if (state === 'launch') drawLaunch(t);
 
     if (playing) {
       const fl = byId(FLAMES, cfg.flame).c;
@@ -2194,6 +2334,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function loop(t) {
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (state === 'play') update(dt);
+    else if (state === 'launch') updateLaunch(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
     draw(t);
     if (state === 'hangar') drawPreview(t);
