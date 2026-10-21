@@ -216,6 +216,39 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .bossitem.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
 .bossitem.won b { color: var(--star); }
 
+/* Histoire */
+.story { max-width: 34rem; gap: 22px; }
+.kicker { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--tail); }
+.storytext { display: flex; flex-direction: column; gap: 14px; text-align: left; }
+.storytext p { margin: 0; font-size: 18px; line-height: 1.55; color: var(--ink); opacity: 0; animation: storyIn .7s ease forwards; }
+.storytext p b { color: var(--star); font-weight: 600; }
+@keyframes storyIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Cinématique d'arrivée d'un boss */
+.cine { position: fixed; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; }
+.hazard {
+  height: 34px; display: grid; place-items: center;
+  background: repeating-linear-gradient(-45deg, var(--star) 0 18px, var(--night) 18px 36px);
+  background-size: 200% 100%; animation: hazardMove 1s linear infinite;
+}
+.hazard.top { margin-top: env(safe-area-inset-top, 0px); }
+.hazard span { font-family: var(--display); font-size: 16px; letter-spacing: .3em; color: var(--night); background: var(--star); padding: 2px 12px; }
+@keyframes hazardMove { to { background-position: 51px 0; } }
+.cinecard {
+  align-self: end; justify-self: start; margin-bottom: 9vh;
+  margin-left: max(16px, env(safe-area-inset-left, 0px)); margin-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 6px; max-width: 30rem;
+  animation: cardIn .6s cubic-bezier(.2, .9, .2, 1.1) .5s both;
+}
+.cinecard small { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.cinecard b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 54px); line-height: 1; color: var(--boss, var(--tail)); text-shadow: 0 0 24px var(--boss, var(--tail)); }
+.cinecard span { font-size: 15px; color: var(--ink); }
+.cinecard q { font-size: 17px; font-style: italic; color: var(--ink); opacity: 0; animation: storyIn .6s ease 1.2s forwards; }
+@keyframes cardIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .hazard, .cinecard, .cinecard q, .storytext p { animation: none; opacity: 1; }
+}
+
 /* Hangar */
 .hangar {
   max-width: 46rem; width: 100%;
@@ -307,6 +340,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <button class="ghost" id="hangarBtn">Hangar</button>
     </div>
     <div class="row">
+      <button class="toggle" id="storyBtn">Histoire</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="soundBtn">Son : activé</button>
     </div>
@@ -346,6 +380,28 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="row">
       <button class="ghost" id="backBtn">Retour</button>
       <button class="play" id="goBtn">Décoller</button>
+    </div>
+  </div>
+</div>
+
+<div class="cine" id="cine" hidden>
+  <div class="hazard top"><span>Alerte</span></div>
+  <div class="cinecard">
+    <small id="cineNum">Boss 1 sur 10</small>
+    <b id="cineName">Vaisseau-mère</b>
+    <span id="cinePlace"></span>
+    <q id="cineQuote"></q>
+  </div>
+  <div class="hazard"><span>Boss</span></div>
+</div>
+
+<div class="panel" id="story" hidden>
+  <div class="card story">
+    <small class="kicker" id="storyKicker">Prologue</small>
+    <div class="storytext" id="storyText"></div>
+    <div class="row">
+      <button class="ghost" id="storySkip">Passer</button>
+      <button class="play" id="storyGo">Décoller</button>
     </div>
   </div>
 </div>
@@ -730,7 +786,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
-  let bossCount = 0;
+  let bossCount = 0, sector = 0, cineT = 0;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -738,7 +794,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; bossCount = 0; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; bossCount = 0; sector = 0; cineT = 0; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -802,19 +858,55 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
 
   const BOSSES = [
-    { id: 'mere', name: 'Vaisseau-mère', col: '#ff7aa8', r: 44, flat: true, desc: 'Tirs en éventail et tirs visés.' },
-    { id: 'reine', name: 'Reine Gluante', col: '#7dff8a', r: 46, desc: 'Pond des bestioles et crache de grosses gouttes.' },
-    { id: 'oeil', name: 'Œil Suprême', col: '#ff4f6d', r: 42, desc: 'Spirales de tirs, puis un regard qui te vise.' },
-    { id: 'crabe', name: 'Crabe Cosmique', col: '#ff7b4a', r: 44, desc: 'Rapide, tire avec ses deux pinces.' },
-    { id: 'meduse', name: 'Méduse Ionique', col: '#7ad8ff', r: 44, desc: 'Pluie électrique et anneaux de tirs.' },
-    { id: 'pieuvre', name: 'Pieuvre Noire', col: '#c86bff', r: 46, desc: 'Anneaux de 12 tirs et jets d\'encre.' },
-    { id: 'spectre', name: 'Le Spectre', col: '#d9d0ff', r: 40, desc: 'Se téléporte et tire dès qu\'il réapparaît.' },
-    { id: 'forteresse', name: 'Forteresse Mécanique', col: '#ffd86b', r: 48, desc: 'Murs de tirs : passe par le trou !' },
-    { id: 'dragon', name: 'Dragon Stellaire', col: '#ff9a3c', r: 46, desc: 'Souffle de feu en rafale.' },
-    { id: 'zorg', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le dernier boss. Devient furieux à mi-vie.' },
+    { id: 'mere', place: 'Orbite terrestre', quote: 'Retourne sur ta petite planète, minuscule fusée !', name: 'Vaisseau-mère', col: '#ff7aa8', r: 44, flat: true, desc: 'Tirs en éventail et tirs visés.' },
+    { id: 'reine', place: 'Marais de Vénus', quote: 'Mes enfants ont faim… et tu as l\'air délicieuse.', name: 'Reine Gluante', col: '#7dff8a', r: 46, desc: 'Pond des bestioles et crache de grosses gouttes.' },
+    { id: 'oeil', place: 'Nébuleuse de l\'Œil', quote: 'Je vois chacun de tes mouvements.', name: 'Œil Suprême', col: '#ff4f6d', r: 42, desc: 'Spirales de tirs, puis un regard qui te vise.' },
+    { id: 'crabe', place: 'Anneaux de Saturne', quote: 'Clac clac ! Personne ne traverse mes anneaux !', name: 'Crabe Cosmique', col: '#ff7b4a', r: 44, desc: 'Rapide, tire avec ses deux pinces.' },
+    { id: 'meduse', place: 'Océans de Neptune', quote: 'Approche… et tu seras électrocutée.', name: 'Méduse Ionique', col: '#7ad8ff', r: 44, desc: 'Pluie électrique et anneaux de tirs.' },
+    { id: 'pieuvre', place: 'Abysses d\'encre', quote: 'Dans le noir, tu ne verras rien venir.', name: 'Pieuvre Noire', col: '#c86bff', r: 46, desc: 'Anneaux de 12 tirs et jets d\'encre.' },
+    { id: 'spectre', place: 'Cimetière d\'étoiles', quote: 'Tu ne peux pas toucher ce que tu ne vois pas…', name: 'Le Spectre', col: '#d9d0ff', r: 40, desc: 'Se téléporte et tire dès qu\'il réapparaît.' },
+    { id: 'forteresse', place: 'Mur de fer', quote: 'PROTOCOLE ÉLIMINATION ACTIVÉ. AUCUNE ISSUE.', name: 'Forteresse Mécanique', col: '#ffd86b', r: 48, desc: 'Murs de tirs : passe par le trou !' },
+    { id: 'dragon', place: 'Soleil rouge', quote: 'Je vais réduire ta fusée en cendres !', name: 'Dragon Stellaire', col: '#ff9a3c', r: 46, desc: 'Souffle de feu en rafale.' },
+    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé quelques étoiles. Je vais toutes les éteindre !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le dernier boss. Devient furieux à mi-vie.' },
   ];
   let beaten = [];
   try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => BOSSES.some(d => d.id === x)); } catch (e) {}
+  // couleur du fond selon le secteur traversé
+  const SECTOR_BG = ['#1a1240', '#12301f', '#2a0f24', '#2e1c10', '#0f2a3a', '#1c0f30', '#22223a', '#2a2610', '#331208', '#163018'];
+
+  // --- histoire ---
+  let seenIntro = false;
+  try { seenIntro = localStorage.getItem('comete-intro') === '1'; } catch (e) {}
+  let storyMode = 'intro';
+  function showStory(mode) {
+    storyMode = mode;
+    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
+    const lines = mode === 'intro' ? [
+      'An 2187. L\'<b>Empereur Zorg</b> a volé les étoiles de la galaxie, une par une. Le ciel de la Terre s\'éteint.',
+      'Pour garder son trésor, il a placé <b>10 gardiens</b> dans 10 secteurs de l\'espace, de l\'orbite terrestre jusqu\'à son palais.',
+      `Une seule fusée est encore prête à décoller : ${n}.`,
+      'Ta mission : rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
+    ] : [
+      'L\'Empereur Zorg s\'écrase dans les ruines de son palais.',
+      `Une à une, les étoiles volées reprennent leur place. Sur Terre, tout le monde lève les yeux vers ${n}.`,
+      'Mais dans l\'ombre, l\'armée de Zorg se reforme déjà…',
+      '<b>Mission accomplie.</b> La partie continue : les gardiens reviennent, plus forts.',
+    ];
+    $('storyKicker').textContent = mode === 'intro' ? 'Prologue' : 'Épilogue';
+    $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .9).toFixed(1)}s">${l}</p>`).join('');
+    $('storySkip').hidden = mode !== 'intro';
+    $('storyGo').textContent = mode === 'intro' ? 'Décoller' : 'Continuer à jouer';
+    for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
+    $('story').hidden = false;
+    if (mode === 'ending') { state = 'story'; $('pauseBtn').hidden = true; }
+    else state = 'hangar';
+  }
+  function closeStory() {
+    $('story').hidden = true;
+    if (storyMode === 'intro') { seenIntro = true; try { localStorage.setItem('comete-intro', '1'); } catch (e) {} start(); }
+    else { state = 'play'; $('pauseBtn').hidden = false; last = performance.now(); }
+  }
+
   function renderBossList() {
     $('bossList').innerHTML = BOSSES.map((d, i) => {
       const ok = beaten.includes(d.id);
@@ -854,6 +946,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
   }
 
+  const CINE_DUR = reduce ? 2.4 : 3.4;
   function spawnBoss() {
     const idx = bossCount % BOSSES.length, def = BOSSES[idx], cycle = Math.floor(bossCount / BOSSES.length);
     bossCount++;
@@ -861,8 +954,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
-    showBanner(def.name, `Boss ${idx + 1} sur 10`);
-    beep(110, .8, 'sawtooth', .16, 60);
+    // cinématique : on nettoie l'écran, alerte, carte du boss
+    for (const it of items) if (it !== boss && (it.kind === 'rock' || it.kind === 'alien')) { it.dead = true; burst(it.x, it.y, '#8f86b8', 6, 120, 3); }
+    ebullets = [];
+    cineT = CINE_DUR;
+    const c = $('cine');
+    c.style.setProperty('--boss', def.col);
+    $('cineNum').textContent = `Boss ${idx + 1} sur 10 · ${def.place}`;
+    $('cineName').textContent = def.name;
+    $('cinePlace').textContent = cycle ? `Il revient, plus fort (${cycle + 1}e fois).` : '';
+    $('cineQuote').textContent = def.quote;
+    c.hidden = true; void c.offsetWidth; c.hidden = false;
+    for (const id of ['weapons', 'powerBtn']) $(id).hidden = true;
+    $('banner').classList.remove('show');
+    for (let i = 0; i < 4; i++) setTimeout(() => beep(i % 2 ? 520 : 390, .28, 'square', .07), i * 330);
+    setTimeout(() => beep(90, 1.1, 'sawtooth', .16, 40), 1500);
   }
 
   function updateAlien(it, dt, slow) {
@@ -1278,6 +1384,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       if (bonus) lives++;
       if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
+      sector++;
+      const next = BOSSES[sector % BOSSES.length];
+      if (it.def.id === 'zorg') setTimeout(() => { if (state === 'play') showStory('ending'); }, 1800);
+      else setTimeout(() => { if (state === 'play') showBanner(`Secteur ${sector + 1}`, next.place); }, 2200);
       beep(200, .9, 'sawtooth', .18, -150); setTimeout(() => beep(660, .3, 'triangle', .14, 400), 250);
     } else {
       const col = { kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
@@ -1395,7 +1505,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function start() {
     initAudio();
     reset(); state = 'play';
-    for (const id of ['menu', 'over', 'paused', 'hangar']) $(id).hidden = true;
+    for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
+    $('cine').hidden = true;
+    setTimeout(() => { if (state === 'play' && time < 3) showBanner('Secteur 1', BOSSES[0].place); }, 400);
     $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
     updateAmmoUi();
     lastPowerUi = ''; updatePowerUi();
@@ -1428,7 +1540,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; last = performance.now(); }
   }
 
-  $('startBtn').onclick = start;
+  const play = () => { if (seenIntro) start(); else { initAudio(); showStory('intro'); } };
+  $('startBtn').onclick = play;
+  $('storyBtn').onclick = () => { initAudio(); showStory('intro'); };
+  $('storyGo').onclick = closeStory;
+  $('storySkip').onclick = closeStory;
   $('againBtn').onclick = start;
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
@@ -1442,7 +1558,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (e.key === 'Escape' && state === 'hangar') closeHangar();
     if (state === 'play' && e.key.toLowerCase() === 'r' && !e.repeat) tryReload();
     if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift')) activatePower();
-    else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && !e.repeat) start();
+    else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && !e.repeat) { if (state === 'menu') play(); else start(); }
   });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
@@ -1546,12 +1662,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (comboT > 0) { comboT -= dt; if (comboT <= 0 && combo) { combo = 0; updateHud(); } }
 
     // apparition
-    if (infAt !== null && time >= infAt) {
+    if (infAt !== null && time >= infAt && cineT <= 0) {
       infAt = null;
       items.push({ kind: 'infini', x: 40 + Math.random() * (W - 80), y: -20, r: 14, vy: 105, rot: 0 });
       pop(W / 2, 130, 'Caisse ∞ en approche !', '#ff9a3c');
     }
-    spawnT -= dt * slow;
+    if (cineT > 0) {
+      cineT -= dt;
+      if (cineT <= 0) { $('cine').hidden = true; $('weapons').hidden = false; $('powerBtn').hidden = false; showBanner('Combat !', boss ? boss.def.name : ''); }
+    }
+    if (cineT <= 0) spawnT -= dt * slow;
     if (spawnT <= 0) { spawn(); spawnT = Math.max(.18, .7 / speed) * (.6 + Math.random() * .8) * (boss ? 1.8 : 1); }
 
     for (const it of items) {
@@ -1559,6 +1679,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       if (it.hitT > 0) it.hitT -= dt;
 
       if (it.kind === 'alien') {
+        if (it.boss && cineT > 0) continue;
         updateAlien(it, dt, slow);
         if (it.dead) continue;
       } else {
@@ -1705,10 +1826,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#0b0820'); g.addColorStop(1, '#1a1240');
+    const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story';
+    g.addColorStop(0, '#0b0820'); g.addColorStop(1, SECTOR_BG[(inGame ? sector : 0) % SECTOR_BG.length]);
     ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
 
-    const playing = state === 'play' || state === 'pause' || state === 'over';
+    const playing = inGame;
     const on = playing && power.active > 0;
     const pid = power.def.id;
     const slow = on && pid === 'temps' ? .35 : 1;
@@ -1851,6 +1973,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ctx.fillStyle = boss.def.col; ctx.fillRect(bx, by, bw * Math.max(0, boss.hp / boss.maxHp), 8);
     }
 
+    if (cineT > 0 && boss && playing) {
+      const k = 1 - cineT / CINE_DUR, fade = Math.min(1, cineT * 2);
+      ctx.fillStyle = `rgba(11, 8, 32, ${(Math.min(.78, k * 3) * fade).toFixed(3)})`; ctx.fillRect(0, 0, W, H);
+      const z = reduce ? 1.7 : 1.1 + Math.min(1, k * 2.5) * .6;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, k * 4) * fade;
+      ctx.translate(W / 2, H * .36); ctx.scale(z, z);
+      drawBoss({ ...boss, x: 0, y: 0, hitT: 0 }, t);
+      ctx.restore();
+    }
     if (slow < 1) { ctx.fillStyle = 'rgba(122, 216, 255, .08)'; ctx.fillRect(0, 0, W, H); }
     if (flash > 0) {
       ctx.fillStyle = `rgba(${flashColor}, ${(flash * .8).toFixed(3)})`;

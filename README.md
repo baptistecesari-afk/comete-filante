@@ -9,7 +9,13 @@ Un jeu d'arcade dans le navigateur : tu pilotes une fusée, tu tires sur les ext
 
 Tu peux aussi télécharger `index.html` et l'ouvrir dans ton navigateur.
 
+## Histoire
+
+An 2187. L'Empereur Zorg a volé les étoiles de la galaxie et placé 10 gardiens dans 10 secteurs de l'espace. Ta fusée est la dernière à pouvoir décoller : traverse les secteurs, bats les gardiens et rallume le ciel.
+
 ## Ce qu'il y a dans le jeu
+
+- Un prologue, 10 secteurs à traverser, une cinématique à l'arrivée de chaque boss et un épilogue après l'Empereur Zorg.
 
 - Le **Hangar** : personnalisation (nom, modèle, couleur, flamme, pistolet, super-pouvoir, à débloquer avec tes points) et **compétences** (chargeur, recharge, dégâts, vies…).
 - 3 pistolets avec chargeur limité, et la **recharge parfaite** qui donne des balles dorées.
