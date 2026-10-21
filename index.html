@@ -250,6 +250,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 }
 
 /* Trophées */
+#optTrophyShips { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.shipcard { flex-direction: row !important; align-items: center; gap: 12px !important; }
+.shipcard canvas { width: 64px; height: 64px; flex: none; border-radius: 12px; background: radial-gradient(circle at 50% 40%, var(--deep), var(--night)); }
+.shipcard div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.shipcard.locked canvas { filter: grayscale(.8) brightness(.7); }
 .shiptitle { font-size: 13px; color: var(--star); text-align: center; min-height: 1em; }
 .tcol { display: flex; flex-direction: column; gap: 10px; }
 .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
@@ -395,6 +400,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         <input id="shipName" maxlength="16" autocomplete="off" spellcheck="false">
       </div>
       <div class="opt"><span>Modèle</span><div class="chips" id="optModel"></div></div>
+      <div class="opt"><span>Vaisseaux de trophée</span><div class="powers" id="optTrophyShips"></div></div>
       <div class="opt"><span>Couleur</span><div class="chips" id="optColor"></div></div>
       <div class="opt"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
       <div class="opt"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
@@ -533,8 +539,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'classique', name: 'Classique' },
     { id: 'navette', name: 'Navette' },
     { id: 'eclair', name: 'Éclair' },
-    { id: 'predateur', name: 'Prédateur' },
-    { id: 'legende', name: 'Légende' },
+    { id: 'predateur', name: 'Prédateur', desc: 'Chasseur à armure noire, visière rouge, deux réacteurs et canons latéraux.' },
+    { id: 'legende', name: 'Légende', desc: 'Vaisseau blanc et or avec auréole, cockpit diamant et étincelles.' },
   ];
   const COLORS = [
     { id: 'rouge', name: 'Rouge', hex: '#ff5a6e' },
@@ -1034,8 +1040,28 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       el.appendChild(b);
     }
   }
+  // vaisseaux gagnés avec les trophées : une carte avec aperçu, trophée à gagner et progression
+  function buildShipCards() {
+    const el = $('optTrophyShips'); el.innerHTML = '';
+    for (const m of MODELS.filter(x => trophyOf('model', x.id))) {
+      const t = trophyOf('model', m.id), got = owns('model', m.id), on = shown('model') === m.id;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'pcard shipcard' + (got ? '' : ' locked'); b.id = `opt-model-${m.id}`;
+      b.setAttribute('aria-pressed', on);
+      const cvs = document.createElement('canvas'); cvs.width = 128; cvs.height = 128;
+      const prog = t.feat ? t.text : `${Math.min(t.goal, statOf(t.stat))} / ${t.goal} ${STAT_UNITS[t.stat]}`;
+      const info = document.createElement('div');
+      info.innerHTML = `<b>${m.name}</b><span>${m.desc}</span><em>${got ? (cfg.model === m.id ? 'Équipé' : 'Débloqué · clique pour le piloter') : `Trophée ${trophyName(t)} · ${prog}`}</em>`;
+      b.append(cvs, info);
+      b.onclick = () => pick('model', m.id);
+      el.appendChild(b);
+      const k = cvs.getContext('2d');
+      drawRocket(k, 64, 60, 1.6, { ...cfg, model: m.id }, 0, 0, 0);
+    }
+  }
   function refreshHangar() {
-    buildChips($('optModel'), MODELS, 'model');
+    buildChips($('optModel'), MODELS.filter(m => !trophyOf('model', m.id)), 'model');
+    buildShipCards();
     buildChips($('optColor'), COLORS, 'color', true);
     buildChips($('optFlame'), FLAMES, 'flame', true);
     buildChips($('optShot'), SHOTS, 'shot', true);
