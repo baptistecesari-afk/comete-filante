@@ -49,6 +49,7 @@ body {
 .stat.mid { align-items: center; text-align: center; }
 .lives { display: flex; gap: 6px; margin-top: 4px; }
 .lives i { width: 12px; height: 12px; border-radius: 50%; background: var(--tail); box-shadow: 0 0 10px var(--tail); }
+.lives i.extra { background: var(--star); box-shadow: 0 0 10px var(--star); }
 .lives i.lost { background: transparent; box-shadow: inset 0 0 0 2px var(--rock); }
 .combo { color: var(--star); font-family: var(--display); font-size: 14px; min-height: 18px; }
 .btn-pause {
@@ -570,6 +571,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>★</span><span>+10 points, multiplié par ton combo</span>
       <span>◆</span><span>Bouclier pendant 5 secondes</span>
       <span>⚡</span><span>Recharge ton super-pouvoir tout de suite</span>
+      <span>♥</span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
+      <span>1UP</span><span>Tous les 2 500 points, tu gagnes une vie bonus.</span>
       <span>∞</span><span>Caisse orange : tirs illimités et plus rapides pendant 30 secondes. Elle tombe une fois tous les 2 niveaux (niveaux 1, 3, 5…).</span>
       <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
       <span>Niv.</span><span>Toutes les 20 secondes, le niveau monte et le jeu accélère. Quand un boss arrive, tu restes au même niveau tant que tu ne l'as pas battu.</span>
@@ -970,6 +973,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   const up = id => shop.up[id] || 0;
   const cost = u => Math.round(u.base * Math.pow(1.6, up(u.id)));
   const maxLives = () => 3 + up('blindage');
+  const lifeCap = () => maxLives() + 2;
+  // gagner une vie (cœur, 1UP, boss) ; si on est au maximum, ça donne des points
+  function gainLife(x, y, label) {
+    if (lives < lifeCap()) {
+      lives++; pop(x, y, label, '#ff7aa8');
+      burst(x, y, '#ff7aa8', 22, 200); flash = .25; flashColor = '255, 122, 168';
+      beep(523, .1, 'triangle', .1); setTimeout(() => beep(659, .1, 'triangle', .1), 90); setTimeout(() => beep(1046, .25, 'triangle', .1), 180);
+    } else { score += 100; pop(x, y, 'Vies au max · +100', '#ff7aa8'); beep(880, .12, 'triangle', .08); }
+    updateHud();
+  }
   const infMax = () => 30 + 5 * up('infini');
 
   function renderAtelier() {
@@ -1673,7 +1686,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
-  let run = { perfect: 0, bossHit: false, clean: true }, bh = null, starT = 0, cloneT = 0, ringT = 0;
+  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
@@ -1684,7 +1697,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500 }; runTrophies = []; bh = null; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -1704,7 +1717,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('level').textContent = level;
     $('levelLabel').textContent = `Monde ${world + 1} · Niveau`;
     $('combo').textContent = combo > 1 ? 'combo ×' + combo : '';
-    $('lives').innerHTML = Array.from({ length: maxLives() }, (_, i) => `<i class="${i < lives ? '' : 'lost'}"></i>`).join('');
+    $('lives').innerHTML = Array.from({ length: Math.max(maxLives(), lives) }, (_, i) => `<i class="${i < lives ? '' : 'lost'}${i >= maxLives() ? ' extra' : ''}"></i>`).join('');
   }
 
   let lastPowerUi = '';
@@ -1733,8 +1746,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (r < .955) {
       const s = 14 + Math.random() * 22;
       items.push({ kind: 'rock', x, y: -40, r: s, hp: s > 28 ? 3 : s > 20 ? 2 : 1, hitT: 0, vy: 140 + Math.random() * 110, vx: (Math.random() - .5) * 60, rot: Math.random() * 6, vr: (Math.random() - .5) * 2, shape: Array.from({ length: 9 }, () => .75 + Math.random() * .35) });
-    } else if (r < .978) items.push({ kind: 'shield', x, y: -20, r: 12, vy: 110, rot: 0 });
-    else items.push({ kind: 'charge', x, y: -20, r: 12, vy: 115, rot: 0 });
+    } else if (r < .972) items.push({ kind: 'shield', x, y: -20, r: 12, vy: 110, rot: 0 });
+    else if (r < .988) items.push({ kind: 'charge', x, y: -20, r: 12, vy: 115, rot: 0 });
+    else items.push({ kind: 'vie', x, y: -20, r: 13, vy: 100, rot: 0 });
   }
 
   // ===== Aliens : espèces, boss et dessins =====
@@ -3277,7 +3291,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       burst(it.x, it.y, it.def.col, 60, 380, 5); burst(it.x, it.y, '#ffd86b', 40, 300, 5);
       shake = .6; flash = .5; flashColor = '200, 255, 210';
       ebullets = [];
-      const bonus = lives < maxLives();
+      const bonus = lives < lifeCap();
       if (bonus) lives++;
       if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
@@ -3636,6 +3650,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       items.push({ kind: 'infini', x: 40 + Math.random() * (W - 80), y: -20, r: 14, vy: 105, rot: 0 });
       pop(W / 2, 130, 'Caisse ∞ en approche !', '#ff9a3c');
     }
+    // 1UP : une vie bonus tous les 2 500 points
+    if (score >= run.nextLife) { run.nextLife += 2500; gainLife(player.x, player.y - 46, '1UP !'); }
     if (cineT > 0) {
       cineT -= dt;
       if (cineT <= 0) { $('cine').hidden = true; $('weapons').hidden = false; $('powerBtn').hidden = false; showBanner('Combat !', `Bats-le pour passer au niveau ${level + 1}`); }
@@ -3658,7 +3674,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       }
 
       // aimant : les étoiles et bonus sont attirés
-      if (on && pid === 'aimant' && (it.kind === 'star' || it.kind === 'shield' || it.kind === 'charge' || it.kind === 'infini')) {
+      if (on && pid === 'aimant' && (it.kind === 'star' || it.kind === 'shield' || it.kind === 'charge' || it.kind === 'infini' || it.kind === 'vie')) {
         const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
         if (d < 280 && d > 1) { it.x += dx / d * 520 * dt; it.y += dy / d * 520 * dt; }
       }
@@ -3681,6 +3697,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           it.dead = true; shield = 5; burst(it.x, it.y, '#7ad8ff', 20, 200);
           pop(it.x, it.y - 20, 'Bouclier', '#7ad8ff');
           beep(300, .3, 'sine', .15, 600);
+        } else if (it.kind === 'vie') {
+          it.dead = true; gainLife(it.x, it.y - 20, '+1 vie');
         } else if (it.kind === 'charge') {
           it.dead = true; power.cd = 0; burst(it.x, it.y, '#b6ff6b', 20, 200);
           pop(it.x, it.y - 20, 'Pouvoir rechargé', '#b6ff6b');
@@ -5034,6 +5052,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         } else if (it.kind === 'shield') {
           ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 20; ctx.fillStyle = '#7ad8ff';
           ctx.beginPath(); ctx.moveTo(it.x, it.y - it.r); ctx.lineTo(it.x + it.r, it.y); ctx.lineTo(it.x, it.y + it.r); ctx.lineTo(it.x - it.r, it.y); ctx.fill();
+        } else if (it.kind === 'vie') {
+          const z = it.r * (1 + (reduce ? 0 : Math.abs(Math.sin(t / 180)) * .18));
+          ctx.shadowColor = '#ff7aa8'; ctx.shadowBlur = 22; ctx.fillStyle = '#ff4f8a';
+          ctx.beginPath(); ctx.moveTo(it.x, it.y + z * .8);
+          ctx.bezierCurveTo(it.x - z * 1.3, it.y - z * .1, it.x - z * .7, it.y - z * 1.1, it.x, it.y - z * .45);
+          ctx.bezierCurveTo(it.x + z * .7, it.y - z * 1.1, it.x + z * 1.3, it.y - z * .1, it.x, it.y + z * .8); ctx.fill();
+          ctx.shadowBlur = 0; ctx.fillStyle = '#ffd0e0'; ctx.beginPath(); ctx.ellipse(it.x - z * .38, it.y - z * .4, z * .18, z * .12, -.6, 0, 7); ctx.fill();
         } else if (it.kind === 'charge') {
           ctx.shadowColor = '#b6ff6b'; ctx.shadowBlur = 20; ctx.strokeStyle = '#b6ff6b'; ctx.lineWidth = 2;
           ctx.beginPath(); ctx.arc(it.x, it.y, it.r + 3, 0, 7); ctx.stroke();
