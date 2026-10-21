@@ -216,29 +216,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .bossitem.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
 .bossitem.won b { color: var(--star); }
 
-/* Trophées */
-#trophies .wallet, #trophies .opt { grid-column: 1 / -1; }
-.tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
-.tcard { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 12px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
-.tcard b { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--muted); }
-.tcard span { font-size: 13px; color: var(--muted); line-height: 1.4; }
-.tcard em { font-style: normal; font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
-.tcard.won { border-style: solid; border-color: color-mix(in srgb, var(--star) 60%, transparent); }
-.tcard.won b { color: var(--star); }
-.tcard.won em { color: var(--star); }
-.tbar { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 30%, transparent); overflow: hidden; }
-.tbar i { display: block; height: 100%; background: var(--star); }
-.shiptitle { font-size: 13px; color: var(--star); text-align: center; min-height: 1em; }
-.toast {
-  position: fixed; left: 50%; top: calc(86px + env(safe-area-inset-top, 0px)); transform: translate(-50%, -12px);
-  max-width: calc(100% - 32px); box-sizing: border-box; pointer-events: none;
-  padding: 10px 16px; border-radius: 14px; background: var(--panel); border: 2px solid var(--star);
-  text-align: center; font-size: 15px; opacity: 0; transition: opacity .3s, transform .3s;
-}
-.toast b { display: block; font-family: var(--display); font-weight: 400; font-size: 13px; color: var(--star); letter-spacing: .08em; }
-.toast.show { opacity: 1; transform: translate(-50%, 0); }
-@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
-
 /* Histoire */
 .story { max-width: 34rem; gap: 22px; }
 .kicker { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--tail); }
@@ -271,6 +248,36 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 @media (prefers-reduced-motion: reduce) {
   .hazard, .cinecard, .cinecard q, .storytext p { animation: none; opacity: 1; }
 }
+
+/* Trophées */
+.tcol { display: flex; flex-direction: column; gap: 10px; }
+.tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.tier { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
+.tier.won { border: 2px solid var(--tier); box-shadow: 0 0 16px color-mix(in srgb, var(--tier) 35%, transparent); }
+.tierhead { display: flex; align-items: center; gap: 8px; }
+.tierhead b { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--tier); }
+.tier span { font-size: 13px; color: var(--ink); line-height: 1.4; }
+.tier em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.tier.won em { color: var(--star); }
+.medal { width: 26px; height: 26px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 30%, #ffffff, var(--tier) 45%, color-mix(in srgb, var(--tier) 50%, #000000)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier) 60%, transparent); }
+.tier:not(.won) .medal { filter: grayscale(1) brightness(.6); }
+.bar { height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--muted) 25%, transparent); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--tier); }
+.toast {
+  position: fixed; left: 50%; top: calc(76px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 5;
+  display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 16px;
+  background: var(--panel); border: 2px solid var(--tier, var(--star));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .5), 0 0 24px color-mix(in srgb, var(--tier, var(--star)) 40%, transparent);
+  width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; pointer-events: none;
+  animation: toastIn .5s cubic-bezier(.2, .9, .2, 1.2);
+}
+.toast .medal { width: 40px; height: 40px; }
+.toast div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.toast small { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.toast b { font-family: var(--display); font-weight: 400; font-size: 16px; color: var(--tier, var(--star)); }
+.toast span { font-size: 13px; color: var(--ink); }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -20px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
 
 /* Hangar */
 .hangar {
@@ -353,7 +360,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 </div>
 
 <div class="banner" id="banner"></div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="panel" id="menu">
   <div class="card">
@@ -362,10 +368,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="row">
       <button class="play" id="startBtn">Jouer</button>
       <button class="ghost" id="hangarBtn">Hangar</button>
+      <button class="ghost" id="trophyBtn">Trophées</button>
     </div>
     <div class="row">
       <button class="toggle" id="storyBtn">Histoire</button>
-      <button class="toggle" id="trophyBtn">Trophées</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="soundBtn">Son : activé</button>
     </div>
@@ -378,7 +384,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="preview" id="persoPreview">
       <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
       <div class="shipname" id="pvName"></div>
-      <div class="shiptitle" id="pvTitle"></div>
       <div class="powername" id="pvPower"></div>
       <div class="powername" id="pvPoints"></div>
     </div>
@@ -390,6 +395,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <div class="opt"><span>Modèle</span><div class="chips" id="optModel"></div></div>
       <div class="opt"><span>Couleur</span><div class="chips" id="optColor"></div></div>
       <div class="opt"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
+      <div class="opt"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
       <div class="opt"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
       <div class="opt"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
       <div class="opt" id="skills">
@@ -432,6 +438,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   </div>
 </div>
 
+<div class="toast" id="toast" hidden>
+  <i class="medal"></i>
+  <div><small>Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
+</div>
+
+<div class="panel" id="trophies" hidden>
+  <div class="hangar atelier">
+    <h2>Trophées</h2>
+    <p class="wallet" id="trophyCount"></p>
+    <div class="tcol" id="trophyList"></div>
+    <div class="row">
+      <button class="play" id="trophyBack">Retour</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="help" hidden>
   <div class="hangar atelier">
     <h2>Comment jouer</h2>
@@ -442,6 +464,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
       <span>Hangar</span><span>Tous les points que tu marques servent à débloquer des objets et acheter des améliorations dans le Hangar.</span>
       <span>Aliens</span><span>7 espèces, avec de nouvelles qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
+      <span>Trophées</span><span>4 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un des 10 boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
       <span>Pouvoir</span><span>Espace, ou le bouton en bas à droite. Il se recharge tout seul.</span>
       <span>★</span><span>+10 points, multiplié par ton combo</span>
@@ -459,21 +482,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   </div>
 </div>
 
-<div class="panel" id="trophies" hidden>
-  <div class="hangar atelier">
-    <h2>Trophées</h2>
-    <p class="wallet" id="trophySummary"></p>
-    <div class="opt" id="titleOpt">
-      <span>Titre affiché sous le nom de ta fusée</span>
-      <div class="chips" id="optTitle"></div>
-    </div>
-    <div class="upsec" id="trophyList"></div>
-    <div class="row">
-      <button class="play" id="trophyBack">Retour</button>
-    </div>
-  </div>
-</div>
-
 <div class="panel" id="over" hidden>
   <div class="card">
     <p id="overTitle">Ta fusée s'est écrasée</p>
@@ -482,6 +490,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     <div class="row">
       <button class="play" id="againBtn">Rejouer</button>
       <button class="ghost" id="overHangarBtn">Hangar</button>
+      <button class="ghost" id="overTrophyBtn">Trophées</button>
     </div>
   </div>
 </div>
@@ -518,6 +527,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'classique', name: 'Classique' },
     { id: 'navette', name: 'Navette' },
     { id: 'eclair', name: 'Éclair' },
+    { id: 'predateur', name: 'Prédateur' },
+    { id: 'legende', name: 'Légende' },
   ];
   const COLORS = [
     { id: 'rouge', name: 'Rouge', hex: '#ff5a6e' },
@@ -526,17 +537,35 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'violet', name: 'Violet', hex: '#b48cff' },
     { id: 'orange', name: 'Orange', hex: '#ff9a3c' },
     { id: 'blanc', name: 'Blanc', hex: '#eef0ff' },
-    // couleurs exclusives : elles se gagnent avec un trophée
-    { id: 'vertalien', name: 'Vert alien', hex: '#7dff8a' },
-    { id: 'chrome', name: 'Chrome', hex: '#a8b8d8' },
+    { id: 'emeraude', name: 'Émeraude', hex: '#1fd18b', grad: ['#9dffd6', '#1fd18b', '#0a6b45'] },
+    { id: 'amethyste', name: 'Améthyste néon', hex: '#b14dff', grad: ['#f0c8ff', '#b14dff', '#4a1580'] },
+    { id: 'chrome', name: 'Chrome doré', hex: '#ffd86b', grad: ['#fffaf0', '#ffd86b', '#a8742a', '#fff2b0', '#c4902a'] },
+    { id: 'blinde', name: 'Blindé', hex: '#8f9bb0', grad: ['#e6ecf5', '#8f9bb0', '#3a4252', '#b8c2d4'] },
   ];
   const FLAMES = [
     { id: 'feu', name: 'Feu', c: ['#fff2b0', '#ff9a3c', '#ff3c3c'] },
     { id: 'plasma', name: 'Plasma', c: ['#e6f9ff', '#7ad8ff', '#6a5cff'] },
     { id: 'toxique', name: 'Toxique', c: ['#f0ffd0', '#b6ff6b', '#2fbf71'] },
     { id: 'rose', name: 'Bonbon', c: ['#fff0f7', '#ffc2e0', '#ff7aa8'] },
-    { id: 'fantome', name: 'Fantôme', c: ['#ffffff', '#d9d0ff', '#8a7cc8'] },
+    { id: 'aurore', name: 'Aurore', c: ['#e6fff4', '#4fe0c8', '#b14dff'] },
+    { id: 'combo', name: 'Combo', c: ['#fff0f7', '#ff4fa0', '#ff9a3c'] },
+    { id: 'arcenciel', name: 'Arc-en-ciel', rainbow: true, c: ['#ffffff', '#ff4f6d', '#7ad8ff'] },
   ];
+  // couleur des tirs ('flamme' = comme la flamme du vaisseau)
+  const SHOTS = [
+    { id: 'flamme', name: 'Comme la flamme' },
+    { id: 'emeraude', name: 'Laser émeraude', c: ['#eafff4', '#1fd18b'] },
+    { id: 'electrique', name: 'Électrique', c: ['#ffffff', '#7ad8ff'], zap: true },
+    { id: 'dore', name: 'Tir parfait doré', c: ['#fffaf0', '#ffd86b'] },
+    { id: 'arcenciel', name: 'Arc-en-ciel', rainbow: true },
+  ];
+  // couleurs de flamme, animées pour l'arc-en-ciel
+  function flameColsOf(id, t) {
+    const f = byId(FLAMES, id);
+    if (!f.rainbow) return f.c;
+    const h = (t / 8) % 360;
+    return [`hsl(${h}, 100%, 92%)`, `hsl(${h}, 100%, 62%)`, `hsl(${(h + 70) % 360}, 100%, 55%)`];
+  }
   // canons : [x, y, angle] dans le repère de la fusée
   const GUNS = [
     { id: 'blaster', name: 'Blaster', desc: 'Un seul canon qui tire très vite.', info: 'cadence rapide', rate: .16, mag: 14, reload: 1.4, barrels: [[0, -24, 0]] },
@@ -549,10 +578,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'aimant', name: 'Aimant', desc: 'Les étoiles proches foncent vers toi.', dur: 6, cd: 11 },
     { id: 'laser', name: 'Laser', desc: 'Un rayon détruit tout ce qui est devant toi.', dur: 1.4, cd: 7 },
     { id: 'nova', name: 'Nova', desc: 'Une explosion efface astéroïdes, aliens et tirs ennemis.', dur: .7, cd: 18 },
+    { id: 'tempete', name: 'Tempête d\'étoiles', desc: 'Une pluie d\'étoiles traverse l\'écran et frappe tous les ennemis.', dur: 3, cd: 13 },
+    { id: 'clone', name: 'Clones', desc: 'Deux copies de ta fusée tirent à tes côtés.', dur: 8, cd: 16 },
+    { id: 'trounoir', name: 'Trou noir', desc: 'Aspire et broie les ennemis et leurs tirs.', dur: 4, cd: 16 },
+    { id: 'supernova', name: 'Supernova divine', desc: 'Invincible, anneaux de tirs, cadence ×3 et munitions infinies.', dur: 6, cd: 24 },
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', gun: 'blaster', power: 'laser', title: '' };
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', flame: 'feu', shot: 'flamme', gun: 'blaster', power: 'laser' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -562,7 +595,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (FLAMES.some(m => m.id === saved.flame)) cfg.flame = saved.flame;
     if (GUNS.some(m => m.id === saved.gun)) cfg.gun = saved.gun;
     if (POWERS.some(m => m.id === saved.power)) cfg.power = saved.power;
-    if (typeof saved.title === 'string') cfg.title = saved.title;
+    if (SHOTS.some(m => m.id === saved.shot)) cfg.shot = saved.shot;
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
 
@@ -584,6 +617,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     flame: { plasma: 600, toxique: 600, rose: 900 },
     gun: { double: 2000, eventail: 3000 },
     power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000 },
+    shot: {},
   };
   const CATS = [
     { key: 'model', label: 'Modèle', list: MODELS },
@@ -591,57 +625,36 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { key: 'flame', label: 'Flamme', list: FLAMES },
     { key: 'gun', label: 'Pistolet', list: GUNS },
     { key: 'power', label: 'Super-pouvoir', list: POWERS },
+    { key: 'shot', label: 'Tirs', list: SHOTS },
   ];
+
+  // ===== Trophées : 4 collections, 4 paliers, des récompenses exclusives =====
+  const TIERS = [
+    { name: 'Bronze', col: '#e09a5a' },
+    { name: 'Argent', col: '#d6dcea' },
+    { name: 'Or', col: '#ffd86b' },
+    { name: 'Diamant', col: '#7ae8ff' },
+  ];
+  const COLLECTIONS = [
+    { id: 'gardiens', name: 'Gardiens', desc: 'Bats les boss gardiens.', stat: 'bosses', unit: 'boss vaincus', tiers: [1, 3, 6, 10],
+      rewards: [[['power', 'tempete']], [['power', 'clone']], [['power', 'trounoir']], [['power', 'supernova']]] },
+    { id: 'chasseur', name: 'Chasseur d\'aliens', desc: 'Détruis des aliens.', stat: 'aliens', unit: 'aliens détruits', tiers: [25, 100, 300, 750],
+      rewards: [[['color', 'emeraude']], [['color', 'amethyste']], [['color', 'chrome']], [['model', 'predateur']]] },
+    { id: 'etoiles', name: 'Attrape-étoiles', desc: 'Attrape des étoiles.', stat: 'stars', unit: 'étoiles attrapées', tiers: [100, 400, 1000, 3000],
+      rewards: [[['shot', 'emeraude']], [['flame', 'aurore']], [['shot', 'electrique']], [['flame', 'arcenciel'], ['shot', 'arcenciel']]] },
+    { id: 'exploits', name: 'Exploits', desc: 'Réussis des défis difficiles.', feats: [
+        { id: 'intact', text: 'Bats un boss sans perdre de vie' },
+        { id: 'combo15', text: 'Fais un combo ×15' },
+        { id: 'parfait5', text: 'Fais 5 recharges parfaites dans une partie' },
+        { id: 'zorg', text: 'Bats l\'Empereur Zorg' }],
+      rewards: [[['color', 'blinde']], [['flame', 'combo']], [['shot', 'dore']], [['model', 'legende']]] },
+  ];
+  const EXCL = {};
+  for (const col of COLLECTIONS) col.rewards.forEach((list, i) => list.forEach(([k, id]) => { EXCL[k + ':' + id] = { col, i }; }));
+  const rewardName = ([k, id]) => { const c = CATS.find(x => x.key === k); return `${c.label} « ${byId(c.list, id).name} »`; };
+  const trophyOf = (key, id) => EXCL[key + ':' + id];
+  const lockLabel = (key, id) => { const e = trophyOf(key, id); return e ? `Trophée ${e.col.name} ${TIERS[e.i].name}` : `${price(key, id)} pts`; };
   const price = (key, id) => PRICES[key][id] || 0;
-
-  // --- trophées : récompenses quand on atteint des paliers (compteurs gardés d'une partie à l'autre) ---
-  const STATS = {
-    aliens: 'aliens détruits',
-    gardiens: 'boss différents battus',
-    etoiles: 'étoiles attrapées',
-    rochers: 'astéroïdes détruits',
-    parfaites: 'recharges parfaites',
-  };
-  const TROPHY_GROUPS = [
-    { id: 'aliens', name: 'Chasseur d\'aliens' },
-    { id: 'gardiens', name: 'Collection de gardiens' },
-    { id: 'pilote', name: 'Pilote' },
-    { id: 'exploits', name: 'Exploits', desc: 'À réussir pendant une seule partie.' },
-  ];
-  // item = objet exclusif débloqué, title = titre affiché sous le nom de la fusée
-  const TROPHIES = [
-    { id: 'aliens1', group: 'aliens', name: 'Chasseur d\'aliens · Bronze', stat: 'aliens', goal: 50, pts: 200 },
-    { id: 'aliens2', group: 'aliens', name: 'Chasseur d\'aliens · Argent', stat: 'aliens', goal: 250, pts: 600 },
-    { id: 'aliens3', group: 'aliens', name: 'Chasseur d\'aliens · Or', stat: 'aliens', goal: 1000, pts: 1500, item: 'color:vertalien' },
-    { id: 'aliens4', group: 'aliens', name: 'Chasseur d\'aliens · Diamant', stat: 'aliens', goal: 5000, pts: 4000, title: 'Fléau des aliens' },
-    { id: 'gardiens1', group: 'gardiens', name: 'Premiers gardiens', stat: 'gardiens', goal: 3, pts: 500 },
-    { id: 'gardiens2', group: 'gardiens', name: 'Mi-chemin', stat: 'gardiens', goal: 6, pts: 1200 },
-    { id: 'gardiens3', group: 'gardiens', name: 'Tous les gardiens', stat: 'gardiens', goal: 10, pts: 0, item: 'color:chrome', title: 'Libératrice des étoiles' },
-    { id: 'etoiles1', group: 'pilote', name: 'Attrape-étoiles · Bronze', stat: 'etoiles', goal: 100, pts: 150 },
-    { id: 'etoiles2', group: 'pilote', name: 'Attrape-étoiles · Argent', stat: 'etoiles', goal: 500, pts: 500 },
-    { id: 'etoiles3', group: 'pilote', name: 'Attrape-étoiles · Or', stat: 'etoiles', goal: 2000, pts: 1500 },
-    { id: 'rochers1', group: 'pilote', name: 'Casse-cailloux · Bronze', stat: 'rochers', goal: 100, pts: 200 },
-    { id: 'rochers2', group: 'pilote', name: 'Casse-cailloux · Argent', stat: 'rochers', goal: 500, pts: 800 },
-    { id: 'parfaites1', group: 'pilote', name: 'Gâchette d\'or · Bronze', stat: 'parfaites', goal: 25, pts: 200 },
-    { id: 'parfaites2', group: 'pilote', name: 'Gâchette d\'or · Argent', stat: 'parfaites', goal: 100, pts: 600 },
-    { id: 'parfaites3', group: 'pilote', name: 'Gâchette d\'or · Or', stat: 'parfaites', goal: 500, pts: 1500 },
-    { id: 'niveau10', group: 'exploits', name: 'Endurance', desc: 'Atteindre le niveau 10.', pts: 500 },
-    { id: 'sansfaute', group: 'exploits', name: 'Sans une égratignure', desc: 'Battre un boss sans perdre de vie pendant le combat.', pts: 800 },
-    { id: 'combo10', group: 'exploits', name: 'Combo ×10', desc: 'Attraper 10 étoiles à la suite sans casser le combo.', pts: 400 },
-    { id: 'intouchable', group: 'exploits', name: 'Intouchable', desc: 'Arriver au secteur 5 sans perdre une seule vie.', pts: 2000, item: 'flame:fantome' },
-    { id: 'zorg', group: 'exploits', name: 'Chute de l\'Empire', desc: 'Battre l\'Empereur Zorg.', pts: 3000, title: 'Héroïne de la galaxie' },
-  ];
-  let tro = { v: 1, stats: {}, got: [] };
-  try {
-    const saved = JSON.parse(localStorage.getItem('comete-trophees') || '{}');
-    if (saved.stats && typeof saved.stats === 'object') for (const k in STATS) if (Number.isFinite(saved.stats[k])) tro.stats[k] = Math.max(0, Math.floor(saved.stats[k]));
-    if (Array.isArray(saved.got)) tro.got = saved.got.filter(id => TROPHIES.some(t => t.id === id));
-  } catch (e) {}
-  function saveTro() { try { localStorage.setItem('comete-trophees', JSON.stringify(tro)); } catch (e) {} }
-  const trophyOf = (key, id) => TROPHIES.find(t => t.item === key + ':' + id);
-  const titles = () => TROPHIES.filter(t => t.title && tro.got.includes(t.id)).map(t => t.title);
-  if (!titles().includes(cfg.title)) cfg.title = '';
-
   let shop = { v: 3, credits: 0, up: {}, owned: [] };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-atelier') || '{}');
@@ -652,18 +665,72 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // avant la boutique, tout était gratuit : on garde ce que le joueur avait déjà équipé
     if ((saved.v || 0) < 3) for (const c of CATS) if (price(c.key, cfg[c.key]) && !shop.owned.includes(c.key + ':' + cfg[c.key])) shop.owned.push(c.key + ':' + cfg[c.key]);
   } catch (e) {}
-  const owns = (key, id) => {
-    const t = trophyOf(key, id);
-    return t ? tro.got.includes(t.id) : !price(key, id) || shop.owned.includes(key + ':' + id);
-  };
-  // ce qu'il faut pour débloquer un objet : son prix, ou le trophée qui le donne
-  const lockText = (key, id) => { const t = trophyOf(key, id); return t ? '🏆 ' + t.name : price(key, id) + ' pts'; };
+  const owns = (key, id) => (trophyOf(key, id) ? false : !price(key, id)) || shop.owned.includes(key + ':' + id);
   for (const c of CATS) if (!owns(c.key, cfg[c.key])) cfg[c.key] = DEFAULT[c.key];
   function saveShop() { try { localStorage.setItem('comete-atelier', JSON.stringify(shop)); } catch (e) {} }
   saveShop();
+
+  // statistiques gardées d'une partie à l'autre
+  let stats = { stars: 0, aliens: 0, bosses: 0, feats: [], won: [] };
+  try {
+    const sv = JSON.parse(localStorage.getItem('comete-stats') || '{}');
+    for (const k of ['stars', 'aliens', 'bosses']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
+    if (Array.isArray(sv.feats)) stats.feats = sv.feats.filter(x => typeof x === 'string');
+    if (Array.isArray(sv.won)) stats.won = sv.won.filter(x => typeof x === 'string');
+  } catch (e) {}
+  let statsDirty = false;
+  function saveStats() { statsDirty = false; try { localStorage.setItem('comete-stats', JSON.stringify(stats)); } catch (e) {} }
+  setInterval(() => { if (statsDirty) saveStats(); }, 2000);
+  function bump(key) { stats[key]++; statsDirty = true; checkTrophies(); }
+  function feat(id) { if (!stats.feats.includes(id)) { stats.feats.push(id); statsDirty = true; checkTrophies(); } }
+  function checkTrophies() {
+    for (const col of COLLECTIONS) for (let i = 0; i < 4; i++) {
+      const id = col.id + ':' + i;
+      if (stats.won.includes(id)) continue;
+      const ok = col.stat ? stats[col.stat] >= col.tiers[i] : stats.feats.includes(col.feats[i].id);
+      if (!ok) continue;
+      stats.won.push(id);
+      for (const [k, item] of col.rewards[i]) if (!shop.owned.includes(k + ':' + item)) shop.owned.push(k + ':' + item);
+      saveShop(); saveStats(); updateTrophyBtn();
+      queueToast(col, i);
+    }
+  }
+  function updateTrophyBtn() {
+    const txt = `Trophées · ${stats.won.length}/${COLLECTIONS.length * 4}`;
+    $('trophyBtn').textContent = txt; $('overTrophyBtn').textContent = txt;
+  }
+  const toastQ = [];
+  let toastBusy = false;
+  function queueToast(col, i) { toastQ.push([col, i]); if (!toastBusy) nextToast(); }
+  function nextToast() {
+    const n = toastQ.shift(), el = $('toast');
+    if (!n) { toastBusy = false; el.hidden = true; return; }
+    toastBusy = true;
+    const [col, i] = n;
+    el.style.setProperty('--tier', TIERS[i].col);
+    $('toastTitle').textContent = `${col.name} · ${TIERS[i].name}`;
+    $('toastReward').textContent = 'Débloqué : ' + col.rewards[i].map(rewardName).join(' + ');
+    el.hidden = true; void el.offsetWidth; el.hidden = false;
+    beep(660, .12, 'triangle', .1); setTimeout(() => beep(880, .12, 'triangle', .1), 110); setTimeout(() => beep(1320, .3, 'triangle', .1), 220);
+    setTimeout(nextToast, toastQ.length > 2 ? 2200 : 3500);
+  }
+  function renderTrophies() {
+    $('trophyCount').textContent = `${stats.won.length} trophées sur ${COLLECTIONS.length * 4}. Les récompenses des trophées ne s'achètent pas : il faut les gagner.`;
+    $('trophyList').innerHTML = COLLECTIONS.map(col => `<section class="tcol"><h3 class="subhead">${col.name}</h3>
+      <p class="wallet">${col.desc}${col.stat ? ` Total : <b>${stats[col.stat]}</b> ${col.unit}.` : ''}</p>
+      <div class="tiers">${TIERS.map((tr, i) => {
+        const won = stats.won.includes(col.id + ':' + i);
+        const goal = col.stat ? col.tiers[i] : 1;
+        const val = col.stat ? Math.min(goal, stats[col.stat]) : (stats.feats.includes(col.feats[i].id) ? 1 : 0);
+        const cond = col.stat ? `${col.tiers[i]} ${col.unit}` : col.feats[i].text;
+        return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${tr.name}</b></div>
+          <span>${cond}</span><div class="bar"><i style="width:${(val / goal * 100).toFixed(0)}%"></i></div>
+          <em>${won ? 'Débloqué : ' : 'Récompense : '}${col.rewards[i].map(rewardName).join(' + ')}</em></div>`;
+      }).join('')}</div></section>`).join('');
+  }
   function buyItem(key, id) {
     const p = price(key, id);
-    if (trophyOf(key, id) || owns(key, id) || shop.credits < p) return false;
+    if (owns(key, id) || shop.credits < p) return false;
     shop.credits -= p; shop.owned.push(key + ':' + id);
     cfg[key] = id; saveShop(); saveCfg();
     beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .1, 'triangle', .1), 70); setTimeout(() => beep(1046, .18, 'triangle', .1), 140);
@@ -720,76 +787,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function initAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
   $('soundBtn').onclick = () => { soundOn = !soundOn; $('soundBtn').textContent = 'Son : ' + (soundOn ? 'activé' : 'coupé'); };
 
-  // --- trophées : gain, annonce et panneau ---
-  let runTrophies = [];
-  const statOf = k => k === 'gardiens' ? beaten.length : tro.stats[k] || 0;
-  function rewardText(t) {
-    const r = [];
-    if (t.pts) r.push(`+${t.pts} pts`);
-    if (t.item) {
-      const [key, id] = t.item.split(':'), c = CATS.find(x => x.key === key);
-      r.push(`${c.label.toLowerCase()} ${byId(c.list, id).name}`);
-    }
-    if (t.title) r.push(`titre « ${t.title} »`);
-    return r.join(' + ');
-  }
-  function award(t) {
-    if (tro.got.includes(t.id)) return;
-    tro.got.push(t.id); saveTro();
-    if (t.pts) { shop.credits += t.pts; saveShop(); renderAtelier(); }
-    if (state === 'play') runTrophies.push(t);
-    toast(t);
-  }
-  function checkTrophies() { for (const t of TROPHIES) if (t.stat && statOf(t.stat) >= t.goal) award(t); }
-  function addStat(k) { tro.stats[k] = (tro.stats[k] || 0) + 1; saveTro(); checkTrophies(); }
-  const exploit = id => award(TROPHIES.find(t => t.id === id));
-
-  // les annonces passent l'une après l'autre
-  const toastQ = [];
-  let toastBusy = false;
-  function toast(t) { toastQ.push(t); if (!toastBusy) nextToast(); }
-  function nextToast() {
-    const t = toastQ.shift(), el = $('toast');
-    if (!t) { toastBusy = false; return; }
-    toastBusy = true;
-    const b = document.createElement('b'); b.textContent = '🏆 Trophée débloqué';
-    el.replaceChildren(b, `${t.name} · ${rewardText(t)}`);
-    el.classList.add('show');
-    beep(784, .1, 'triangle', .1); setTimeout(() => beep(1046, .1, 'triangle', .1), 90); setTimeout(() => beep(1318, .22, 'triangle', .1), 180);
-    setTimeout(() => { el.classList.remove('show'); setTimeout(nextToast, 350); }, 2800);
-  }
-
-  function renderTrophies() {
-    $('trophySummary').innerHTML = `<b>${tro.got.length}</b> trophées gagnés sur ${TROPHIES.length}. Les points gagnés vont directement dans le Hangar.`;
-    const own = titles();
-    $('titleOpt').hidden = !own.length;
-    const ot = $('optTitle'); ot.innerHTML = '';
-    for (const ti of ['', ...own]) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'chip'; b.textContent = ti || 'Aucun';
-      b.setAttribute('aria-pressed', cfg.title === ti);
-      b.onclick = () => { cfg.title = ti; saveCfg(); renderTrophies(); beep(700, .06, 'triangle', .08); };
-      ot.appendChild(b);
-    }
-    const el = $('trophyList'); el.innerHTML = '';
-    for (const g of TROPHY_GROUPS) {
-      const h = document.createElement('h3'); h.className = 'subhead'; h.textContent = g.name; el.appendChild(h);
-      if (g.desc) { const p = document.createElement('p'); p.className = 'wallet'; p.textContent = g.desc; el.appendChild(p); }
-      const list = document.createElement('div'); list.className = 'tlist';
-      for (const t of TROPHIES.filter(x => x.group === g.id)) {
-        const won = tro.got.includes(t.id);
-        const goal = t.stat ? t.goal : 1, v = t.stat ? Math.min(statOf(t.stat), goal) : won ? 1 : 0;
-        const card = document.createElement('div');
-        card.className = 'tcard' + (won ? ' won' : '');
-        card.innerHTML = `<b>${won ? '🏆 ' : ''}${t.name}</b><span>${t.desc || `${t.goal} ${STATS[t.stat]}`}</span>
-          <div class="tbar"><i style="width:${(v / goal * 100).toFixed(1)}%"></i></div>
-          <em>${won ? 'Gagné · ' : t.stat ? `${v} / ${goal} · ` : ''}${rewardText(t)}</em>`;
-        list.appendChild(card);
-      }
-      el.appendChild(list);
-    }
-  }
-
   // --- dessin de la fusée ---
   function shade(hex, k) {
     const n = parseInt(hex.slice(1), 16);
@@ -798,8 +795,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function drawRocket(c, x, y, s, conf, t, tilt = 0, boost = 0) {
-    const body = byId(COLORS, conf.color).hex;
-    const fl = byId(FLAMES, conf.flame).c;
+    const colDef = byId(COLORS, conf.color), body = colDef.hex;
+    const fl = flameColsOf(conf.flame, t);
+    let bodyFill = body;
+    if (colDef.grad) { bodyFill = c.createLinearGradient(-16, -26, 16, 22); colDef.grad.forEach((h, i) => bodyFill.addColorStop(i / (colDef.grad.length - 1), h)); }
     const dark = shade(body, -.45), light = shade(body, .45);
     c.save();
     c.translate(x, y); c.rotate(tilt); c.scale(s, s);
@@ -810,7 +809,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const fg = c.createLinearGradient(0, 13, 0, 13 + len);
     fg.addColorStop(0, fl[0]); fg.addColorStop(.35, fl[1]); fg.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = fg;
-    c.beginPath(); c.moveTo(-5.5, 13); c.quadraticCurveTo(-3, 13 + len * .7, 0, 13 + len); c.quadraticCurveTo(3, 13 + len * .7, 5.5, 13); c.closePath(); c.fill();
+    // le Prédateur a deux réacteurs
+    for (const nx of conf.model === 'predateur' ? [-5, 5] : [0]) {
+      c.save(); c.translate(nx, 0); if (nx) c.scale(.7, .95);
+      c.beginPath(); c.moveTo(-5.5, 13); c.quadraticCurveTo(-3, 13 + len * .7, 0, 13 + len); c.quadraticCurveTo(3, 13 + len * .7, 5.5, 13); c.closePath(); c.fill();
+      c.restore();
+    }
 
     // canons
     c.fillStyle = '#3a3062';
@@ -825,7 +829,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
     c.shadowColor = body; c.shadowBlur = 10 + boost * 20;
     if (conf.model === 'navette') {
-      c.fillStyle = body;
+      c.fillStyle = bodyFill;
       c.beginPath();
       c.moveTo(0, -20); c.lineTo(5, -8); c.lineTo(17, 11); c.lineTo(5, 9); c.lineTo(4, 14);
       c.lineTo(-4, 14); c.lineTo(-5, 9); c.lineTo(-17, 11); c.lineTo(-5, -8); c.closePath(); c.fill();
@@ -840,7 +844,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.fillStyle = dark;
       c.beginPath(); c.moveTo(-4, 4); c.lineTo(-11, 11); c.lineTo(-11, 17); c.lineTo(-4, 13); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(4, 4); c.lineTo(11, 11); c.lineTo(11, 17); c.lineTo(4, 13); c.closePath(); c.fill();
-      c.fillStyle = body;
+      c.fillStyle = bodyFill;
       c.beginPath(); c.moveTo(0, -25); c.bezierCurveTo(5.5, -16, 5, 6, 4, 14); c.lineTo(-4, 14); c.bezierCurveTo(-5, 6, -5.5, -16, 0, -25); c.closePath(); c.fill();
       c.shadowBlur = 0;
       c.fillStyle = dark; c.fillRect(-1.2, 6, 2.4, 12);
@@ -848,11 +852,66 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.beginPath(); c.moveTo(-3, -2); c.lineTo(1, -6); c.lineTo(-1, -1); c.lineTo(3, -5); c.stroke();
       c.fillStyle = '#1a1240'; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.2;
       c.beginPath(); c.arc(0, -12, 2.6, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'predateur') {
+      // armure sombre avec liserés lumineux de la couleur choisie
+      const ar = c.createLinearGradient(0, -28, 0, 20);
+      ar.addColorStop(0, '#3a3450'); ar.addColorStop(1, '#100c1c');
+      c.fillStyle = ar;
+      c.beginPath();
+      c.moveTo(0, -29); c.lineTo(4, -18); c.lineTo(6, -4); c.lineTo(19, 6); c.lineTo(22, 17); c.lineTo(8, 13); c.lineTo(6, 18);
+      c.lineTo(-6, 18); c.lineTo(-8, 13); c.lineTo(-22, 17); c.lineTo(-19, 6); c.lineTo(-6, -4); c.lineTo(-4, -18);
+      c.closePath(); c.fill();
+      c.shadowBlur = 8; c.strokeStyle = bodyFill; c.lineWidth = 1.3; c.stroke();
+      c.shadowBlur = 0;
+      c.strokeStyle = body; c.globalAlpha = .8; c.lineWidth = .9;
+      c.beginPath(); c.moveTo(0, -22); c.lineTo(0, 14); c.moveTo(-6, -4); c.lineTo(-14, 10); c.moveTo(6, -4); c.lineTo(14, 10); c.moveTo(-4, 4); c.lineTo(4, 4); c.stroke();
+      c.globalAlpha = 1;
+      // trois griffes de chasseur sur l'aile gauche
+      c.strokeStyle = bodyFill; c.lineWidth = 1.2;
+      c.beginPath(); for (let i = 0; i < 3; i++) { c.moveTo(-17 + i * 3, 9); c.lineTo(-13 + i * 3, 14); } c.stroke();
+      // canons latéraux
+      c.fillStyle = '#100c1c'; c.fillRect(-15, -4, 3, 12); c.fillRect(12, -4, 3, 12);
+      c.fillStyle = bodyFill; c.fillRect(-15, -6, 3, 2); c.fillRect(12, -6, 3, 2);
+      // visière rouge
+      c.shadowColor = '#ff2d55'; c.shadowBlur = 10; c.fillStyle = '#ff2d55';
+      c.beginPath(); c.moveTo(0, -17); c.lineTo(3.2, -9); c.lineTo(0, -7); c.lineTo(-3.2, -9); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+    } else if (conf.model === 'legende') {
+      // auréole dorée qui tourne
+      c.save(); c.translate(0, 4); c.rotate(reduce ? 0 : t / 900); c.scale(1, .35);
+      c.strokeStyle = '#ffd86b'; c.globalAlpha = .8; c.lineWidth = 2.2; c.shadowColor = '#ffd86b'; c.shadowBlur = 14;
+      c.beginPath(); c.arc(0, 0, 27, 0, 7); c.stroke(); c.restore();
+      const gw = c.createLinearGradient(0, -30, 0, 20);
+      gw.addColorStop(0, '#ffffff'); gw.addColorStop(.5, '#fff2c8'); gw.addColorStop(1, '#e8b84a');
+      c.fillStyle = gw; c.shadowColor = '#ffd86b'; c.shadowBlur = 16;
+      c.beginPath();
+      c.moveTo(0, -31); c.lineTo(5, -17); c.lineTo(7, -2); c.lineTo(21, 6); c.lineTo(27, 18); c.lineTo(10, 13); c.lineTo(6, 20);
+      c.lineTo(-6, 20); c.lineTo(-10, 13); c.lineTo(-27, 18); c.lineTo(-21, 6); c.lineTo(-7, -2); c.lineTo(-5, -17);
+      c.closePath(); c.fill();
+      c.shadowBlur = 0; c.strokeStyle = '#c4902a'; c.lineWidth = 1.2; c.stroke();
+      c.strokeStyle = bodyFill; c.lineWidth = 1.8;
+      c.beginPath(); c.moveTo(-21, 7); c.lineTo(-8, 3); c.moveTo(21, 7); c.lineTo(8, 3); c.moveTo(-24, 14); c.lineTo(-11, 11); c.moveTo(24, 14); c.lineTo(11, 11); c.stroke();
+      // ailerons en couronne
+      c.fillStyle = '#ffd86b';
+      for (const x of [-5, 0, 5]) { c.beginPath(); c.moveTo(x - 2, 17); c.lineTo(x, x === 0 ? 27 : 23); c.lineTo(x + 2, 17); c.closePath(); c.fill(); }
+      // cockpit en diamant
+      c.fillStyle = '#7ae8ff'; c.shadowColor = '#7ae8ff'; c.shadowBlur = 10;
+      c.beginPath(); c.moveTo(0, -18); c.lineTo(3.5, -11); c.lineTo(0, -5); c.lineTo(-3.5, -11); c.closePath(); c.fill();
+      c.shadowBlur = 0; c.fillStyle = '#ffffff'; c.fillRect(-1, -15, 1.5, 3);
+      // étincelles autour du vaisseau
+      for (let i = 0; i < 4; i++) {
+        const a = t / 700 + i * Math.PI / 2, rr = 31 + Math.sin(t / 300 + i) * 3, k = (Math.sin(t / 200 + i * 2) + 1) / 2;
+        const sx = Math.cos(a) * rr, sy = Math.sin(a) * rr * .7;
+        c.globalAlpha = k; c.fillStyle = '#fffaf0';
+        c.beginPath(); c.moveTo(sx, sy - 3.5); c.lineTo(sx + 1, sy); c.lineTo(sx, sy + 3.5); c.lineTo(sx - 1, sy); c.closePath(); c.fill();
+        c.beginPath(); c.moveTo(sx - 3.5, sy); c.lineTo(sx, sy + 1); c.lineTo(sx + 3.5, sy); c.lineTo(sx, sy - 1); c.closePath(); c.fill();
+      }
+      c.globalAlpha = 1;
     } else {
       c.fillStyle = dark;
       c.beginPath(); c.moveTo(-7, 2); c.lineTo(-15, 15); c.lineTo(-7, 13); c.closePath(); c.fill();
       c.beginPath(); c.moveTo(7, 2); c.lineTo(15, 15); c.lineTo(7, 13); c.closePath(); c.fill();
-      c.fillStyle = body;
+      c.fillStyle = bodyFill;
       c.beginPath(); c.moveTo(0, -22); c.bezierCurveTo(9.5, -14, 9, 4, 7, 14); c.lineTo(-7, 14); c.bezierCurveTo(-9, 4, -9.5, -14, 0, -22); c.closePath(); c.fill();
       c.shadowBlur = 0;
       c.fillStyle = light;
@@ -873,6 +932,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else { preview = { key, id }; beep(400, .06, 'triangle', .06); }
     refreshHangar();
   }
+  const RAINBOW = 'linear-gradient(135deg, #ff4f6d, #ffd86b, #7dff8a, #7ad8ff, #c86bff)';
+  const swatchBg = it => it.rainbow ? RAINBOW : it.grad ? `linear-gradient(135deg, ${it.grad.join(', ')})` : it.hex ? it.hex
+    : it.c ? `linear-gradient(180deg, ${it.c[0]}, ${it.c[1]} 45%, ${it.c[2] || it.c[1]})` : 'conic-gradient(#fff2b0, #ff9a3c, #ff3c3c, #fff2b0)';
   function buildChips(el, list, key, swatch) {
     el.innerHTML = '';
     for (const it of list) {
@@ -883,12 +945,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       b.id = `opt-${key}-${it.id}`;
       b.setAttribute('aria-pressed', shown(key) === it.id);
       if (swatch) {
-        b.style.background = it.hex || `linear-gradient(180deg, ${it.c[0]}, ${it.c[1]} 45%, ${it.c[2]})`;
-        const label = it.name + (locked ? ` · ${lockText(key, it.id)}` : '');
+        b.style.background = swatchBg(it);
+        const label = it.name + (locked ? ` · ${lockLabel(key, it.id)}` : '');
         b.setAttribute('aria-label', label); b.title = label;
       } else {
         b.textContent = it.name;
-        if (locked) { const sm = document.createElement('small'); sm.textContent = lockText(key, it.id); b.appendChild(sm); }
+        if (locked) { const sm = document.createElement('small'); sm.textContent = trophyOf(key, it.id) ? 'Trophée' : price(key, it.id) + ' pts'; b.appendChild(sm); }
       }
       b.onclick = () => pick(key, it.id);
       el.appendChild(b);
@@ -901,7 +963,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const locked = !owns(key, p.id);
       b.type = 'button'; b.className = 'pcard' + (locked ? ' locked' : ''); b.id = `opt-${key}-${p.id}`;
       b.setAttribute('aria-pressed', shown(key) === p.id);
-      b.innerHTML = `<b>${p.name}</b><span>${p.desc}</span><em>${locked ? 'À débloquer · ' + lockText(key, p.id) : info(p)}</em>`;
+      b.innerHTML = `<b>${p.name}</b><span>${p.desc}</span><em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + price(key, p.id) + ' pts') : info(p)}</em>`;
       b.onclick = () => pick(key, p.id);
       el.appendChild(b);
     }
@@ -910,21 +972,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     buildChips($('optModel'), MODELS, 'model');
     buildChips($('optColor'), COLORS, 'color', true);
     buildChips($('optFlame'), FLAMES, 'flame', true);
+    buildChips($('optShot'), SHOTS, 'shot', true);
     buildCards($('optGun'), GUNS, 'gun', g => `Chargeur ${g.mag} · recharge ${String(g.reload).replace('.', ',')} s · ${g.info}`);
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
     $('pvName').textContent = cfg.name;
-    $('pvTitle').textContent = cfg.title;
     $('pvPower').textContent = byId(GUNS, shown('gun')).name + ' · ' + byId(POWERS, shown('power')).name;
     $('pvPoints').textContent = `Tes points : ${shop.credits}`;
     const bar = $('buybar');
     bar.hidden = !preview;
     if (preview) {
       const c = CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
-      const t = trophyOf(preview.key, preview.id);
-      if (t) {
-        $('buyText').textContent = `${c.label} ${it.name} · à gagner avec le trophée « ${t.name} »`;
-        $('buyBtn').textContent = 'Réservé aux trophées';
-        $('buyBtn').disabled = true;
+      const tro = trophyOf(preview.key, preview.id);
+      if (tro) {
+        const col = tro.col, goal = col.stat ? col.tiers[tro.i] : 0;
+        $('buyText').textContent = `${c.label} ${it.name} · exclusif, gagne le trophée ${col.name} ${TIERS[tro.i].name}` +
+          (col.stat ? ` (${Math.min(goal, stats[col.stat])}/${goal} ${col.unit})` : ` : ${col.feats[tro.i].text}`);
+        $('buyBtn').textContent = 'Trophée requis'; $('buyBtn').disabled = true;
       } else {
         $('buyText').textContent = `${c.label} ${it.name} · ${p} pts`;
         const miss = p - shop.credits;
@@ -951,11 +1014,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('hangar').hidden = true; $('help').hidden = true; $('trophies').hidden = true; $('menu').hidden = false; state = 'menu'; }
-  $('trophyBtn').onclick = () => { renderTrophies(); state = 'hangar'; $('menu').hidden = true; $('trophies').hidden = false; };
-  $('trophyBack').onclick = closeHangar;
+  function closePanels() { $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
+  const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
+  $('trophyBtn').onclick = openTrophies;
+  $('overTrophyBtn').onclick = openTrophies;
+  $('trophyBack').onclick = closeHangar;
   $('hangarBtn').onclick = openHangar;
   $('overHangarBtn').onclick = openHangar;
   $('backBtn').onclick = closeHangar;
@@ -968,9 +1033,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
+  let run = { perfect: 0, bossHit: false }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
-  // pour les exploits : aucune vie perdue dans la partie / pendant le combat de boss en cours
-  let runClean = true, bossClean = false;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -978,8 +1042,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
-    runClean = true; bossClean = false; runTrophies = [];
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false }; bh = null; bossCount = 0; sector = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     const base = byId(GUNS, cfg.gun);
     gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
     ammo = gun.mag; reload = null; golden = false; infinite = 0;
@@ -1056,8 +1119,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   let beaten = [];
   try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => BOSSES.some(d => d.id === x)); } catch (e) {}
-  // les boss déjà battus avant les trophées comptent pour la collection
-  checkTrophies();
 
   // --- histoire ---
   let seenIntro = false;
@@ -1139,7 +1200,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
-    bossClean = true;
+    run.bossHit = false;
     // cinématique : on nettoie l'écran, alerte, carte du boss
     for (const it of items) if (it !== boss && (it.kind === 'rock' || it.kind === 'alien')) { it.dead = true; burst(it.x, it.y, '#8f86b8', 6, 120, 3); }
     ebullets = [];
@@ -1558,9 +1619,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     it.hp -= dmg; it.hitT = .08;
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     it.dead = true;
-    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); addStat('rochers'); return; }
+    if (it.kind === 'rock') { score += 5; burst(it.x, it.y, '#8f86b8', 16, 240); beep(160, .1, 'square', .05); return; }
     score += it.pts;
     pop(it.x, it.y - 20, '+' + it.pts, '#7dff8a');
+    bump('aliens');
+    if (it.boss) { bump('bosses'); if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); }
     if (it.boss) {
       boss = null;
       burst(it.x, it.y, it.def.col, 60, 380, 5); burst(it.x, it.y, '#ffd86b', 40, 300, 5);
@@ -1568,12 +1631,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ebullets = [];
       const bonus = lives < maxLives();
       if (bonus) lives++;
-      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
+      if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
       sector++;
-      if (bossClean) exploit('sansfaute');
-      if (sector >= 4 && runClean) exploit('intouchable');
-      if (it.def.id === 'zorg') exploit('zorg');
       if (it.def.id === 'zorg') setTimeout(() => { if (state === 'play') showStory('ending'); }, 1800);
       // boss vaincu : on passe au niveau suivant 2,5 secondes plus tard
       lvT = 17.5; newSector = true;
@@ -1582,14 +1642,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const col = { kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
       burst(it.x, it.y, col, 22, 260);
       beep(it.type === 'saucer' ? 260 : 420, .18, 'square', .08, -200);
-      addStat('aliens');
       // la gélatine se divise en deux petites bestioles
       if (it.type === 'splitter') for (const s of [-1, 1]) items.push({ kind: 'alien', type: 'chaser', mini: true, x: it.x + s * 12, y: it.y, r: 10, hp: 1, pts: 10, vy: 120, t: Math.random() * 9, hitT: 0 });
     }
   }
 
   function hitPlayer() {
-    lives--; runClean = false; bossClean = false; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
+    if (boss) run.bossHit = true;
+    lives--; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
     pop(player.x, player.y - 34, lives > 0 ? '−1 vie' : 'Plus de vie !');
     burst(player.x, player.y, '#ff7aa8', 16);
     beep(120, .35, 'sawtooth', .18, -60);
@@ -1622,7 +1682,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function finishReload(perfect) {
     ammo = gun.mag; reload = null; golden = perfect;
     if (perfect) {
-      score += 20; addStat('parfaites');
+      score += 20;
+      run.perfect++; if (run.perfect >= 5) feat('parfait5');
       pop(player.x, player.y - 40, 'Recharge parfaite !', '#ffd86b');
       burst(player.x, player.y, '#ffd86b', 18, 180, 3);
       beep(660, .1, 'triangle', .12); setTimeout(() => beep(990, .18, 'triangle', .12), 80);
@@ -1680,6 +1741,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (d.id === 'temps') { beep(600, .6, 'sine', .14, -450); flash = .25; flashColor = '122, 216, 255'; }
     else if (d.id === 'aimant') { beep(330, .3, 'triangle', .12, 330); }
     else if (d.id === 'laser') { beep(900, .5, 'square', .07, -500); }
+    else if (d.id === 'tempete') { starT = 0; beep(880, .5, 'triangle', .1, 400); }
+    else if (d.id === 'clone') { cloneT = 0; beep(440, .3, 'square', .06, 440); }
+    else if (d.id === 'trounoir') { bh = { x: player.x, y: Math.max(150, player.y - 230) }; beep(60, 1.2, 'sawtooth', .18, 20); shake = .3; }
+    else if (d.id === 'supernova') {
+      reload = null; ammo = gun.mag; ringT = 0; flash = .6; flashColor = '255, 230, 150'; shake = .4;
+      beep(220, .9, 'sawtooth', .14, 660); setTimeout(() => beep(990, .5, 'triangle', .12), 200);
+    }
     else if (d.id === 'nova') {
       const before = score;
       for (const it of items) if (it.kind === 'rock' || it.kind === 'alien') damage(it, it.boss ? 10 : 99);
@@ -1704,6 +1772,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function gameOver() {
+    saveStats();
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
     const record = score > best;
     if (record) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
@@ -1711,10 +1780,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('finalScore').textContent = score;
     shop.credits += score; saveShop(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${score} points pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
-    if (runTrophies.length) {
-      const n = runTrophies.length, pts = runTrophies.reduce((s, t) => s + t.pts, 0);
-      $('finalInfo').innerHTML += `<br>🏆 ${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${pts} points bonus` : '');
-    }
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
   }
@@ -1785,7 +1850,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (!boss) lvT += dt;
     if (lvT >= 20) {
       lvT = 0; level++; updateHud(); setTheme(level);
-      if (level >= 10) exploit('niveau10');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       if (level % 3 === 0 && !boss) spawnBoss();
@@ -1801,7 +1865,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (power.cd > 0) power.cd = Math.max(0, power.cd - dt);
     const slow = on && pid === 'temps' ? .35 : 1;
     const hyper = on && pid === 'hyper';
-    const invincible = hyper || shield > 0;
+    const nova = on && pid === 'supernova';
+    const invincible = hyper || nova || shield > 0;
 
     // déplacement de la fusée
     const ax = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
@@ -1819,7 +1884,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     player.tilt += (Math.max(-.45, Math.min(.45, player.vx / 900)) - player.tilt) * Math.min(1, dt * 10);
 
     // particules de réacteur
-    const fl = byId(FLAMES, cfg.flame).c;
+    const fl = flameColsOf(cfg.flame, performance.now());
     const n = reduce ? 1 : (hyper ? 4 : 2);
     for (let i = 0; i < n; i++) {
       const ex = player.x - Math.sin(player.tilt) * 18, ey = player.y + Math.cos(player.tilt) * 18;
@@ -1836,20 +1901,51 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (reload) {
       reload.t += dt;
       if (reload.t >= reload.dur) finishReload(false);
-    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire) && fireT <= 0) {
-      fireT = gun.rate * (infinite ? .7 : 1);
-      if (!infinite) ammo--;
+    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || nova) && fireT <= 0) {
+      fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
+      if (!infinite && !nova) ammo--;
       const cs = Math.cos(player.tilt), sn = Math.sin(player.tilt);
       for (const [lx, ly, a] of gun.barrels) {
-        shots.push({ x: player.x + lx * cs - ly * sn, y: player.y + lx * sn + ly * cs, vx: Math.sin(a) * 720, vy: -Math.cos(a) * 720, dmg: (golden ? 2 : 1) * (1 + .25 * up('puissance')), gold: golden, inf: infinite > 0, last: !infinite && ammo === 0 });
+        shots.push({ x: player.x + lx * cs - ly * sn, y: player.y + lx * sn + ly * cs, vx: Math.sin(a) * 720, vy: -Math.cos(a) * 720, dmg: (golden ? 2 : 1) * (1 + .25 * up('puissance')), gold: golden, inf: infinite > 0, last: !infinite && !nova && ammo === 0 });
       }
       beep(golden ? 1100 : 1500, .05, 'square', .03, -700);
       player.vy += 40;
-      if (!infinite && ammo === 0) startReload();
+      if (!infinite && !nova && ammo === 0) startReload();
+    }
+    // pouvoirs ultimes
+    if (on && pid === 'tempete') {
+      starT -= dt;
+      while (starT <= 0) { starT += .05; shots.push({ x: 10 + Math.random() * (W - 20), y: H + 10, vx: 0, vy: -900, dmg: 2, star: true }); }
+    }
+    if (on && pid === 'clone') {
+      cloneT -= dt;
+      if (cloneT <= 0) { cloneT = gun.rate; for (const sd of [-1, 1]) shots.push({ x: player.x + sd * 46, y: player.y - 18, vx: 0, vy: -720, dmg: 1 + .25 * up('puissance') }); }
+    }
+    if (on && pid === 'trounoir' && bh) {
+      for (const it of items) {
+        if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
+        const dx = bh.x - it.x, dy = bh.y - it.y, d = Math.hypot(dx, dy) || 1;
+        if (!it.boss && d < 320) { it.x += dx / d * 240 * dt; it.y += dy / d * 240 * dt; }
+        if (d < it.r + 34) damage(it, (it.boss ? 10 : 40) * dt);
+      }
+      for (const b of ebullets) {
+        const dx = bh.x - b.x, dy = bh.y - b.y, d = Math.hypot(dx, dy) || 1;
+        if (d < 340) { b.x += dx / d * 300 * dt; b.y += dy / d * 300 * dt; }
+        if (d < 30) b.dead = true;
+      }
+    }
+    if (!on) bh = null;
+    if (nova) {
+      ringT -= dt;
+      if (ringT <= 0) {
+        ringT = .55;
+        for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2 + time; shots.push({ x: player.x, y: player.y, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, dmg: 2, gold: true }); }
+        beep(1200, .1, 'triangle', .05, -400);
+      }
     }
     for (const s of shots) {
       s.x += s.vx * dt; s.y += s.vy * dt;
-      if (s.y < -20 || s.x < -20 || s.x > W + 20) { s.dead = true; continue; }
+      if (s.y < -20 || s.y > H + 40 || s.x < -20 || s.x > W + 20) { s.dead = true; continue; }
       for (const it of items) {
         if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
         const hr = it.boss ? it.r + 10 : it.r + 4;
@@ -1913,8 +2009,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       if (d < it.r + player.r - 3) {
         if (it.kind === 'star') {
           it.dead = true; combo++; comboT = 2.2;
+          bump('stars'); if (combo >= 15) feat('combo15');
           score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
-          addStat('etoiles'); if (combo >= 10) exploit('combo10');
           beep(520 + Math.min(combo, 16) * 40, .1, 'triangle', .12);
           updateHud();
         } else if (it.kind === 'shield') {
@@ -2439,7 +2535,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // fumée et flammes
     for (const p of lparts) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
-      ctx.fillStyle = p.smoke ? '#d9d0ff' : byId(FLAMES, cfg.flame).c[1];
+      ctx.fillStyle = p.smoke ? '#d9d0ff' : flameColsOf(cfg.flame, t)[1];
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
     }
     ctx.globalAlpha = 1;
@@ -2600,7 +2696,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (state === 'launch') drawLaunch(t);
 
     if (playing) {
-      const fl = byId(FLAMES, cfg.flame).c;
+      const fl = flameColsOf(cfg.flame, t);
       // laser
       if (on && pid === 'laser') {
         const w = 14 + Math.sin(t / 30) * 3;
@@ -2624,14 +2720,41 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         ctx.beginPath(); ctx.arc(player.x, player.y, k * Math.max(W, H), 0, 7); ctx.stroke();
       }
 
+      // trou noir
+      if (on && pid === 'trounoir' && bh) {
+        const k = Math.min(1, (power.def.dur - power.active) * 3), r0 = 26 * k;
+        ctx.save(); ctx.translate(bh.x, bh.y);
+        ctx.save(); ctx.rotate(t / 300); ctx.scale(1, .4);
+        const g = ctx.createRadialGradient(0, 0, r0, 0, 0, r0 * 4);
+        g.addColorStop(0, '#fff2b0'); g.addColorStop(.3, '#c86bff'); g.addColorStop(.7, '#5b3a9e'); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r0 * 4, 0, 7); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = '#000000'; ctx.beginPath(); ctx.arc(0, 0, r0, 0, 7); ctx.fill();
+        ctx.strokeStyle = '#c86bff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.restore();
+      }
       // tirs de la fusée
       for (const s of shots) {
         const a = Math.atan2(s.vx, -s.vy);
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
-        const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : fl[1], c0 = s.gold || s.inf ? '#fffaf0' : fl[0], k = s.gold ? 1.4 : 1;
-        ctx.shadowColor = c1; ctx.shadowBlur = s.gold ? 18 : 10; ctx.fillStyle = c1;
+        if (s.star) {
+          ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff2b0';
+          ctx.beginPath();
+          for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + t / 200, rr = i % 2 ? 3 : 7; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+          ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0; ctx.restore(); continue;
+        }
+        const sh = byId(SHOTS, cfg.shot);
+        const base = sh.rainbow ? ['#ffffff', `hsl(${(t / 3 + s.x + s.y) % 360}, 100%, 62%)`] : sh.c || [fl[0], fl[1]];
+        const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : base[1], c0 = s.gold || s.inf ? '#fffaf0' : base[0], k = s.gold ? 1.4 : 1;
+        ctx.shadowColor = c1; ctx.shadowBlur = s.gold || sh.rainbow ? 18 : 10; ctx.fillStyle = c1;
         ctx.fillRect(-2.5 * k, -8 * k, 5 * k, 16 * k);
         ctx.shadowBlur = 0; ctx.fillStyle = c0; ctx.fillRect(-1 * k, -6 * k, 2 * k, 12 * k);
+        if (sh.zap && !s.gold && !s.inf) {
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(0, -10);
+          for (let i = 1; i <= 4; i++) ctx.lineTo((Math.random() - .5) * 8, -10 + i * 5);
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
@@ -2698,7 +2821,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           drawRocket(ctx, player.x - player.vx * .03, player.y + 14, 1, cfg, t, player.tilt, 0);
           ctx.globalAlpha = 1;
         }
-        drawRocket(ctx, player.x, player.y, 1, cfg, t, player.tilt, hyper ? 1 : 0);
+        if (on && pid === 'clone') {
+          ctx.globalAlpha = .45;
+          for (const sd of [-1, 1]) drawRocket(ctx, player.x + sd * 46, player.y + 6, .85, cfg, t, player.tilt, 0);
+          ctx.globalAlpha = 1;
+        }
+        if (on && pid === 'supernova') {
+          const pr = 40 + Math.sin(t / 90) * 6;
+          const g = ctx.createRadialGradient(player.x, player.y, 6, player.x, player.y, pr);
+          g.addColorStop(0, 'rgba(255, 242, 176, .7)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(player.x, player.y, pr, 0, 7); ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 216, 107, .7)'; ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t / 400; ctx.moveTo(player.x + Math.cos(a) * 30, player.y + Math.sin(a) * 30); ctx.lineTo(player.x + Math.cos(a) * 52, player.y + Math.sin(a) * 52); }
+          ctx.stroke();
+        }
+        drawRocket(ctx, player.x, player.y, 1, cfg, t, player.tilt, hyper || (on && pid === 'supernova') ? 1 : 0);
         if (shield > 0 || hyper) {
           ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
           ctx.globalAlpha = !hyper && shield < 1.5 ? (Math.sin(t / 60) + 1) / 2 : .9;
@@ -2764,6 +2902,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   reset();
   resetScenery(false);
   renderAtelier();
+  updateTrophyBtn();
   requestAnimationFrame(loop);
 })();
 </script>
