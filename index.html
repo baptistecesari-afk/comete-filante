@@ -1507,6 +1507,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     reset(); state = 'play';
     for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
     $('cine').hidden = true;
+    resetScenery(true);
     setTimeout(() => { if (state === 'play' && time < 3) showBanner('Secteur 1', BOSSES[0].place); }, 400);
     $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
     updateAmmoUi();
@@ -1824,6 +1825,194 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.restore();
   }
 
+  // ===== Décor de fond : nébuleuses, planètes, croiseurs et combats de chasseurs =====
+  const PLANET_STYLES = [
+    { c: ['#ffcf8a', '#c4702e'], bands: true },
+    { c: ['#c86bff', '#4a1f7a'], ring: '#e8d2ff' },
+    { c: ['#ff8a6b', '#8a2a1f'], craters: true },
+    { c: ['#9fe0ff', '#2a6a9a'], ring: '#ffffff' },
+    { c: ['#b6ff6b', '#2f7a3a'], bands: true },
+    { c: ['#d9d0ff', '#6a5f9a'], craters: true },
+    { c: ['#ffd86b', '#a8642a'], ring: '#ffe9b0' },
+  ];
+  const EARTH = { c: ['#6fc0ff', '#1f4f98'], land: '#4fd27a' };
+  const NEBULAS = [['#5b3a9e', '#ff7aa8'], ['#2fbf71', '#4fe0c8'], ['#ff4f6d', '#c86bff'], ['#ff9a3c', '#ff4f6d'], ['#7ad8ff', '#5b3a9e'],
+    ['#c86bff', '#3a2a6a'], ['#d9d0ff', '#5a5478'], ['#ffd86b', '#8f86b8'], ['#ff7b4a', '#ffd86b'], ['#b6ff6b', '#c86bff']];
+  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3;
+
+  // une planète est dessinée une seule fois dans une image, puis réutilisée
+  function makePlanet(style, r) {
+    const pad = style.ring ? r * 1.8 : r * 1.1;
+    const img = document.createElement('canvas');
+    img.width = img.height = Math.ceil(pad * 2);
+    const c = img.getContext('2d');
+    c.translate(pad, pad);
+    const ring = (from, to, a) => {
+      c.strokeStyle = style.ring; c.globalAlpha = a; c.lineWidth = r * .13;
+      c.beginPath(); c.ellipse(0, 0, r * 1.7, r * .42, -.3, from, to); c.stroke(); c.globalAlpha = 1;
+    };
+    if (style.ring) ring(Math.PI, Math.PI * 2, .45);
+    const g = c.createRadialGradient(-r * .35, -r * .35, r * .1, 0, 0, r);
+    g.addColorStop(0, style.c[0]); g.addColorStop(1, style.c[1]);
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill();
+    c.save(); c.beginPath(); c.arc(0, 0, r, 0, 7); c.clip();
+    if (style.bands) {
+      c.globalAlpha = .22;
+      for (let i = -4; i <= 4; i++) { c.fillStyle = i % 2 ? '#ffffff' : '#000000'; c.fillRect(-r, i * r * .22, r * 2, r * (.08 + Math.random() * .08)); }
+      c.globalAlpha = 1;
+    }
+    if (style.land) {
+      c.fillStyle = style.land; c.globalAlpha = .85;
+      for (let i = 0; i < 7; i++) { c.beginPath(); c.ellipse((Math.random() - .5) * r * 1.5, (Math.random() - .5) * r * 1.5, r * (.15 + Math.random() * .25), r * (.1 + Math.random() * .18), Math.random() * 3, 0, 7); c.fill(); }
+      c.fillStyle = '#ffffff'; c.globalAlpha = .35;
+      for (let i = 0; i < 5; i++) { c.beginPath(); c.ellipse((Math.random() - .5) * r * 1.6, (Math.random() - .5) * r * 1.6, r * .3, r * .05, Math.random() * 3, 0, 7); c.fill(); }
+      c.globalAlpha = 1;
+    }
+    if (style.craters) {
+      for (let i = 0; i < 10; i++) { c.fillStyle = 'rgba(0, 0, 0, .22)'; c.beginPath(); c.arc((Math.random() - .5) * r * 1.5, (Math.random() - .5) * r * 1.5, r * (.05 + Math.random() * .12), 0, 7); c.fill(); }
+    }
+    const sh = c.createLinearGradient(-r, -r, r, r);
+    sh.addColorStop(.45, 'rgba(5, 3, 20, 0)'); sh.addColorStop(1, 'rgba(5, 3, 20, .85)');
+    c.fillStyle = sh; c.fillRect(-r, -r, r * 2, r * 2);
+    c.restore();
+    if (style.ring) ring(0, Math.PI, .7);
+    return img;
+  }
+
+  function addPlanet(style, r, x, y, vy) {
+    scenery.push({ type: 'planet', img: makePlanet(style, r), x, y, r, vy });
+  }
+  function randomPlanet(y) {
+    const big = Math.random() < .25;
+    const r = big ? 70 + Math.random() * 60 : 18 + Math.random() * 40;
+    addPlanet(PLANET_STYLES[Math.floor(Math.random() * PLANET_STYLES.length)], r, Math.random() * W, y ?? -r * 2, 5 + r * .1);
+  }
+  function addFight() {
+    const fromLeft = Math.random() < .5, dir = fromLeft ? 1 : -1;
+    const y0 = H * (.1 + Math.random() * .5), vx = dir * (150 + Math.random() * 60), vy = 30 + Math.random() * 50;
+    const x0 = fromLeft ? -40 : W + 40;
+    // un chasseur alien poursuivi par deux chasseurs alliés
+    scenery.push({ type: 'fighter', kind: 'alien', x: x0, y: y0, vx, vy, fireT: .4 + Math.random() });
+    for (let i = 1; i <= 2; i++) scenery.push({ type: 'fighter', kind: 'ally', x: x0 - dir * (60 * i), y: y0 - 18 * i + (i === 2 ? 30 : 0), vx, vy, fireT: Math.random() * .5 });
+  }
+  function addCruiser() {
+    const fromLeft = Math.random() < .5;
+    const len = Math.min(260, W * .55) * (.8 + Math.random() * .4);
+    scenery.push({ type: 'cruiser', dir: fromLeft ? 1 : -1, len, x: fromLeft ? -len : W + len, y: H * (.12 + Math.random() * .4), vx: (fromLeft ? 1 : -1) * (18 + Math.random() * 12) });
+  }
+  function resetScenery(withEarth) {
+    scenery = [];
+    if (withEarth) addPlanet(EARTH, W * .65, W * .5, H + W * .2, 14);
+    else randomPlanet(H * (.2 + Math.random() * .4));
+    planetT = withEarth ? 14 : 8; fightT = 3 + Math.random() * 3; cruiserT = withEarth ? 10 : 4; meteorT = 2;
+  }
+
+  function updateScenery(dt) {
+    const k = state === 'play' ? speed : .6, m = reduce ? .3 : 1;
+    planetT -= dt; fightT -= dt; cruiserT -= dt; meteorT -= dt;
+    if (planetT <= 0) { if (scenery.filter(o => o.type === 'planet').length < 2) randomPlanet(); planetT = 10 + Math.random() * 14; }
+    if (!reduce && fightT <= 0) { addFight(); fightT = 7 + Math.random() * 7; }
+    if (cruiserT <= 0) { if (!scenery.some(o => o.type === 'cruiser')) addCruiser(); cruiserT = 22 + Math.random() * 18; }
+    if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 3 + Math.random() * 6; }
+    for (const o of scenery) {
+      if (o.type === 'planet') o.y += o.vy * k * m * dt;
+      else if (o.type === 'cruiser') { o.x += o.vx * m * dt; o.y += 4 * k * dt; }
+      else {
+        o.x += o.vx * m * dt; o.y += o.vy * m * dt;
+        if (o.type === 'fighter') {
+          o.fireT -= dt;
+          if (o.fireT <= 0) {
+            const a = Math.atan2(o.vy, o.vx), sp = 520;
+            scenery.push({ type: 'bolt', x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6, col: o.kind === 'ally' ? '#ff4f6d' : '#7dff8a' });
+            o.fireT = .35 + Math.random() * .6;
+          }
+        }
+        if (o.life !== undefined) o.life -= dt;
+      }
+    }
+    scenery = scenery.filter(o => {
+      if (o.life !== undefined && o.life <= 0) return false;
+      if (o.type === 'planet') return o.y - o.r * 2 < H + 20;
+      if (o.type === 'cruiser') return o.dir > 0 ? o.x - o.len < W + 40 : o.x + o.len > -40;
+      return o.x > -100 && o.x < W + 100 && o.y < H + 60;
+    });
+  }
+
+  function drawCruiser(o) {
+    const L = o.len, h = L * .28;
+    ctx.save(); ctx.translate(o.x, o.y); ctx.scale(o.dir, 1);
+    // réacteurs
+    for (const yy of [-h * .22, 0, h * .22]) {
+      const g = ctx.createRadialGradient(-L * .5, yy, 0, -L * .5, yy, h * .3);
+      g.addColorStop(0, 'rgba(122, 216, 255, .9)'); g.addColorStop(1, 'rgba(122, 216, 255, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(-L * .5, yy, h * .3, 0, 7); ctx.fill();
+    }
+    // coque en pointe
+    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+    g.addColorStop(0, '#8f86b8'); g.addColorStop(.55, '#4a4270'); g.addColorStop(1, '#2a2350');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, -h / 2); ctx.lineTo(-L * .5, h / 2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#3a3062'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, 0); ctx.stroke();
+    // tour de commandement
+    ctx.fillStyle = '#6a6290';
+    ctx.fillRect(-L * .42, -h * .5 - h * .28, L * .16, h * .28);
+    ctx.fillRect(-L * .38, -h * .5 - h * .42, L * .08, h * .16);
+    // hublots
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 14; i++) {
+      const fx = -L * .45 + i * L * .055, maxY = (h / 2) * (1 - (fx + L * .5) / L);
+      if (Math.floor(i * 7.3) % 3) ctx.fillRect(fx, maxY * .45, 2, 1.5);
+    }
+    ctx.restore();
+  }
+
+  function drawFighter(o) {
+    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.atan2(o.vy, o.vx));
+    if (o.kind === 'ally') {
+      ctx.strokeStyle = '#eef0ff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(9, 0); ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(-5, -7); ctx.lineTo(3, 7); ctx.moveTo(-5, 7); ctx.lineTo(3, -7); ctx.stroke();
+      ctx.fillStyle = '#ff4f6d'; ctx.fillRect(-10, -1.5, 3, 3);
+    } else {
+      ctx.fillStyle = '#5a5478';
+      ctx.fillRect(-2, -9, 4, 18);
+      ctx.strokeStyle = '#8f86b8'; ctx.lineWidth = 1;
+      ctx.strokeRect(-2, -9, 4, 18);
+      ctx.fillStyle = '#7dff8a'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#0b0820'; ctx.beginPath(); ctx.arc(1.5, 0, 1.6, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawScenery(t, sec) {
+    // nébuleuses du secteur
+    const [n1, n2] = NEBULAS[sec % NEBULAS.length], R = Math.max(W, H) * .55;
+    for (const [i, col] of [[0, n1], [1, n2]]) {
+      const x = W * (i ? .82 : .18) + Math.sin(t / 9000 + i * 2) * 40, y = H * (i ? .28 : .72) + Math.cos(t / 11000 + i) * 40;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+      g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.globalAlpha = .09; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+    for (const o of scenery) {
+      if (o.type === 'planet') { ctx.globalAlpha = .6; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
+      else if (o.type === 'cruiser') { ctx.globalAlpha = .55; drawCruiser(o); }
+      else if (o.type === 'fighter') { ctx.globalAlpha = .65; drawFighter(o); }
+      else if (o.type === 'bolt') {
+        ctx.globalAlpha = .8; ctx.strokeStyle = o.col; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .025, o.y - o.vy * .025); ctx.stroke();
+      } else if (o.type === 'meteor') {
+        ctx.globalAlpha = Math.min(1, o.life);
+        const g = ctx.createLinearGradient(o.x, o.y, o.x - o.vx * .15, o.y - o.vy * .15);
+        g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .15, o.y - o.vy * .15); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function draw(t) {
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
@@ -1847,6 +2036,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       else ctx.fillRect(s.x * W, y, s.z * 2, s.z * 2);
     }
     ctx.globalAlpha = 1;
+    drawScenery(t, inGame ? sector : 0);
 
     if (playing) {
       const fl = byId(FLAMES, cfg.flame).c;
@@ -2004,11 +2194,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function loop(t) {
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (state === 'play') update(dt);
+    if (state !== 'pause' && state !== 'story') updateScenery(dt);
     draw(t);
     if (state === 'hangar') drawPreview(t);
     requestAnimationFrame(loop);
   }
   reset();
+  resetScenery(false);
   renderAtelier();
   requestAnimationFrame(loop);
 })();
