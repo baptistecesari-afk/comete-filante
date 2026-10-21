@@ -1738,7 +1738,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   // --- apparitions ---
   function spawn() {
-    const pAlien = boss ? 0 : Math.min(.26, .05 + level * .03);
+    // les objets tombent de plus en plus souvent : on limite aussi le nombre d'aliens par seconde,
+    // qui ne grimpe plus que doucement après le niveau 6
+    const perSec = .7 + Math.max(0, level - 6) * .02;
+    const pAlien = boss ? 0 : Math.min(.26, .05 + level * .03, perSec * Math.max(.18, .7 / speed));
     if (Math.random() < pAlien) { spawnAlien(); return; }
     const r = Math.random();
     const x = 30 + Math.random() * (W - 60);
