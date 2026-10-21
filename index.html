@@ -567,6 +567,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'galion', name: 'Galion' },
     { id: 'mecha', name: 'Méca' },
     { id: 'cristal', name: 'Cristal' },
+    { id: 'pixel', name: 'Fusée 8-bit' },
     { id: 'arcade', name: 'Rétro Arcade' },
     { id: 'predateur', name: 'Prédateur', desc: 'Chasseur à armure noire, visière rouge, deux réacteurs et canons latéraux.' },
     { id: 'legende', name: 'Légende', desc: 'Vaisseau blanc et or avec auréole, cockpit diamant et étincelles.' },
@@ -708,7 +709,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 1500, eclair: 3000, aile: 1200, ovni: 1800, tie: 2000, faucon: 2500, requin: 3500, abeille: 1500, chevalier: 2800, galion: 3000, mecha: 3200, cristal: 4000, arcade: 10000 },
+    model: { navette: 1500, eclair: 3000, aile: 1200, ovni: 1800, tie: 2000, faucon: 2500, requin: 3500, abeille: 1500, chevalier: 2800, galion: 3000, mecha: 3200, cristal: 4000, arcade: 10000, pixel: 2000 },
     color: { or: 300, turquoise: 300, violet: 500, orange: 500, blanc: 800, bleunuit: 300, rosebonbon: 300, citron: 300, corail: 300, menthe: 300, noir: 600, lave: 800, ocean: 800, galaxie: 1000, neon: 900 },
     accent: { noir: 150, blanc: 150, or: 250, cyan: 250, rose: 250, vert: 250, violet: 250, rouge: 250 },
     motif: { rayures: 300, etoiles: 400, damier: 500, eclair: 600, camo: 600, flammes: 700, course: 800 },
@@ -969,6 +970,31 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     'W..RR..W..RR..W',
     '...R...W...R...',
   ];
+  // Fusée 8-bit : B coque, D ombre, N ogive, S bande, M métal, G gemme, L vitre, W propulseurs, K contour
+  const PIXEL_PIX = [
+    '......K......',
+    '.....KNK.....',
+    '.....NSN.....',
+    '....KNSNK....',
+    '....NNSNN....',
+    '....MMSMM....',
+    '....BBSBB....',
+    '...MMMMMMM...',
+    '....BBGBB....',
+    '....BGLGB....',
+    '....BGLGB....',
+    '....BGLGB....',
+    '....BBGBB....',
+    '.W..BBBBB..W.',
+    '.W..BBWBB..W.',
+    '.B.DBBWBBD.B.',
+    '.BDDBBWBBDDB.',
+    '.BDDBBBBBDDB.',
+    '.W.DDBWBDD.W.',
+    '.W..DDWDD..W.',
+    '....NNSNN....',
+    '.....MMM.....',
+  ];
   function drawRocket(c, x, y, s, conf, t, tilt = 0, boost = 0) {
     const colDef = byId(COLORS, conf.color), body = colDef.hex;
     const fl = flameColsOf(conf.flame, t);
@@ -988,15 +1014,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     fg.addColorStop(0, fl[0]); fg.addColorStop(.35, fl[1]); fg.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = fg;
     // flammes en pixels pour le Rétro Arcade
-    if (conf.model === 'arcade') {
-      for (const nx of [-12, 0, 12]) {
-        const n = 2 + Math.floor(flick * 3 + boost * 4);
-        for (let i = 0; i < n; i++) { c.fillStyle = fl[Math.min(2, i)] || fl[1]; c.globalAlpha = 1 - i / (n + 1); c.fillRect(nx - 1.5, 13 + i * 3, 3, 3); }
+    if (conf.model === 'arcade' || conf.model === 'pixel') {
+      const pix = conf.model === 'pixel';
+      for (const nx of pix ? [-11, 0, 11] : [-12, 0, 12]) {
+        const n = 2 + Math.floor(flick * 3 + boost * 4) + (pix && !nx ? 2 : 0), y0 = pix ? 19 : 13;
+        for (let i = 0; i < n; i++) { c.fillStyle = fl[Math.min(2, i)] || fl[1]; c.globalAlpha = 1 - i / (n + 1); c.fillRect(nx - 1.5, y0 + i * 3, 3, 3); }
       }
       c.globalAlpha = 1;
     }
     // le Prédateur a deux réacteurs
-    for (const nx of conf.model === 'predateur' ? [-5, 5] : conf.model === 'arcade' ? [] : [0]) {
+    for (const nx of conf.model === 'predateur' ? [-5, 5] : conf.model === 'arcade' || conf.model === 'pixel' ? [] : [0]) {
       c.save(); c.translate(nx, 0); if (nx) c.scale(.7, .95);
       c.beginPath(); c.moveTo(-5.5, 13); c.quadraticCurveTo(-3, 13 + len * .7, 0, 13 + len); c.quadraticCurveTo(3, 13 + len * .7, 5.5, 13); c.closePath(); c.fill();
       c.restore();
@@ -1180,6 +1207,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       c.fillStyle = glass; c.beginPath(); c.moveTo(0, -18); c.lineTo(3, -10); c.lineTo(0, -6); c.lineTo(-3, -10); c.closePath(); c.fill();
       const sh = (t / 400) % 1;
       c.fillStyle = `rgba(255, 255, 255, ${(.6 * (1 - sh)).toFixed(2)})`; c.beginPath(); c.arc(-4 + sh * 8, -20 + sh * 30, 1.6, 0, 7); c.fill();
+    } else if (conf.model === 'pixel') {
+      const px = 2.2, ox = -PIXEL_PIX[0].length * px / 2, oy = -30;
+      const nose = acc.hex || '#e8403a', win = conf.glass && conf.glass !== 'nuit' ? glass : '#e6f0ff';
+      const pal = { B: bodyFill, D: dark, N: nose, S: '#f3eefe', M: '#a8b0c8', G: '#3ad87a', L: win, W: '#e8e8f0', K: '#0b1030' };
+      c.shadowBlur = 0;
+      c.fillStyle = '#0b1030';
+      PIXEL_PIX.forEach((row, j) => [...row].forEach((ch, i) => { if (ch !== '.') c.fillRect(ox + i * px - 1, oy + j * px - 1, px + 2, px + 2); }));
+      PIXEL_PIX.forEach((row, j) => [...row].forEach((ch, i) => {
+        if (ch === '.') return;
+        c.fillStyle = pal[ch]; c.fillRect(ox + i * px, oy + j * px, px + .25, px + .25);
+      }));
+      // petit éclat qui clignote dans la gemme
+      if (Math.floor(t / 400) % 3 === 0) { c.fillStyle = '#ffffff'; c.fillRect(ox + 6 * px, oy + 9 * px, px * .6, px * .6); }
     } else if (conf.model === 'arcade') {
       const px = 3, ox = -ARCADE_PIX[0].length * px / 2, oy = -24;
       const red = acc.hex || '#ff3b3b', blue = conf.glass && conf.glass !== 'nuit' ? glass : '#3a6bff';
@@ -3137,6 +3177,48 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.restore();
   }
 
+  // Fusée 8-bit : base de lancement pixelisée, comme dans un vieux jeu vidéo
+  function drawPixelBase(g, t, k) {
+    const B = 8, snap = v => Math.round(v / B) * B;
+    const a = Math.max(0, 1 - k * 1.3);
+    if (a > 0) {
+      ctx.save(); ctx.globalAlpha = a;
+      const bands = ['#3a6bff', '#4a86ff', '#5ea2ff', '#7ab8ff', '#9fd0ff'];
+      bands.forEach((col, i) => { ctx.fillStyle = col; ctx.fillRect(0, i * H / bands.length, W, H / bands.length + 1); });
+      ctx.fillStyle = '#ffe94a'; ctx.fillRect(snap(W * .12), snap(H * .1 + k * H), B * 4, B * 4);
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 5; i++) {
+        const cx = snap(((i * 113 + t * .02 * (i % 2 ? 1 : -1)) % (W + 120) + W + 120) % (W + 120) - 60), cy = snap(H * (.12 + i * .1) + k * H * 1.8);
+        ctx.fillRect(cx, cy, B * 6, B * 2); ctx.fillRect(cx + B, cy - B, B * 3, B);
+      }
+      ctx.restore();
+    }
+    if (g > H + 220) return;
+    const gy = snap(g);
+    // arbres en escalier
+    for (const x of [snap(W * .08), snap(W * .2), snap(W * .82)]) {
+      ctx.fillStyle = '#6b3a1a'; ctx.fillRect(x + B, gy - B * 2, B, B * 2);
+      ctx.fillStyle = '#2f9a3a';
+      ctx.fillRect(x - B, gy - B * 4, B * 5, B * 2); ctx.fillRect(x, gy - B * 6, B * 3, B * 2); ctx.fillRect(x + B, gy - B * 7, B, B);
+    }
+    // herbe et terre en damier
+    ctx.fillStyle = '#4fd27a'; ctx.fillRect(0, gy, W, B);
+    for (let y = gy + B; y < gy + 300; y += B) for (let x = 0; x < W; x += B) {
+      ctx.fillStyle = ((x + y) / B) % 2 ? '#8a5a2a' : '#7a4a1e'; ctx.fillRect(x, y, B, B);
+    }
+    // tour de lancement en blocs
+    const tx = snap(W / 2 + 32);
+    for (let y = gy - B; y > gy - B * 18; y -= B) { ctx.fillStyle = (y / B) % 2 ? '#a8b0c8' : '#7a8098'; ctx.fillRect(tx, y, B, B); ctx.fillRect(tx + B * 2, y, B, B); if ((y / B) % 3 === 0) ctx.fillRect(tx + B, y, B, B); }
+    ctx.fillStyle = Math.floor(t / 300) % 2 ? '#ff3b3b' : '#6a1a1a'; ctx.fillRect(tx + B, gy - B * 19, B, B);
+    // bras de la tour qui se replient
+    const open = Math.min(1, Math.max(0, launchT - 1.1) / .3);
+    ctx.fillStyle = '#ffd86b';
+    for (const y of [gy - B * 9, gy - B * 5]) ctx.fillRect(tx - B * 2 + snap(open * B * 2), y, B * 2 - snap(open * B * 2), B / 2);
+    // pas de tir
+    ctx.fillStyle = '#5a5478'; ctx.fillRect(snap(W / 2 - 40), gy - B, B * 10, B);
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = (Math.floor(t / 150) + i) % 5 ? '#3a3060' : '#ffd86b'; ctx.fillRect(snap(W / 2 - 40) + i * B * 2 + 2, gy - B + 2, B - 4, B - 4); }
+  }
+
   // Rétro Arcade : décor synthwave des années 80 (soleil rayé, grille néon, montagnes)
   function drawSynthwave(g, t, k) {
     const hor = g - 40;
@@ -3447,6 +3529,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (model === 'mecha') drawCity(stationY, t, sk);
     else if (model === 'cristal') drawIce(stationY, t, sk);
     else if (model === 'arcade') drawSynthwave(stationY, t, sk);
+    else if (model === 'pixel') drawPixelBase(stationY, t, sk);
     else drawStation(W / 2, stationY, t);
     // pinces qui retiennent la fusée, elles s'ouvrent à l'allumage
     const open = Math.min(1, Math.max(0, launchT - 1.1) / .25);
@@ -3460,8 +3543,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // fumée et flammes
     for (const p of lparts) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
-      ctx.fillStyle = p.smoke ? ({ requin: '#c8fbff', predateur: '#5a3a3a', legende: '#fff2c8', aile: '#f0c89a', ovni: '#b6ff6b', abeille: '#ffe9a0', chevalier: '#f3eefe', galion: '#d6dcea', mecha: '#ff7ad9', cristal: '#e6f9ff', arcade: '#ff4fd8' }[cfg.model] || '#d9d0ff') : flameColsOf(cfg.flame, t)[1];
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+      ctx.fillStyle = p.smoke ? ({ requin: '#c8fbff', predateur: '#5a3a3a', legende: '#fff2c8', aile: '#f0c89a', ovni: '#b6ff6b', abeille: '#ffe9a0', chevalier: '#f3eefe', galion: '#d6dcea', mecha: '#ff7ad9', cristal: '#e6f9ff', arcade: '#ff4fd8', pixel: '#ffffff' }[cfg.model] || '#d9d0ff') : flameColsOf(cfg.flame, t)[1];
+      if (model === 'pixel' || model === 'arcade') { const z = Math.round(p.r / 4) * 4 * 1.6; ctx.fillRect(Math.round((p.x - z / 2) / 4) * 4, Math.round((p.y - z / 2) / 4) * 4, z, z); }
+      else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
     }
     ctx.globalAlpha = 1;
     if (model === 'arcade' && launchT > 1.2 && launchT < 2.2) {
@@ -3476,7 +3560,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       }
       ctx.globalAlpha = 1;
     }
-    drawRocket(ctx, rx, ry, model === 'arcade' ? 1.6 : 1.35, cfg, t, 0, launchT > 1.2 ? 1.6 : 0);
+    drawRocket(ctx, rx, ry, model === 'arcade' ? 1.6 : model === 'pixel' ? 1.5 : 1.35, cfg, t, 0, launchT > 1.2 ? 1.6 : 0);
     ctx.restore();
     if (model === 'arcade') {
       // glitch : des bandes de l'écran se décalent au moment de l'allumage
