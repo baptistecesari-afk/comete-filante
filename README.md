@@ -2,9 +2,12 @@
 
 Un jeu d'arcade dans le navigateur : tu pilotes une fusée, tu tires sur les extraterrestres, tu attrapes les étoiles et tu esquives les astéroïdes.
 
-## Jouer
+## Liens
 
-Ouvre `index.html` dans ton navigateur, ou joue en ligne sur GitHub Pages.
+- **Jouer en ligne :** https://baptistecesari-afk.github.io/comete-filante/
+- **Code du jeu :** [index.html](index.html) (tout le jeu tient dans ce fichier : HTML, CSS et JavaScript)
+
+Tu peux aussi télécharger `index.html` et l'ouvrir dans ton navigateur.
 
 ## Ce qu'il y a dans le jeu
 
