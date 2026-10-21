@@ -490,6 +490,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   <div class="card">
     <h1 style="font-size:56px">Pause</h1>
     <button class="play" id="resumeBtn">Reprendre</button>
+    <button class="ghost" id="quitBtn">Quitter la partie</button>
+    <p>Si tu quittes, les points de cette partie sont quand même ajoutés au Hangar.</p>
   </div>
 </div>
 
@@ -1698,11 +1700,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
     $('cine').hidden = true;
     resetScenery(true);
-    setTimeout(() => { if (state === 'play' && time < 3) showBanner('Secteur 1', BOSSES[0].place); }, 400);
-    $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
     updateAmmoUi();
     lastPowerUi = ''; updatePowerUi();
-    beep(440, .1, 'triangle'); setTimeout(() => beep(660, .15, 'triangle'), 90);
+    beginLaunch();
   }
 
   function gameOver() {
@@ -1743,9 +1743,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('againBtn').onclick = start;
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
+  // quitter depuis la pause : on garde les points et on revient au menu
+  $('quitBtn').onclick = () => {
+    if (state !== 'pause') return;
+    shop.credits += score; saveShop();
+    if (score > best) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
+    state = 'menu';
+    for (const id of ['paused', 'pauseBtn', 'powerBtn', 'weapons', 'cine']) $(id).hidden = true;
+    $('banner').classList.remove('show');
+    reset(); resetScenery(false); renderAtelier();
+    $('menu').hidden = false;
+  };
 
   // --- contrôles ---
+  addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); });
   addEventListener('keydown', e => {
+    if (state === 'launch') { if (!e.repeat) finishLaunch(); return; }
     if (e.target.tagName === 'INPUT') return;
     keys[e.key.toLowerCase()] = true;
     if (e.key.startsWith('Arrow') || e.key === ' ') e.preventDefault();
@@ -2209,6 +2222,255 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.globalAlpha = 1;
   }
 
+  // ===== Cinématique de décollage depuis la station spatiale =====
+  const LAUNCH_DUR = 3.3;
+  let launchT = 0, lparts = [], launchBeeps = 0;
+  const easeIn = p => p * p * p;
+
+  function beginLaunch() {
+    state = 'launch'; launchT = 0; lparts = []; launchBeeps = 0;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
+  }
+  function finishLaunch() {
+    state = 'play';
+    lparts = [];
+    $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
+    // la fusée arrive par le bas de l'écran
+    player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
+    last = performance.now();
+    showBanner('Secteur 1', BOSSES[0].place);
+  }
+  function updateLaunch(dt) {
+    launchT += dt;
+    // compte à rebours sonore
+    const step = Math.floor(launchT / .4);
+    if (step > launchBeeps && step <= 3) { launchBeeps = step; beep(step < 3 ? 520 : 880, step < 3 ? .12 : .25, 'square', .08); }
+    if (launchT > 1.2 && launchBeeps === 3) { launchBeeps = 4; beep(70, 1.4, 'sawtooth', .2, 60); beep(140, 1, 'square', .06, 300); }
+    // fumée et flammes au décollage
+    if (launchT > 1.2 && launchT < 2.8) {
+      const { rx, ry } = launchRocket();
+      const n = reduce ? 1 : 5;
+      for (let i = 0; i < n; i++) {
+        const smoke = launchT < 1.7;
+        lparts.push({ x: rx + (Math.random() - .5) * 14, y: ry + 30, vx: (Math.random() - .5) * (smoke ? 320 : 60), vy: smoke ? 40 + Math.random() * 80 : 220 + Math.random() * 120,
+          life: smoke ? 1 + Math.random() * .6 : .4, r: smoke ? 8 + Math.random() * 10 : 3 + Math.random() * 3, smoke });
+      }
+    }
+    for (const p of lparts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; p.life -= dt; if (p.smoke) p.r += 14 * dt; }
+    lparts = lparts.filter(p => p.life > 0);
+    if (launchT >= LAUNCH_DUR) finishLaunch();
+  }
+  // position de la station et de la fusée selon le moment de la cinématique
+  function launchRocket() {
+    const padY = cfg.model === 'navette' ? H * .6 : H * .72;
+    const lift = Math.max(0, launchT - 1.4) / 1.2;                 // 0 → 1 pendant la montée
+    const fall = easeIn(Math.min(1, Math.max(0, launchT - 1.6) / 1.4)); // la station s'éloigne vers le bas
+    return { rx: W / 2, ry: padY - 30 - easeIn(Math.min(1, lift)) * (padY + 120), stationY: padY + fall * H * .7, lift };
+  }
+
+  function drawStation(cx, top, t) {
+    const w = Math.min(W * .92, 420), half = w / 2;
+    ctx.save();
+    // panneaux solaires
+    for (const s of [-1, 1]) {
+      ctx.fillStyle = '#6a6290'; ctx.fillRect(cx + s * (half - 10) - (s < 0 ? 30 : 0), top + 34, 30, 6);
+      ctx.fillStyle = '#1f3f8a'; ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 1;
+      const px = s < 0 ? cx - half - 70 : cx + half + 10;
+      ctx.fillRect(px, top + 16, 60, 40); ctx.strokeRect(px, top + 16, 60, 40);
+      ctx.beginPath();
+      for (let i = 1; i < 4; i++) { ctx.moveTo(px + i * 15, top + 16); ctx.lineTo(px + i * 15, top + 56); }
+      ctx.moveTo(px, top + 36); ctx.lineTo(px + 60, top + 36); ctx.stroke();
+    }
+    // coque principale
+    const g = ctx.createLinearGradient(0, top + 20, 0, top + 110);
+    g.addColorStop(0, '#9a92c4'); g.addColorStop(.5, '#5a5478'); g.addColorStop(1, '#2a2350');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.roundRect(cx - half, top + 20, w, 70, 18); ctx.fill();
+    ctx.strokeStyle = '#3a3062'; ctx.lineWidth = 2; ctx.stroke();
+    // dôme du dessous et hublots
+    ctx.fillStyle = '#4a4270'; ctx.beginPath(); ctx.ellipse(cx, top + 90, w * .25, 28, 0, 0, Math.PI); ctx.fill();
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 18; i++) { const x = cx - half + 24 + i * (w - 48) / 17; if (i % 4 !== 1) ctx.fillRect(x - 3, top + 62, 6, 5); }
+    ctx.fillStyle = '#7ad8ff';
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(cx - w * .16 + i * w * .08, top + 104, 3, 0, 7); ctx.fill(); }
+    // antennes avec voyants
+    for (const s of [-1, 1]) {
+      const ax = cx + s * (half - 34);
+      ctx.strokeStyle = '#8f86b8'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(ax, top + 20); ctx.lineTo(ax, top - 26); ctx.stroke();
+      ctx.fillStyle = Math.floor(t / 300 + (s > 0 ? 1 : 0)) % 2 ? '#ff4f6d' : '#5a2030';
+      ctx.beginPath(); ctx.arc(ax, top - 28, 4, 0, 7); ctx.fill();
+    }
+    // pas de tir
+    ctx.fillStyle = '#3a3062';
+    ctx.beginPath(); ctx.moveTo(cx - 54, top + 20); ctx.lineTo(cx - 34, top); ctx.lineTo(cx + 34, top); ctx.lineTo(cx + 54, top + 20); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 5; i++) { ctx.globalAlpha = (Math.floor(t / 150) + i) % 5 === 0 ? 1 : .35; ctx.fillRect(cx - 28 + i * 13, top + 6, 5, 3); }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // base de lancement sur Terre (fusée Classique)
+  function drawEarthBase(g, t, k) {
+    ctx.save();
+    // ciel bleu qui s'efface quand on monte vers l'espace
+    ctx.globalAlpha = Math.max(0, 1 - k * 1.3);
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, '#2a4fa8'); sky.addColorStop(.6, '#6fb4ff'); sky.addColorStop(1, '#ffd9a8');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 6; i++) {
+      const cx = ((i * 157 + t * .012 * (i % 2 ? 1 : -1)) % (W + 240) + W + 240) % (W + 240) - 120;
+      const cy = H * (.08 + i * .11) + k * H * 1.8;
+      ctx.globalAlpha = Math.max(0, 1 - k * 1.3) * .85;
+      for (const [dx, dy, rx, ry] of [[0, 0, 46, 14], [26, -8, 30, 14], [-24, -4, 24, 11]]) { ctx.beginPath(); ctx.ellipse(cx + dx, cy + dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.restore();
+    if (g > H + 220) return;
+    // collines et sol
+    ctx.fillStyle = '#3a8a5a';
+    ctx.beginPath(); ctx.moveTo(0, g);
+    for (let x = 0; x <= W; x += 20) ctx.lineTo(x, g - 34 - Math.sin(x / 70) * 16 - Math.sin(x / 23) * 5);
+    ctx.lineTo(W, g); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#2f7a3a'; ctx.fillRect(0, g, W, Math.max(0, H - g) + 300);
+    ctx.fillStyle = '#8f86b8'; ctx.fillRect(W / 2 - 80, g - 6, 160, 12);
+    // bâtiment de contrôle avec antenne parabolique
+    const bx = W / 2 - 175;
+    ctx.fillStyle = '#d9d0ff'; ctx.fillRect(bx, g - 54, 84, 54);
+    ctx.fillStyle = '#4fe0c8';
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) ctx.fillRect(bx + 8 + c * 19, g - 46 + r * 18, 12, 9);
+    ctx.strokeStyle = '#eef0ff'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(bx + 60, g - 54); ctx.lineTo(bx + 66, g - 72); ctx.stroke();
+    ctx.fillStyle = '#eef0ff'; ctx.beginPath(); ctx.arc(bx + 70, g - 78, 14, Math.PI * .85, Math.PI * 1.85); ctx.fill();
+    // dôme
+    ctx.fillStyle = '#eef0ff'; ctx.beginPath(); ctx.arc(W / 2 + 150, g, 32, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#7ad8ff'; ctx.fillRect(W / 2 + 140, g - 12, 20, 12);
+    // tour de lancement en treillis
+    const tx = W / 2 + 34, top = g - 160;
+    ctx.strokeStyle = '#ff7b4a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(tx, g); ctx.lineTo(tx, top); ctx.moveTo(tx + 18, g); ctx.lineTo(tx + 18, top); ctx.stroke();
+    ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let y = g; y > top; y -= 18) { ctx.moveTo(tx, y); ctx.lineTo(tx + 18, y - 18); ctx.moveTo(tx + 18, y); ctx.lineTo(tx, y - 18); }
+    ctx.stroke();
+    ctx.fillStyle = Math.floor(t / 300) % 2 ? '#ff4f6d' : '#5a2030';
+    ctx.beginPath(); ctx.arc(tx + 9, top - 6, 5, 0, 7); ctx.fill();
+    // bras qui tiennent la fusée, ils se relèvent à l'allumage
+    const open = Math.min(1, Math.max(0, launchT - 1.1) / .3);
+    ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    for (const y of [g - 70, g - 40]) {
+      const a = -open * 1.1, len = 22;
+      ctx.beginPath(); ctx.moveTo(tx, y); ctx.lineTo(tx - Math.cos(a) * len, y + Math.sin(a) * len); ctx.stroke();
+    }
+  }
+
+  // hangar d'un croiseur (fusée Éclair)
+  function drawHangar(shift, t) {
+    const ceil = H * .24 + shift, open = Math.min(1, Math.max(0, launchT - .3) / .9);
+    ctx.save();
+    // intérieur
+    const g = ctx.createLinearGradient(0, ceil, 0, H);
+    g.addColorStop(0, '#2a2350'); g.addColorStop(1, '#141028');
+    ctx.fillStyle = g; ctx.fillRect(0, ceil, W, Math.max(0, H - ceil));
+    // murs avec bandes lumineuses
+    for (const s of [0, 1]) {
+      const x = s ? W - 26 : 0;
+      ctx.fillStyle = '#3a3062'; ctx.fillRect(x, ceil, 26, H);
+      for (let y = ceil + 20; y < H; y += 46) {
+        ctx.fillStyle = (Math.floor(t / 200) + Math.floor(y / 46)) % 3 ? '#7ad8ff' : '#2a6a9a';
+        ctx.fillRect(x + 9, y, 8, 22);
+      }
+    }
+    // chasseurs garés sur les côtés
+    for (const [x, y] of [[W * .2, H * .5 + shift], [W * .8, H * .58 + shift], [W * .18, H * .78 + shift]]) {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(-Math.PI / 2); ctx.scale(1.6, 1.6);
+      ctx.strokeStyle = '#8f86b8'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(9, 0); ctx.moveTo(-5, -7); ctx.lineTo(3, 7); ctx.moveTo(-5, 7); ctx.lineTo(3, -7); ctx.stroke();
+      ctx.restore();
+    }
+    // rail de catapulte avec lumières qui montent
+    ctx.strokeStyle = '#5a5478'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(W / 2 - 16, ceil); ctx.lineTo(W / 2 - 16, H); ctx.moveTo(W / 2 + 16, ceil); ctx.lineTo(W / 2 + 16, H); ctx.stroke();
+    ctx.fillStyle = '#7ad8ff';
+    const run = (t / (launchT > 1.2 ? 2 : 6)) % 40;
+    for (let y = H - run; y > ceil; y -= 40) { ctx.fillRect(W / 2 - 19, y, 6, 4); ctx.fillRect(W / 2 + 13, y, 6, 4); }
+    // chevrons au sol
+    ctx.fillStyle = '#ffd86b';
+    for (let i = 0; i < 3; i++) {
+      const y = H * .84 + shift + i * 18;
+      ctx.beginPath(); ctx.moveTo(W / 2 - 40, y + 10); ctx.lineTo(W / 2, y); ctx.lineTo(W / 2 + 40, y + 10); ctx.lineTo(W / 2 + 40, y + 16); ctx.lineTo(W / 2, y + 6); ctx.lineTo(W / 2 - 40, y + 16); ctx.closePath(); ctx.fill();
+    }
+    // grandes portes du plafond qui s'ouvrent sur l'espace
+    const half = W / 2 * (1 - open);
+    for (const s of [-1, 1]) {
+      const x0 = s < 0 ? 0 : W - half;
+      ctx.fillStyle = '#4a4270'; ctx.fillRect(x0, -10, half, ceil + 10);
+      ctx.fillStyle = '#3a3062';
+      for (let y = ceil - 40; y > -10; y -= 40) ctx.fillRect(x0, y, half, 4);
+      // bord jaune et noir
+      const ex = s < 0 ? half - 12 : W - half;
+      for (let y = -10; y < ceil; y += 16) { ctx.fillStyle = Math.floor(y / 16) % 2 ? '#ffd86b' : '#0b0820'; ctx.fillRect(ex, y, 12, 16); }
+    }
+    ctx.fillStyle = '#5a5478'; ctx.fillRect(0, ceil - 6, W, 8);
+    ctx.restore();
+  }
+
+  function drawLaunch(t) {
+    const { rx, ry, stationY, lift } = launchRocket();
+    ctx.save();
+    if (!reduce && launchT > 1.2 && launchT < 2.4) ctx.translate((Math.random() - .5) * 8, (Math.random() - .5) * 8);
+    // traînées d'étoiles pendant la montée
+    if (lift > 0 && !reduce) {
+      ctx.strokeStyle = 'rgba(217, 208, 255, .5)'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 97.3) % W, y = ((i * 211.7) + launchT * 1400) % H, len = 20 + lift * 80;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - len); ctx.stroke();
+      }
+    }
+    // un décor de départ différent selon le modèle de fusée
+    const model = cfg.model;
+    if (model === 'classique') drawEarthBase(stationY, t, Math.min(1, Math.max(0, launchT - 1.5) / 1.2));
+    else if (model === 'eclair') drawHangar(stationY - H * .72, t);
+    else drawStation(W / 2, stationY, t);
+    // pinces qui retiennent la fusée, elles s'ouvrent à l'allumage
+    const open = Math.min(1, Math.max(0, launchT - 1.1) / .25);
+    if (model !== 'classique' && stationY < H + 40) {
+      ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (const s of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(W / 2 + s * 30, stationY + 2);
+        ctx.lineTo(W / 2 + s * (16 + open * 20), stationY - 18 - open * 6); ctx.stroke();
+      }
+    }
+    // fumée et flammes
+    for (const p of lparts) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
+      ctx.fillStyle = p.smoke ? '#d9d0ff' : byId(FLAMES, cfg.flame).c[1];
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    drawRocket(ctx, rx, ry, 1.35, cfg, t, 0, launchT > 1.2 ? 1.6 : 0);
+    ctx.restore();
+
+    // compte à rebours puis « Décollage ! »
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (launchT < 1.2) {
+      const n = 3 - Math.floor(launchT / .4), k = (launchT % .4) / .4;
+      ctx.globalAlpha = 1 - k * .6;
+      ctx.font = `${Math.round(110 - k * 30)}px Bungee, Impact, sans-serif`;
+      ctx.lineWidth = 8; ctx.strokeStyle = '#0b0820'; ctx.strokeText(String(n), W / 2, H * .32);
+      ctx.fillStyle = '#ffd86b'; ctx.fillText(String(n), W / 2, H * .32);
+    } else if (launchT < 2.3) {
+      ctx.globalAlpha = Math.min(1, (2.3 - launchT) * 2);
+      ctx.font = `${Math.round(Math.min(46, W / 9))}px Bungee, Impact, sans-serif`;
+      ctx.lineWidth = 6; ctx.strokeStyle = '#0b0820'; ctx.strokeText('Décollage !', W / 2, H * .3);
+      ctx.fillStyle = '#ff7aa8'; ctx.fillText('Décollage !', W / 2, H * .3);
+    }
+    ctx.globalAlpha = .7; ctx.font = '600 13px Outfit, system-ui, sans-serif'; ctx.fillStyle = '#d9d0ff';
+    ctx.fillText('Touche l\'écran pour passer', W / 2, H - 30);
+    ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
+    // éclair blanc final
+    if (launchT > 2.9) { ctx.fillStyle = `rgba(255, 255, 255, ${((launchT - 2.9) / .4 * .8).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+  }
+
   function draw(t) {
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
@@ -2233,6 +2495,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
     ctx.globalAlpha = 1;
     drawScenery(t, inGame ? sector : 0);
+    if (state === 'launch') drawLaunch(t);
 
     if (playing) {
       const fl = byId(FLAMES, cfg.flame).c;
@@ -2390,6 +2653,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function loop(t) {
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (state === 'play') update(dt);
+    else if (state === 'launch') updateLaunch(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
     draw(t);
     if (state === 'hangar') drawPreview(t);
