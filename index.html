@@ -4124,6 +4124,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (it.dead) return;
     // carapace ou boss enfoui : les tirs ricochent
     if (it.invuln) { if (dmg >= 1) burst(it.x, it.y, '#ffffff', 3, 100, 2); return; }
+    // le boss est intouchable pendant son apparition : il faut le combattre une fois arrivé
+    if (it.boss && (!it.entered || cineT > 0)) { if (dmg >= 1) burst(it.x, it.y + it.r * .5, '#ffffff', 2, 80, 2); return; }
     it.hp -= dmg; it.hitT = .08;
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     // le Phénix renaît une fois
@@ -4334,7 +4336,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (d.id === 'gel') { beep(1800, .6, 'sine', .1, -1500); flash = .45; flashColor = '190, 240, 255'; }
     else if (d.id === 'nova') {
       const before = score;
-      for (const it of items) if (it.kind === 'rock' || it.kind === 'alien') damage(it, it.boss ? 10 : 99);
+      for (const it of items) if (it.kind === 'rock' || it.kind === 'alien') damage(it, it.boss ? 5 : 99);
       ebullets = [];
       if (score > before) pop(player.x, player.y - 40, '+' + (score - before), '#ffd86b');
       flash = .5; flashColor = '255, 240, 200'; shake = .25;
@@ -4671,7 +4673,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
         const dx = bh.x - it.x, dy = bh.y - it.y, d = Math.hypot(dx, dy) || 1;
         if (!it.boss && d < 320) { it.x += dx / d * 240 * dt; it.y += dy / d * 240 * dt; }
-        if (d < it.r + 34) damage(it, (it.boss ? 10 : 40) * dt);
+        if (d < it.r + 34) damage(it, (it.boss ? 4 : 40) * dt);
       }
       for (const b of ebullets) {
         const dx = bh.x - b.x, dy = bh.y - b.y, d = Math.hypot(dx, dy) || 1;
@@ -4693,7 +4695,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           left.sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y));
           const it = left.shift();
           pts.push([it.x, it.y]); burst(it.x, it.y, '#bfe6ff', 6, 160, 3);
-          damage(it, it.boss ? 4 : 99); from = it;
+          damage(it, it.boss ? 1.5 : 99); from = it;
         }
         if (pts.length > 1) { zaps.push({ pts, life: .2 }); beep(1800 + Math.random() * 600, .06, 'sawtooth', .04, -1400); }
       }
@@ -4719,7 +4721,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       for (const it of items) {
         if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
         const dy = player.y - it.y, dx = Math.abs(it.x - player.x);
-        if (dy > 0 && dy < reach + it.r && dx < dy * .4 + 24 + it.r) damage(it, (it.boss ? 9 : 40) * dt);
+        if (dy > 0 && dy < reach + it.r && dx < dy * .4 + 24 + it.r) damage(it, (it.boss ? 4 : 40) * dt);
       }
       for (const b of ebullets) { const dy = player.y - b.y; if (dy > 0 && dy < reach && Math.abs(b.x - player.x) < dy * .4 + 24) b.dead = true; }
     }
@@ -4751,7 +4753,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         const hr = it.boss ? it.r + 10 : it.r + 4;
         if (Math.abs(s.x - it.x) < hr && Math.abs(s.y - it.y) < hr && Math.hypot(s.x - it.x, (s.y - it.y) * (it.flat ? 1.6 : 1)) < hr) {
           if (s.pierce) { s.pierce.push(it); burst(s.x, s.y, '#d78bff', 8, 160, 3); } else s.dead = true;
-          damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1));
+          damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1) * (it.boss && (s.star || s.missile) ? .3 : 1));
           if (s.last && it.dead && !s.bonus) {
             s.bonus = true; score += 25;
             pop(it.x, it.y - 44, 'Dernière balle ! +25', '#ffd86b');
@@ -4805,7 +4807,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const hostile = it.kind === 'rock' || it.kind === 'alien';
       // laser : détruit ce qui est au-dessus de la fusée
       if (on && pid === 'laser' && hostile && it.y < player.y && Math.abs(it.x - player.x) < it.r + 10) {
-        damage(it, it.boss ? 14 * dt : 99);
+        damage(it, it.boss ? 6 * dt : 99);
         if (it.dead) continue;
       }
 
@@ -4834,7 +4836,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           beep(330, .12, 'square', .1); setTimeout(() => beep(495, .12, 'square', .1), 90); setTimeout(() => beep(660, .25, 'square', .1, 300), 180);
         } else if (invincible) {
           if (!it.boss) damage(it, 99);
-          else if (it.contactT <= 0) { damage(it, 5); it.contactT = .5; }
+          else if (it.contactT <= 0) { damage(it, 3); it.contactT = .5; }
           updateHud();
         } else if (player.hurt <= 0) {
           if (!it.boss) { it.dead = true; explode(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : '#7dff8a', 1, it.kind === 'rock' ? 'roche' : 'feu'); }
