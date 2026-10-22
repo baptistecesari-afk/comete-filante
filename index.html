@@ -3547,11 +3547,26 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   function updateBoss(it, dt, slow) {
-    const d = it.def, sp = slow * dt, bs = 1 + level * .03 + world * .06;
+    const d = it.def, sp = slow * dt, bs = (1 + level * .03 + world * .06) * 1.15;
     if (it.contactT > 0) it.contactT -= dt;
     if (!it.entered) { it.y += 70 * sp; if (it.y >= 150) it.entered = true; else return; }
     const sweep = (k, m = 70) => { it.x = W / 2 + Math.sin(it.t * k) * Math.max(0, W / 2 - m); };
-    it.fireT -= sp; it.aimT -= sp; it.altT -= sp;
+    // tous les boss attaquent plus souvent, et deviennent furieux à mi-vie puis désespérés à 25 %
+    const hpLeft = it.hp / it.maxHp;
+    if (!it.mad && hpLeft < .5) { it.mad = 1; it.madT = 1.5; showBanner(`${d.name} est furieux !`, 'Il attaque deux fois plus'); shake = .4; flash = .25; flashColor = '255, 60, 90'; beep(70, .9, 'sawtooth', .16, 40); }
+    if (it.mad === 1 && hpLeft < .25) { it.mad = 2; showBanner('Dernière chance !', `${d.name} donne tout ce qu'il a`); shake = .5; beep(60, 1, 'sawtooth', .18, 30); }
+    const ag = 1.3 + world * .08 + (it.mad ? .35 * it.mad : 0);
+    it.fireT -= sp * ag; it.aimT -= sp * ag; it.altT -= sp * ag;
+    // attaque de rage : un anneau de tirs, puis des tirs visés en éventail
+    if (it.mad) {
+      it.madT = (it.madT || 0) - sp;
+      if (it.madT <= 0) {
+        it.madT = it.mad === 2 ? 2.2 : 3.2;
+        ringO(it.x, it.y, it.mad === 2 ? 16 : 12, 150 * bs, it.t, '#ff4f6d', 5);
+        setTimeout(() => { if (boss === it && state === 'play') fan(it.x, it.y + 20, 5, .7, 230 * bs, '#ff8a9a', 5); }, 450);
+        beep(140, .3, 'sawtooth', .07, -60);
+      }
+    }
     if (d.move) { d.move(it, sp, bs, dt, sweep); return; }
     switch (d.id) {
       case 'mere':
@@ -6298,6 +6313,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           ctx.textBaseline = 'alphabetic';
         } else if (it.kind === 'alien') {
           ctx.shadowBlur = 0;
+          if (it.boss && it.mad) {
+            const pr = it.r * (1.5 + (reduce ? 0 : Math.sin(t / 120) * .12)), rg = ctx.createRadialGradient(it.x, it.y, it.r * .6, it.x, it.y, pr);
+            rg.addColorStop(0, it.mad === 2 ? 'rgba(255, 40, 70, .45)' : 'rgba(255, 60, 90, .3)'); rg.addColorStop(1, 'rgba(255, 60, 90, 0)');
+            ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(it.x, it.y, pr, 0, 7); ctx.fill();
+          }
           if (it.boss) drawBoss(it, t); else drawAlien(it, t);
         } else {
           ctx.shadowBlur = 0;
