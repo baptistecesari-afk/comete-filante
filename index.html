@@ -290,6 +290,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .storytext p b { color: var(--star); font-weight: 600; }
 @keyframes storyIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
+/* Cinématique de présentation d'une galaxie (prologue de chaque monde) */
+.procine { position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 16px;
+  padding: 0 16px calc(28px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
+.procine[hidden] { display: none; }
+.procine p { margin: 0; max-width: 36rem; text-align: center; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.5; color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .9), 0 0 2px #000; text-wrap: balance; }
+.procine p.in { animation: storyIn .6s ease both; }
+.procine p b { color: var(--star); font-weight: 600; }
+.procine p.mission { font-size: clamp(19px, 3vw, 26px); }
+.procine .row { pointer-events: auto; }
+.procine .dots { display: flex; gap: 6px; }
+.procine .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
+.procine .dots i.on { background: var(--star); }
+.procine .hint { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
+@media (prefers-reduced-motion: reduce) { .procine p.in { animation: none; } }
+
 /* Cinématique d'arrivée d'un boss */
 .cine { position: fixed; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; }
 .hazard {
@@ -627,6 +643,16 @@ body:not(.jeu) .hud { opacity: 0; }
     <q id="cineQuote"></q>
   </div>
   <div class="hazard"><span>Boss</span></div>
+</div>
+
+<div class="procine" id="proCine" hidden>
+  <p id="proSub"></p>
+  <div class="dots" id="proDots"></div>
+  <div class="row">
+    <button class="ghost" id="proSkip">Passer</button>
+    <button class="play" id="proGo" hidden>Décoller</button>
+  </div>
+  <small class="hint" id="proHint">Touche l'écran pour continuer</small>
 </div>
 
 <div class="panel" id="story" hidden>
@@ -3435,7 +3461,8 @@ body:not(.jeu) .hud { opacity: 0; }
   // un prologue pour chacun des 5 mondes (n = nom de la fusée)
   const PROLOGUES = [
     n => [
-      'An 2187. L\'<b>Empereur Zorg</b> a volé les étoiles de la galaxie, une par une. Le ciel de la Terre s\'éteint.',
+      'An 2187. Dans la <b>Voie lactée</b>, les étoiles s\'éteignent une par une. Le ciel de la Terre devient noir.',
+      'Le coupable : l\'<b>Empereur Zorg</b>. Il a volé toutes les étoiles pour les cacher dans son palais.',
       'Pour garder son trésor, il a placé <b>10 gardiens</b> dans 10 secteurs de l\'espace, de l\'orbite terrestre jusqu\'à son palais.',
       `Une seule fusée est encore prête à décoller : ${n}.`,
       '<b>Mission :</b> rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
@@ -3511,6 +3538,162 @@ body:not(.jeu) .hud { opacity: 0; }
     if (mode !== 'prologue') { state = 'story'; $('pauseBtn').hidden = true; }
     else state = 'hangar';
   }
+  // ===== Cinématique de prologue : présentation de la galaxie en 5 scènes =====
+  // 1. la galaxie  2. son tyran  3. ses gardiens  4. ta fusée arrive  5. la mission
+  const PRO_SCENE = 5;
+  let proT = 0, proScene = 0, proLines = [], proPts = [], proImgs = {}, proSil = {};
+  function proImg(d) {
+    if (!proImgs[d.id]) { const im = new Image(); im.src = bossPortrait(d); proImgs[d.id] = im; }
+    return proImgs[d.id];
+  }
+  // silhouette noire d'un gardien (on garde le mystère)
+  function proSilhouette(d) {
+    if (proSil[d.id]) return proSil[d.id];
+    const im = proImg(d); if (!im.complete || !im.naturalWidth) return null;
+    const c = document.createElement('canvas'); c.width = c.height = 128; const k = c.getContext('2d');
+    k.drawImage(im, 0, 0); k.globalCompositeOperation = 'source-in'; k.fillStyle = '#07051a'; k.fillRect(0, 0, 128, 128);
+    return (proSil[d.id] = c);
+  }
+  function startPrologue(w) {
+    storyWorld = w; storyMode = 'prologue';
+    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
+    proLines = PROLOGUES[w](n);
+    for (const id of ['menu', 'over', 'help', 'hangar', 'story']) $(id).hidden = true;
+    const R = Math.random;
+    proPts = Array.from({ length: reduce ? 260 : 600 }, () => {
+      const arm = Math.floor(R() * 3), rr = Math.pow(R(), .7);
+      return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .55, r: rr, z: R() < .08 ? 2.6 : 1.3, white: R() < .35, d: R(), u: R(), v: R() };
+    });
+    WORLDS[w].bosses.forEach(proImg);
+    $('proDots').innerHTML = '<i></i>'.repeat(PRO_SCENE);
+    $('proCine').hidden = false;
+    state = 'prologue';
+    proGoto(0);
+  }
+  function proGoto(i) {
+    proScene = i; proT = 0;
+    const last = i === PRO_SCENE - 1, sub = $('proSub');
+    sub.innerHTML = proLines[i] || ''; sub.className = last ? 'mission' : '';
+    void sub.offsetWidth; sub.classList.add('in');
+    [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
+    $('proGo').hidden = !last; $('proSkip').hidden = last; $('proHint').hidden = last;
+    beep([392, 440, 523, 587, 784][i], last ? .5 : .25, 'triangle', .08);
+    if (i === 1) beep(110, .9, 'sawtooth', .08, -40);
+  }
+  function proNext() { if (proScene < PRO_SCENE - 1) proGoto(proScene + 1); }
+  function endPrologue() {
+    if (state !== 'prologue') return;
+    $('proCine').hidden = true; markPrologue(storyWorld); start();
+  }
+  function updatePrologue(dt) {
+    proT += dt;
+    if (proScene < PRO_SCENE - 1 && proT > 5.5) proNext();
+  }
+  function drawPrologue(t) {
+    const w = WORLDS[storyWorld], [c1, c2] = w.col, T = proT, sc = proScene, m = Math.min(W, H);
+    const gs = w.bosses, chief = gs[9];
+    ctx.save();
+    // fond : le ciel de la galaxie
+    const bg = ctx.createRadialGradient(W / 2, H * .42, 10, W / 2, H * .42, Math.max(W, H) * .8);
+    bg.addColorStop(0, sc === 1 ? '#2a0612' : c1); bg.addColorStop(1, '#04020c');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    // étoiles de fond qui défilent (plus vite quand la fusée fonce)
+    const speed = sc === 3 ? 1.6 : .05;
+    for (let i = 0; i < 120; i++) {
+      const q = proPts[i], y = ((q.v + (t / 1000) * speed * (.3 + q.d)) % 1) * H;
+      ctx.globalAlpha = .3 + q.d * .5; ctx.fillStyle = q.white ? '#ffffff' : c2;
+      if (sc === 3) ctx.fillRect(q.u * W, y, 1.5, 6 + q.d * 18); else ctx.fillRect(q.u * W, y, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+    if (sc === 0) {
+      // 1. la galaxie qui tourne, vue de loin, puis on s'approche
+      const z = m * (.32 + ease(T / 4) * .18), rot = t / 9000;
+      const core = ctx.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, z * .5);
+      core.addColorStop(0, '#ffffff'); core.addColorStop(.25, c2); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.globalCompositeOperation = 'lighter';
+      for (const q of proPts) {
+        const a = q.a + rot, x = W / 2 + Math.cos(a) * q.r * z, y = H * .42 + Math.sin(a) * q.r * z * .45;
+        ctx.globalAlpha = (1 - q.r * .6) * Math.min(1, T * 1.5); ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1);
+        ctx.fillRect(x, y, q.z, q.z);
+      }
+      ctx.globalAlpha = Math.min(1, T); ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(W / 2, H * .42, z * .5, z * .24, 0, 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      // titre
+      const k = ease((T - .5) / .8);
+      ctx.globalAlpha = k; ctx.textAlign = 'center';
+      ctx.font = `600 ${Math.max(11, m * .022)}px Outfit, system-ui, sans-serif`; ctx.fillStyle = '#ff7aa8';
+      ctx.fillText(`MONDE ${storyWorld + 1}`.split('').join(' '), W / 2, H * .12);
+      const fs = Math.min(64, W / (w.name.length * .78));
+      ctx.font = `${fs}px Bungee, Impact, system-ui, sans-serif`;
+      const tg = ctx.createLinearGradient(0, H * .14, 0, H * .14 + fs); tg.addColorStop(0, '#ffffff'); tg.addColorStop(1, c2);
+      ctx.fillStyle = tg; ctx.shadowColor = c2; ctx.shadowBlur = 24;
+      ctx.fillText(w.name.toUpperCase(), W / 2, H * .12 + fs * 1.1 + (1 - k) * 20);
+      ctx.shadowBlur = 0;
+    } else if (sc === 1) {
+      // 2. le tyran de la galaxie surgit de l'ombre et aspire les étoiles
+      const im = proImg(chief), cx = W / 2, cy = H * .38, size = m * (.38 + ease(T / 3) * .14);
+      for (let i = 0; i < 70; i++) {
+        const q = proPts[i + 200], ph = (q.d + T * .35) % 1, ang = q.a * 3, rr = (1 - ph) * Math.max(W, H) * .6 + size * .3;
+        ctx.globalAlpha = ph; ctx.fillStyle = '#ffd86b';
+        drawStar(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * .7, 2 + q.z, t / 400 + i); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      const halo = ctx.createRadialGradient(cx, cy, size * .2, cx, cy, size * .9);
+      halo.addColorStop(0, chief.col + '88'); halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = halo; ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+      if (im.complete && im.naturalWidth) {
+        ctx.globalAlpha = Math.min(1, T / 1.2);
+        const shake = T < 1.2 ? 0 : Math.sin(t / 60) * 1.5;
+        ctx.drawImage(im, cx - size / 2 + shake, cy - size / 2 + Math.sin(t / 700) * 6, size, size);
+      }
+      ctx.globalAlpha = ease((T - .8) / .6); ctx.textAlign = 'center';
+      ctx.font = `${Math.min(34, W / 16)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = chief.col; ctx.shadowColor = chief.col; ctx.shadowBlur = 16;
+      ctx.fillText(chief.name.toUpperCase(), W / 2, cy + size * .62);
+      ctx.shadowBlur = 0;
+    } else if (sc === 2) {
+      // 3. les gardiens apparaissent un à un, en silhouette
+      const cols = W > 700 ? 5 : 3, rows = Math.ceil(9 / cols), cell = Math.min(W / (cols + .6), H * .5 / rows, 150);
+      for (let i = 0; i < 9; i++) {
+        const k = ease((T - i * .22) / .5); if (k <= 0) continue;
+        const row = Math.floor(i / cols), inRow = Math.min(cols, 9 - row * cols), col = i % cols;
+        const x = W / 2 + (col - (inRow - 1) / 2) * cell, y = H * .14 + row * cell + cell / 2 + (1 - k) * 30 + Math.sin(t / 600 + i) * 4;
+        const sil = proSilhouette(gs[i]);
+        ctx.globalAlpha = k;
+        const gl = ctx.createRadialGradient(x, y, 0, x, y, cell * .55); gl.addColorStop(0, c2 + '55'); gl.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = gl; ctx.fillRect(x - cell / 2, y - cell / 2, cell, cell);
+        if (sil) { ctx.shadowColor = c2; ctx.shadowBlur = 10; ctx.drawImage(sil, x - cell * .45, y - cell * .45, cell * .9, cell * .9); ctx.shadowBlur = 0; }
+        // deux yeux qui s'allument
+        if (T > 1.6 + i * .1) { ctx.fillStyle = '#ff4f6d'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200 + i)); ctx.beginPath(); ctx.arc(x - cell * .07, y - cell * .04, 2.2, 0, 7); ctx.arc(x + cell * .07, y - cell * .04, 2.2, 0, 7); ctx.fill(); }
+      }
+      ctx.globalAlpha = ease((T - 2.2) / .5); ctx.textAlign = 'center';
+      ctx.font = `${Math.min(30, W / 18)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = c2;
+      ctx.fillText('10 GARDIENS', W / 2, H * .1);
+    } else if (sc === 3) {
+      // 4. ta fusée fonce vers la galaxie
+      const k = ease(T / 1.4), y = H + 120 - k * (H * .62 + 120);
+      const glow = ctx.createRadialGradient(W / 2, y + 60, 0, W / 2, y + 60, 160); glow.addColorStop(0, 'rgba(255, 180, 80, .35)'); glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
+      ctx.fillStyle = glow; ctx.fillRect(W / 2 - 160, y - 100, 320, 320);
+      drawRocket(ctx, W / 2 + Math.sin(t / 500) * 10, y + Math.sin(t / 300) * 4, Math.min(3, m / 240), cfg, t, Math.sin(t / 700) * .06, 1);
+    } else {
+      // 5. la mission : la galaxie au loin, la fusée prête
+      const z = m * .3, rot = t / 9000, gy = H * .3;
+      ctx.globalCompositeOperation = 'lighter';
+      for (const q of proPts) {
+        const a = q.a + rot, x = W / 2 + Math.cos(a) * q.r * z, yy = gy + Math.sin(a) * q.r * z * .45;
+        ctx.globalAlpha = (1 - q.r * .6) * .8; ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1); ctx.fillRect(x, yy, q.z, q.z);
+      }
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      drawRocket(ctx, W / 2, H * .58 + Math.sin(t / 500) * 6, Math.min(2.4, m / 300), cfg, t, 0, .5);
+      ctx.globalAlpha = ease(T / .6); ctx.textAlign = 'center';
+      ctx.font = `${Math.min(40, W / 12)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 18;
+      ctx.fillText('MISSION', W / 2, H * .1); ctx.shadowBlur = 0;
+    }
+    // fondu au noir entre deux scènes + bandes cinéma
+    ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; const bar = Math.min(40, H * .05); ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+    ctx.restore();
+  }
+
   function closeStory() {
     $('story').hidden = true;
     if (storyMode === 'prologue') { markPrologue(storyWorld); start(); }
@@ -4688,9 +4871,11 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; $('cine').style.visibility = ''; $('toast').style.visibility = ''; last = performance.now(); }
   }
 
-  const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); storyWorld = startWorld; showStory('prologue'); } };
+  const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
-  $('storyBtn').onclick = () => { initAudio(); storyWorld = startWorld; showStory('prologue'); };
+  $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
+  $('proSkip').onclick = endPrologue;
+  $('proGo').onclick = endPrologue;
   $('storyGo').onclick = closeStory;
   $('storySkip').onclick = closeStory;
   $('againBtn').onclick = start;
@@ -4838,9 +5023,17 @@ body:not(.jeu) .hud { opacity: 0; }
   };
 
   // --- contrôles ---
-  addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro(); });
+  addEventListener('pointerdown', e => {
+    if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro();
+    else if (state === 'prologue' && !e.target.closest('button') && proT > .5) proNext();
+  });
   addEventListener('keydown', e => {
     if (state === 'outro') { if (!e.repeat && outroT > .8) finishOutro(); return; }
+    if (state === 'prologue') {
+      if (e.repeat) return;
+      if (e.key === 'Escape') endPrologue(); else if (proScene === PRO_SCENE - 1 && (e.key === 'Enter' || e.key === ' ')) endPrologue(); else if (proT > .5) proNext();
+      e.preventDefault(); return;
+    }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
     if (e.target.tagName === 'INPUT') return;
     keys[e.key.toLowerCase()] = true;
@@ -6971,6 +7164,7 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.globalAlpha = q; ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
     }
     if (state === 'outro') drawOutro(t);
+    if (state === 'prologue') drawPrologue(t);
     if (flash > 0) {
       ctx.fillStyle = `rgba(${flashColor}, ${(flash * .8).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
@@ -7023,6 +7217,7 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'launch') updateLaunch(dt);
     else if (state === 'dying') updateDying(dt);
     else if (state === 'outro') updateOutro(dt);
+    else if (state === 'prologue') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
     document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'outro'].includes(state));
