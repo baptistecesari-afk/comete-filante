@@ -459,11 +459,10 @@ body:not(.jeu) .hud { opacity: 0; }
 }
 @keyframes logoShine { 0%, 60% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -50% 0, 0 0; } }
 .bossdetails { width: 100%; }
-.bossdetails summary { cursor: pointer; list-style: none; font-size: 14px; color: var(--muted); padding: 6px 12px; border-radius: 999px;
-  border: 1px dashed color-mix(in srgb, var(--muted) 45%, transparent); display: inline-block; }
-.bossdetails summary::-webkit-details-marker { display: none; }
-.bossdetails[open] summary { color: var(--star); border-color: var(--star); }
-.bossdetails .wbosses { margin-top: 10px; }
+.bossdetails[hidden] { display: none; }
+.bossdetails .wbosses { margin-top: 4px; animation: bossOpen .25s ease-out; }
+@keyframes bossOpen { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .bossdetails .wbosses { animation: none; } }
 
 /* Hangar : un vrai hangar, en métal, avec bande de sécurité et voyants */
 .hangar {
@@ -542,7 +541,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <div class="worldpick" id="worldPick">
       <b>Choisis ton monde</b>
       <div class="worlds" id="worldChips"></div>
-      <details class="bossdetails"><summary>Voir les 10 boss de ce monde</summary><div class="wbosses" id="worldBosses"></div></details>
+      <div class="bossdetails" id="bossDetails" hidden><div class="wbosses" id="worldBosses"></div></div>
     </div>
     <div class="row">
       <button class="ghost" id="rankBtn">🏆 Classement mondial</button>
@@ -3343,7 +3342,7 @@ body:not(.jeu) .hud { opacity: 0; }
   try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => ALL_BOSSES.some(d => d.id === x)); } catch (e) {}
 
   // --- mondes débloqués : battre le 10e boss d'un monde ouvre le suivant ---
-  let worldsOpen = 1, startWorld = 0;
+  let worldsOpen = 1, startWorld = 0, bossShown = false;
   try {
     const m = JSON.parse(localStorage.getItem('comete-mondes') || '{}');
     worldsOpen = Math.max(1, Math.min(WORLDS.length, m.open | 0));
@@ -3364,10 +3363,12 @@ body:not(.jeu) .hud { opacity: 0; }
         + `<span class="wname">${open ? w.name : '???'}</span><span class="wprog">${open ? `${won}/10 boss` : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span>`;
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
-      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
+      // clic sur un monde : on le choisit et on montre ses 10 boss (re-clic sur le même monde : on les cache)
+      b.onclick = () => { bossShown = !(bossShown && startWorld === i); startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
       el.appendChild(b);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
+    $('bossDetails').hidden = !bossShown;
     renderWorldBosses();
   }
   // collection du monde choisi : les boss vaincus en portrait, les autres en silhouette « ??? »
