@@ -388,7 +388,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .preview { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .preview canvas { width: 200px; height: 240px; max-width: 100%; border-radius: 16px; background: radial-gradient(circle at 50% 40%, var(--deep), var(--night)); }
 .preview .shipname { font-family: var(--display); font-size: 18px; text-align: center; overflow-wrap: anywhere; }
-.preview .powername { font-size: 14px; color: var(--muted); text-align: center; }
+.preview /* Monnaie du Hangar : les Astros */
+.coin { display: inline-block; width: 1.05em; height: 1.05em; border-radius: 50%; vertical-align: -.18em; margin: 0 .12em;
+  background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd86b 40%, #e09a1a 75%, #8a5a08); box-shadow: 0 0 8px rgba(255, 216, 107, .6), inset 0 0 0 1.5px rgba(138, 90, 8, .6);
+  position: relative; }
+.coin::after { content: '✦'; position: absolute; inset: 0; display: grid; place-items: center; font-size: .62em; line-height: 1; color: #8a5a08; }
+.walletbig { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; border-radius: 999px; background: color-mix(in srgb, var(--star) 14%, var(--night));
+  border: 2px solid color-mix(in srgb, var(--star) 60%, transparent); font-family: var(--display); font-size: 22px; color: var(--star); font-variant-numeric: tabular-nums; }
+.walletbig .coin { width: 30px; height: 30px; margin: 0; animation: coinSpin 3s ease-in-out infinite; }
+.walletbig small { font-family: var(--body); font-size: 13px; color: var(--muted); letter-spacing: .06em; }
+@keyframes coinSpin { 0%, 70%, 100% { transform: rotateY(0); } 85% { transform: rotateY(180deg); } }
+@media (prefers-reduced-motion: reduce) { .walletbig .coin { animation: none; } }
+.powername { font-size: 14px; color: var(--muted); text-align: center; }
 .opts { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .opt { display: flex; flex-direction: column; gap: 8px; }
 .opt > label, .opt > span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
@@ -496,7 +507,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <div class="shipname" id="pvName"></div>
       <div class="shiptitle" id="pvTitle"></div>
       <div class="powername" id="pvPower"></div>
-      <div class="powername" id="pvPoints"></div>
+      <div class="walletbig" id="pvPoints"></div>
     </div>
     <div class="opts" id="persoOpts">
       <div class="opt">
@@ -535,7 +546,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <div class="opt"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
       <div class="opt" id="skills">
         <span>Compétences</span>
-        <p class="wallet">Tu as <b id="credits">0</b> points. Chaque compétence améliore ta fusée pour toutes tes parties.</p>
+        <p class="wallet">Tu as <i class="coin"></i><b id="credits">0</b> Astros. Chaque compétence améliore ta fusée pour toutes tes parties.</p>
         <div class="upgrades" id="upgrades"></div>
       </div>
     </div>
@@ -644,7 +655,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : tape sur ta fusée, une fois par tir. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
-      <span>Hangar</span><span>Tous les points que tu marques servent à débloquer des objets et acheter des améliorations dans le Hangar.</span>
+      <span>Astros ✦</span><span>La monnaie de l'espace : chaque point marqué en partie te rapporte 1 Astro, à dépenser dans le Hangar pour débloquer des objets et acheter des améliorations.</span>
       <span>Aliens</span><span>50 espèces, 10 dans chaque monde (pingouins, glaçons, diablotins, guêpes, glitchs…), avec 7 façons d'attaquer qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
       <span>Trophées</span><span>5 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
@@ -875,26 +886,26 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   // --- atelier : améliorations permanentes ---
   const UPGRADES = [
-    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 600, now: L => `+${20 * L} % de balles` },
-    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 600, now: L => `−${12 * L} % de temps` },
-    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 500, now: L => `+${25 * L} % de zone` },
-    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 700, now: L => `+${8 * L} % de cadence` },
-    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 900, now: L => `+${25 * L} % de dégâts` },
-    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 1800, now: L => `${3 + L} vies` },
-    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 750, now: L => `−${10 * L} % de recharge` },
-    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 750, now: L => `${30 + 5 * L} s illimités` },
+    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 800, now: L => `+${20 * L} % de balles` },
+    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 800, now: L => `−${12 * L} % de temps` },
+    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 650, now: L => `+${25 * L} % de zone` },
+    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 900, now: L => `+${8 * L} % de cadence` },
+    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 1150, now: L => `+${25 * L} % de dégâts` },
+    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 2350, now: L => `${3 + L} vies` },
+    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 1000, now: L => `−${10 * L} % de recharge` },
+    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 1000, now: L => `${30 + 5 * L} s illimités` },
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 2250, eclair: 4500, aile: 1800, ovni: 2700, tie: 3000, faucon: 3750, requin: 5250, abeille: 2250, chevalier: 4200, galion: 4500, mecha: 4800, cristal: 6000, arcade: 15000, pixel: 3000 },
-    color: { or: 450, turquoise: 450, violet: 750, orange: 750, blanc: 1200, bleunuit: 450, rosebonbon: 450, citron: 450, corail: 450, menthe: 450, noir: 900, lave: 1200, ocean: 1200, galaxie: 1500, neon: 1350 },
-    accent: { noir: 200, blanc: 200, or: 400, cyan: 400, rose: 400, vert: 400, violet: 400, rouge: 400 },
-    motif: { rayures: 450, etoiles: 600, damier: 750, eclair: 900, camo: 900, flammes: 1050, course: 1200 },
-    glass: { cyan: 200, or: 300, rouge: 200, vert: 200, miroir: 450 },
-    trail: { etincelles: 600, bulles: 450, pixels: 450, coeurs: 750, comete: 1050 },
-    flame: { plasma: 900, toxique: 900, rose: 1350 },
-    gun: { double: 2000, eventail: 3000, mitrailleuse: 4500, vague: 5500, plasma: 6000, ricochet: 7500, quintuple: 9000 },
-    power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000, miroir: 2000, gel: 2200, dragon: 2800, foudre: 3000, missiles: 3500 },
+    model: { navette: 2900, eclair: 5850, aile: 2350, ovni: 3500, tie: 3900, faucon: 4900, requin: 6800, abeille: 2900, chevalier: 5450, galion: 5850, mecha: 6250, cristal: 7800, arcade: 19500, pixel: 3900 },
+    color: { or: 600, turquoise: 600, violet: 1000, orange: 1000, blanc: 1550, bleunuit: 600, rosebonbon: 600, citron: 600, corail: 600, menthe: 600, noir: 1150, lave: 1550, ocean: 1550, galaxie: 1950, neon: 1750 },
+    accent: { noir: 250, blanc: 250, or: 500, cyan: 500, rose: 500, vert: 500, violet: 500, rouge: 500 },
+    motif: { rayures: 600, etoiles: 800, damier: 1000, eclair: 1150, camo: 1150, flammes: 1350, course: 1550 },
+    glass: { cyan: 250, or: 400, rouge: 250, vert: 250, miroir: 600 },
+    trail: { etincelles: 800, bulles: 600, pixels: 600, coeurs: 1000, comete: 1350 },
+    flame: { plasma: 1150, toxique: 1150, rose: 1750 },
+    gun: { double: 2600, eventail: 3900, mitrailleuse: 5850, vague: 7150, plasma: 7800, ricochet: 9750, quintuple: 11700 },
+    power: { aimant: 1550, temps: 1950, hyper: 3250, nova: 5200, miroir: 2600, gel: 2850, dragon: 3650, foudre: 3900, missiles: 4550 },
     shot: {},
   };
   const CATS = [
@@ -995,8 +1006,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   for (const t of TROPHIES) for (const [k, id] of t.rewards) EXCL[k + ':' + id] = t;
   const rewardName = ([k, id]) => { const c = CATS.find(x => x.key === k); return `${c.label} « ${byId(c.list, id).name} »`; };
   const trophyOf = (key, id) => EXCL[key + ':' + id];
-  const lockLabel = (key, id) => { const t = trophyOf(key, id); return t ? `Trophée ${trophyName(t)}` : `${price(key, id)} pts`; };
-  const rewardText = t => [t.pts ? `+${t.pts} pts` : '', ...t.rewards.map(rewardName), t.title ? `titre « ${t.title} »` : ''].filter(Boolean).join(' + ');
+  // les Astros : la monnaie de l'espace, gagnée avec les points des parties
+  const astros = n => `${Number(n).toLocaleString('fr-FR')} ✦`;
+  function showWallet() { $('pvPoints').innerHTML = `<i class="coin"></i>${Number(shop.credits).toLocaleString('fr-FR')} <small>ASTROS</small>`; }
+  const lockLabel = (key, id) => { const t = trophyOf(key, id); return t ? `Trophée ${trophyName(t)}` : astros(price(key, id)); };
+  const rewardText = t => [t.pts ? `+${t.pts} ✦` : '', ...t.rewards.map(rewardName), t.title ? `titre « ${t.title} »` : ''].filter(Boolean).join(' + ');
   const price = (key, id) => PRICES[key][id] || 0;
   let shop = { v: 3, credits: 0, up: {}, owned: [] };
   try {
@@ -1074,7 +1088,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     setTimeout(nextToast, toastQ.length > 2 ? 2200 : 3500);
   }
   function renderTrophies() {
-    $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Leurs objets ne s'achètent pas : il faut les gagner. Les points bonus vont dans le Hangar.`;
+    $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Leurs objets ne s'achètent pas : il faut les gagner. Les Astros bonus vont dans le Hangar.`;
     const own = titles();
     $('titleOpt').hidden = !own.length;
     const ot = $('optTitle'); ot.innerHTML = '';
@@ -1123,9 +1137,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   function renderAtelier() {
     $('credits').textContent = shop.credits;
-    $('hangarBtn').textContent = `Hangar · ${shop.credits} pts`;
-    $('overHangarBtn').textContent = `Hangar · ${shop.credits} pts`;
-    $('pvPoints').textContent = `Tes points : ${shop.credits}`;
+    $('hangarBtn').textContent = `Hangar · ${shop.credits} ✦`;
+    $('overHangarBtn').textContent = `Hangar · ${shop.credits} ✦`;
+    showWallet();
     const el = $('upgrades'); el.innerHTML = '';
     for (const u of UPGRADES) {
       const L = up(u.id), maxed = L >= u.max, c = cost(u);
@@ -1136,7 +1150,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         <div class="now">${L ? 'Actuel : ' + u.now(L) : 'Pas encore amélioré'}</div>`;
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'buy'; b.id = 'buy-' + u.id;
-      b.textContent = maxed ? 'Niveau max' : `Améliorer · ${c} pts`;
+      b.textContent = maxed ? 'Niveau max' : `Améliorer · ${astros(c)}`;
       b.disabled = maxed || shop.credits < c;
       b.onclick = () => {
         if (up(u.id) >= u.max || shop.credits < cost(u)) return;
@@ -1611,7 +1625,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
         b.setAttribute('aria-label', label); b.title = label;
       } else {
         b.textContent = it.name;
-        if (locked) { const sm = document.createElement('small'); sm.textContent = trophyOf(key, it.id) ? 'Trophée' : price(key, it.id) + ' pts'; b.appendChild(sm); }
+        if (locked) { const sm = document.createElement('small'); sm.textContent = trophyOf(key, it.id) ? 'Trophée' : astros(price(key, it.id)); b.appendChild(sm); }
       }
       b.onclick = () => pick(key, it.id);
       el.appendChild(b);
@@ -1625,7 +1639,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       b.type = 'button'; b.className = 'pcard' + (locked ? ' locked' : ''); b.id = `opt-${key}-${p.id}`;
       b.setAttribute('aria-pressed', shown(key) === p.id);
       b.title = p.desc;
-      b.innerHTML = `<b>${p.name}</b><canvas width="480" height="260" data-act="${key}:${p.id}" aria-hidden="true"></canvas><span class="vh">${p.desc}</span><em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + price(key, p.id) + ' pts') : info(p)}</em>`;
+      b.innerHTML = `<b>${p.name}</b><canvas width="480" height="260" data-act="${key}:${p.id}" aria-hidden="true"></canvas><span class="vh">${p.desc}</span><em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + astros(price(key, p.id))) : info(p)}</em>`;
       b.onclick = () => pick(key, p.id);
       el.appendChild(b);
     }
@@ -1918,8 +1932,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       btn.textContent = 'Trophée requis'; btn.disabled = true;
     } else {
       const miss = p - shop.credits;
-      $('carStatus').textContent = `${p} pts · tu as ${shop.credits} pts`;
-      btn.textContent = miss > 0 ? `Il te manque ${miss} pts` : `Acheter · ${p} pts`; btn.disabled = miss > 0;
+      $('carStatus').textContent = `${astros(p)} · tu as ${astros(shop.credits)}`;
+      btn.textContent = miss > 0 ? `Il te manque ${astros(miss)}` : `Acheter · ${astros(p)}`; btn.disabled = miss > 0;
     }
     const dots = $('carDots'); dots.innerHTML = '';
     MODELS.forEach((x, i) => {
@@ -2011,7 +2025,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
     $('pvName').textContent = cfg.name;
     $('pvPower').textContent = byId(GUNS, shown('gun')).name + ' · ' + byId(POWERS, shown('power')).name;
-    $('pvPoints').textContent = `Tes points : ${shop.credits}`;
+    showWallet();
     $('pvTitle').textContent = cfg.title;
     const bar = $('buybar');
     bar.hidden = !preview || preview.key === 'model';
@@ -2023,9 +2037,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           (tro.feat ? ` : ${tro.text}` : ` (${Math.min(tro.goal, statOf(tro.stat))}/${tro.goal} ${STAT_UNITS[tro.stat]})`);
         $('buyBtn').textContent = 'Trophée requis'; $('buyBtn').disabled = true;
       } else {
-        $('buyText').textContent = `${c.label} ${it.name} · ${p} pts`;
+        $('buyText').textContent = `${c.label} ${it.name} · ${astros(p)}`;
         const miss = p - shop.credits;
-        $('buyBtn').textContent = miss > 0 ? `Il te manque ${miss} pts` : 'Acheter et équiper';
+        $('buyBtn').textContent = miss > 0 ? `Il te manque ${astros(miss)}` : 'Acheter et équiper';
         $('buyBtn').disabled = miss > 0;
       }
     }
@@ -4551,10 +4565,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('overTitle').textContent = `${cfg.name} a explosé !`;
     $('finalScore').textContent = score;
     creditRun(); renderAtelier();
-    $('finalInfo').innerHTML = `Niveau ${level} atteint · +${score} points pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
+    $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
     if (runTrophies.length) {
       const n = runTrophies.length, pts = runTrophies.reduce((a, t) => a + t.pts, 0);
-      $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${pts} points bonus` : '');
+      $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${astros(pts)} Astros bonus` : '');
     }
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
@@ -4684,7 +4698,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     initAudio();
     const owned = MODELS.filter(m => owns('model', m.id)).length;
     $('saveSum').innerHTML = [
-      [shop.credits, 'points à dépenser'], [best, 'record'], [`${owned}/${MODELS.length}`, 'vaisseaux'],
+      [astros(shop.credits), 'Astros à dépenser'], [best, 'record'], [`${owned}/${MODELS.length}`, 'vaisseaux'],
       [`${stats.won.length}/${TROPHIES.length}`, 'trophées'], [`${worldsOpen}/${WORLDS.length}`, 'mondes ouverts'],
     ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join('');
     $('saveCode').value = makeSaveCode();
