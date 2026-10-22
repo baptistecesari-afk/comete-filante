@@ -19,3 +19,7 @@ Ce jeu est fait à plusieurs : **baptistecesari-afk** (le propriétaire du dép�
 ## Tester avant de proposer
 - Ouvrir `index.html` dans un navigateur, jouer une partie et vérifier qu'il n'y a pas d'erreur dans la console.
 - Vérifier aussi l'affichage sur une largeur de téléphone (environ 400 px).
+
+## Classement mondial
+- Le serveur du classement est `api/scores.js` (fonction Vercel). Les scores sont dans une base Upstash Redis reliée au projet Vercel (onglet Storage).
+- Si `https://comete-filante.vercel.app/api/scores` répond « pas encore branché », la base n'est pas reliée : la relier dans Vercel > Storage, puis relancer une mise en ligne.
