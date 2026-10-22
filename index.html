@@ -294,7 +294,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .procine { position: fixed; inset: 0; z-index: 6; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 16px;
   padding: 0 16px calc(28px + env(safe-area-inset-bottom, 0px)); pointer-events: none; }
 .procine[hidden] { display: none; }
-.procine p { margin: 0; max-width: 36rem; text-align: center; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.5; color: #fff;
+.procine p { margin: 0; max-width: 36rem; text-align: center; padding: 12px 18px; border-radius: 16px; background: rgba(5, 3, 15, .55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); font-size: clamp(17px, 2.4vw, 22px); line-height: 1.5; color: #fff;
   text-shadow: 0 2px 10px rgba(0, 0, 0, .9), 0 0 2px #000; text-wrap: balance; }
 .procine p.in { animation: storyIn .6s ease both; }
 .procine p b { color: var(--star); font-weight: 600; }
@@ -303,8 +303,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .procine .dots { display: flex; gap: 6px; }
 .procine .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
 .procine .dots i.on { background: var(--star); }
-.procine .hint { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .5); }
 @media (prefers-reduced-motion: reduce) { .procine p.in { animation: none; } }
+@media (max-height: 520px) {
+  .procine { gap: 6px; padding-bottom: 8px; }
+  .procine p, .procine p.mission { font-size: 14px; padding: 6px 12px; max-width: 44rem; }
+  .procine .row button { padding: 8px 18px; font-size: 14px; }
+}
 
 /* Cinématique d'arrivée d'un boss */
 .cine { position: fixed; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; }
@@ -650,9 +654,9 @@ body:not(.jeu) .hud { opacity: 0; }
   <div class="dots" id="proDots"></div>
   <div class="row">
     <button class="ghost" id="proSkip">Passer</button>
+    <button class="play" id="proNext">Suivant ›</button>
     <button class="play" id="proGo" hidden>Décoller</button>
   </div>
-  <small class="hint" id="proHint">Touche l'écran pour continuer</small>
 </div>
 
 <div class="panel" id="story" hidden>
@@ -3576,7 +3580,8 @@ body:not(.jeu) .hud { opacity: 0; }
     sub.innerHTML = proLines[i] || ''; sub.className = last ? 'mission' : '';
     void sub.offsetWidth; sub.classList.add('in');
     [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
-    $('proGo').hidden = !last; $('proSkip').hidden = last; $('proHint').hidden = last;
+    $('proGo').hidden = !last; $('proNext').hidden = last;
+    $('proSkip').textContent = last ? 'Revoir' : 'Passer';
     beep([392, 440, 523, 587, 784][i], last ? .5 : .25, 'triangle', .08);
     if (i === 1) beep(110, .9, 'sawtooth', .08, -40);
   }
@@ -3587,7 +3592,6 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   function updatePrologue(dt) {
     proT += dt;
-    if (proScene < PRO_SCENE - 1 && proT > 5.5) proNext();
   }
   function drawPrologue(t) {
     const w = WORLDS[storyWorld], [c1, c2] = w.col, T = proT, sc = proScene, m = Math.min(W, H);
@@ -3609,14 +3613,14 @@ body:not(.jeu) .hud { opacity: 0; }
       // 1. la galaxie qui tourne, vue de loin, puis on s'approche
       const z = m * (.32 + ease(T / 4) * .18), rot = t / 9000;
       const core = ctx.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, z * .5);
-      core.addColorStop(0, '#ffffff'); core.addColorStop(.25, c2); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      core.addColorStop(0, 'rgba(255, 255, 255, .9)'); core.addColorStop(.18, c2 + 'aa'); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.globalCompositeOperation = 'lighter';
       for (const q of proPts) {
         const a = q.a + rot, x = W / 2 + Math.cos(a) * q.r * z, y = H * .42 + Math.sin(a) * q.r * z * .45;
         ctx.globalAlpha = (1 - q.r * .6) * Math.min(1, T * 1.5); ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1);
         ctx.fillRect(x, y, q.z, q.z);
       }
-      ctx.globalAlpha = Math.min(1, T); ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(W / 2, H * .42, z * .5, z * .24, 0, 0, 7); ctx.fill();
+      ctx.globalAlpha = Math.min(1, T) * .7; ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(W / 2, H * .42, z * .38, z * .18, 0, 0, 7); ctx.fill();
       ctx.globalCompositeOperation = 'source-over';
       // titre
       const k = ease((T - .5) / .8);
@@ -3631,7 +3635,7 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.shadowBlur = 0;
     } else if (sc === 1) {
       // 2. le tyran de la galaxie surgit de l'ombre et aspire les étoiles
-      const im = proImg(chief), cx = W / 2, cy = H * .38, size = m * (.38 + ease(T / 3) * .14);
+      const im = proImg(chief), cx = W / 2, cy = H < 520 ? H * .24 : H * .32, size = Math.min(m * (.3 + ease(T / 3) * .1), H < 520 ? H * .26 : H * .36);
       for (let i = 0; i < 70; i++) {
         const q = proPts[i + 200], ph = (q.d + T * .35) % 1, ang = q.a * 3, rr = (1 - ph) * Math.max(W, H) * .6 + size * .3;
         ctx.globalAlpha = ph; ctx.fillStyle = '#ffd86b';
@@ -3643,12 +3647,13 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.fillStyle = halo; ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
       if (im.complete && im.naturalWidth) {
         ctx.globalAlpha = Math.min(1, T / 1.2);
-        const shake = T < 1.2 ? 0 : Math.sin(t / 60) * 1.5;
+        const shake = T > 1.2 && T < 2 ? Math.sin(t / 50) * 3 * (2 - T) : 0;
         ctx.drawImage(im, cx - size / 2 + shake, cy - size / 2 + Math.sin(t / 700) * 6, size, size);
       }
       ctx.globalAlpha = ease((T - .8) / .6); ctx.textAlign = 'center';
-      ctx.font = `${Math.min(34, W / 16)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = chief.col; ctx.shadowColor = chief.col; ctx.shadowBlur = 16;
-      ctx.fillText(chief.name.toUpperCase(), W / 2, cy + size * .62);
+      ctx.fillStyle = chief.col; ctx.shadowColor = chief.col; ctx.shadowBlur = 16;
+      ctx.font = `${Math.min(34, W / (chief.name.length * .72))}px Bungee, Impact, system-ui, sans-serif`;
+      ctx.fillText(chief.name.toUpperCase(), W / 2, cy + size * .58 + 10);
       ctx.shadowBlur = 0;
     } else if (sc === 2) {
       // 3. les gardiens apparaissent un à un, en silhouette
@@ -3665,15 +3670,15 @@ body:not(.jeu) .hud { opacity: 0; }
         // deux yeux qui s'allument
         if (T > 1.6 + i * .1) { ctx.fillStyle = '#ff4f6d'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200 + i)); ctx.beginPath(); ctx.arc(x - cell * .07, y - cell * .04, 2.2, 0, 7); ctx.arc(x + cell * .07, y - cell * .04, 2.2, 0, 7); ctx.fill(); }
       }
-      ctx.globalAlpha = ease((T - 2.2) / .5); ctx.textAlign = 'center';
+      ctx.globalAlpha = ease((T - .3) / .5); ctx.textAlign = 'center';
       ctx.font = `${Math.min(30, W / 18)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = c2;
-      ctx.fillText('10 GARDIENS', W / 2, H * .1);
+      ctx.fillText('10 GARDIENS', W / 2, Math.max(H * .1, Math.min(40, H * .05) + 30));
     } else if (sc === 3) {
       // 4. ta fusée fonce vers la galaxie
-      const k = ease(T / 1.4), y = H + 120 - k * (H * .62 + 120);
+      const k = ease(T / 1.4), y = H + 120 - k * (H * (H < 520 ? .7 : .62) + 120);
       const glow = ctx.createRadialGradient(W / 2, y + 60, 0, W / 2, y + 60, 160); glow.addColorStop(0, 'rgba(255, 180, 80, .35)'); glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
       ctx.fillStyle = glow; ctx.fillRect(W / 2 - 160, y - 100, 320, 320);
-      drawRocket(ctx, W / 2 + Math.sin(t / 500) * 10, y + Math.sin(t / 300) * 4, Math.min(3, m / 240), cfg, t, Math.sin(t / 700) * .06, 1);
+      drawRocket(ctx, W / 2 + Math.sin(t / 500) * 10, y + Math.sin(t / 300) * 4, Math.min(4, m / 200), cfg, t, Math.sin(t / 700) * .06, 1);
     } else {
       // 5. la mission : la galaxie au loin, la fusée prête
       const z = m * .3, rot = t / 9000, gy = H * .3;
@@ -3683,10 +3688,10 @@ body:not(.jeu) .hud { opacity: 0; }
         ctx.globalAlpha = (1 - q.r * .6) * .8; ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1); ctx.fillRect(x, yy, q.z, q.z);
       }
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-      drawRocket(ctx, W / 2, H * .58 + Math.sin(t / 500) * 6, Math.min(2.4, m / 300), cfg, t, 0, .5);
+      drawRocket(ctx, W / 2, H * (H < 520 ? .4 : .55) + Math.sin(t / 500) * 6, Math.min(3.2, m / 250), cfg, t, 0, .5);
       ctx.globalAlpha = ease(T / .6); ctx.textAlign = 'center';
       ctx.font = `${Math.min(40, W / 12)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 18;
-      ctx.fillText('MISSION', W / 2, H * .1); ctx.shadowBlur = 0;
+      ctx.fillText('MISSION', W / 2, Math.max(H * .1, Math.min(40, H * .05) + 34)); ctx.shadowBlur = 0;
     }
     // fondu au noir entre deux scènes + bandes cinéma
     ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
@@ -4874,7 +4879,8 @@ body:not(.jeu) .hud { opacity: 0; }
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
-  $('proSkip').onclick = endPrologue;
+  $('proSkip').onclick = () => { if (proScene === PRO_SCENE - 1) proGoto(0); else endPrologue(); };
+  $('proNext').onclick = () => proNext();
   $('proGo').onclick = endPrologue;
   $('storyGo').onclick = closeStory;
   $('storySkip').onclick = closeStory;
