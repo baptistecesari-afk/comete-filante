@@ -3439,10 +3439,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   }
 
   const CINE_DUR = reduce ? 2.4 : 3.4;
+  // dégâts par seconde de l'arme du joueur, comparés au Blaster de départ (3,85 par seconde)
+  function weaponFactor() {
+    const perShot = gun.barrels.length * (gun.dmg || 1) * (1 + .25 * up('puissance'));
+    const dps = gun.mag * perShot / (gun.mag * gun.rate + gun.reload);
+    return Math.max(1, dps / 3.85);
+  }
   function spawnBoss() {
     const idx = bossInWorld % 10, def = WORLDS[world].bosses[idx];
     bossCount++;
-    const hp = Math.round((55 + idx * 17 + level * 6) * (1 + world * .45) * (1 + cycle * .5));
+    // plus ton arme fait de dégâts par seconde (pistolet + compétences), plus le boss a de vie
+    const hp = Math.round((55 + idx * 17 + level * 6) * (1 + world * .45) * (1 + cycle * .5) * weaponFactor());
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100 + world * 400,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
