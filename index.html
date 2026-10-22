@@ -388,18 +388,18 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .preview { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .preview canvas { width: 200px; height: 240px; max-width: 100%; border-radius: 16px; background: radial-gradient(circle at 50% 40%, var(--deep), var(--night)); }
 .preview .shipname { font-family: var(--display); font-size: 18px; text-align: center; overflow-wrap: anywhere; }
-.preview /* Monnaie du Hangar : les Astros */
+/* Monnaie du Hangar : les Astros */
 .coin { display: inline-block; width: 1.05em; height: 1.05em; border-radius: 50%; vertical-align: -.18em; margin: 0 .12em;
   background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd86b 40%, #e09a1a 75%, #8a5a08); box-shadow: 0 0 8px rgba(255, 216, 107, .6), inset 0 0 0 1.5px rgba(138, 90, 8, .6);
-  position: relative; }
-.coin::after { content: '✦'; position: absolute; inset: 0; display: grid; place-items: center; font-size: .62em; line-height: 1; color: #8a5a08; }
+  position: relative; overflow: hidden; pointer-events: none; }
+.coin::after { content: '✦'; position: absolute; inset: 0; pointer-events: none; display: grid; place-items: center; font-size: .62em; line-height: 1; color: #8a5a08; }
 .walletbig { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; border-radius: 999px; background: color-mix(in srgb, var(--star) 14%, var(--night));
   border: 2px solid color-mix(in srgb, var(--star) 60%, transparent); font-family: var(--display); font-size: 22px; color: var(--star); font-variant-numeric: tabular-nums; }
 .walletbig .coin { width: 30px; height: 30px; margin: 0; animation: coinSpin 3s ease-in-out infinite; }
 .walletbig small { font-family: var(--body); font-size: 13px; color: var(--muted); letter-spacing: .06em; }
 @keyframes coinSpin { 0%, 70%, 100% { transform: rotateY(0); } 85% { transform: rotateY(180deg); } }
 @media (prefers-reduced-motion: reduce) { .walletbig .coin { animation: none; } }
-.powername { font-size: 14px; color: var(--muted); text-align: center; }
+.preview .powername { font-size: 14px; color: var(--muted); text-align: center; }
 .opts { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .opt { display: flex; flex-direction: column; gap: 8px; }
 .opt > label, .opt > span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
