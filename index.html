@@ -257,6 +257,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 @media (max-width: 440px) { .bgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .btile img { width: 40px; height: 40px; } }
 
 /* Sauvegarde */
+/* Classement mondial */
+.rankme { padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--star) 16%, var(--night)); border: 2px solid var(--star); font-size: 15px; }
+.rankme b { font-family: var(--display); font-weight: 400; color: var(--star); }
+.ranklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ranklist li { display: grid; grid-template-columns: 2.6em 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: var(--night); font-variant-numeric: tabular-nums; }
+.ranklist li.me { outline: 2px solid var(--star); }
+.ranklist .pos { font-family: var(--display); color: var(--muted); text-align: center; }
+.ranklist li:nth-child(1) .pos { color: #ffd86b; } .ranklist li:nth-child(2) .pos { color: #d6dcea; } .ranklist li:nth-child(3) .pos { color: #e09a5a; }
+.ranklist .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranklist .pts { font-family: var(--display); color: var(--star); }
 .savesum { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
 .savesum div { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--night); }
 .savesum b { font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--star); font-variant-numeric: tabular-nums; }
@@ -467,6 +477,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <button class="ghost" id="trophyBtn">Trophées</button>
     </div>
     <div class="row">
+      <button class="ghost" id="rankBtn">🏆 Classement mondial</button>
+    </div>
+    <div class="row">
       <button class="toggle" id="storyBtn">Histoire</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="saveBtn">Sauvegarde</button>
@@ -581,6 +594,25 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   </div>
 </div>
 
+<div class="panel" id="rankPanel" hidden>
+  <div class="hangar atelier">
+    <h2>Classement mondial</h2>
+    <p class="wallet">Tous les joueurs du monde, classés par leur meilleur score. Pas besoin d'e-mail : choisis juste ton nom de joueur.</p>
+    <div class="opt" id="rankJoinBox">
+      <label for="rankName">Ton nom de joueur</label>
+      <input id="rankName" maxlength="16" autocomplete="off" placeholder="Ex. : Baptiste">
+      <button type="button" class="buy" id="rankJoin">Entrer dans le classement</button>
+    </div>
+    <p class="wallet" id="rankMsg" role="status"></p>
+    <div class="rankme" id="rankMe" hidden></div>
+    <ol class="ranklist" id="rankList"></ol>
+    <div class="row">
+      <button class="ghost small" id="rankRefresh">Actualiser</button>
+      <button class="play" id="rankBack">Retour</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="savePanel" hidden>
   <div class="hangar atelier">
     <h2>Sauvegarde</h2>
@@ -623,6 +655,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>⚡</span><span>Recharge ton super-pouvoir tout de suite</span>
       <span>♥</span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
       <span>Sauvegarde</span><span>Tout est enregistré automatiquement, même si tu fermes le jeu en pleine partie. Le menu « Sauvegarde » donne un code pour retrouver ta partie ailleurs.</span>
+      <span>Classement</span><span>Dans le menu, « Classement mondial » : choisis un nom de joueur (sans e-mail) et ton meilleur score est comparé à celui de tous les joueurs.</span>
       <span>1UP</span><span>Tous les 2 500 points, tu gagnes une vie bonus.</span>
       <span>∞</span><span>Caisse orange : tirs illimités et plus rapides pendant 30 secondes. Elle tombe une fois tous les 2 niveaux (niveaux 1, 3, 5…).</span>
       <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
@@ -645,6 +678,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <button class="play" id="againBtn">Rejouer</button>
       <button class="ghost" id="overHangarBtn">Hangar</button>
       <button class="ghost" id="overTrophyBtn">Trophées</button>
+      <button class="ghost" id="overRankBtn">Classement</button>
     </div>
   </div>
 </div>
@@ -2014,7 +2048,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -4074,6 +4108,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
+    if (joueur) sendRecord().then(j => {
+      if (j && j.me && state === 'over') $('finalInfo').innerHTML += `<br>🏆 Classement mondial : <span class="best">${j.me.rank}e</span> sur ${j.total}`;
+    });
+    else $('finalInfo').innerHTML += '<br>Entre dans le <b>classement mondial</b> pour comparer ton score !';
   }
 
   function showBanner(title, sub) {
@@ -4099,6 +4137,70 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
   // quitter depuis la pause : on garde les points et on revient au menu
+  // ===== Classement mondial =====
+  // les scores sont envoyés au serveur du jeu sur Vercel
+  const RANK_API = /\.vercel\.app$/.test(location.hostname) ? '/api/scores' : 'https://comete-filante.vercel.app/api/scores';
+  let joueur = null;
+  try { const pj = JSON.parse(localStorage.getItem('comete-joueur') || 'null'); if (pj && typeof pj.name === 'string' && typeof pj.token === 'string') joueur = pj; } catch (e) {}
+  const newToken = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  async function rankCall(method, body) {
+    const url = method === 'GET' && joueur ? `${RANK_API}?name=${encodeURIComponent(joueur.name)}` : RANK_API;
+    const res = await fetch(url, method === 'GET' ? {} : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || 'Le classement ne répond pas.');
+    return j;
+  }
+  // envoie le record du joueur (le serveur garde seulement le meilleur)
+  async function sendRecord() {
+    if (!joueur || best <= 0) return null;
+    try { return await rankCall('POST', { name: joueur.name, token: joueur.token, score: best }); } catch (e) { return null; }
+  }
+  function showRankMe(me, total) {
+    const box = $('rankMe');
+    if (!joueur) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = me ? `<b>${esc(joueur.name)}</b> : tu es <b>${me.rank}e</b> sur ${total} joueurs, avec ${me.score} points.` : `<b>${esc(joueur.name)}</b> : joue une partie pour apparaître dans le classement.`;
+  }
+  async function loadRanking() {
+    $('rankMsg').textContent = 'Chargement…'; $('rankList').innerHTML = '';
+    try {
+      const j = await rankCall('GET');
+      $('rankMsg').textContent = j.top.length ? '' : 'Personne n\'est encore classé. Sois le premier !';
+      const mine = joueur ? joueur.name.toLowerCase() : '';
+      $('rankList').innerHTML = j.top.map((x, i) => `<li class="${x.name.toLowerCase() === mine ? 'me' : ''}"><span class="pos">${i + 1}</span><span class="who">${esc(x.name)}</span><span class="pts">${x.score}</span></li>`).join('');
+      showRankMe(j.me, j.total);
+    } catch (e) { $('rankMsg').textContent = e.message; }
+  }
+  function renderRankJoin() {
+    $('rankName').value = joueur ? joueur.name : (cfg.name || '');
+    $('rankJoin').textContent = joueur ? 'Changer de nom' : 'Entrer dans le classement';
+  }
+  async function openRanking() {
+    initAudio();
+    state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('rankPanel').hidden = false;
+    renderRankJoin();
+    if (joueur) await sendRecord();
+    loadRanking();
+  }
+  $('rankBtn').onclick = openRanking;
+  $('overRankBtn').onclick = openRanking;
+  $('rankRefresh').onclick = loadRanking;
+  $('rankBack').onclick = () => { $('rankPanel').hidden = true; closeHangar(); };
+  $('rankJoin').onclick = async () => {
+    const name = $('rankName').value.replace(/[^\p{L}\p{N} _.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+    if (name.length < 2) { $('rankMsg').textContent = 'Ton nom doit avoir au moins 2 lettres.'; return; }
+    const next = { name, token: joueur ? joueur.token : newToken() };
+    $('rankMsg').textContent = 'Inscription…';
+    try {
+      await rankCall('POST', { name: next.name, token: next.token, score: Math.max(0, best) });
+      joueur = next;
+      try { localStorage.setItem('comete-joueur', JSON.stringify(joueur)); } catch (e) {}
+      renderRankJoin(); beep(880, .15, 'triangle', .1);
+      loadRanking();
+    } catch (e) { $('rankMsg').textContent = e.message; }
+  };
+
   // ===== Sauvegarde automatique =====
   // verse dans le Hangar les points pas encore comptés de la partie en cours
   function creditRun() {
