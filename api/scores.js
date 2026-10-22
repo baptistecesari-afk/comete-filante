@@ -2,8 +2,10 @@
 // Les scores sont gardés dans une base Upstash Redis reliée au projet Vercel
 // (Vercel > Storage > Upstash for Redis). Pas besoin d'adresse e-mail :
 // chaque joueur a un nom et un code secret gardé dans son navigateur.
-const DB_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const DB_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+// Vercel peut ajouter un préfixe au nom des variables (ex. STORAGE_KV_REST_API_URL) : on les cherche toutes
+const envEnding = ends => { for (const e of ends) { const k = Object.keys(process.env).find(n => n.endsWith(e) && !n.includes('READ_ONLY')); if (k) return process.env[k]; } };
+const DB_URL = envEnding(['KV_REST_API_URL', 'REDIS_REST_URL']);
+const DB_TOKEN = envEnding(['KV_REST_API_TOKEN', 'REDIS_REST_TOKEN']);
 const SCORES = 'cf:scores', OWNERS = 'cf:owners', NAMES = 'cf:names';
 
 async function redis(cmd) {
