@@ -656,6 +656,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>♥</span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
       <span>Sauvegarde</span><span>Tout est enregistré automatiquement, même si tu fermes le jeu en pleine partie. Le menu « Sauvegarde » donne un code pour retrouver ta partie ailleurs.</span>
       <span>Classement</span><span>Dans le menu, « Classement mondial » : choisis un nom de joueur (sans e-mail) et ton meilleur score est comparé à celui de tous les joueurs.</span>
+      <span>Nouveau monde</span><span>À chaque monde terminé, nouveau départ : compétences, pistolets, super-pouvoirs et points repartent à zéro (tes vaisseaux et couleurs sont gardés). Chaque monde est plus dur et ses niveaux durent plus longtemps.</span>
       <span>1UP</span><span>Tous les 2 500 points, tu gagnes une vie bonus.</span>
       <span>∞</span><span>Caisse orange : tirs illimités et plus rapides pendant 30 secondes. Elle tombe une fois tous les 2 niveaux (niveaux 1, 3, 5…).</span>
       <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
@@ -2080,17 +2081,42 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
-    const base = byId(GUNS, cfg.gun);
-    gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
-    ammo = gun.mag; reload = null; golden = false; infinite = 0;
+    equipLoadout();
+    infinite = 0;
     infAt = 4 + Math.random() * 10;
-    $('gunName').textContent = gun.name; lastAmmoUi = '';
     level = 1; setTheme(1, true); flash = 0; flashColor = '255, 60, 110';
     score = 0; lives = maxLives(); combo = 0; comboT = 0; speed = 1; spawnT = 0; time = 0; shield = 0; shake = 0;
     power = { def: byId(POWERS, cfg.power), cd: 0, active: 0 };
     power.maxCd = power.def.cd * (1 - .1 * up('pouvoir'));
     $('powerName').textContent = power.def.name;
     target = null;
+    updateHud();
+  }
+  // pistolet et super-pouvoir de la partie, avec les améliorations achetées
+  function equipLoadout() {
+    const base = byId(GUNS, cfg.gun);
+    gun = { ...base, mag: Math.round(base.mag * (1 + .2 * up('chargeur'))), reload: base.reload * (1 - .12 * up('recharge')), rate: base.rate * (1 - .08 * up('cadence')) };
+    ammo = gun.mag; reload = null; golden = false;
+    $('gunName').textContent = gun.name; lastAmmoUi = '';
+    if (power) { power = { def: byId(POWERS, cfg.power), cd: 0, active: 0 }; power.maxCd = power.def.cd * (1 - .1 * up('pouvoir')); $('powerName').textContent = power.def.name; }
+  }
+
+  // ===== Nouveau départ à chaque nouveau monde =====
+  // compétences, pistolets, super-pouvoirs et points repartent à zéro ;
+  // les vaisseaux, couleurs et objets de personnalisation (et ceux des trophées) sont gardés
+  function resetForNewWorld() {
+    creditRun();
+    shop.up = {}; shop.credits = 0;
+    shop.owned = shop.owned.filter(x => {
+      const [k, id] = x.split(':');
+      return !(k === 'gun' || k === 'power') || trophyOf(k, id);
+    });
+    if (!owns('gun', cfg.gun)) cfg.gun = DEFAULT.gun;
+    if (!owns('power', cfg.power)) cfg.power = DEFAULT.power;
+    run.credited = score;
+    saveShop(); saveCfg(); renderAtelier();
+    equipLoadout(); lastPowerUi = ''; updatePowerUi(); updateAmmoUi();
+    if (lives > maxLives() + 2) lives = maxLives() + 2;
     updateHud();
   }
 
@@ -2123,7 +2149,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // les objets tombent de plus en plus souvent : on limite aussi le nombre d'aliens par seconde,
     // qui ne grimpe plus que doucement après le niveau 6
     const perSec = .7 + Math.max(0, level - 6) * .02;
-    const pAlien = boss ? 0 : Math.min(.26, .05 + level * .03, perSec * Math.max(.18, .7 / speed));
+    const pAlien = boss ? 0 : Math.min(.26 + world * .04, .05 + level * .03 + world * .03, perSec * Math.max(.18, .7 / speed) + world * .03);
     if (Math.random() < pAlien) { spawnAlien(); return; }
     const r = Math.random();
     const x = 30 + Math.random() * (W - 60);
@@ -3186,6 +3212,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       const gs = WORLDS[storyWorld].bosses;
       lines.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
     }
+    if (mode === 'world') lines.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
     $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
     $('storySkip').hidden = mode !== 'prologue';
     $('storyGo').textContent = mode === 'prologue' ? 'Décoller' : mode === 'world' ? 'En route !' : 'Continuer à jouer';
@@ -3200,7 +3227,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else {
       state = 'play'; last = performance.now();
       for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
-      if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); }
+      if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); resetForNewWorld(); }
     }
   }
   // ===== Cinématique de fin de monde =====
@@ -3244,6 +3271,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
     if (outroT >= outroDur) finishOutro();
   }
+  // le nom du capitaine : son nom de joueur, sinon le nom de sa fusée
+  const captain = () => (typeof joueur !== 'undefined' && joueur ? joueur.name : cfg.name) || 'Aurore';
   const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
   function outroText(txt, y, size, col, alpha, glow) {
     ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
@@ -3279,9 +3308,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       if (T < 1.2) { ctx.strokeStyle = `rgba(255, 216, 107, ${1 - T / 1.2})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(rx, ry, T * Math.max(W, H) * .7, 0, 7); ctx.stroke(); }
       drawRocket(ctx, rx, ry, 1.8, cfg, t, Math.sin(T * 1.5) * .08, .5);
       const k = ease((T - .4) / .6);
-      outroText(outroNext === 'world' ? 'MISSION ACCOMPLIE' : 'VICTOIRE TOTALE', H * .24, big * (1.4 - .4 * k), '#ffd86b', k, '#ffb020');
-      outroText(outroNext === 'world' ? `Monde libéré : ${W0.name}` : 'Les 5 mondes sont libérés !', H * .24 + big * .95, Math.max(16, big * .42), '#ffffff', ease((T - 1) / .6));
-      outroText('10 gardiens vaincus · toutes les étoiles rendues', H * .24 + big * 1.6, Math.max(12, big * .26), '#d9d0ff', ease((T - 1.6) / .6));
+      outroText('FÉLICITATIONS', H * .2, big * (1.4 - .4 * k), '#ffd86b', k, '#ffb020');
+      outroText(`Capitaine ${captain()} !`, H * .2 + big * .95, Math.max(18, big * .55), '#ffffff', ease((T - .8) / .6), '#ffd86b');
+      outroText(outroNext === 'world' ? `Tu as libéré : ${W0.name}` : 'Les 5 mondes sont libérés !', H * .2 + big * 1.65, Math.max(14, big * .36), '#d9d0ff', ease((T - 1.4) / .6));
+      outroText('10 gardiens vaincus · toutes les étoiles rendues', H * .2 + big * 2.15, Math.max(12, big * .26), '#d9d0ff', ease((T - 1.9) / .6));
+      if (outroNext === 'world') outroText('Nouveau départ : ton vaisseau repart de zéro', H * .9, Math.max(12, big * .28), '#7ad8ff', ease((T - 2.3) / .5));
       // fondu vers l'hyperespace
       if (outroNext === 'world' && T > 3.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(T - 3.3) / .5})`; ctx.fillRect(0, 0, W, H); }
     }
@@ -3346,8 +3377,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       // la fusée arrive par le bas
       drawRocket(ctx, W / 2, H + 40 - ease((q - 1.5) / 2) * H * .22, 1.3, cfg, t, 0, 1);
       outroText('⚠ ALERTE ⚠', H * .1, Math.max(16, big * .45), '#ff4f6d', Math.min(1, q * 2) * (.6 + pulse * .4), '#ff4f6d');
-      outroText(next.name.toUpperCase(), H * .78, big, '#ffffff', ease((q - .8) / .6), next.col[1]);
-      outroText('Les envahisseurs sont de retour !', H * .78 + big * .85, Math.max(14, big * .36), '#ffd0d8', ease((q - 1.6) / .6));
+      outroText(next.name.toUpperCase(), H * .7, big, '#ffffff', ease((q - .8) / .6), next.col[1]);
+      outroText('Ce nouveau monde a besoin de ton aide,', H * .7 + big * .85, Math.max(14, big * .34), '#ffd0d8', ease((q - 1.6) / .6));
+      outroText(`Capitaine ${captain()} !`, H * .7 + big * 1.4, Math.max(16, big * .45), '#ffd86b', ease((q - 2.1) / .6), '#ffb020');
       if (q > 4.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(q - 4.3) / .4})`; ctx.fillRect(0, 0, W, H); }
     }
     outroText('Touche l\'écran pour passer', H - 26, 12, 'rgba(217, 208, 255, .6)', T > .8 ? 1 : 0);
@@ -3388,7 +3420,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const pool = ALIEN_TYPES.filter(a => level + world * 6 >= a.from);
     let r = Math.random() * pool.reduce((s, a) => s + a.w, 0);
     const kind = (pool.find(a => (r -= a.w) < 0) || pool[0]).type;
-    const lvHp = Math.floor(level / 4) + world;
+    const lvHp = Math.floor(level / 4) + world * 2;
     const base = { kind: 'alien', type: kind, x: 30 + Math.random() * (W - 60), y: -30, t: 0, hitT: 0 };
     if (kind === 'chaser') items.push({ ...base, y: -20, r: 15, hp: level > 4 ? 2 : 1, pts: 25, vy: 85 + Math.random() * 40, t: Math.random() * 9 });
     else if (kind === 'saucer') {
@@ -3410,7 +3442,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function spawnBoss() {
     const idx = bossInWorld % 10, def = WORLDS[world].bosses[idx];
     bossCount++;
-    const hp = Math.round((22 + idx * 7 + level * 2.5) * (1 + world * .3) * (1 + cycle * .5));
+    const hp = Math.round((22 + idx * 7 + level * 2.5) * (1 + world * .45) * (1 + cycle * .5));
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100 + world * 400,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
@@ -4316,13 +4348,16 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   cv.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pt(e); });
   addEventListener('blur', () => { mouseFire = btnFire = false; for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
 
+  // un niveau dure plus longtemps dans les mondes lointains (20 s, puis 26, 32, 38, 44)
+  const levelSecs = () => 20 + world * 6;
+
   // --- boucle ---
   function update(dt) {
     time += dt;
     if (storyAt && time >= storyAt) { storyAt = 0; startOutro(storyNext); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss) lvT += dt;
-    if (lvT >= 20) {
+    if (lvT >= levelSecs()) {
       lvT = 0; level++; updateHud(); setTheme(level);
       if (level >= 10) feat('niveau10'); if (level >= 20) feat('niveau20');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
@@ -4332,7 +4367,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       newSector = false;
       beep(660, .12, 'triangle'); setTimeout(() => beep(880, .18, 'triangle'), 110);
     }
-    speed = 1 + (level - 1) * .22 + world * .25 + lvT / 200;
+    speed = 1 + (level - 1) * .22 + world * .35 + lvT / (200 + world * 60);
 
     const pid = power.def.id;
     const on = power.active > 0;
