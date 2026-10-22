@@ -2062,7 +2062,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   $('goBtn').onclick = () => { preview = null; start(); };
 
   // --- fond étoilé ---
-  const bg = Array.from({ length: 140 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random() * .8 + .2 }));
+  const bg = Array.from({ length: 170 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random() * .8 + .2 }));
+  const CLOUDS = Array.from({ length: 6 }, (_, i) => ({ u: Math.random(), v: Math.random(), r: .22 + Math.random() * .2, sp: .15 + Math.random() * .25, c: i % 2 }));
 
   // --- état ---
   let state = 'menu';
@@ -4579,11 +4580,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (!boss) lvT += dt;
     if (lvT >= levelSecs()) {
       lvT = 0; level++; updateHud(); setTheme(level);
+      levelFx = { t: performance.now(), name: themeOf(level).name, col: themeOf(level).neb[0], col2: themeOf(level).neb[1], lv: level };
       if (level >= 10) feat('niveau10'); if (level >= 20) feat('niveau20');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       if (level % 3 === 0 && !boss) spawnBoss();
-      else showBanner('Niveau ' + level, newSector ? `Secteur ${bossInWorld + 1} · ${WORLDS[world].bosses[bossInWorld].place}` : `${themeOf(level).name} · ça accélère !`);
+      else levelFx.name = newSector ? `Secteur ${bossInWorld + 1} · ${WORLDS[world].bosses[bossInWorld].place}` : `${themeOf(level).name} · ça accélère !`;
       newSector = false;
       beep(660, .12, 'triangle'); setTimeout(() => beep(880, .18, 'triangle'), 110);
     }
@@ -4990,7 +4992,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { c: ['#ffd86b', '#a8642a'], ring: '#ffe9b0' },
   ];
   const EARTH = { c: ['#6fc0ff', '#1f4f98'], land: '#4fd27a' };
-  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3;
+  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3, cometT = 3, swarmT = 9;
 
   // une planète est dessinée une seule fois dans une image, puis réutilisée
   function makePlanet(style, r) {
@@ -5075,9 +5077,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const k = state === 'play' ? speed : .6, m = reduce ? .3 : 1;
     planetT -= dt; fightT -= dt; cruiserT -= dt; meteorT -= dt;
     if (planetT <= 0) { if (scenery.filter(o => o.type === 'planet').length < 2) randomPlanet(); planetT = 10 + Math.random() * 14; }
-    if (!reduce && fightT <= 0) { addFight(); fightT = 7 + Math.random() * 7; }
+    if (!reduce && fightT <= 0) { addFight(); fightT = 4 + Math.random() * 5; }
+    cometT = (cometT ?? 3) - dt;
+    if (!reduce && cometT <= 0) {
+      const left = Math.random() < .5;
+      scenery.push({ type: 'comet', x: left ? -40 : W + 40, y: Math.random() * H * .5, vx: (left ? 1 : -1) * (180 + Math.random() * 120), vy: 60 + Math.random() * 80, life: 5 });
+      cometT = 6 + Math.random() * 7;
+    }
+    swarmT = (swarmT ?? 9) - dt;
+    if (!reduce && swarmT <= 0) {
+      const left = Math.random() < .5;
+      scenery.push({ type: 'swarm', x: left ? -80 : W + 80, y: H * (.15 + Math.random() * .45), vx: (left ? 1 : -1) * (70 + Math.random() * 40), vy: 10, n: 5 + Math.floor(Math.random() * 5), life: 14, ph: Math.random() * 6 });
+      swarmT = 12 + Math.random() * 10;
+    }
     if (cruiserT <= 0) { if (!scenery.some(o => o.type === 'cruiser')) addCruiser(); cruiserT = 22 + Math.random() * 18; }
-    if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 3 + Math.random() * 6; }
+    if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 1.2 + Math.random() * 3; }
     for (const o of scenery) {
       if (o.type === 'planet') o.y += o.vy * k * m * dt;
       else if (o.type === 'cruiser') { o.x += o.vx * m * dt; o.y += 4 * k * dt; }
@@ -5166,6 +5180,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       else if (o.type === 'bolt') {
         ctx.globalAlpha = .8; ctx.strokeStyle = o.col; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .025, o.y - o.vy * .025); ctx.stroke();
+      } else if (o.type === 'comet') {
+        // comète : tête brillante et longue queue aux couleurs du niveau
+        ctx.globalAlpha = Math.min(1, o.life) * .85;
+        const tl = 110, tx = o.x - o.vx / Math.hypot(o.vx, o.vy) * tl, ty = o.y - o.vy / Math.hypot(o.vx, o.vy) * tl;
+        const cg = ctx.createLinearGradient(o.x, o.y, tx, ty);
+        cg.addColorStop(0, '#ffffff'); cg.addColorStop(.25, neb[1]); cg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.strokeStyle = cg; ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(tx, ty); ctx.stroke(); ctx.lineCap = 'butt';
+        ctx.drawImage(softSprite('#ffffff'), o.x - 9, o.y - 9, 18, 18);
+      } else if (o.type === 'swarm') {
+        // escadrille lointaine en formation en V
+        ctx.globalAlpha = .55 * Math.min(1, o.life);
+        const d = Math.sign(o.vx);
+        for (let i = 0; i < o.n; i++) {
+          const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, x = o.x - d * row * 14, y = o.y + side * row * 9 + Math.sin(o.life * 3 + i + o.ph) * 2;
+          ctx.fillStyle = '#c9c3ea'; ctx.beginPath(); ctx.moveTo(x + d * 5, y); ctx.lineTo(x - d * 4, y - 3); ctx.lineTo(x - d * 4, y + 3); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = neb[0]; ctx.fillRect(x - d * 6, y - .8, 2, 1.6);
+        }
       } else if (o.type === 'meteor') {
         ctx.globalAlpha = Math.min(1, o.life);
         const g = ctx.createLinearGradient(o.x, o.y, o.x - o.vx * .15, o.y - o.vy * .15);
@@ -6013,7 +6045,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { name: 'Faille', top: '#040008', bottom: '#1a0624', neb: ['#c86bff', '#4fe0c8'], feature: 'glitch' },
     { name: 'Dernière étoile', top: '#000000', bottom: '#100818', neb: ['#ffd86b', '#5b3a9e'], feature: 'pulsar' },
   ];
-  let bgIdx = 0, bgPrev = 0, bgStart = -1e9;
+  let bgIdx = 0, bgPrev = 0, bgStart = -1e9, levelFx = null;
   // le monde 1 parcourt les 12 premiers décors, chaque autre monde a les siens
   const themeIndex = lv => { const l = WORLDS[world].themes; return l ? l[(lv - 1) % l.length] : (lv - 1) % 12; };
   const themeOf = lv => THEMES[themeIndex(lv)];
@@ -6145,20 +6177,61 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     const pid = power.def.id;
     const slow = on && pid === 'gel' ? .03 : on && pid === 'temps' ? .35 : 1;
 
-    // étoiles de fond
+    // nuages de nébuleuse qui dérivent lentement (couleurs du niveau)
     const drift = playing ? time * 40 * speed : t * .01;
+    // le décor se décale un peu quand la fusée bouge (effet de profondeur)
+    const par = playing && player && !reduce ? (W / 2 - player.x) * .05 : 0;
+    for (const c of CLOUDS) {
+      const R = c.r * Math.max(W, H), y = ((c.v * (H + 2 * R) + drift * c.sp) % (H + 2 * R) + H + 2 * R) % (H + 2 * R) - R;
+      ctx.globalAlpha = .16;
+      ctx.drawImage(softSprite(th.neb[c.c]), c.u * W + par * c.sp - R, y - R, R * 2, R * 2);
+    }
+    // étoiles de fond : 3 profondeurs, scintillement et grandes étoiles en croix
     for (const s of bg) {
-      const y = ((s.y * H + drift * s.z) % H + H) % H;
-      ctx.globalAlpha = .25 + s.z * .6;
+      const y = ((s.y * H + drift * s.z) % H + H) % H, x = ((s.x * W + par * s.z) % W + W) % W;
+      const tw = reduce ? 1 : .65 + .35 * Math.sin(t / (300 + s.z * 500) + s.x * 40);
+      ctx.globalAlpha = (.25 + s.z * .6) * tw;
       ctx.fillStyle = '#d9d0ff';
-      if (on && pid === 'hyper' && !reduce) ctx.fillRect(s.x * W, y, s.z * 1.5, s.z * 18);
-      else ctx.fillRect(s.x * W, y, s.z * 2, s.z * 2);
+      if (on && pid === 'hyper' && !reduce) ctx.fillRect(x, y, s.z * 1.5, s.z * 18);
+      else ctx.fillRect(x, y, s.z * 2, s.z * 2);
+      if (s.z > .93) { ctx.globalAlpha *= .6; ctx.fillRect(x - 5, y + .5, 12, 1); ctx.fillRect(x + .5, y - 5, 1, 12); }
     }
     ctx.globalAlpha = 1;
     drawFeature(th.a.feature, th, t, 1 - th.k);
     drawFeature(th.b.feature, th, t, th.k);
     drawScenery(t, th.neb);
     if (state === 'launch') drawLaunch(t);
+    // passage de niveau : saut en vitesse lumière, vague de couleur du nouveau décor et grand titre
+    if (levelFx && playing) {
+      const q = (t - levelFx.t) / 1800;
+      if (q >= 1) levelFx = null;
+      else {
+        ctx.save();
+        if (!reduce) {
+          const cx = W / 2, cy = H * .45, sp = Math.sin(Math.min(1, q * 1.4) * Math.PI);
+          ctx.lineCap = 'round';
+          for (let i = 0; i < 70; i++) {
+            const a = seeded(i) * Math.PI * 2, d = ((seeded(i + 300) + q * 1.6) % 1) * Math.max(W, H) * .8;
+            ctx.strokeStyle = i % 3 ? `rgba(230, 236, 255, ${.55 * sp})` : levelFx.col2; ctx.globalAlpha = i % 3 ? 1 : sp * .8; ctx.lineWidth = 1 + d / 300;
+            ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * d, cy + Math.sin(a) * d); ctx.lineTo(cx + Math.cos(a) * (d + 30 + sp * 90), cy + Math.sin(a) * (d + 30 + sp * 90)); ctx.stroke();
+          }
+          ctx.lineCap = 'butt'; ctx.globalAlpha = 1;
+          // vague de couleur qui balaie l'écran de haut en bas
+          const wy = -H * .3 + q * H * 1.6, wg = ctx.createLinearGradient(0, wy - 120, 0, wy + 120);
+          wg.addColorStop(0, 'rgba(0, 0, 0, 0)'); wg.addColorStop(.5, levelFx.col + '55'); wg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = wg; ctx.fillRect(0, wy - 120, W, 240);
+        }
+        // grand titre au centre
+        const a = q < .15 ? q / .15 : q > .75 ? (1 - q) / .25 : 1, z = 1 + (1 - Math.min(1, q * 4)) * .3;
+        ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.translate(W / 2, H * .3); ctx.scale(z, z);
+        ctx.font = `${Math.min(64, W / 7)}px Bungee, Impact, sans-serif`; ctx.shadowColor = levelFx.col; ctx.shadowBlur = 26; ctx.fillStyle = '#ffffff';
+        ctx.fillText(`NIVEAU ${levelFx.lv}`, 0, 0);
+        ctx.shadowBlur = 0; ctx.font = `600 ${Math.max(14, Math.min(22, W / 22))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = levelFx.col2;
+        ctx.fillText(levelFx.name, 0, Math.min(64, W / 7) * .75);
+        ctx.restore();
+      }
+    }
 
     if (playing) {
       const fl = flameColsOf(cfg.flame, t);
