@@ -436,6 +436,63 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   .hangar .row { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { .play { transition: none; } .banner { transition: none; } }
+
+/* ===== Qualité visuelle ===== */
+/* le score n'apparaît qu'en partie */
+.hud { transition: opacity .35s; }
+body:not(.jeu) .hud { opacity: 0; }
+
+/* Accueil : logo avec comète et reflet qui passe */
+.logo { position: relative; padding: 6px 10px 0; }
+.logo .streak {
+  position: absolute; left: -18%; right: 8%; top: 46%; height: 14px; border-radius: 999px; transform: rotate(-12deg);
+  background: linear-gradient(90deg, rgba(255, 122, 168, 0), rgba(255, 122, 168, .35) 55%, rgba(255, 216, 107, .9) 92%, #fff 100%);
+  filter: blur(1px); box-shadow: 0 0 30px rgba(255, 216, 107, .35); pointer-events: none;
+}
+.logo .streak::after { content: ''; position: absolute; right: -10px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 30%, #ffd86b 55%, rgba(255, 216, 107, 0) 72%); }
+.card h1 {
+  position: relative;
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .85) 50%, transparent 60%), linear-gradient(180deg, var(--star) 20%, var(--tail) 100%);
+  background-size: 300% 100%, 100% 100%; background-position: 150% 0, 0 0; background-repeat: no-repeat; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: logoShine 6s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(11, 8, 32, .55)) drop-shadow(0 0 24px rgba(255, 122, 168, .25));
+}
+@keyframes logoShine { 0%, 60% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -50% 0, 0 0; } }
+.bossdetails { width: 100%; }
+.bossdetails summary { cursor: pointer; list-style: none; font-size: 14px; color: var(--muted); padding: 6px 12px; border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--muted) 45%, transparent); display: inline-block; }
+.bossdetails summary::-webkit-details-marker { display: none; }
+.bossdetails[open] summary { color: var(--star); border-color: var(--star); }
+.bossdetails .wbosses { margin-top: 10px; }
+
+/* Hangar : un vrai hangar, en métal, avec bande de sécurité et voyants */
+.hangar {
+  --pad: 22px; position: relative; padding: var(--pad);
+  background:
+    radial-gradient(circle at 12px 12px, #7a729f 2.5px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 12px) 12px, #7a729f 2.5px, transparent 3.5px),
+    radial-gradient(circle at 12px calc(100% - 12px), #7a729f 2.5px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), #7a729f 2.5px, transparent 3.5px),
+    repeating-linear-gradient(90deg, transparent 0 139px, rgba(255, 255, 255, .035) 139px 140px),
+    repeating-linear-gradient(0deg, transparent 0 139px, rgba(0, 0, 0, .18) 139px 141px),
+    linear-gradient(180deg, #1e1846, #120d2c 60%, #0e0a24);
+  border: 2px solid #3d3570; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04), inset 0 40px 80px rgba(122, 216, 255, .05), 0 30px 80px rgba(0, 0, 0, .5);
+}
+.hangar h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.hangar h2::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 9px; border-radius: 22px 22px 0 0;
+  background: repeating-linear-gradient(-45deg, #ffd86b 0 14px, #20183f 14px 28px); opacity: .9;
+}
+.hangar h2 .bay { font-family: var(--body); font-size: 12px; letter-spacing: .18em; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; }
+.hangar h2 .led { width: 9px; height: 9px; border-radius: 50%; background: #7dff8a; box-shadow: 0 0 10px #7dff8a; animation: ledBlink 1.6s steps(2, jump-none) infinite; }
+@keyframes ledBlink { 50% { opacity: .35; } }
+.hangar .opt > label, .hangar .opt > span { display: flex; align-items: center; gap: 8px; color: #c9c3ea; }
+.hangar .opt > label::before, .hangar .opt > span::before { content: ''; width: 7px; height: 7px; transform: rotate(45deg); background: var(--star); box-shadow: 0 0 8px var(--star); flex: none; }
+.hangar .opt > label::after, .hangar .opt > span::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--muted) 40%, transparent), transparent); }
+.preview canvas { border: 1px solid #3d3570; box-shadow: 0 0 0 4px #120d2c, 0 0 0 5px #3d3570, 0 16px 40px rgba(0, 0, 0, .5); }
+.carousel canvas { border: 1px solid #3d3570; box-shadow: inset 0 0 40px rgba(0, 0, 0, .5); }
+@media (max-width: 620px) { .hangar { --pad: 16px; } }
+@media (prefers-reduced-motion: reduce) { .card h1, .hangar h2 .led { animation: none; } }
 </style>
 </head>
 <body>
@@ -475,17 +532,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
 <div class="panel" id="menu">
   <div class="card">
-    <h1>Comète<br>Filante</h1>
+    <div class="logo"><i class="streak" aria-hidden="true"></i><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
-    <div class="worldpick" id="worldPick">
-      <b>Choisis ton monde</b>
-      <div class="worlds" id="worldChips"></div>
-      <div class="wbosses" id="worldBosses"></div>
-    </div>
     <div class="row">
       <button class="play" id="startBtn">Jouer</button>
       <button class="ghost" id="hangarBtn">Hangar</button>
       <button class="ghost" id="trophyBtn">Trophées</button>
+    </div>
+    <div class="worldpick" id="worldPick">
+      <b>Choisis ton monde</b>
+      <div class="worlds" id="worldChips"></div>
+      <details class="bossdetails"><summary>Voir les 10 boss de ce monde</summary><div class="wbosses" id="worldBosses"></div></details>
     </div>
     <div class="row">
       <button class="ghost" id="rankBtn">🏆 Classement mondial</button>
@@ -501,7 +558,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
 <div class="panel" id="hangar" hidden>
   <div class="hangar">
-    <h2>Hangar</h2>
+    <h2>Hangar <small class="bay">BAIE 07 · <i class="led"></i> PRÊT AU DÉCOLLAGE</small></h2>
     <div class="preview" id="persoPreview">
       <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
       <div class="shipname" id="pvName"></div>
@@ -2007,6 +2064,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     carPos = ((carPos % n) + n) % n;
     k.setTransform(1, 0, 0, 1, 0, 0);
     k.clearRect(0, 0, Wc, Hc);
+    drawBay(k, Wc, Hc, t, .82);
     // plateforme lumineuse sous le vaisseau du centre
     const pg = k.createRadialGradient(Wc / 2, Hc * .82, 4, Wc / 2, Hc * .82, 150);
     pg.addColorStop(0, 'rgba(255, 216, 107, .35)'); pg.addColorStop(1, 'rgba(255, 216, 107, 0)');
@@ -5425,7 +5483,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ctx.globalAlpha = .09; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
     for (const o of scenery) {
-      if (o.type === 'planet') { ctx.globalAlpha = .6; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
+      if (o.type === 'planet') { ctx.globalAlpha = .85; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
       else if (o.type === 'cruiser') { ctx.globalAlpha = .55; drawCruiser(o); }
       else if (o.type === 'fighter') { ctx.globalAlpha = .65; drawFighter(o); }
       else if (o.type === 'bolt') {
@@ -6331,6 +6389,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { name: 'Dernière étoile', top: '#000000', bottom: '#100818', neb: ['#ffd86b', '#5b3a9e'], feature: 'pulsar' },
   ];
   let bgIdx = 0, bgPrev = 0, bgStart = -1e9, levelFx = null;
+  const vignette = { w: 0, h: 0, g: null };
   // le monde 1 parcourt les 12 premiers décors, chaque autre monde a les siens
   const themeIndex = lv => { const l = WORLDS[world].themes; return l ? l[(lv - 1) % l.length] : (lv - 1) % 12; };
   const themeOf = lv => THEMES[themeIndex(lv)];
@@ -6566,6 +6625,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     drawAmbient(AMBIENTS[bgIdx % AMBIENTS.length], t, th.k, th.b.neb);
     drawScenery(t, th.neb);
     if (state === 'launch') drawLaunch(t);
+    if (state === 'menu' && W > 900 && !reduce) {
+      const mx = W * .86, my = H * .62 + Math.sin(t / 700) * 14;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5;
+      ctx.drawImage(softSprite(flameColsOf(cfg.flame, t)[1]), mx - 40, my + 10, 80, 120); ctx.restore();
+      drawRocket(ctx, mx, my, 2.2, cfg, t, Math.sin(t / 900) * .1, .6);
+    }
     // passage de niveau : saut en vitesse lumière, vague de couleur du nouveau décor et grand titre
     if (levelFx && playing) {
       const q = (t - levelFx.t) / 1800;
@@ -6844,6 +6909,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
           for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t / 400; ctx.moveTo(player.x + Math.cos(a) * 30, player.y + Math.sin(a) * 30); ctx.lineTo(player.x + Math.cos(a) * 52, player.y + Math.sin(a) * 52); }
           ctx.stroke();
         }
+        // halo de lumière du réacteur
+        if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(fl[1]), player.x - 22, player.y + 6, 44, 60); ctx.restore(); }
         drawRocket(ctx, player.x, player.y, 1, cfg, t, player.tilt, hyper || (on && pid === 'supernova') ? 1 : 0);
         if (shield > 0 || hyper) {
           ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
@@ -6883,6 +6950,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ctx.restore();
     }
     if (slow < 1) { ctx.fillStyle = 'rgba(122, 216, 255, .08)'; ctx.fillRect(0, 0, W, H); }
+    // vignette : les bords de l'écran sont un peu plus sombres, comme un hublot
+    if (vignette.w !== W || vignette.h !== H) { const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .45, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(5, 3, 15, 0)'); vg.addColorStop(1, 'rgba(5, 3, 15, .55)'); vignette.g = vg; vignette.w = W; vignette.h = H; }
+    ctx.fillStyle = vignette.g; ctx.fillRect(0, 0, W, H);
     // nuage d'encre ou de spores : on ne voit plus qu'autour de la fusée
     if (playing && boss && boss.pw && boss.pw.kind === 'fog' && boss.pw.t >= boss.pw.warn) {
       const q = Math.min(1, (boss.pw.t - boss.pw.warn) * 3) * Math.min(1, (3 - (boss.pw.t - boss.pw.warn)) * 3);
@@ -6897,9 +6967,40 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     }
   }
 
+  // baie de lancement : mur du fond, structures, sol quadrillé, projecteurs et plateforme lumineuse
+  function drawBay(k, w, h, t, fy) {
+    const wall = k.createLinearGradient(0, 0, 0, h);
+    wall.addColorStop(0, '#0d0a22'); wall.addColorStop(fy, '#1d1745'); wall.addColorStop(1, '#0a0819');
+    k.fillStyle = wall; k.fillRect(0, 0, w, h);
+    // structures verticales et hublots du fond
+    k.fillStyle = 'rgba(255, 255, 255, .04)';
+    for (let x = w * .08; x < w; x += w * .21) k.fillRect(x, 0, 6, h * fy);
+    for (let i = 0; i < 5; i++) { k.fillStyle = (Math.floor(t / 700) + i) % 4 ? 'rgba(122, 216, 255, .25)' : 'rgba(255, 216, 107, .5)'; k.fillRect(w * (.12 + i * .19), h * .12, 10, 4); }
+    // sol en perspective
+    const fyy = h * fy;
+    k.strokeStyle = 'rgba(122, 216, 255, .14)'; k.lineWidth = 1;
+    for (let i = -8; i <= 8; i++) { k.beginPath(); k.moveTo(w / 2 + i * w * .04, fyy); k.lineTo(w / 2 + i * w * .2, h); k.stroke(); }
+    for (let i = 1; i < 6; i++) { const y = fyy + (h - fyy) * Math.pow(i / 6, 1.7); k.beginPath(); k.moveTo(0, y); k.lineTo(w, y); k.stroke(); }
+    // projecteurs
+    for (const sx of [-1, 1]) {
+      const g = k.createLinearGradient(w / 2 + sx * w * .45, 0, w / 2, fyy);
+      g.addColorStop(0, 'rgba(255, 246, 216, .22)'); g.addColorStop(1, 'rgba(255, 246, 216, 0)');
+      k.fillStyle = g; k.beginPath(); k.moveTo(w / 2 + sx * w * .48, 0); k.lineTo(w / 2 + sx * w * .4, 0); k.lineTo(w / 2 - sx * w * .14, fyy); k.lineTo(w / 2 + sx * w * .18, fyy); k.closePath(); k.fill();
+    }
+    // plateforme et ses lumières
+    const pg = k.createRadialGradient(w / 2, fyy, 4, w / 2, fyy, w * .4);
+    pg.addColorStop(0, 'rgba(255, 216, 107, .45)'); pg.addColorStop(1, 'rgba(255, 216, 107, 0)');
+    k.fillStyle = pg; k.beginPath(); k.ellipse(w / 2, fyy, w * .4, w * .08, 0, 0, 7); k.fill();
+    k.strokeStyle = 'rgba(255, 216, 107, .7)'; k.lineWidth = 2; k.beginPath(); k.ellipse(w / 2, fyy, w * .3, w * .055, 0, 0, 7); k.stroke();
+    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 + t / 900; k.fillStyle = Math.sin(a) > 0 ? '#ffd86b' : 'rgba(255, 216, 107, .35)'; k.beginPath(); k.arc(w / 2 + Math.cos(a) * w * .3, fyy + Math.sin(a) * w * .055, 2.5, 0, 7); k.fill(); }
+    // ligne de scan qui passe sur la fusée
+    if (!reduce) { const sy = ((t / 2200) % 1) * fyy; const sg = k.createLinearGradient(0, sy - 14, 0, sy + 2); sg.addColorStop(0, 'rgba(122, 216, 255, 0)'); sg.addColorStop(1, 'rgba(122, 216, 255, .22)'); k.fillStyle = sg; k.fillRect(w * .2, sy - 14, w * .6, 16); }
+  }
+
   function drawPreview(t) {
     pctx.setTransform(1, 0, 0, 1, 0, 0);
     pctx.clearRect(0, 0, pv.width, pv.height);
+    drawBay(pctx, pv.width, pv.height, t, .78);
     const bob = reduce ? 0 : Math.sin(t / 500) * 8;
     const pcfg = preview ? { ...cfg, [preview.key]: preview.id } : cfg;
     drawRocket(pctx, pv.width / 2, pv.height * .42 + bob, 5, pcfg, t, reduce ? 0 : Math.sin(t / 900) * .12, .3);
@@ -6914,6 +7015,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (state === 'outro') updateOutro(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
+    document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'outro'].includes(state));
     draw(t);
     if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); drawActs(t); }
     requestAnimationFrame(loop);
