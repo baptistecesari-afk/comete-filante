@@ -747,6 +747,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     { id: 'cristal', name: 'Cristal' },
     { id: 'pixel', name: 'Fusée 8-bit' },
     { id: 'arcade', name: 'Rétro Arcade' },
+    { id: 'coeur', name: 'Cœur Étoilé', desc: 'Le vaisseau le plus cher : un cœur brillant avec ses ailes d\'ange, son cockpit et ses petits cœurs en orbite.' },
     { id: 'predateur', name: 'Prédateur', desc: 'Chasseur à armure noire, visière rouge, deux réacteurs et canons latéraux.' },
     { id: 'legende', name: 'Légende', desc: 'Vaisseau blanc et or avec auréole, cockpit diamant et étincelles.' },
   ];
@@ -897,7 +898,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 2900, eclair: 5850, aile: 2350, ovni: 3500, tie: 3900, faucon: 4900, requin: 6800, abeille: 2900, chevalier: 5450, galion: 5850, mecha: 6250, cristal: 7800, arcade: 19500, pixel: 3900 },
+    model: { navette: 2900, eclair: 5850, aile: 2350, ovni: 3500, tie: 3900, faucon: 4900, requin: 6800, abeille: 2900, chevalier: 5450, galion: 5850, mecha: 6250, cristal: 7800, arcade: 19500, pixel: 3900, coeur: 50000 },
     color: { or: 600, turquoise: 600, violet: 1000, orange: 1000, blanc: 1550, bleunuit: 600, rosebonbon: 600, citron: 600, corail: 600, menthe: 600, noir: 1150, lave: 1550, ocean: 1550, galaxie: 1950, neon: 1750 },
     accent: { noir: 250, blanc: 250, or: 500, cyan: 500, rose: 500, vert: 500, violet: 500, rouge: 500 },
     motif: { rayures: 600, etoiles: 800, damier: 1000, eclair: 1150, camo: 1150, flammes: 1350, course: 1550 },
@@ -1443,6 +1444,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       core.addColorStop(0, '#ffffff'); core.addColorStop(1, '#7ad8ff');
       c.fillStyle = core; c.beginPath(); c.arc(0, -2, 4, 0, 7); c.fill();
       c.strokeStyle = light; c.lineWidth = .8; c.beginPath(); c.moveTo(-8, 5); c.lineTo(8, 5); c.stroke();
+    } else if (conf.model === 'coeur') {
+      // ailes d'ange qui battent doucement
+      const flap = Math.sin(t / 220) * .18;
+      c.fillStyle = 'rgba(255, 255, 255, .85)';
+      for (const sd of [-1, 1]) {
+        c.save(); c.translate(sd * 12, -6); c.rotate(sd * (.25 + flap));
+        for (let f = 0; f < 3; f++) { c.beginPath(); c.ellipse(sd * (8 + f * 5), -2 + f * 3, 9 - f * 2, 4, sd * .5, 0, 7); c.fill(); }
+        c.restore();
+      }
+      // le cœur
+      const heart = () => { c.beginPath(); c.moveTo(0, 16); c.bezierCurveTo(-20, 2, -22, -18, -11, -24); c.bezierCurveTo(-4, -28, 0, -22, 0, -17); c.bezierCurveTo(0, -22, 4, -28, 11, -24); c.bezierCurveTo(22, -18, 20, 2, 0, 16); c.closePath(); };
+      c.shadowColor = '#ff7aa8'; c.shadowBlur = 20;
+      const hg = c.createLinearGradient(0, -26, 0, 16); hg.addColorStop(0, light); hg.addColorStop(.5, bodyFill); hg.addColorStop(1, dark);
+      c.fillStyle = hg; heart(); c.fill(); c.shadowBlur = 0;
+      c.strokeStyle = 'rgba(255, 255, 255, .55)'; c.lineWidth = 1; heart(); c.stroke();
+      // reflet brillant
+      c.fillStyle = 'rgba(255, 255, 255, .55)'; c.beginPath(); c.ellipse(-9, -16, 4, 2.4, -.6, 0, 7); c.fill();
+      // cockpit
+      c.fillStyle = glass; c.beginPath(); c.ellipse(0, -7, 5.5, 7, 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255, 255, 255, .7)'; c.beginPath(); c.ellipse(-1.6, -9.5, 1.6, 2.4, -.3, 0, 7); c.fill();
+      // petits cœurs en orbite
+      for (let i = 0; i < 3; i++) {
+        const a = t / 600 + i * 2.09, hx = Math.cos(a) * 26, hy = -4 + Math.sin(a) * 10, z = 3 + Math.sin(a) * .8;
+        c.fillStyle = i % 2 ? '#ffd0e0' : '#ff4f8a'; c.globalAlpha = Math.sin(a) > -.2 ? 1 : .45;
+        c.beginPath(); c.moveTo(hx, hy + z); c.bezierCurveTo(hx - z * 1.6, hy - z * .2, hx - z * .8, hy - z * 1.5, hx, hy - z * .6); c.bezierCurveTo(hx + z * .8, hy - z * 1.5, hx + z * 1.6, hy - z * .2, hx, hy + z); c.fill();
+      }
+      c.globalAlpha = 1;
     } else if (conf.model === 'cristal') {
       // diamant taillé avec des facettes
       const pts = [[0, -31], [10, -12], [8, 8], [0, 18], [-8, 8], [-10, -12]];
@@ -1907,7 +1935,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     aile: 'Une grande aile triangulaire.', ovni: 'Soucoupe volante avec son petit pilote alien.', tie: 'Une boule de cockpit entre deux ailes hexagonales.',
     faucon: 'Disque cargo avec deux pinces à l\'avant.', requin: 'Dents, branchies et nageoires.', abeille: 'Corps rayé et ailes qui battent.',
     chevalier: 'Bouclier, lance et visière de casque.', galion: 'Un bateau pirate de l\'espace.', mecha: 'Robot de combat aux bras-canons.',
-    cristal: 'Un diamant taillé qui brille.', pixel: 'Fusée en pixel art 8-bit.', arcade: 'Le vaisseau le plus cher : pixel art de borne d\'arcade.',
+    cristal: 'Un diamant taillé qui brille.', pixel: 'Fusée en pixel art 8-bit.', arcade: 'Pixel art de borne d\'arcade.',
   };
   let carIdx = 0, carPos = 0, carDrag = null;
   const carCount = () => MODELS.length;
@@ -5808,6 +5836,39 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.restore();
   }
 
+  // Cœur Étoilé : décollage depuis un royaume de nuages roses, arc-en-ciel et pluie de cœurs
+  function drawLoveSky(g, t, k) {
+    skyFill(['#2a0a2e', '#8a2a6a', '#ff9ac8'], k);
+    if (g > H + 300) return;
+    ctx.save();
+    // arc-en-ciel
+    const a = Math.max(0, 1 - k * 1.3);
+    if (a > 0) {
+      const cols = ['#ff4f6d', '#ff9a3c', '#ffd86b', '#7dff8a', '#7ad8ff', '#c86bff'];
+      ctx.globalAlpha = .45 * a; ctx.lineWidth = 9;
+      cols.forEach((col, i) => { ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(W / 2, g + 40, Math.min(W, H) * .55 - i * 9, Math.PI, 0); ctx.stroke(); });
+      ctx.globalAlpha = 1;
+    }
+    // cœurs qui montent
+    for (let i = 0; i < 22; i++) {
+      const x = seeded(i) * W + Math.sin(t / 700 + i) * 14, y = (H - ((seeded(i + 40) * H + t * .06 * (1 + seeded(i + 80))) % (H + 40))) + g - H * .72, z = 4 + seeded(i + 120) * 6;
+      ctx.globalAlpha = .75; ctx.fillStyle = i % 3 ? '#ff7aa8' : '#ffffff';
+      ctx.beginPath(); ctx.moveTo(x, y + z); ctx.bezierCurveTo(x - z * 1.6, y - z * .2, x - z * .8, y - z * 1.5, x, y - z * .6); ctx.bezierCurveTo(x + z * .8, y - z * 1.5, x + z * 1.6, y - z * .2, x, y + z); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // nuages roses moelleux
+    for (let i = 0; i < 14; i++) {
+      const x = (i / 13) * (W + 80) - 40, r2 = 40 + seeded(i + 200) * 34;
+      ctx.fillStyle = i % 2 ? '#ffd0e4' : '#ffe6f0'; ctx.beginPath(); ctx.arc(x, g + 30 + seeded(i + 300) * 20, r2, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = '#ffe6f0'; ctx.fillRect(0, g + 40, W, Math.max(0, H - g) + 300);
+    // socle en forme de cœur
+    ctx.fillStyle = '#ff4f8a'; ctx.shadowColor = '#ff7aa8'; ctx.shadowBlur = 20;
+    const z = 30, x = W / 2, y = g + 6;
+    ctx.beginPath(); ctx.moveTo(x, y + z * .7); ctx.bezierCurveTo(x - z * 1.6, y - z * .1, x - z * .8, y - z * .9, x, y - z * .35); ctx.bezierCurveTo(x + z * .8, y - z * .9, x + z * 1.6, y - z * .1, x, y + z * .7); ctx.fill();
+    ctx.restore();
+  }
+
   // Fusée 8-bit : base de lancement pixelisée, comme dans un vieux jeu vidéo
   function drawPixelBase(g, t, k) {
     const B = 8, snap = v => Math.round(v / B) * B;
@@ -6159,6 +6220,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     else if (model === 'galion') drawHarbor(stationY, t, sk);
     else if (model === 'mecha') drawCity(stationY, t, sk);
     else if (model === 'cristal') drawIce(stationY, t, sk);
+    else if (model === 'coeur') drawLoveSky(stationY, t, sk);
     else if (model === 'arcade') drawSynthwave(stationY, t, sk);
     else if (model === 'pixel') drawPixelBase(stationY, t, sk);
     else drawStation(W / 2, stationY, t);
@@ -6179,7 +6241,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     // fumée et flammes
     for (const p of lparts) {
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
-      ctx.fillStyle = p.smoke ? ({ requin: '#c8fbff', predateur: '#5a3a3a', legende: '#fff2c8', aile: '#f0c89a', ovni: '#b6ff6b', abeille: '#ffe9a0', chevalier: '#f3eefe', galion: '#d6dcea', mecha: '#ff7ad9', cristal: '#e6f9ff', arcade: '#ff4fd8', pixel: '#ffffff' }[cfg.model] || '#d9d0ff') : flameColsOf(cfg.flame, t)[1];
+      ctx.fillStyle = p.smoke ? ({ requin: '#c8fbff', predateur: '#5a3a3a', legende: '#fff2c8', aile: '#f0c89a', ovni: '#b6ff6b', abeille: '#ffe9a0', chevalier: '#f3eefe', galion: '#d6dcea', mecha: '#ff7ad9', cristal: '#e6f9ff', arcade: '#ff4fd8', pixel: '#ffffff', coeur: '#ffd0e4' }[cfg.model] || '#d9d0ff') : flameColsOf(cfg.flame, t)[1];
       if (model === 'pixel' || model === 'arcade') { const z = Math.round(p.r / 4) * 4 * 1.6; ctx.fillRect(Math.round((p.x - z / 2) / 4) * 4, Math.round((p.y - z / 2) / 4) * 4, z, z); }
       else { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
     }
