@@ -34,7 +34,11 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (!DB_URL || !DB_TOKEN) return res.status(503).json({ error: 'Le classement mondial n\'est pas encore branché.' });
+  if (!DB_URL || !DB_TOKEN) {
+    // aide pour brancher la base : seulement les NOMS des variables, jamais leur valeur
+    const seen = Object.keys(process.env).filter(n => /KV|REDIS|UPSTASH/i.test(n));
+    return res.status(503).json({ error: 'Le classement mondial n\'est pas encore branché.', variables: seen });
+  }
 
   try {
     if (req.method === 'GET') {
