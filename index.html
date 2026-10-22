@@ -3164,10 +3164,162 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     $('story').hidden = true;
     if (storyMode === 'prologue') { markPrologue(storyWorld); start(); }
     else {
-      state = 'play'; $('pauseBtn').hidden = false; last = performance.now();
+      state = 'play'; last = performance.now();
+      for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
       if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); }
     }
   }
+  // ===== Cinématique de fin de monde =====
+  // 1. Mission accomplie : les étoiles volées reviennent dans le ciel
+  // 2. Saut dans l'hyperespace
+  // 3. Une nouvelle galaxie, déjà envahie par les méchants
+  let outroT = 0, outroNext = 'world', outroDur = 11, outroStars = [], outroFleet = [], outroGalaxy = [], outroSfx = 0;
+  function startOutro(next) {
+    state = 'outro'; outroT = 0; outroNext = next; outroSfx = 0;
+    document.querySelector('.hud').style.visibility = 'hidden';
+    outroDur = next === 'world' ? 11 : 5.5;
+    mouseFire = btnFire = false;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
+    $('banner').classList.remove('show');
+    const R = Math.random;
+    outroStars = Array.from({ length: reduce ? 30 : 70 }, () => ({ tx: R() * W, ty: R() * H * .85, d: R() * 1.4, z: 2 + R() * 4, tw: R() * 7 }));
+    outroFleet = Array.from({ length: 16 }, (_, i) => {
+      const side = i % 4, k = R();
+      const from = side === 0 ? [-60, k * H] : side === 1 ? [W + 60, k * H] : side === 2 ? [k * W, -60] : [k * W * .3 + (i % 2 ? W * .7 : 0), H + 60];
+      return { fx: from[0], fy: from[1], d: R() * 1.8, z: .7 + R() * .7, mother: i < 2 };
+    });
+    outroGalaxy = Array.from({ length: reduce ? 250 : 520 }, () => {
+      const arm = Math.floor(R() * 3), rr = Math.pow(R(), .7);
+      return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .5, r: rr, z: R() < .1 ? 2.5 : 1.3, white: R() < .3 };
+    });
+    beep(523, .15, 'triangle', .12); setTimeout(() => beep(659, .15, 'triangle', .12), 150);
+    setTimeout(() => beep(784, .15, 'triangle', .12), 300); setTimeout(() => beep(1046, .6, 'triangle', .14), 450);
+  }
+  function finishOutro() {
+    if (state !== 'outro') return;
+    document.querySelector('.hud').style.visibility = '';
+    showStory(outroNext);
+  }
+  function updateOutro(dt) {
+    outroT += dt;
+    if (outroNext === 'world') {
+      if (outroSfx === 0 && outroT > 3.8) { outroSfx = 1; beep(90, 2.4, 'sawtooth', .12, 1400); beep(180, 2.4, 'sine', .08, 1800); }
+      if (outroSfx === 1 && outroT > 6.3) { outroSfx = 2; beep(60, 1, 'sawtooth', .2, -30); }
+      // sirène d'alerte dans la nouvelle galaxie
+      if (outroSfx >= 2 && outroT > 7 && outroT < 10.5 && Math.floor((outroT - 7) / .5) > outroSfx - 2) { outroSfx++; beep(outroSfx % 2 ? 660 : 440, .3, 'square', .06); }
+    }
+    if (outroT >= outroDur) finishOutro();
+  }
+  const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
+  function outroText(txt, y, size, col, alpha, glow) {
+    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    ctx.font = `${size}px Bungee, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // le texte rétrécit s'il est trop large pour l'écran
+    const w = ctx.measureText(txt).width;
+    if (w > W - 32) ctx.font = `${size * (W - 32) / w}px Bungee, Impact, sans-serif`;
+    if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 24; }
+    ctx.fillStyle = col; ctx.fillText(txt, W / 2, y);
+    ctx.restore();
+  }
+  function drawOutro(t) {
+    const T = outroT, W0 = WORLDS[world], next = WORLDS[Math.min(world + 1, WORLDS.length - 1)];
+    const big = Math.min(54, W / 11);
+    ctx.save();
+    // --- 1. Mission accomplie ---
+    if (T < 3.8 || outroNext !== 'world') {
+      const g = ctx.createRadialGradient(W / 2, H * .62, 10, W / 2, H * .5, Math.max(W, H));
+      g.addColorStop(0, W0.col[0]); g.addColorStop(1, '#05030f');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      const rx = W / 2, ry = H * .66 + Math.sin(T * 2) * 6;
+      // les étoiles libérées montent depuis la fusée et rallument le ciel
+      for (const st of outroStars) {
+        const q = ease((T - .3 - st.d) / 1.2);
+        if (q <= 0) continue;
+        const x = rx + (st.tx - rx) * q, y = ry + (st.ty - ry) * q;
+        const tw = q >= 1 ? .6 + Math.sin(t / 200 + st.tw) * .4 : 1;
+        ctx.globalAlpha = tw; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 12;
+        drawStar(x, y, st.z * (q < 1 ? 1.4 : 1), t / 600 + st.tw); ctx.fill();
+      }
+      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      // anneau de lumière au début
+      if (T < 1.2) { ctx.strokeStyle = `rgba(255, 216, 107, ${1 - T / 1.2})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(rx, ry, T * Math.max(W, H) * .7, 0, 7); ctx.stroke(); }
+      drawRocket(ctx, rx, ry, 1.8, cfg, t, Math.sin(T * 1.5) * .08, .5);
+      const k = ease((T - .4) / .6);
+      outroText(outroNext === 'world' ? 'MISSION ACCOMPLIE' : 'VICTOIRE TOTALE', H * .24, big * (1.4 - .4 * k), '#ffd86b', k, '#ffb020');
+      outroText(outroNext === 'world' ? `Monde libéré : ${W0.name}` : 'Les 5 mondes sont libérés !', H * .24 + big * .95, Math.max(16, big * .42), '#ffffff', ease((T - 1) / .6));
+      outroText('10 gardiens vaincus · toutes les étoiles rendues', H * .24 + big * 1.6, Math.max(12, big * .26), '#d9d0ff', ease((T - 1.6) / .6));
+      // fondu vers l'hyperespace
+      if (outroNext === 'world' && T > 3.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(T - 3.3) / .5})`; ctx.fillRect(0, 0, W, H); }
+    }
+    // --- 2. Saut dans l'hyperespace ---
+    else if (T < 6.3) {
+      const q = (T - 3.8) / 2.5;
+      ctx.fillStyle = '#05030f'; ctx.fillRect(0, 0, W, H);
+      const cx = W / 2, cy = H * .45;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < (reduce ? 50 : 140); i++) {
+        const a = seeded(i) * Math.PI * 2, sp = seeded(i + 500);
+        const d = ((sp + T * (0.4 + q * 2.2)) % 1), r0 = d * Math.max(W, H) * .8, len = 6 + q * q * 160 * d;
+        ctx.strokeStyle = i % 5 ? `rgba(220, 230, 255, ${.3 + d * .7})` : next.col[1];
+        ctx.lineWidth = .8 + d * 2;
+        ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * (r0 + len), cy + Math.sin(a) * (r0 + len)); ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+      // la fusée file au loin, vers le centre
+      const z = 1.6 * (1 - ease(q) * .85);
+      drawRocket(ctx, cx, cy + (H * .25) * (1 - ease(q)), z, cfg, t, 0, 1.6);
+      outroText('SAUT HYPERESPACE', H * .85, Math.max(14, big * .35), '#7ad8ff', Math.min(1, q * 3) * (1 - Math.max(0, q - .8) * 5), '#7ad8ff');
+      // éclair blanc à l'arrivée
+      if (q > .85) { ctx.fillStyle = `rgba(255, 255, 255, ${(q - .85) / .15})`; ctx.fillRect(0, 0, W, H); }
+    }
+    // --- 3. Nouvelle galaxie envahie ---
+    else {
+      const q = T - 6.3;
+      const g = ctx.createRadialGradient(W / 2, H * .45, 10, W / 2, H * .45, Math.max(W, H) * .8);
+      g.addColorStop(0, next.col[0]); g.addColorStop(1, '#05030f');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // galaxie en spirale aux couleurs du nouveau monde
+      const gx = W / 2, gy = H * .45, GR = Math.min(W, H) * .42, rot = t / 9000;
+      const core = ctx.createRadialGradient(gx, gy, 0, gx, gy, GR * .35);
+      core.addColorStop(0, '#ffffff'); core.addColorStop(.3, next.col[1]); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = core; ctx.beginPath(); ctx.arc(gx, gy, GR * .35, 0, 7); ctx.fill();
+      for (const pt of outroGalaxy) {
+        const a = pt.a + rot, x = gx + Math.cos(a) * pt.r * GR, y = gy + Math.sin(a) * pt.r * GR * .55;
+        ctx.globalAlpha = .4 + (1 - pt.r) * .6; ctx.fillStyle = pt.white ? '#ffffff' : next.col[1];
+        ctx.fillRect(x, y, pt.z, pt.z);
+      }
+      ctx.globalAlpha = 1;
+      // la flotte ennemie fonce vers la galaxie
+      for (const sh of outroFleet) {
+        const k = ease((q - sh.d * .6) / 2.6);
+        if (k <= 0) continue;
+        const x = sh.fx + (gx - sh.fx) * k * .8, y = sh.fy + (gy - sh.fy) * k * .8, a = Math.atan2(gy - sh.fy, gx - sh.fx);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+        ctx.strokeStyle = 'rgba(125, 255, 138, .35)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-10 * sh.z, 0); ctx.lineTo(-60 * sh.z, 0); ctx.stroke();
+        const z = sh.z * (sh.mother ? 2.4 : 1);
+        ctx.fillStyle = '#1a1430'; ctx.strokeStyle = '#7dff8a'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(14 * z, 0); ctx.lineTo(-10 * z, -9 * z); ctx.lineTo(-5 * z, 0); ctx.lineTo(-10 * z, 9 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = Math.floor(t / 150 + sh.fx) % 2 ? '#7dff8a' : '#ff4f6d';
+        ctx.beginPath(); ctx.arc(2 * z, 0, 2.2 * z, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      // alerte rouge sur les bords
+      const pulse = (Math.sin(t / 160) + 1) / 2;
+      const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75);
+      v.addColorStop(0, 'rgba(255, 40, 70, 0)'); v.addColorStop(1, `rgba(255, 40, 70, ${(.25 + pulse * .3) * Math.min(1, q)})`);
+      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+      // la fusée arrive par le bas
+      drawRocket(ctx, W / 2, H + 40 - ease((q - 1.5) / 2) * H * .22, 1.3, cfg, t, 0, 1);
+      outroText('⚠ ALERTE ⚠', H * .1, Math.max(16, big * .45), '#ff4f6d', Math.min(1, q * 2) * (.6 + pulse * .4), '#ff4f6d');
+      outroText(next.name.toUpperCase(), H * .78, big, '#ffffff', ease((q - .8) / .6), next.col[1]);
+      outroText('Les envahisseurs sont de retour !', H * .78 + big * .85, Math.max(14, big * .36), '#ffd0d8', ease((q - 1.6) / .6));
+      if (q > 4.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(q - 4.3) / .4})`; ctx.fillRect(0, 0, W, H); }
+    }
+    outroText('Touche l\'écran pour passer', H - 26, 12, 'rgba(217, 208, 255, .6)', T > .8 ? 1 : 0);
+    ctx.restore();
+  }
+
   // arrivée dans un nouveau monde en pleine partie : le niveau repart à 1
   function enterWorld(w) {
     world = w; bossInWorld = 0; level = 1; lvT = 0; newSector = false;
@@ -3960,7 +4112,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function saveNow() {
     // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
     if (loadingSave) return;
-    if (['play', 'pause', 'story', 'launch', 'dying'].includes(state)) { creditRun(); saveRecord(); }
+    if (['play', 'pause', 'story', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
     saveStats(); saveCfg(); saveShop();
   }
   // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
@@ -4024,8 +4176,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   };
 
   // --- contrôles ---
-  addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); });
+  addEventListener('pointerdown', () => { if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro(); });
   addEventListener('keydown', e => {
+    if (state === 'outro') { if (!e.repeat && outroT > .8) finishOutro(); return; }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
     if (e.target.tagName === 'INPUT') return;
     keys[e.key.toLowerCase()] = true;
@@ -4064,7 +4217,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   // --- boucle ---
   function update(dt) {
     time += dt;
-    if (storyAt && time >= storyAt) { storyAt = 0; showStory(storyNext); return; }
+    if (storyAt && time >= storyAt) { storyAt = 0; startOutro(storyNext); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss) lvT += dt;
     if (lvT >= 20) {
@@ -5918,6 +6071,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       ctx.restore();
     }
     if (slow < 1) { ctx.fillStyle = 'rgba(122, 216, 255, .08)'; ctx.fillRect(0, 0, W, H); }
+    if (state === 'outro') drawOutro(t);
     if (flash > 0) {
       ctx.fillStyle = `rgba(${flashColor}, ${(flash * .8).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
@@ -5938,6 +6092,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     if (state === 'play') update(dt);
     else if (state === 'launch') updateLaunch(dt);
     else if (state === 'dying') updateDying(dt);
+    else if (state === 'outro') updateOutro(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story') updateScenery(dt);
     draw(t);
