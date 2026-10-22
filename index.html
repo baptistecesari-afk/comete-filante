@@ -645,7 +645,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
       <span>Hangar</span><span>Tous les points que tu marques servent à débloquer des objets et acheter des améliorations dans le Hangar.</span>
-      <span>Aliens</span><span>7 espèces, avec de nouvelles qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
+      <span>Aliens</span><span>50 espèces, 10 dans chaque monde (pingouins, glaçons, diablotins, guêpes, glitchs…), avec 7 façons d'attaquer qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
       <span>Trophées</span><span>5 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
       <span>Mondes</span><span>5 mondes de 10 boss : Voie lactée, Royaume de Givre, Forge Volcanique, Jungle Cosmique et Néant. Bats le 10e boss d'un monde pour passer au suivant et le débloquer : tu pourras ensuite le choisir comme départ dans le menu.</span>
@@ -3421,7 +3421,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     let r = Math.random() * pool.reduce((s, a) => s + a.w, 0);
     const kind = (pool.find(a => (r -= a.w) < 0) || pool[0]).type;
     const lvHp = Math.floor(level / 4) + world * 2;
-    const base = { kind: 'alien', type: kind, x: 30 + Math.random() * (W - 60), y: -30, t: 0, hitT: 0 };
+    const base = { kind: 'alien', type: kind, sp: pickSpecies(kind), x: 30 + Math.random() * (W - 60), y: -30, t: 0, hitT: 0 };
     if (kind === 'chaser') items.push({ ...base, y: -20, r: 15, hp: level > 4 ? 2 : 1, pts: 25, vy: 85 + Math.random() * 40, t: Math.random() * 9 });
     else if (kind === 'saucer') {
       const amp = Math.min(40 + Math.random() * 60, W / 2 - 40);
@@ -3646,7 +3646,215 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     ctx.fillStyle = pc; ctx.beginPath(); ctx.arc(x + dx / d * r * .4, y + dy / d * r * .4, r * .5, 0, 7); ctx.fill();
   }
 
+  // ===== 50 espèces d'aliens : 10 par monde =====
+  // chaque espèce garde un des 7 comportements (type) et a son propre look
+  // [id, nom, type, monde, couleur, accent, corps, yeux, dessus, dessous, côtés, bouche, motif]
+  const SPECIES = [
+    // Monde 1 · Voie lactée (les 7 d'origine + 3 nouveaux)
+    ['bestiole', 'Bestiole verte', 'chaser', 0, '#7dff8a', '#2fbf71', 'classic'],
+    ['soucoupe', 'Soucoupe', 'saucer', 0, '#b9b2e0', '#7dff8a', 'classic'],
+    ['fonceur', 'Fonceur rouge', 'kamikaze', 0, '#ff4f6d', '#ff8a8a', 'classic'],
+    ['gelatine', 'Gélatine', 'splitter', 0, '#c86bff', '#7a4bd1', 'classic'],
+    ['fantome', 'Fantôme', 'ghost', 0, '#e8e2ff', '#d9d0ff', 'classic'],
+    ['tireur', 'Tireur d\'élite', 'sniper', 0, '#4fe0c8', '#2a9d8a', 'classic'],
+    ['poseur', 'Poseur de mines', 'bomber', 0, '#ff9a3c', '#c4502e', 'classic'],
+    ['lutin', 'Lutin à antennes', 'chaser', 0, '#9dff6b', '#ffd86b', 'round', 3, 'antennae', 'legs', 'none', 'smile', 'spots'],
+    ['poulpe', 'Poulpe rose', 'splitter', 0, '#ff7ad9', '#c94fa8', 'squid', 2, 'none', 'tentacles', 'none', 'o', 'spots'],
+    ['cyclope', 'Cyclope de lune', 'sniper', 0, '#d9d0ff', '#8f86b8', 'oval', 1, 'horns', 'none', 'arms', 'teeth', 'cracks'],
+    // Monde 2 · Royaume de Givre
+    ['pingouin', 'Pingouin glouton', 'chaser', 1, '#2a3a5e', '#ffffff', 'oval', 2, 'none', 'legs', 'fins', 'beak', 'belly'],
+    ['givrosoucoupe', 'Soucoupe givrée', 'saucer', 1, '#bfefff', '#5aa0d8', 'saucer', 2, 'ice', 'jet', 'none', 'none', 'glow'],
+    ['glacon', 'Glaçon furieux', 'kamikaze', 1, '#9fe8ff', '#e6f9ff', 'crystal', 2, 'spikes', 'none', 'none', 'teeth', 'cracks'],
+    ['bulleneige', 'Bulle de neige', 'splitter', 1, '#e6f9ff', '#9fd0ff', 'blob', 2, 'none', 'drip', 'none', 'smile', 'spots'],
+    ['spectre', 'Spectre polaire', 'ghost', 1, '#c8f0ff', '#7ad8ff', 'ghost', 2, 'ice', 'none', 'none', 'o', 'none'],
+    ['cristal', 'Œil de cristal', 'sniper', 1, '#7ad8ff', '#e6f9ff', 'diamond', 1, 'ice', 'none', 'none', 'none', 'glow'],
+    ['morse', 'Morse bombardier', 'bomber', 1, '#a08060', '#ffffff', 'round', 2, 'none', 'none', 'fins', 'fangs', 'none'],
+    ['phoque', 'Phoque des glaces', 'chaser', 1, '#c8d0e0', '#5a6a88', 'oval', 2, 'none', 'tail', 'fins', 'smile', 'spots'],
+    ['flocon', 'Flocon piquant', 'kamikaze', 1, '#ffffff', '#7ad8ff', 'star', 1, 'none', 'none', 'none', 'none', 'glow'],
+    ['yetinou', 'Petit yéti', 'splitter', 1, '#f3eefe', '#7ad8ff', 'fluffy', 2, 'horns', 'legs', 'arms', 'fangs', 'none'],
+    // Monde 3 · Forge Volcanique
+    ['braise', 'Lutin de braise', 'chaser', 2, '#ff7b2a', '#ffd86b', 'round', 2, 'flame', 'legs', 'none', 'teeth', 'cracks'],
+    ['ardente', 'Soucoupe ardente', 'saucer', 2, '#4a1a10', '#ff4f1a', 'saucer', 3, 'flame', 'jet', 'none', 'none', 'glow'],
+    ['bouledelave', 'Boule de lave', 'kamikaze', 2, '#ff4f1a', '#ffd86b', 'blob', 2, 'flame', 'drip', 'none', 'fangs', 'cracks'],
+    ['magma', 'Magma gluant', 'splitter', 2, '#c4301a', '#ff9a3c', 'blob', 3, 'none', 'drip', 'none', 'o', 'spots'],
+    ['cendre', 'Fantôme de cendre', 'ghost', 2, '#5a4a48', '#ff7b2a', 'ghost', 2, 'flame', 'none', 'none', 'o', 'cracks'],
+    ['oeillave', 'Œil de lave', 'sniper', 2, '#2a1008', '#ff4f1a', 'round', 1, 'spikes', 'none', 'none', 'none', 'cracks'],
+    ['chauvebombe', 'Chauve-souris bombe', 'bomber', 2, '#3a2030', '#ff4f6d', 'round', 2, 'horns', 'none', 'batwings', 'fangs', 'none'],
+    ['scorpion', 'Scorpion de feu', 'chaser', 2, '#ff5a1f', '#2a1008', 'bug', 2, 'none', 'claws', 'none', 'none', 'stripes'],
+    ['salamandre', 'Salamandre', 'sniper', 2, '#ffb020', '#c4301a', 'oval', 2, 'spikes', 'tail', 'arms', 'smile', 'spots'],
+    ['diablotin', 'Diablotin', 'kamikaze', 2, '#e8303a', '#2a1008', 'round', 2, 'horns', 'tail', 'batwings', 'fangs', 'none'],
+    // Monde 4 · Jungle Cosmique
+    ['scarabee', 'Scarabée émeraude', 'chaser', 3, '#1fd18b', '#0f4a24', 'bug', 2, 'antennae', 'legs', 'none', 'none', 'stripes'],
+    ['fleurvolante', 'Fleur volante', 'saucer', 3, '#ff7ad9', '#ffd86b', 'flower', 1, 'none', 'none', 'bugwings', 'smile', 'none'],
+    ['guepe', 'Guêpe furieuse', 'kamikaze', 3, '#ffd86b', '#2a1a08', 'bug', 2, 'antennae', 'none', 'bugwings', 'fangs', 'stripes'],
+    ['champignon', 'Champignon sauteur', 'splitter', 3, '#ff4f6d', '#fff2e0', 'mushroom', 2, 'none', 'legs', 'none', 'smile', 'spots'],
+    ['esprit', 'Esprit de la forêt', 'ghost', 3, '#b6ff6b', '#2f9a3a', 'ghost', 2, 'leaves', 'none', 'none', 'o', 'glow'],
+    ['cameleon', 'Caméléon tireur', 'sniper', 3, '#4fd27a', '#ffd86b', 'oval', 1, 'spikes', 'tail', 'arms', 'none', 'spots'],
+    ['libellule', 'Libellule bombardière', 'bomber', 3, '#4fe0c8', '#1f6a8a', 'bug', 2, 'antennae', 'tail', 'bugwings', 'none', 'stripes'],
+    ['chenille', 'Chenille géante', 'chaser', 3, '#9dff6b', '#ff7ad9', 'caterpillar', 2, 'antennae', 'legs', 'none', 'smile', 'none'],
+    ['grenouille', 'Grenouille cosmique', 'splitter', 3, '#5ad86b', '#ffd86b', 'round', 2, 'none', 'legs', 'none', 'smile', 'spots'],
+    ['mante', 'Mante stellaire', 'kamikaze', 3, '#7dff8a', '#1f6a2a', 'oval', 2, 'antennae', 'claws', 'bugwings', 'none', 'none'],
+    // Monde 5 · Le Néant
+    ['ombre', 'Ombre rampante', 'chaser', 4, '#2a1a40', '#c86bff', 'blob', 2, 'none', 'tentacles', 'none', 'teeth', 'glow'],
+    ['disque', 'Disque du vide', 'saucer', 4, '#140a24', '#4fe0f0', 'saucer', 1, 'halo', 'jet', 'none', 'none', 'glow'],
+    ['cometenoire', 'Comète noire', 'kamikaze', 4, '#1a1030', '#ff4f6d', 'star', 2, 'flame', 'none', 'none', 'fangs', 'glow'],
+    ['glitch', 'Glitch', 'splitter', 4, '#4fe0f0', '#ff4fd8', 'pixel', 2, 'none', 'none', 'none', 'none', 'glitch'],
+    ['echo', 'Écho', 'ghost', 4, '#d9d0ff', '#c86bff', 'ghost', 3, 'halo', 'none', 'none', 'none', 'glow'],
+    ['oeilvide', 'Œil du Néant', 'sniper', 4, '#0b0820', '#c86bff', 'round', 1, 'tentacles', 'none', 'none', 'none', 'glow'],
+    ['verdevide', 'Ver du vide', 'bomber', 4, '#5a2a8a', '#4fe0f0', 'caterpillar', 1, 'spikes', 'none', 'none', 'teeth', 'glow'],
+    ['pixelfou', 'Pixel fou', 'chaser', 4, '#ff4fd8', '#4fe0f0', 'pixel', 2, 'antennae', 'none', 'none', 'smile', 'glitch'],
+    ['tentacule', 'Tentaculaire', 'splitter', 4, '#7a3ab8', '#ff7ad9', 'squid', 4, 'none', 'tentacles', 'none', 'o', 'spots'],
+    ['masque', 'Masque sans visage', 'kamikaze', 4, '#e8e2ff', '#140a24', 'mask', 2, 'halo', 'none', 'none', 'none', 'cracks'],
+  ].map(([id, name, type, world, col, acc, body, eyes = 2, top = 'none', bottom = 'none', side = 'none', mouth = 'none', pattern = 'none']) =>
+    ({ id, name, type, world, col, acc, body, eyes, top, bottom, side, mouth, pattern }));
+  // une espèce du monde en cours qui a ce comportement
+  function pickSpecies(type) {
+    let pool = SPECIES.filter(sp => sp.world === world && sp.type === type);
+    if (!pool.length) pool = SPECIES.filter(sp => sp.type === type);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // dessin d'une espèce à partir de ses morceaux (taille de base : rayon 18)
+  function drawSpecies(it, t) {
+    const sp = it.sp, k = it.r / 18, T = it.t || 0, wob = reduce ? 0 : 1;
+    ctx.save(); ctx.translate(it.x, it.y);
+    if (it.type === 'kamikaze') {
+      const warn = !it.dash && it.y >= it.hoverY;
+      if (warn && !reduce) ctx.translate((Math.random() - .5) * 4, 0);
+      if (it.dash) ctx.rotate(Math.atan2(it.vy, it.vx) - Math.PI / 2);
+      if (warn) { ctx.shadowColor = '#ff4f6d'; ctx.shadowBlur = 26; }
+    }
+    if (it.type === 'ghost') ctx.globalAlpha *= .45 + .4 * Math.abs(Math.sin(T * 3));
+    ctx.scale(k, k);
+    const C = sp.col, A = sp.acc;
+    if (!ctx.shadowBlur) { ctx.shadowColor = C; ctx.shadowBlur = sp.pattern === 'glow' ? 22 : 12; }
+    // côtés (derrière le corps)
+    ctx.fillStyle = A; ctx.strokeStyle = A;
+    if (sp.side === 'batwings') {
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 10, -4); ctx.lineTo(d * 32, -14 + Math.sin(T * 10) * 4 * wob); ctx.lineTo(d * 26, -2); ctx.lineTo(d * 30, 8); ctx.lineTo(d * 20, 4); ctx.lineTo(d * 12, 10); ctx.closePath(); ctx.fill(); }
+    } else if (sp.side === 'bugwings') {
+      ctx.globalAlpha *= .6;
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(d * 18, -10, 14, 6 + Math.sin(T * 30) * 3 * wob, d * .5, 0, 7); ctx.fill(); }
+      ctx.globalAlpha /= .6;
+    } else if (sp.side === 'fins') {
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 12, -2); ctx.quadraticCurveTo(d * 30, 4 + Math.sin(T * 6) * 3 * wob, d * 22, 14); ctx.lineTo(d * 12, 8); ctx.closePath(); ctx.fill(); }
+    } else if (sp.side === 'arms') {
+      ctx.lineWidth = 4; ctx.lineCap = 'round';
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 12, 2); ctx.quadraticCurveTo(d * 24, -2, d * 24, -12 + Math.sin(T * 5 + d) * 4 * wob); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+    }
+    // dessous
+    if (sp.bottom === 'tentacles') {
+      ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = C;
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 6, 8); ctx.quadraticCurveTo(i * 8 + Math.sin(T * 5 + i) * 6 * wob, 20, i * 7, 30); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+    } else if (sp.bottom === 'legs') {
+      ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.strokeStyle = A;
+      for (const d of [-1, 1]) { const st = Math.sin(T * 10 + d) * 3 * wob; ctx.beginPath(); ctx.moveTo(d * 7, 12); ctx.lineTo(d * 9 + st, 24); ctx.lineTo(d * 13 + st, 24); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+    } else if (sp.bottom === 'claws') {
+      ctx.lineWidth = 3.5; ctx.strokeStyle = A;
+      for (const d of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(d * 10, 8); ctx.lineTo(d * 20, 18); ctx.stroke();
+        const o = Math.abs(Math.sin(T * 4)) * .5 * wob;
+        ctx.beginPath(); ctx.arc(d * 22, 22, 6, d > 0 ? -1.2 - o : Math.PI - 1.9 + o, d > 0 ? 1.9 + o : Math.PI + 1.2 - o); ctx.stroke();
+      }
+    } else if (sp.bottom === 'tail') {
+      ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = A;
+      ctx.beginPath(); ctx.moveTo(0, 14); ctx.quadraticCurveTo(14 * Math.sin(T * 3) * wob + 8, 28, 0, 34); ctx.stroke(); ctx.lineCap = 'butt';
+    } else if (sp.bottom === 'jet') {
+      ctx.fillStyle = A; ctx.globalAlpha *= .8;
+      ctx.beginPath(); ctx.moveTo(-6, 10); ctx.lineTo(0, 22 + Math.random() * 8 * wob); ctx.lineTo(6, 10); ctx.closePath(); ctx.fill(); ctx.globalAlpha /= .8;
+    } else if (sp.bottom === 'drip') {
+      ctx.fillStyle = C;
+      for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.ellipse(i * 9, 16 + ((T * 6 + i * 2) % 6) * wob, 3, 5, 0, 0, 7); ctx.fill(); }
+    }
+    // corps
+    ctx.fillStyle = C; ctx.beginPath();
+    const b = sp.body;
+    if (b === 'round') ctx.arc(0, 0, 17, 0, 7);
+    else if (b === 'oval') ctx.ellipse(0, 0, 14, 19, 0, 0, 7);
+    else if (b === 'blob') { for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, rr = 17 + Math.sin(a * 3 + T * 4) * 2.5 * wob; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); }
+    else if (b === 'star') { for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + T * 2, rr = i % 2 ? 11 : 19; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); }
+    else if (b === 'diamond') { ctx.moveTo(0, -20); ctx.lineTo(15, 0); ctx.lineTo(0, 20); ctx.lineTo(-15, 0); ctx.closePath(); }
+    else if (b === 'crystal') { for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.PI / 6; ctx.lineTo(Math.cos(a) * 18, Math.sin(a) * 18); } ctx.closePath(); }
+    else if (b === 'saucer') { ctx.ellipse(0, 4, 24, 9, 0, 0, 7); }
+    else if (b === 'squid') { ctx.arc(0, 0, 16, Math.PI, 0); ctx.lineTo(16, 8); ctx.quadraticCurveTo(0, 14, -16, 8); ctx.closePath(); }
+    else if (b === 'bug') { ctx.ellipse(0, 4, 14, 15, 0, 0, 7); ctx.moveTo(10, -12); ctx.arc(0, -12, 10, 0, 7); }
+    else if (b === 'ghost') { ctx.arc(0, -3, 16, Math.PI, 0); for (let i = 0; i <= 4; i++) ctx.lineTo(16 - i * 8, 16 + (i % 2 ? -5 : 0) + Math.sin(T * 6 + i) * 2 * wob); ctx.closePath(); }
+    else if (b === 'fluffy') { for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; ctx.moveTo(Math.cos(a) * 12 + 6, Math.sin(a) * 12); ctx.arc(Math.cos(a) * 12, Math.sin(a) * 12, 6, 0, 7); } ctx.moveTo(14, 0); ctx.arc(0, 0, 14, 0, 7); }
+    else if (b === 'flower') { for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + T; ctx.moveTo(Math.cos(a) * 13 + 8, Math.sin(a) * 13); ctx.arc(Math.cos(a) * 13, Math.sin(a) * 13, 8, 0, 7); } }
+    else if (b === 'mushroom') { ctx.arc(0, -2, 18, Math.PI, 0); ctx.closePath(); }
+    else if (b === 'caterpillar') { for (let i = 0; i < 4; i++) { const x = -18 + i * 12, y = Math.sin(T * 6 + i) * 3 * wob; ctx.moveTo(x + 8, y); ctx.arc(x, y, 8, 0, 7); } ctx.moveTo(30, -2); ctx.arc(20, -2, 10, 0, 7); }
+    else if (b === 'pixel') { const g = 6; for (const [x, y] of [[-2, -3], [-1, -3], [0, -3], [1, -3], [-3, -2], [-2, -2], [-1, -2], [0, -2], [1, -2], [2, -2], [-3, -1], [-2, -1], [-1, -1], [0, -1], [1, -1], [2, -1], [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-2, 1], [-1, 1], [0, 1], [1, 1], [-3, 2], [2, 2]]) ctx.rect(x * g, y * g, g, g); }
+    else if (b === 'mask') { ctx.ellipse(0, 0, 15, 19, 0, 0, 7); }
+    ctx.fill(); ctx.shadowBlur = 0;
+    // ventre, champignon, masque
+    if (sp.pattern === 'belly') { ctx.fillStyle = A; ctx.beginPath(); ctx.ellipse(0, 5, 9, 12, 0, 0, 7); ctx.fill(); }
+    if (b === 'mushroom') { ctx.fillStyle = A; ctx.fillRect(-7, -2, 14, 14); }
+    if (b === 'saucer') { ctx.fillStyle = 'rgba(160, 230, 255, .55)'; ctx.beginPath(); ctx.ellipse(0, -2, 11, 11, 0, Math.PI, 0); ctx.fill(); }
+    // motifs
+    ctx.save(); ctx.globalAlpha *= .55;
+    if (sp.pattern === 'spots') { ctx.fillStyle = A; for (const [x, y, z] of [[-9, 6, 3], [8, 8, 2.5], [10, -6, 2], [-5, 12, 2]]) { ctx.beginPath(); ctx.arc(x, y, z, 0, 7); ctx.fill(); } }
+    else if (sp.pattern === 'stripes') { ctx.fillStyle = A; for (const y of [0, 7, 14]) ctx.fillRect(-12, y, 24, 3); }
+    else if (sp.pattern === 'cracks') { ctx.strokeStyle = A; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-10, 4); ctx.lineTo(-4, 8); ctx.lineTo(-6, 14); ctx.moveTo(8, 2); ctx.lineTo(12, 9); ctx.moveTo(3, 10); ctx.lineTo(6, 15); ctx.stroke(); }
+    else if (sp.pattern === 'glitch' && !reduce && Math.floor(t / 90) % 4 === 0) { ctx.globalAlpha = .8; ctx.fillStyle = A; ctx.fillRect(-20, -4 + Math.random() * 8, 40, 3); }
+    ctx.restore();
+    // dessus
+    ctx.fillStyle = A; ctx.strokeStyle = A;
+    if (sp.top === 'antennae') {
+      ctx.lineWidth = 2; for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 5, -15); ctx.lineTo(d * 10, -27); ctx.stroke(); ctx.beginPath(); ctx.arc(d * 10, -27, 3, 0, 7); ctx.fill(); }
+    } else if (sp.top === 'horns') {
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 6, -13); ctx.quadraticCurveTo(d * 14, -22, d * 16, -30); ctx.lineTo(d * 12, -12); ctx.closePath(); ctx.fill(); }
+    } else if (sp.top === 'spikes') {
+      ctx.beginPath(); for (let i = -2; i <= 2; i++) { ctx.moveTo(i * 6 - 3, -14 + Math.abs(i) * 2); ctx.lineTo(i * 6, -25 + Math.abs(i) * 3); ctx.lineTo(i * 6 + 3, -14 + Math.abs(i) * 2); } ctx.fill();
+    } else if (sp.top === 'flame') {
+      const f = reduce ? 0 : Math.sin(t / 60) * 3;
+      ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.moveTo(-9, -12); ctx.quadraticCurveTo(-6, -26 - f, 0, -32 - f); ctx.quadraticCurveTo(6, -24 + f, 9, -12); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff7b2a'; ctx.beginPath(); ctx.moveTo(-5, -12); ctx.quadraticCurveTo(0, -22 - f, 5, -12); ctx.closePath(); ctx.fill();
+    } else if (sp.top === 'leaves') {
+      for (const d of [-1, 0, 1]) { ctx.save(); ctx.translate(d * 6, -15); ctx.rotate(d * .6 + Math.sin(T * 3) * .15 * wob); ctx.beginPath(); ctx.ellipse(0, -7, 4, 9, 0, 0, 7); ctx.fill(); ctx.restore(); }
+    } else if (sp.top === 'ice') {
+      ctx.fillStyle = '#e6f9ff'; ctx.beginPath(); for (const [x, h] of [[-8, 12], [0, 18], [8, 12]]) { ctx.moveTo(x - 4, -13); ctx.lineTo(x, -13 - h); ctx.lineTo(x + 4, -13); } ctx.fill();
+    } else if (sp.top === 'halo') {
+      ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(0, -24, 12, 4, 0, 0, 7); ctx.stroke();
+    } else if (sp.top === 'tentacles') {
+      ctx.lineWidth = 3; ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) { const a = -Math.PI / 2 + i * .4; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 16, Math.sin(a) * 16); ctx.quadraticCurveTo(Math.cos(a) * 24 + Math.sin(T * 5 + i) * 4 * wob, Math.sin(a) * 24, Math.cos(a) * 30, Math.sin(a) * 30); ctx.stroke(); }
+      ctx.lineCap = 'butt';
+    }
+    // yeux
+    const aim = it.type === 'sniper' && it.aiming > 0 ? '#ff4f6d' : '#0b0820';
+    const EYES = { 1: [[0, -3, 7]], 2: [[-6.5, -3, 5], [6.5, -3, 5]], 3: [[-8, -1, 4], [8, -1, 4], [0, -9, 4.5]], 4: [[-10, -4, 3.5], [-3.5, -8, 3.5], [3.5, -8, 3.5], [10, -4, 3.5]] };
+    const ey = b === 'caterpillar' ? [[16, -4, 3.5], [24, -4, 3.5]] : b === 'bug' ? [[-4.5, -13, 3.5], [4.5, -13, 3.5]] : b === 'saucer' ? (EYES[sp.eyes] || EYES[2]).map(([x, y, z]) => [x * .6, y - 1, z * .6]) : EYES[sp.eyes] || EYES[2];
+    if (b === 'mask') {
+      ctx.fillStyle = A; for (const [x, y] of [[-6, -4], [6, -4]]) { ctx.beginPath(); ctx.ellipse(x, y, 4, 2.5, 0, 0, 7); ctx.fill(); }
+    } else for (const [x, y, z] of ey) eyeAt(it, x, y, z, aim);
+    // bouche
+    const my = b === 'caterpillar' ? 4 : b === 'bug' ? -7 : 8;
+    const mx = b === 'caterpillar' ? 20 : 0;
+    ctx.fillStyle = '#0b0820'; ctx.strokeStyle = '#0b0820'; ctx.lineWidth = 2;
+    if (sp.mouth === 'smile') { ctx.beginPath(); ctx.arc(mx, my - 2, 5, .2, Math.PI - .2); ctx.stroke(); }
+    else if (sp.mouth === 'o') { ctx.beginPath(); ctx.ellipse(mx, my, 3, 4, 0, 0, 7); ctx.fill(); }
+    else if (sp.mouth === 'teeth' || sp.mouth === 'fangs') {
+      ctx.beginPath(); ctx.ellipse(mx, my, 7, 3.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      if (sp.mouth === 'teeth') for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(mx + i * 2.8 - 1.2, my - 3); ctx.lineTo(mx + i * 2.8, my); ctx.lineTo(mx + i * 2.8 + 1.2, my - 3); ctx.fill(); }
+      else for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(mx + d * 4 - 1.5, my - 3); ctx.lineTo(mx + d * 4, my + 4); ctx.lineTo(mx + d * 4 + 1.5, my - 3); ctx.fill(); }
+    } else if (sp.mouth === 'beak') { ctx.fillStyle = '#ffb020'; ctx.beginPath(); ctx.moveTo(-4, 4); ctx.lineTo(4, 4); ctx.lineTo(0, 10); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+    // ligne de visée du tireur d'élite
+    if (it.type === 'sniper' && it.aiming > 0) {
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 79, 109, ${.3 + .5 * (1 - it.aiming / .9)})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+      ctx.beginPath(); ctx.moveTo(it.x, it.y + 14); ctx.lineTo(it.tx, it.ty); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(it.tx, it.ty, 4, 0, 7); ctx.fill();
+      ctx.restore();
+    }
+  }
+
   function drawAlien(it, t) {
+    if (it.sp && it.sp.body !== 'classic') { drawSpecies(it, t); return; }
     if (it.type === 'chaser') { drawChaser(it, t); return; }
     if (it.type === 'saucer') { drawSaucer(it, t, 1, false); return; }
     ctx.save(); ctx.translate(it.x, it.y);
@@ -3936,7 +4144,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
       lvT = 17.5; newSector = true;
       beep(200, .9, 'sawtooth', .18, -150); setTimeout(() => beep(660, .3, 'triangle', .14, 400), 250);
     } else {
-      const col = { kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
+      const col = it.sp && it.sp.body !== 'classic' ? it.sp.col : { kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
       burst(it.x, it.y, col, 10, 260); explode(it.x, it.y, col, it.type === 'saucer' ? 1.3 : .9);
       beep(it.type === 'saucer' ? 260 : 420, .18, 'square', .08, -200);
       // la gélatine se divise en deux petites bestioles
