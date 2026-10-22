@@ -3442,7 +3442,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   function spawnBoss() {
     const idx = bossInWorld % 10, def = WORLDS[world].bosses[idx];
     bossCount++;
-    const hp = Math.round((35 + idx * 11 + level * 4) * (1 + world * .45) * (1 + cycle * .5));
+    const hp = Math.round((55 + idx * 17 + level * 6) * (1 + world * .45) * (1 + cycle * .5));
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100 + world * 400,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
