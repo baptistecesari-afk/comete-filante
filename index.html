@@ -840,24 +840,24 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 
   // --- atelier : améliorations permanentes ---
   const UPGRADES = [
-    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 400, now: L => `+${20 * L} % de balles` },
-    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 400, now: L => `−${12 * L} % de temps` },
-    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 350, now: L => `+${25 * L} % de zone` },
-    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 450, now: L => `+${8 * L} % de cadence` },
-    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 600, now: L => `+${25 * L} % de dégâts` },
-    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 1200, now: L => `${3 + L} vies` },
-    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 500, now: L => `−${10 * L} % de recharge` },
-    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 500, now: L => `${30 + 5 * L} s illimités` },
+    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 600, now: L => `+${20 * L} % de balles` },
+    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 600, now: L => `−${12 * L} % de temps` },
+    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 500, now: L => `+${25 * L} % de zone` },
+    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 700, now: L => `+${8 * L} % de cadence` },
+    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 900, now: L => `+${25 * L} % de dégâts` },
+    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 1800, now: L => `${3 + L} vies` },
+    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 750, now: L => `−${10 * L} % de recharge` },
+    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 750, now: L => `${30 + 5 * L} s illimités` },
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 1500, eclair: 3000, aile: 1200, ovni: 1800, tie: 2000, faucon: 2500, requin: 3500, abeille: 1500, chevalier: 2800, galion: 3000, mecha: 3200, cristal: 4000, arcade: 10000, pixel: 2000 },
-    color: { or: 300, turquoise: 300, violet: 500, orange: 500, blanc: 800, bleunuit: 300, rosebonbon: 300, citron: 300, corail: 300, menthe: 300, noir: 600, lave: 800, ocean: 800, galaxie: 1000, neon: 900 },
-    accent: { noir: 150, blanc: 150, or: 250, cyan: 250, rose: 250, vert: 250, violet: 250, rouge: 250 },
-    motif: { rayures: 300, etoiles: 400, damier: 500, eclair: 600, camo: 600, flammes: 700, course: 800 },
-    glass: { cyan: 150, or: 200, rouge: 150, vert: 150, miroir: 300 },
-    trail: { etincelles: 400, bulles: 300, pixels: 300, coeurs: 500, comete: 700 },
-    flame: { plasma: 600, toxique: 600, rose: 900 },
+    model: { navette: 2250, eclair: 4500, aile: 1800, ovni: 2700, tie: 3000, faucon: 3750, requin: 5250, abeille: 2250, chevalier: 4200, galion: 4500, mecha: 4800, cristal: 6000, arcade: 15000, pixel: 3000 },
+    color: { or: 450, turquoise: 450, violet: 750, orange: 750, blanc: 1200, bleunuit: 450, rosebonbon: 450, citron: 450, corail: 450, menthe: 450, noir: 900, lave: 1200, ocean: 1200, galaxie: 1500, neon: 1350 },
+    accent: { noir: 200, blanc: 200, or: 400, cyan: 400, rose: 400, vert: 400, violet: 400, rouge: 400 },
+    motif: { rayures: 450, etoiles: 600, damier: 750, eclair: 900, camo: 900, flammes: 1050, course: 1200 },
+    glass: { cyan: 200, or: 300, rouge: 200, vert: 200, miroir: 450 },
+    trail: { etincelles: 600, bulles: 450, pixels: 450, coeurs: 750, comete: 1050 },
+    flame: { plasma: 900, toxique: 900, rose: 1350 },
     gun: { double: 2000, eventail: 3000, mitrailleuse: 4500, vague: 5500, plasma: 6000, ricochet: 7500, quintuple: 9000 },
     power: { aimant: 1200, temps: 1500, hyper: 2500, nova: 4000, miroir: 2000, gel: 2200, dragon: 2800, foudre: 3000, missiles: 3500 },
     shot: {},
@@ -1071,7 +1071,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
     return true;
   }
   const up = id => shop.up[id] || 0;
-  const cost = u => Math.round(u.base * Math.pow(1.6, up(u.id)));
+  const cost = u => Math.round(u.base * Math.pow(1.7, up(u.id)));
   const maxLives = () => 3 + up('blindage');
   const lifeCap = () => maxLives() + 2;
   // gagner une vie (cœur, 1UP, boss) ; si on est au maximum, ça donne des points
