@@ -5,6 +5,7 @@ Un jeu d'arcade dans le navigateur : tu pilotes une fusée, tu tires sur les ext
 ## Liens
 
 - **Jouer en ligne :** https://baptistecesari-afk.github.io/comete-filante/
+- **Jouer sur Vercel (avec le classement mondial) :** https://comete-filante.vercel.app
 - **Code du jeu :** [index.html](index.html) (tout le jeu tient dans ce fichier : HTML, CSS et JavaScript)
 
 Tu peux aussi télécharger `index.html` et l'ouvrir dans ton navigateur.
@@ -21,9 +22,10 @@ An 2187. L'Empereur Zorg a volé les étoiles de la galaxie et placé 10 gardien
 - Battre le 10e boss d'un monde ouvre le suivant pour toujours : on peut ensuite choisir son monde de départ dans le menu.
 
 - Le **Hangar** : 15 modèles de vaisseau (dont la Fusée 8-bit et le Rétro Arcade en pixel art) (+ 2 vaisseaux de trophée), chacun avec sa cinématique de départ, 25 couleurs, couleur secondaire, motif peint, hublot, flamme, traînée, couleur des tirs, pistolet et super-pouvoir, 3 emplacements « Mes styles » et un bouton « Style au hasard ». Plus les **compétences** (chargeur, recharge, dégâts, vies…).
-- 3 pistolets avec chargeur limité, et la **recharge parfaite** qui donne des balles dorées.
-- 5 super-pouvoirs : Hyperpropulsion, Ralenti, Aimant, Laser, Nova.
-- 7 espèces d'aliens avec chacune son pouvoir (poursuite, tirs, charge, division, téléportation, visée, mines).
+- 8 pistolets avec chargeur limité, et la **recharge parfaite** qui donne des balles dorées.
+- 14 super-pouvoirs, de l'Hyperpropulsion au Gel cosmique.
+- 50 espèces d'aliens, 10 par monde, avec 7 façons d'attaquer (poursuite, tirs, charge, division, téléportation, visée, mines).
+- Un **classement mondial** sans e-mail (fonction Vercel `api/scores.js` et base Upstash Redis).
 - 50 boss différents, un tous les 3 niveaux, chacun avec son dessin et ses attaques :
   - **Voie lactée** : Vaisseau-mère, Reine Gluante, Œil Suprême, Crabe Cosmique, Méduse Ionique, Pieuvre Noire, Le Spectre, Forteresse Mécanique, Dragon Stellaire et Empereur Zorg.
   - **Royaume de Givre** : Pingouin Blindé, Yéti des Comètes, Flocon Géant, Morse Spatial, Golem de Glace, Hibou des Neiges, Serpent de Givre, Sorcière Blizzard, Mammouth Cosmique et Impératrice Glacia.
