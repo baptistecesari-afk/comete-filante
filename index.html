@@ -477,6 +477,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   border: 2px solid color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 12px; padding: 10px 12px; width: 100%; box-sizing: border-box;
   user-select: text; -webkit-user-select: text;
 }
+.nameinput {
+  font-family: var(--display); font-size: 24px; text-align: center; color: var(--ink); background: var(--night);
+  border: 2px solid color-mix(in srgb, var(--star) 60%, transparent); border-radius: 14px; padding: 12px 14px;
+  width: min(100%, 20rem); box-sizing: border-box; user-select: text; -webkit-user-select: text;
+}
+.card p.namehint { font-size: 14px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   font: inherit; font-size: 15px; color: var(--ink); background: var(--night); cursor: pointer;
@@ -870,6 +876,16 @@ body:not(.jeu) .hud { opacity: 0; }
     <button class="ghost" id="quitBtn">Quitter la partie</button>
     <p>Si tu quittes, les points de cette partie sont quand même ajoutés au Hangar.</p>
   </div>
+</div>
+
+<div class="panel" id="naming" hidden>
+  <form class="card" id="namingForm" autocomplete="off">
+    <h1 style="font-size:clamp(38px,10vw,60px)">Ta fusée</h1>
+    <p>Avant le premier décollage, donne un nom à ta fusée. C'est ce nom qu'on entendra dans toute l'histoire.</p>
+    <input id="namingInput" class="nameinput" maxlength="16" placeholder="Aurore" spellcheck="false" aria-label="Nom de la fusée">
+    <button class="play" type="submit">C'est parti</button>
+    <p class="namehint">Tu pourras le changer plus tard au Hangar.</p>
+  </form>
 </div>
 
 <script>
@@ -2249,6 +2265,22 @@ body:not(.jeu) .hud { opacity: 0; }
     cfg.name = v ? v.slice(0, 16) : DEFAULT.name;
     $('pvName').textContent = cfg.name; saveCfg();
   });
+  // tout premier lancement : on demande le nom de la fusée avant d'arriver au menu
+  let named = false;
+  try { named = localStorage.getItem('comete-nom') === '1' || !!localStorage.getItem('comete-hangar') || localStorage.getItem('comete-intro') === '1'; } catch (e) { named = true; }
+  if (!named) {
+    $('menu').hidden = true; $('naming').hidden = false;
+    setTimeout(() => $('namingInput').focus(), 50);
+  }
+  $('namingForm').onsubmit = e => {
+    e.preventDefault();
+    const v = $('namingInput').value.trim();
+    cfg.name = v ? v.slice(0, 16) : DEFAULT.name;
+    $('shipName').value = cfg.name; $('pvName').textContent = cfg.name; saveCfg();
+    try { localStorage.setItem('comete-nom', '1'); } catch (e) {}
+    $('namingInput').blur();
+    $('naming').hidden = true; $('menu').hidden = false;
+  };
 
   function openHangar() {
     initAudio();
@@ -5820,7 +5852,7 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (e.key === 'Escape' && state === 'hangar') closeHangar();
     if (state === 'play' && e.key.toLowerCase() === 'r' && !e.repeat) tryReload();
     if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift')) activatePower();
-    else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && !e.repeat) { if (state === 'menu') play(); else start(); }
+    else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && $('naming').hidden && !e.repeat) { if (state === 'menu') play(); else start(); }
   });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
