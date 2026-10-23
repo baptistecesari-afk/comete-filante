@@ -396,6 +396,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .shipcard.locked canvas { filter: grayscale(.8) brightness(.7); }
 .shiptitle { font-size: 13px; color: var(--star); text-align: center; min-height: 1em; }
 .tcol { display: flex; flex-direction: column; gap: 10px; }
+/* Cinématiques : on revoit celles des mondes terminés */
+.cinelist { display: flex; flex-direction: column; gap: 12px; }
+.cinerow { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px 14px; padding: 12px 14px; border-radius: 18px;
+  background: linear-gradient(160deg, var(--w1), color-mix(in srgb, var(--w2) 25%, var(--night))); border: 2px solid color-mix(in srgb, var(--w2) 55%, transparent); }
+.cinerow.locked { filter: grayscale(.8); opacity: .6; }
+.cinerow .wicon { font-size: 30px; filter: drop-shadow(0 0 8px var(--w2)); }
+.cinerow small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
+.cinerow b { font-family: var(--display); font-weight: 400; font-size: 17px; }
+.cinerow .cinebtns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.cinerow .cinebtns button { padding: 8px 14px; font-size: 13px; }
+.cinerow .cinebtns button:disabled { filter: grayscale(1); opacity: .5; cursor: not-allowed; box-shadow: none; }
+.cinerow .cinehint { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { .cinerow { grid-template-columns: auto 1fr; } .cinerow .cinebtns { grid-column: 1 / -1; justify-content: stretch; } .cinerow .cinebtns button { flex: 1; } }
 .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .tier { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
 .tier.won { border: 2px solid var(--tier); box-shadow: 0 0 16px color-mix(in srgb, var(--tier) 35%, transparent); }
@@ -592,6 +605,7 @@ body:not(.jeu) .hud { opacity: 0; }
     </div>
     <div class="row">
       <button class="ghost" id="rankBtn">🏆 Classement mondial</button>
+      <button class="ghost" id="cinemaBtn">🎬 Cinématiques</button>
     </div>
     <div class="row">
       <button class="toggle" id="storyBtn">Histoire</button>
@@ -711,6 +725,17 @@ body:not(.jeu) .hud { opacity: 0; }
 <div class="toast" id="toast" hidden>
   <i class="medal"></i>
   <div><small>Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
+</div>
+
+<div class="panel" id="cinema" hidden>
+  <div class="hangar atelier">
+    <h2>Cinématiques</h2>
+    <p class="wallet" id="cinemaCount"></p>
+    <div class="cinelist" id="cinemaList"></div>
+    <div class="row">
+      <button class="play" id="cinemaBack">Retour</button>
+    </div>
+  </div>
 </div>
 
 <div class="panel" id="trophies" hidden>
@@ -2215,11 +2240,14 @@ body:not(.jeu) .hud { opacity: 0; }
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
   $('trophyBtn').onclick = openTrophies;
+  $('cinemaBtn').onclick = openCinema;
+  $('cinemaBack').onclick = closeHangar;
+  $('cinemaList').onclick = e => { const b = e.target.closest('button[data-c]'); if (b && !b.disabled) playCinema(b.dataset.c, +b.dataset.w); };
   $('overTrophyBtn').onclick = openTrophies;
   $('trophyBack').onclick = closeHangar;
   $('hangarBtn').onclick = openHangar;
@@ -3652,7 +3680,7 @@ body:not(.jeu) .hud { opacity: 0; }
       const gs = WORLDS[storyWorld].bosses;
       storyExtra.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
     }
-    if (mode === 'world') storyExtra.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
+    if (mode === 'world' && !cineReplay) storyExtra.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
     showStoryPage();
     for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
     $('story').hidden = false;
@@ -3665,7 +3693,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (lastPage) for (const x of storyExtra) lines.push([x, false]);
     $('storyText').innerHTML = lines.map(([l, say], i) => `<p${say ? ' class="say"' : ''} style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
     $('storySkip').hidden = storyMode !== 'prologue' && lastPage;
-    $('storyGo').textContent = !lastPage ? 'Suivant ›' : storyMode === 'prologue' ? 'Décoller' : storyMode === 'world' ? 'En route !' : 'Continuer à jouer';
+    $('storyGo').textContent = !lastPage ? 'Suivant ›' : cineReplay ? 'Terminer' : storyMode === 'prologue' ? 'Décoller' : storyMode === 'world' ? 'En route !' : 'Continuer à jouer';
   }
   function storyNextPage() {
     if (storyPage < storyPages.length - 1) { storyPage++; showStoryPage(); beep(523, .12, 'triangle', .06); }
@@ -3696,7 +3724,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const n = `<b>${rocketName()}</b>`;
     proLines = PROLOGUES[w](n).map(sceneLines); proCount = proLines.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story']) $(id).hidden = true;
-    proKind = 'prologue'; $('proGo').textContent = 'Décoller';
+    proKind = 'prologue'; $('proGo').textContent = cineReplay ? 'Terminer' : 'Décoller';
     proOpen(); state = 'prologue';
     proGoto(0);
   }
@@ -3716,13 +3744,14 @@ body:not(.jeu) .hud { opacity: 0; }
     storyWorld = world; storyMode = 'world'; proKind = 'world';
     proLines = WORLD_STORY[world + 1](`<b>${rocketName()}</b>`).map(sceneLines); proCount = proLines.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine']) $(id).hidden = true;
-    $('proGo').textContent = 'En route !';
+    $('proGo').textContent = cineReplay ? 'Terminer' : 'En route !';
     proOpen(); state = 'transit';
     proGoto(0);
   }
   function endCine() {
     if (state === 'prologue') return endPrologue();
     if (state !== 'transit') return;
+    if (cineReplay) return backToCinema();
     $('proCine').hidden = true; proKind = 'prologue';
     state = 'play'; last = performance.now();
     for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
@@ -3732,7 +3761,7 @@ body:not(.jeu) .hud { opacity: 0; }
     proScene = i; proT = 0;
     const last = i === proCount - 1, sub = $('proSub');
     sub.innerHTML = (proLines[i] || []).map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${last ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
-      + (last && proKind === 'world' ? '<p class="in note" style="animation-delay:.7s"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</p>' : '');
+      + (last && proKind === 'world' && !cineReplay ? '<p class="in note" style="animation-delay:.7s"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</p>' : '');
     [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
     $('proGo').hidden = !last; $('proNext').hidden = last;
     $('proSkip').textContent = last ? 'Revoir' : 'Passer';
@@ -3742,7 +3771,8 @@ body:not(.jeu) .hud { opacity: 0; }
   function proNext() { if (proScene < proCount - 1) proGoto(proScene + 1); }
   function endPrologue() {
     if (state !== 'prologue') return;
-    $('proCine').hidden = true; markPrologue(storyWorld); start();
+    $('proCine').hidden = true; markPrologue(storyWorld);
+    if (cineReplay) backToCinema(); else start();
   }
   function updatePrologue(dt) {
     proT += dt;
@@ -4042,6 +4072,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function closeStory() {
+    if (cineReplay) return backToCinema();
     $('story').hidden = true;
     if (storyMode === 'prologue') { markPrologue(storyWorld); start(); }
     else {
@@ -4050,6 +4081,39 @@ body:not(.jeu) .hud { opacity: 0; }
       if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); resetForNewWorld(); }
     }
   }
+  // ===== Page Cinématiques : on revoit celles des mondes terminés =====
+  // le prologue d'un monde se débloque quand le monde est ouvert, sa fin quand son dernier boss est battu
+  let cineReplay = false, replayWorld = 0;
+  function renderCinema() {
+    const last = WORLDS.length - 1;
+    let ends = 0;
+    $('cinemaList').innerHTML = WORLDS.map((w, i) => {
+      const open = i < worldsOpen || prologueSeen(i), done = beaten.includes(w.bosses[9].id);
+      if (done) ends++;
+      const fin = i === last ? 'Épilogue' : 'Fin du monde';
+      return `<div class="cinerow${open ? '' : ' locked'}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
+        + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}</small><b>${open ? w.name : '???'}</b></div>`
+        + `<div class="cinebtns"><button class="ghost" type="button" data-c="pro" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} Prologue</button>`
+        + `<button class="play" type="button" data-c="fin" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button></div>`
+        + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'l\'épilogue' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
+        + '</div>';
+    }).join('');
+    $('cinemaCount').textContent = `${ends} cinématique${ends > 1 ? 's' : ''} de fin débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}. Termine un monde pour débloquer la sienne.`;
+  }
+  function openCinema() { initAudio(); renderCinema(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('cinema').hidden = false; }
+  // relecture : le jeu n'est pas lancé, on prête juste le numéro du monde aux cinématiques
+  function playCinema(kind, w) {
+    cineReplay = true; replayWorld = world; $('cinema').hidden = true;
+    if (kind === 'pro') { startPrologue(w); return; }
+    world = w; startOutro(w === WORLDS.length - 1 ? 'ending' : 'world');
+  }
+  function backToCinema() {
+    cineReplay = false; proKind = 'prologue'; world = replayWorld;
+    for (const id of ['proCine', 'story']) $(id).hidden = true;
+    document.querySelector('.hud').style.visibility = '';
+    openCinema();
+  }
+
   // ===== Cinématique de fin de monde =====
   // 1. Mission accomplie : les étoiles volées reviennent dans le ciel
   // 2. Saut dans l'hyperespace
@@ -5369,7 +5433,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveNow() {
     // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
     if (loadingSave) return;
-    if (['play', 'pause', 'story', 'talk', 'transit', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
+    if (!cineReplay && ['play', 'pause', 'story', 'talk', 'transit', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
     saveStats(); saveCfg(); saveShop();
   }
   // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
@@ -7664,7 +7728,7 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'prologue' || state === 'transit') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story' && state !== 'talk') updateScenery(dt);
-    document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'talk', 'outro'].includes(state));
+    document.body.classList.toggle('jeu', !cineReplay && ['play', 'pause', 'launch', 'dying', 'story', 'talk', 'outro'].includes(state));
     draw(t);
     if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); drawActs(t); }
     requestAnimationFrame(loop);
