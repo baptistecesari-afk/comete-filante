@@ -319,6 +319,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .ava { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid currentColor; background: #0b0820; object-fit: cover; }
 .procine .prosub { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .procine p.say, .storytext p.say { font-style: italic; }
+#choice .card { text-align: center; max-width: 30rem; }
+#choice .choicebtns { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
+#choice .choicebtns button { width: 100%; }
 /* Réplique d'un boss en plein combat : une bulle en haut, le jeu continue */
 .say-bubble { position: fixed; z-index: 3; left: 16px; right: 16px; top: 200px; margin: 0 auto; width: fit-content; max-width: 30rem;
   padding: 10px 16px; border-radius: 16px; border: 2px solid var(--boss, var(--tail)); background: rgba(5, 3, 15, .85); color: var(--ink);
@@ -335,6 +338,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .talkbox p.narr { font-style: italic; color: var(--muted); }
 .talkbox small { display: block; margin-top: 6px; text-align: right; font-size: 12px; color: var(--muted); }
 #overTitle .who { margin-top: 10px; color: var(--tail); }
+/* sur grand écran, le nom de qui parle se met sur la même ligne : il reste plus de place pour l'image */
+@media (min-width: 700px) {
+  .procine .prosub { gap: 6px; }
+  .procine p { max-width: 46rem; padding: 8px 18px; }
+  .procine p.say .who { display: inline-flex; vertical-align: -7px; margin: 0 10px 0 0; }
+}
 @media (prefers-reduced-motion: reduce) { .say-bubble, .talkbox { animation: none; } }
 
 /* Cinématique d'arrivée d'un boss */
@@ -707,6 +716,17 @@ body:not(.jeu) .hud { opacity: 0; }
     <button class="ghost" id="proSkip">Passer</button>
     <button class="play" id="proNext">Suivant ›</button>
     <button class="play" id="proGo" hidden>Décoller</button>
+  </div>
+</div>
+
+<div class="panel choice" id="choice" hidden>
+  <div class="card">
+    <small class="kicker">Le choix</small>
+    <h2>Que fais-tu&#8239;?</h2>
+    <div class="choicebtns">
+      <button class="play" id="choiceA">Lui rendre la lumière</button>
+      <button class="ghost" id="choiceB">L'éteindre pour toujours</button>
+    </div>
   </div>
 </div>
 
@@ -2267,7 +2287,7 @@ body:not(.jeu) .hud { opacity: 0; }
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
-  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
+  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0;
   // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
   let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
@@ -2279,7 +2299,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -2561,11 +2581,10 @@ body:not(.jeu) .hud { opacity: 0; }
     { id: 'spectre', place: 'Cimetière d\'étoiles', quote: 'Tu ne peux pas toucher ce que tu ne vois pas…', name: 'Le Spectre', col: '#d9d0ff', r: 40, desc: 'Se téléporte et tire dès qu\'il réapparaît.' },
     { id: 'forteresse', place: 'Mur de fer', quote: 'PROTOCOLE ÉLIMINATION ACTIVÉ. AUCUNE ISSUE.', name: 'Forteresse Mécanique', col: '#ffd86b', r: 48, desc: 'Murs de tirs : passe par le trou !' },
     { id: 'dragon', place: 'Soleil rouge', quote: 'Je vais réduire ta fusée en cendres !', name: 'Dragon Stellaire', col: '#ff9a3c', r: 46, desc: 'Souffle de feu en rafale.' },
-    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé MES étoiles ? Tout ce qui brille est à moi !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le maître de la Voie lactée. Devient furieux à mi-vie.' },
+    { id: 'zorg', place: 'Palais de Zorg', quote: 'Aucune Porteuse de lumière ne sortira de ma galaxie !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le maître de la Voie lactée. Devient furieux à mi-vie.' },
   ];
   // ce que disent les boss : en plein combat (sous la moitié de leur vie), à leur défaite, puis la réaction à bord
   // qui parle : 'n' = la fusée (son nom choisi au Hangar), 'Clac', 'Nina', '' = narration
-  // (les Mondes 2 à 5 auront leurs textes plus tard : sans texte, rien ne s'affiche)
   const TALK = {
     mere: { mid: 'Tous les canons sur cette vieille boîte de conserve !', bye: 'Impossible… battu par une épave de musée…',
       after: [['n', 'Épave de musée. Je crois que c\'est une insulte. Je crois que je n\'aime pas ça.']] },
@@ -2574,18 +2593,23 @@ body:not(.jeu) .hud { opacity: 0; }
     oeil: { mid: 'Je vois tout… Alors pourquoi je ne vois pas ta peur ?', bye: 'Je vois plus loin, maintenant… Quelqu\'un te regarde, toi aussi. Depuis le bout du vide.',
       after: [['n', 'Mes capteurs ne détectent rien. Pourtant, j\'ai l\'impression d\'être observée. C\'est quoi, une impression ?']] },
     crabe: { mid: 'Clac ! Clac ! Arrête de bouger, j\'arrive pas à te pincer !', bye: 'Aïe, ma tête… Pourquoi j\'ai obéi à ce tas de ferraille dorée ? Hé, la fusée ! Tu vas chez Zorg ? Je viens. J\'ai deux pinces à lui rendre.',
-      after: [['n', 'Passager non autorisé.'], ['Clac', 'Trop tard, je suis à bord.']] },
+      after: [['n', 'Passager non autorisé.'], ['Nina', 'Il a l\'air gentil, en vrai.'], ['Clac', 'Trop tard, je suis à bord.']] },
     meduse: { mid: 'Mon courant monte… dix mille volts… vingt mille…', bye: 'Merci… La lumière de Zorg me brûlait de l\'intérieur.',
       after: [['Clac', 'Tu vois ? Tu les détruis pas, tu les libères. T\'es une gentille fusée.'], ['n', 'Je suis une fusée de classe IV.'], ['Clac', 'Une gentille fusée de classe IV.']] },
     pieuvre: { mid: 'Encore de l\'encre ! Encore plus de noir !', bye: 'J\'aimais le noir, avant… Mais le noir de Zorg est vide. Il n\'y a rien dedans. Rien du tout.',
       after: [['Clac', 'Brr, elle me donne des frissons.'], ['n', 'Moi aussi. Je crois.']] },
-    spectre: { mid: 'Écoute… Les étoiles mortes chuchotent. Elles t\'attendaient.', bye: 'Ici reposent les étoiles que personne n\'a sauvées… Tu lui ressembles. À celle d\'il y a mille ans.',
-      after: [['n', 'Quelle autre ?'], ['', 'Le Spectre a disparu.'], ['Clac', 'Les fantômes, ça dit toujours des trucs bizarres.']] },
+    spectre: { mid: 'Écoute… Les étoiles mortes chuchotent. Elles t\'attendaient.', bye: 'Ici reposent les étoiles que personne n\'a sauvées… Tu ressembles à l\'autre vaisseau. Celui d\'il y a mille ans.',
+      after: [['n', 'Quel vaisseau ?'], ['', 'Le Spectre a disparu.'], ['Clac', 'Les fantômes, ça dit toujours des trucs bizarres.']] },
     forteresse: { mid: 'ALERTE. DÉGÂTS CRITIQUES. CETTE FUSÉE NE RESPECTE PAS LES CALCULS.', bye: 'ERREUR… TU ES UNE MACHINE… POURQUOI DÉSOBÉIS-TU ?',
       after: [['n', 'Je ne désobéis pas. Je choisis.'], ['Clac', 'Ooh, elle choisit ! Ça grandit vite, les fusées.']] },
     dragon: { mid: 'Mon feu vient du soleil rouge ! Et le tien, il vient d\'où ?!', bye: 'Zorg m\'avait promis toute la lumière du soleil… Il ne m\'en a jamais donné une miette. Il garde tout. Toujours.',
       after: [['n', 'Prendre et ne jamais rendre. Pourquoi quelqu\'un voudrait-il ça ?']] },
-    zorg: { mid: 'Plus j\'en prends, plus j\'en veux ! Pourquoi ça ne s\'arrête jamais ?!', bye: 'Non… Le Maître va avoir faim… Il a toujours faim…', after: [] },
+    zorg: { mid: 'Soldats ! Fermez toutes les sorties !', bye: 'Tu ne passeras pas… Le Dévoreur… il vous trouvera…', after: [] },
+    // les tyrans des Mondes 2 à 5 (les gardiens de ces mondes n'ont pas encore leurs répliques : rien ne s'affiche)
+    glacia: { mid: 'Ne bouge plus ! Plus personne ne bouge, pour toujours !', bye: 'Mon royaume… fond… Le Dévoreur m\'avait promis l\'éternité…', after: [] },
+    magmor: { mid: 'Plus de feu ! PLUS DE FEU !', bye: 'Maître… aide-moi… Maître ?!', after: [] },
+    ruche: { mid: 'Mes enfants ! Protégez votre roi !', bye: 'Mon prince… pardonne-moi… Je n\'ai pas su te protéger…', after: [] },
+    // le Dévoreur : à mi-vie, Clac revient (cinématique) ; vaincu, c'est le choix final
   };
 
   // ===== Mondes 2 à 5 : chaque boss a ses attaques (move) et son dessin (draw) =====
@@ -2811,7 +2835,7 @@ body:not(.jeu) .hud { opacity: 0; }
         ell(-44, -24, 10, 8, '#dff4ff'); ell(10, -32, 12, 7, '#dff4ff');
       } },
     { id: 'glacia', name: 'Impératrice Glacia', place: 'Palais de cristal', col: '#dff4ff', r: 46,
-      quote: 'Zorg n\'était qu\'un pion. Moi, je vais geler ton cœur.', desc: 'Son reflet attaque avec elle. Devient furieuse à mi-vie.',
+      quote: 'Ta petite lumière fera un très joli glaçon.', desc: 'Son reflet attaque avec elle. Devient furieuse à mi-vie.',
       move(it, sp, bs, dt, sweep) {
         enrage(it, 'Glacia est furieuse !', 'Le palais gèle tout entier');
         sweep(it.rage ? .8 : .45);
@@ -3026,7 +3050,7 @@ body:not(.jeu) .hud { opacity: 0; }
         for (let i = -2; i <= 2; i++) ell(i * 14, 30, 5, 4, '#ffd86b');
       } },
     { id: 'magmor', name: 'Seigneur Magmor', place: 'Trône de lave', col: '#ff4f1a', r: 52,
-      quote: 'Glacia a fondu. Toi aussi, tu vas fondre.', desc: 'Murs de lave, fontaines et spirales. Devient furieux à mi-vie.',
+      quote: 'Mon maître nous regarde. Je vais te faire fondre devant lui !', desc: 'Murs de lave, fontaines et spirales. Devient furieux à mi-vie.',
       move(it, sp, bs, dt, sweep) {
         enrage(it, 'Magmor est furieux !', 'La lave déborde');
         sweep(it.rage ? .8 : .4);
@@ -3235,7 +3259,7 @@ body:not(.jeu) .hud { opacity: 0; }
         }
       } },
     { id: 'ruche', name: 'Reine-Ruche', place: 'Cœur de la jungle', col: '#ffb020', r: 50,
-      quote: 'Ma jungle a dévoré Magmor. Mes larves vont te dévorer.', desc: 'Pond des larves et lance des bombes de miel. Devient furieuse à mi-vie.',
+      quote: 'Tu ne toucheras pas à mon prince !', desc: 'Pond des larves et lance des bombes de miel. Devient furieuse à mi-vie.',
       move(it, sp, bs, dt, sweep) {
         enrage(it, 'La Reine-Ruche est furieuse !', 'Le miel déborde de partout');
         sweep(it.rage ? .8 : .4);
@@ -3425,7 +3449,7 @@ body:not(.jeu) .hud { opacity: 0; }
         ell(dx / dd * 9, dy / dd * 7, 15, 15, '#c86bff'); ell(dx / dd * 9, dy / dd * 7, 6, it.pre > 0 || it.sweepT > 0 ? 13 : 6, '#0b0820');
       } },
     { id: 'devoreur', name: 'Le Dévoreur d\'étoiles', place: 'Cœur du Néant', col: '#ff4f6d', r: 56,
-      quote: 'J\'ai mangé mille galaxies. La tienne sera mon dessert.', desc: 'Utilise les attaques des quatre seigneurs. Devient furieux à mi-vie.',
+      quote: 'J\'ai mangé mille galaxies. La tienne sera mon dessert !', desc: 'Utilise les attaques des quatre seigneurs. Devient furieux à mi-vie.',
       move(it, sp, bs, dt, sweep) {
         enrage(it, 'Le Dévoreur est furieux !', 'Le Néant se déchaîne');
         sweep(it.rage ? .7 : .35, 90);
@@ -3534,74 +3558,6 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- histoire ---
   let seenIntro = false;
   try { seenIntro = localStorage.getItem('comete-intro') === '1'; } catch (e) {}
-  let storyMode = 'intro';
-  // texte affiché en arrivant dans le monde w (1 à 4), puis la fin après le dernier boss du Néant
-  const WORLD_STORY = [
-    null,
-    // Monde 1 → Monde 2 : une suite de scènes ; chaque scène est une liste de lignes (texte = narration, [qui, texte] = dialogue)
-    n => [
-      ['Zorg s\'effondre. Son corps se dissout en fumée noire, aspirée vers le fond de l\'univers.'],
-      [`Les étoiles du palais flottent autour de ${n}. Avec elles, elle serait invincible. Elle hésite une seconde, puis ouvre ses soutes.`],
-      ['Toute son énergie part vers le ciel : ses armes, ses super-pouvoirs, ses améliorations. Elle ne garde que sa coque et ses couleurs. La <b>Voie lactée</b> se rallume. Sur Terre, Nina voit apparaître la première étoile.'],
-      [['Clac', 'T\'as tout rendu ? Toutes ces étoiles, et même tes armes ?'], ['n', 'Les étoiles n\'étaient pas à moi.'], ['Clac', 'T\'es bizarre, toi. J\'aime bien.']],
-      ['Dans les ruines, ils trouvent une carte : quatre royaumes sur la route du <b>Néant</b>. Tout au bout, un nom gravé : le <b>Dévoreur d\'étoiles</b>.'],
-      ['Une porte de glace s\'ouvre. <b>Monde 2 : Royaume de Givre.</b>'],
-    ],
-    n => ['Glacia se brise en mille éclats de cristal.',
-      'Sous la glace, le sol se met à trembler : une chaleur terrible monte des profondeurs.',
-      `${n} plonge vers une planète en fusion…`,
-      '<b>Monde 3 : Forge Volcanique.</b> Le Seigneur Magmor y forge une armée de feu.'],
-    n => ['Magmor s\'effondre et sa forge s\'éteint.',
-      'Plus loin, une jungle géante pousse entre les étoiles. Elle avance, et dévore tout sur son passage.',
-      `${n} se faufile entre les lianes…`,
-      '<b>Monde 4 : Jungle Cosmique.</b> La Reine-Ruche règne sur ses gardiens.'],
-    n => ['La Reine-Ruche tombe, et la jungle se fane.',
-      'Derrière elle, il n\'y a plus rien : ni étoile, ni lumière. Seulement le <b>Néant</b>.',
-      `Quelque chose s'y réveille. Quelque chose de très affamé. ${n} n'a pas peur.`,
-      '<b>Monde 5 : Le Néant.</b> Le Dévoreur d\'étoiles t\'attend au bout du vide.'],
-  ];
-  // un prologue pour chacun des 5 mondes (n = nom de la fusée)
-  const PROLOGUES = [
-    // Monde 1 : 8 scènes ; chaque scène est une liste de lignes (texte = narration, [qui, texte] = dialogue, 'n' = la fusée)
-    n => [
-      ['Terre, an 2187. Une à une, les étoiles s\'éteignent. Les enfants ne savent plus ce qu\'est une constellation.'],
-      ['En pleine nuit, une fillette, <b>Nina</b>, se glisse dans un vieux musée de l\'espace. Une plaque raconte : « Les Porteuses de lumière rallumaient les étoiles. La première n\'est jamais revenue. » Nina s\'arrête devant la baie 07, où dort la dernière Porteuse de lumière.'],
-      ['Nina appuie sur un bouton. Un voyant s\'allume.', ['???', 'Système réveillé. Bonjour. Je n\'ai pas de nom.'], ['Nina', `Maintenant, si. Tu t'appelles ${n}.`]],
-      [['n', 'Étoiles manquantes : 100 milliards. Responsable : l\'Empereur Zorg.']],
-      ['Zorg apparaît sur tous les écrans, couvert d\'étoiles volées comme de bijoux.', ['Empereur Zorg', 'Tout ce qui brille est à moi. Et ce qui est à moi, je le garde.']],
-      [['n', 'Il a placé 10 gardiens entre la Terre et son palais. Probabilité de succès : 0,3 %.'], ['Nina', 'Et si tu essayais quand même ?']],
-      [['n', 'Cette réponse n\'est pas logique. Je l\'enregistre quand même.'], 'Les réacteurs s\'allument.'],
-      ['<b>Mission :</b> franchir les 10 gardiens, reprendre les étoiles et rallumer le ciel de Nina.'],
-    ],
-    n => [
-      'Au-delà de la Voie lactée s\'étend le <b>Royaume de Givre</b>, un océan d\'étoiles gelées où plus rien ne bouge.',
-      'Son impératrice, <b>Glacia</b>, enferme les étoiles volées dans des blocs de glace éternelle pour les offrir à son maître.',
-      'Pingouins blindés, yétis des comètes et mammouths cosmiques patrouillent sur ses banquises.',
-      `${n} pousse ses réacteurs à fond : il va falloir faire fondre tout ça.`,
-      '<b>Mission :</b> briser les 10 gardiens de glace et libérer les étoiles prisonnières.',
-    ],
-    n => [
-      'Au cœur d\'une planète en fusion gronde la <b>Forge Volcanique</b>. Le ciel y est rouge et l\'air brûle.',
-      'Le <b>Seigneur Magmor</b> y fait fondre les étoiles volées pour forger des armes et des armures de feu.',
-      'Salamandres de lave, phénix et une hydre à trois têtes gardent ses rivières de feu.',
-      `La coque de ${n} commence déjà à chauffer…`,
-      '<b>Mission :</b> éteindre la forge et sauver les étoiles avant qu\'elles ne fondent.',
-    ],
-    n => [
-      'Entre deux galaxies pousse une <b>jungle géante</b>. Ses lianes avalent des planètes entières.',
-      'La <b>Reine-Ruche</b> s\'y est bâti un nid avec les étoiles volées : leur lumière nourrit ses millions de larves.',
-      'Fleurs carnivores, mantes stellaires et caméléons fantômes se cachent dans les feuillages.',
-      `${n} se glisse sous la canopée. Ici, tout ce qui bouge a faim.`,
-      '<b>Mission :</b> traverser la jungle et détrôner la Reine-Ruche.',
-    ],
-    n => [
-      'Au bout de l\'univers, il n\'y a plus rien. Ni étoile, ni lumière, ni bruit. C\'est le <b>Néant</b>.',
-      'Là dort le <b>Dévoreur d\'étoiles</b>, le maître de Zorg, de Glacia, de Magmor et de la Reine-Ruche. Toutes les étoiles volées finissent dans son ventre.',
-      'Ses gardiens sont étranges : un miroir noir, une horloge brisée, un glitch qui déforme l\'espace…',
-      `${n} allume tous ses capteurs. C\'est le dernier voyage.`,
-      '<b>Mission :</b> vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.',
-    ],
-  ];
   let seenPrologues = [];
   try { const sp = JSON.parse(localStorage.getItem('comete-prologues') || '[]'); if (Array.isArray(sp)) seenPrologues = sp.filter(Number.isInteger); } catch (e) {}
   const prologueSeen = w => w === 0 ? seenIntro : seenPrologues.includes(w);
@@ -3609,478 +3565,309 @@ body:not(.jeu) .hud { opacity: 0; }
     if (w === 0) { seenIntro = true; try { localStorage.setItem('comete-intro', '1'); } catch (e) {} return; }
     if (!seenPrologues.includes(w)) { seenPrologues.push(w); try { localStorage.setItem('comete-prologues', JSON.stringify(seenPrologues)); } catch (e) {} }
   }
-  let storyWorld = 0;
-  // titre du monde avec ses couleurs
-  function setStoryTitle(w) {
-    const t = $('storyTitle');
-    if (w < 0) { t.hidden = true; return; }
-    const W0 = WORLDS[w];
-    t.hidden = false; t.textContent = W0.name;
-    t.style.setProperty('--w1', W0.col[1]); t.style.setProperty('--w2', '#ffffff');
-  }
+  // la fin choisie contre le Dévoreur ('A' : lui rendre la lumière, 'B' : l'éteindre), gardée dans la sauvegarde
+  let finChoice = '';
+  try { finChoice = localStorage.getItem('comete-fin') || ''; } catch (e) {}
+
+  // ===== Les cinématiques, scène par scène =====
+  // une scène : un plan (sa mise en scène), une variante, puis ses lignes
+  // une ligne : un texte (narration) ou [qui parle, texte] ; 'n' = la fusée, avec le nom choisi au Hangar
+  // options d'une scène : at (titre en haut : numéro de monde ou texte), clac (Clac à bord ou non)
+  const S = (plan, ...l) => { const [p, v = ''] = plan.split(':'); return { p, v, l }; };
+  const at = (sc, a) => ({ ...sc, at: a });
+  const noClac = sc => ({ ...sc, clac: false });
+  const mission = txt => S('decor:mission', `<b>Mission :</b> ${txt}`);
+  const PAST = 'Il y a mille ans';
+
+  // un prologue pour chacun des 5 mondes (n = nom de la fusée)
+  const PROLOGUES = [
+    n => [
+      S('decor:terre', 'Terre, an 2187. Une à une, les étoiles s\'éteignent. Personne ne sait pourquoi.'),
+      S('musee:facade', 'Une nuit, Nina et ses copains Malo et Inès se glissent dans le vieux musée de l\'espace. Juste pour s\'amuser.', ['Malo', 'Chiche que tu montes dans la grosse fusée !']),
+      S('musee:baie', 'Dans la baie 07 dort une fusée couverte de poussière. Sur la plaque : « Les Porteurs de lumière protégeaient les étoiles. Le premier n\'est jamais revenu. »', ['Inès', 'Nina, on n\'a pas le droit…'], ['Nina', 'Deux secondes, et je redescends !']),
+      S('cockpit:nuit', 'Nina grimpe à bord, s\'installe… et pose la main sur un gros bouton. Clic.'),
+      S('cockpit:voyants', ['???', 'Système réveillé. Durée de veille : 1 000 ans, 3 mois, 12 jours.'], ['???', 'Mission reprise. Objectif : récupérer les étoiles volées. Ennemi numéro un : le Dévoreur d\'étoiles.'], ['Nina', 'Le… quoi ?']),
+      S('poursuite:decollage', 'Les réacteurs s\'allument. Le toit du musée s\'ouvre en grand.', ['Malo', 'NINA !'], ['Inès', 'Elle a VRAIMENT appuyé ?!']),
+      S('cockpit:terre', ['Nina', 'Euh… Tu as un nom ?'], ['???', 'Négatif.'], ['Nina', `Alors tu t'appelles ${n}.`], ['n', 'Nom enregistré. Bonjour, passagère.'], ['Nina', 'Nina. Je m\'appelle Nina.']),
+      S('tyran:soldats', ['Empereur Zorg', 'Une Porteuse de lumière ? Réveillée ? Le Dévoreur m\'a ordonné de surveiller cette galaxie au cas où l\'une de vous se réveillerait.'], ['Empereur Zorg', 'Aucune de vous ne sortira de ma galaxie. Soldats ! Fermez tout !']),
+      S('radio:gardiens', ['Malo (radio)', 'Nina, tu nous entends ? Il y a un truc qui brille dans le ciel, c\'est toi ?!'], ['n', '10 gardiens bloquent la sortie de la galaxie. Probabilité de succès : 0,3 %.'], ['Nina', 'Et si on essayait quand même ?'], ['n', 'Réponse illogique. Enregistrée quand même.']),
+      mission('traverser les 10 gardiens de Zorg, reprendre les étoiles de la Voie lactée et trouver le Dévoreur d\'étoiles.'),
+    ],
+    n => [
+      S('decor:glace', 'Au-delà de la Voie lactée s\'étend le Royaume de Givre. Ici, les étoiles volées dorment dans des blocs de glace.'),
+      S('tyran:trone', ['Impératrice Glacia', 'Une étoile qui brille finit toujours par s\'éteindre. Une étoile gelée, elle, est à moi pour toujours.']),
+      S('tyran:cristal', ['Impératrice Glacia', 'Et la prochaine que je vais geler… c\'est cette jolie petite planète bleue.']),
+      S('cockpit:givre', ['Nina', 'C\'est la Terre !'], ['n', 'Température extérieure : −270 °C. Probabilité de…'], ['Nina', `Pas de probabilités aujourd'hui, ${n}.`]),
+      S('cockpit:givre', ['Clac', 'Moi, le froid, ça me ralentit les pinces. Je dis ça, je dis rien.']),
+      mission('briser les 10 gardiens de glace, libérer les étoiles et empêcher Glacia de geler la Terre.'),
+    ],
+    n => [
+      S('decor:lave', 'Au cœur d\'une planète en fusion gronde la Forge Volcanique. Le ciel est rouge, l\'air brûle.'),
+      S('tyran:enclume', ['Seigneur Magmor', 'Chaque étoile que je fais fondre devient une arme pour mon maître.']),
+      S('message:volcan', 'Tout en haut du volcan, une ombre immense regarde. Le Dévoreur est venu voir le spectacle.', ['Le Dévoreur', 'Magmor, montre-leur ce qu\'est le vrai feu.']),
+      S('cockpit:alarme', ['n', 'Coque en surchauffe.'], ['Clac', 'Moi, je cuis. Je vais finir en crabe grillé.']),
+      S('cockpit:alarme', ['Nina', 'Il est là, juste au-dessus. Cette fois, on ne le laisse pas filer.']),
+      mission('vaincre les 10 gardiens de la Forge, éteindre le feu de Magmor et atteindre le Dévoreur.'),
+    ],
+    n => [
+      S('decor:jungle', 'Entre deux galaxies pousse une jungle géante. Ses lianes avalent des planètes entières.'),
+      S('tyran:nid', 'Au cœur de la jungle, la Reine-Ruche nourrit ses larves avec la lumière des étoiles volées. Tout ce qu\'elle fait, elle le fait pour un seul être.'),
+      S('tyran:nid', ['Reine-Ruche', 'Mon prince… Mon Dévoreur… Ils osent te poursuivre ?'], ['Reine-Ruche', 'Personne ne touchera à mon prince. Mes enfants, fermez la jungle ! Que rien ne passe !']),
+      S('cockpit', ['Clac', 'Attends… Elle est AMOUREUSE de ce gros trou noir ?'], ['Nina', 'L\'amour, ça rend bizarre, Clac.']),
+      S('cockpit', ['n', 'Donnée enregistrée. Je ne comprends pas l\'amour. Pas encore.']),
+      mission('traverser la jungle, vaincre les 10 gardiens de la ruche et passer la Reine-Ruche pour atteindre le Néant.'),
+    ],
+    // Monde 5 : Clac n'est pas là (il a disparu à la fin du Monde 4)
+    n => [
+      S('decor:noir', 'Au bout de l\'univers, il n\'y a plus rien. C\'est le Néant.'),
+      S('tyran:devoreur', ['Le Dévoreur', 'Te voilà enfin, petite sœur.']),
+      S('cockpit', ['n', 'Je sais qui tu es. Elio. Le premier Porteur de lumière.']),
+      S('tyran:devoreur', ['Le Dévoreur', 'Elio ? Ce petit vaisseau faible est mort il y a mille ans. Il passait sa vie à rendre la lumière. Quelle bêtise.']),
+      S('tyran:devoreur', ['Le Dévoreur', 'Moi, j\'ai compris. La lumière, il faut la prendre. Toute la lumière. Plus j\'en mange, plus je suis grand.']),
+      S('cockpit', ['Nina', 'Et quand il n\'y aura plus rien à manger ?'], ['Le Dévoreur', 'Alors je serai le plus grand de tout l\'univers. Le seul.']),
+      S('carte:toute', ['Le Dévoreur', 'Rien ne m\'arrêtera. Je dévorerai toutes les galaxies. La tienne aussi, petite humaine.']),
+      S('tyran:gardiens', ['Le Dévoreur', 'Mes gardiens ultimes vous attendent. Personne n\'a jamais traversé le Néant. Personne.']),
+      S('cockpit', ['n', 'Probabilité de succès : 0,3 %.'], ['Nina', 'Comme au début.'], ['n', 'Comme au début. On y va.']),
+      mission('traverser les 10 gardiens du Néant, vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.'),
+    ].map(noClac),
+  ];
+  // la transition à la fin du monde w, vers le monde w + 1 (la dernière scène se passe déjà dans le nouveau monde)
+  const TRANSITIONS = [
+    n => [
+      S('action:effondre', 'Zorg s\'effondre. La marque noire du Dévoreur s\'échappe de lui en fumée et file vers le fond de l\'univers.'),
+      S('decor:etoiles', `${n} ouvre ses soutes et rend tout aux étoiles : ses armes, ses super-pouvoirs, ses améliorations. Elle ne garde que sa coque et ses couleurs. La Voie lactée se rallume.`),
+      S('radio:toit', ['Inès (radio)', 'Nina ! Les étoiles sont revenues au-dessus du musée !'], ['Malo (radio)', 'Vous êtes des héros !'], ['Clac', 'Des héros ? Ça me va bien, ça.']),
+      S('carte', ['n', 'Je ressens une autre galaxie. Elle retient des étoiles prisonnières.']),
+      S('carte:ombre', ['n', 'Les galaxies s\'éteignent les unes après les autres. Prochaine sur la liste… la Terre.'], ['Nina', 'La Terre ? Mais… Malo, Inès, mes parents…']),
+      S('cockpit', ['Nina', 'Alors on fonce.'], ['Clac', 'On fonce ! … On fonce où, exactement ?']),
+      S('decor:porte', 'Une porte de glace s\'ouvre. <b>Monde 2 : Royaume de Givre.</b>'),
+    ],
+    n => [
+      S('action:brise', 'Glacia se brise en mille éclats de cristal. La marque noire s\'envole vers le fond de l\'univers.'),
+      S('decor:fonte', `Comme toujours, ${n} rend tout pour libérer les étoiles. La glace fond. Le Royaume de Givre se remet à briller.`, ['Inès (radio)', 'Nina ! Le froid s\'en va, ici !']),
+      S('message:eteint', `Soudain, tous les écrans de ${n} s'éteignent. Un rire immense remplit le cockpit.`),
+      S('message:yeux', ['Le Dévoreur', 'Ahahah ! C\'est tout ce que vous avez ? Une gamine, un crabe et une vieille fusée de musée ?']),
+      S('carte:marque', ['Le Dévoreur', 'Vous n\'avez encore rien vu. Toutes ces galaxies sont à moi. Zorg, Glacia, Magmor, la Reine-Ruche : ils me servent tous.'], ['Le Dévoreur', 'Je suis l\'Ordre suprême.']),
+      S('message:yeux', ['Le Dévoreur', 'Vous voulez me trouver ? Venez dans la Forge Volcanique. Je vous attendrai. Enfin… si vous survivez.']),
+      S('cockpit:rallume', ['Clac', 'Il est très poli, ce monsieur.'], ['Nina', 'S\'il n\'avait pas peur de nous, il ne nous aurait jamais appelés.'], ['n', 'Cap sur la Forge.']),
+      S('poursuite:plonge', '<b>Monde 3 : Forge Volcanique.</b>'),
+    ],
+    n => [
+      S('action:effondre', `Magmor s'effondre et sa forge s'éteint. Sa marque noire s'envole. Comme toujours, ${n} rend tout pour libérer les étoiles.`),
+      S('poursuite:fuite', 'Là-haut, le Dévoreur recule. Pour la première fois, il s\'enfuit.', ['Nina', 'Il s\'enfuit !']),
+      S('poursuite:scan', ['n', 'Scan en cours…']),
+      S('cockpit:plan', ['n', 'Signature reconnue. Ce n\'est pas un monstre. C\'est un vaisseau. Un Porteur de lumière. Le tout premier : Elio.']),
+      S('cockpit:plan', ['Nina', 'Un vaisseau… comme toi ?']),
+      at(S('flashback:porteur', 'Il y a mille ans, Elio était le premier Porteur de lumière. Il protégeait les étoiles, une à une, dans tout l\'univers.'), PAST),
+      at(S('flashback:etoile', 'Un jour, pour sauver une étoile mourante, il garda un peu de sa lumière en lui. Elle était chaude. Il se sentit plus fort que jamais.'), PAST),
+      at(S('flashback:aimant', 'Alors il en prit une autre. Puis une autre. Les étoiles venaient à lui comme vers un aimant. Il en voulait toujours plus. Il ne pouvait plus s\'arrêter.'), PAST),
+      at(S('flashback:grossit', 'Plus il en avalait, plus il grandissait, et plus il avait faim. Le protecteur des étoiles était devenu le Dévoreur.'), PAST),
+      S('cockpit:silence', ['n', 'Il était comme moi.'], ['Clac', 'Non. Toi, tu rends tout. Même tes armes.'], ['Nina', 'Et tu ne deviendras jamais comme lui. Je te le promets.']),
+      S('carte:verte', ['n', 'Je ressens une présence. Une autre galaxie, très vivante… et très affamée.'], '<b>Monde 4 : Jungle Cosmique.</b>'),
+    ],
+    n => [
+      S('decor:fane', `La Reine-Ruche tombe. Sa marque noire s'envole. Comme toujours, ${n} rend tout pour libérer les étoiles, et la jungle commence à se faner.`),
+      S('action:lianes', `Mais dans un dernier sursaut, les lianes se referment sur ${n}.`),
+      S('action:pinces', ['Clac', 'Partez ! Je les retiens !'], ['Nina', 'Clac, NON !']),
+      noClac(S('poursuite:clac', ['Clac', 'Clac clac… Prenez soin de ma fusée préférée.'])),
+      noClac(S('cockpit:vide', 'La jungle se referme. Clac a disparu.', ['n', 'Passager… manquant.'])),
+      noClac(S('cockpit:larmes', ['n', 'Nina, je crois que j\'ai mal. Pourtant, je n\'ai rien de cassé.'], ['Nina', 'Ça s\'appelle être triste.'])),
+      noClac(S('decor:noir', 'Derrière la jungle, il n\'y a plus rien. Ni étoile, ni lumière, ni bruit. <b>Monde 5 : Le Néant.</b>')),
+    ],
+  ];
+  // le combat final : Clac revient à mi-vie du Dévoreur, puis le choix, les deux fins et l'épilogue
+  const FINALE = {
+    clac: () => [
+      noClac(S('action:gueule', ['Le Dévoreur', 'Assez joué ! Je vais t\'avaler !'])),
+      noClac(S('radio:clac', ['Clac (radio)', 'Pas si vite, gros trou noir !'])),
+      S('action:renforts', ['Clac', 'Tu croyais que la jungle allait me garder ? J\'ai ramené des copains !']),
+      S('cockpit', ['Nina', 'CLAC !'], ['n', 'Passager… retrouvé.']),
+    ],
+    choix: n => [
+      S('action:hurle', 'Le Dévoreur hurle. Les étoiles volées s\'échappent de lui, et il rétrécit… rétrécit…'),
+      S('decor:epave', 'Il ne reste qu\'un vieux vaisseau abîmé. Elio.'),
+      S('decor:epave', ['Elio', 'Tu as gagné aujourd\'hui… Mais tant qu\'il restera une étoile, j\'aurai faim. Je serai toujours le plus grand.']),
+      S('cockpit', ['Nina', `${n}… C'est à toi de choisir.`]),
+    ],
+    A: n => [
+      S('decor:rayon', `${n} lui offre sa dernière lumière. Pas une lumière qu'on prend : une lumière qu'on donne.`),
+      S('decor:etoile', ['Elio', '… Personne ne m\'avait jamais rien donné.'], 'Elio se met à briller, doucement. Il redevient une étoile, la première à briller dans le Néant.'),
+    ],
+    B: n => [
+      S('action:tir', `${n} tire une dernière fois. Elio explose en une pluie de lumière, et toutes les étoiles qu'il avait avalées reviennent.`),
+      S('decor:vide', `Le Néant redevient silencieux. ${n} regarde longtemps l'endroit où Elio aurait pu briller.`),
+    ],
+    epilogue: (n, fin) => [
+      at(S('carte:allume', 'Galaxie après galaxie, l\'univers se rallume.'), 'L\'univers'),
+      at(S('musee:aube', `Au-dessus du vieux musée, ${n} se pose doucement dans la baie 07.`), 'Terre · le musée'),
+      at(S('musee:tous', ['Malo', 'Tu as pris une fusée et sauvé l\'univers ? En une nuit ?!'], ['Inès', 'Le gardien du musée va nous tuer.'], ['Clac', 'Bonjour, je suis un crabe.']), 'Terre · le musée'),
+      at(S('decor:ciel' + fin, fin === 'B' ? 'Nina lève les yeux. Le ciel est plein d\'étoiles. Mais tout au bout, il reste un petit coin de noir.' : 'Nina lève les yeux. Parmi toutes les étoiles, une brille un peu plus chaud que les autres.'), 'Terre'),
+      at(S('musee:tous', ['n', 'Nina… Merci de m\'avoir réveillée.'], ['Nina', 'Merci d\'avoir décollé.']), 'Terre · le musée'),
+      at(S('decor:victoire', '<b>Victoire totale !</b> Mais au fond du Néant, quelque chose bouge encore. Les gardiens reviennent, plus forts.', ['Clac', 'On repart ?'], ['Nina', 'On repart !']), 'Le Néant'),
+    ],
+  };
+  const NOTE = '<b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés.';
+
+  // ===== Qui parle =====
   // le nom choisi au Hangar, sans caractères qui casseraient la page
   const rocketName = () => cfg.name.replace(/[<>&"]/g, '');
-  // une scène est une liste de lignes (les anciens textes : une phrase = une scène)
-  const sceneLines = sc => Array.isArray(sc) ? sc : [sc];
-  // portrait rond de qui parle : la fusée (avec son apparence du Hangar), Clac (le crabe), Nina ou un boss
+  const whoBase = w => w.replace(/ \(radio\)$/, '');
+  // portraits ronds dessinés une fois : Nina, Malo, Inès, la fusée, Elio, le Dévoreur caché dans l'ombre
   const avaCache = {};
   function avatar(who) {
-    const def = who === 'Clac' ? ALL_BOSSES.find(d => d.id === 'crabe') : ALL_BOSSES.find(d => d.name === who);
+    const b = whoBase(who);
+    if (b === 'Clac') return bossPortrait(ALL_BOSSES.find(d => d.id === 'crabe'));
+    const shown = b === 'Le Dévoreur' && film && film.w === WORLDS.length - 1;
+    if (shown) return bossPortrait(ALL_BOSSES.find(d => d.id === 'devoreur'));
+    const def = ALL_BOSSES.find(d => d.name === b);
     if (def) return bossPortrait(def);
-    if (who !== 'n' && who !== '???' && who !== 'Nina') return '';
-    const key = who === 'Nina' ? 'Nina' : 'n' + JSON.stringify(cfg);
+    if (!['n', '???', 'Nina', 'Malo', 'Inès', 'Elio', 'Le Dévoreur'].includes(b)) return '';
+    const key = b === 'n' || b === '???' ? 'n' + JSON.stringify(cfg) : b;
     if (avaCache[key]) return avaCache[key];
     const c = document.createElement('canvas'); c.width = c.height = 96; const k = c.getContext('2d');
-    if (who === 'Nina') {
-      // Nina : une fillette aux cheveux bruns, avec deux couettes
-      k.fillStyle = '#1d2a5a'; k.fillRect(0, 0, 96, 96);
-      k.fillStyle = '#5a3420'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 30, 40, 12, 0, 7); k.fill(); }
-      k.beginPath(); k.arc(48, 46, 27, Math.PI, 0); k.fill();
-      k.fillStyle = '#ffd9b8'; k.beginPath(); k.ellipse(48, 52, 22, 24, 0, 0, 7); k.fill();
-      k.fillStyle = '#5a3420'; k.beginPath(); k.ellipse(48, 32, 24, 10, 0, Math.PI, 0); k.fill();
-      k.fillStyle = '#2a1a40'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 3.4, 0, 7); k.fill(); }
-      k.fillStyle = 'rgba(255, 120, 150, .5)'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 15, 60, 4, 0, 7); k.fill(); }
-      k.strokeStyle = '#a0405a'; k.lineWidth = 2; k.beginPath(); k.arc(48, 62, 6, .2, Math.PI - .2); k.stroke();
-      k.fillStyle = '#7ad8ff'; k.fillRect(26, 88, 44, 8);
-    } else {
-      // la fusée, avec l'apparence choisie au Hangar
-      k.fillStyle = '#141036'; k.fillRect(0, 0, 96, 96);
-      drawRocket(k, 48, 44, 1.25, cfg, 0, 0, 0);
-    }
+    if (b === 'Nina' || b === 'Malo' || b === 'Inès') kidFace(k, b);
+    else if (b === 'Elio') { k.fillStyle = '#2a2216'; k.fillRect(0, 0, 96, 96); drawElio(k, 48, 50, 1.6, 0, 1); }
+    else if (b === 'Le Dévoreur') { k.fillStyle = '#000'; k.fillRect(0, 0, 96, 96); shadowEyes(k, 48, 50, 30, '#ff4f6d', 1); }
+    else { k.fillStyle = '#141036'; k.fillRect(0, 0, 96, 96); drawRocket(k, 48, 44, 1.25, cfg, 0, 0, 0); }
     return (avaCache[key] = c.toDataURL());
+  }
+  // le visage d'un des trois enfants
+  function kidFace(k, b) {
+    const hair = { Nina: '#5a3420', Malo: '#1e1410', Inès: '#c0702a' }[b], skin = { Nina: '#ffd9b8', Malo: '#c98a5a', Inès: '#f6cfa8' }[b];
+    k.fillStyle = { Nina: '#1d2a5a', Malo: '#173a22', Inès: '#3a1d4a' }[b]; k.fillRect(0, 0, 96, 96);
+    k.fillStyle = hair;
+    if (b === 'Nina') for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 30, 40, 12, 0, 7); k.fill(); }
+    if (b === 'Inès') { k.beginPath(); k.ellipse(48, 58, 30, 34, 0, 0, 7); k.fill(); }
+    k.beginPath(); k.arc(48, 46, 27, Math.PI, 0); k.fill();
+    k.fillStyle = skin; k.beginPath(); k.ellipse(48, 52, 22, 24, 0, 0, 7); k.fill();
+    k.fillStyle = hair;
+    if (b === 'Malo') { for (let i = 0; i < 5; i++) { k.beginPath(); k.moveTo(26 + i * 11, 36); k.lineTo(31 + i * 11, 18); k.lineTo(37 + i * 11, 36); k.fill(); } }
+    else { k.beginPath(); k.ellipse(48, 32, 24, 10, 0, Math.PI, 0); k.fill(); }
+    k.fillStyle = '#2a1a40'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 3.4, 0, 7); k.fill(); }
+    if (b === 'Inès') { k.strokeStyle = '#2a1a40'; k.lineWidth = 2; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 7, 0, 7); k.stroke(); } k.beginPath(); k.moveTo(46, 52); k.lineTo(50, 52); k.stroke(); }
+    k.fillStyle = 'rgba(255, 120, 150, .45)'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 15, 61, 4, 0, 7); k.fill(); }
+    k.strokeStyle = '#a0405a'; k.lineWidth = 2; k.beginPath();
+    if (b === 'Malo') k.arc(48, 60, 8, .1, Math.PI - .1); else k.arc(48, 62, 6, .2, Math.PI - .2); k.stroke();
+    k.fillStyle = WHO_COL[b]; k.fillRect(26, 88, 44, 8);
   }
   // l'étiquette de qui parle, avec son portrait
   function whoHtml(w, col) {
     const ava = avatar(w), name = w === 'n' ? rocketName() : w;
     return `<span class="who"${col ? ` style="color:${col}"` : ''}>${ava ? `<img class="ava" src="${ava}" alt="">` : ''}${name}</span>`;
   }
-  // une ligne : narration (texte), ou réplique [qui parle, texte] ('n' = la fusée, avec le nom choisi par le joueur)
+  // une ligne : narration (texte), ou réplique [qui parle, texte]
   function lineHtml(l) {
-    if (!Array.isArray(l)) return l;
-    return `${whoHtml(l[0], WHO_COL[l[0]])}«\u202f${l[1]}\u202f»`;
+    if (!Array.isArray(l)) return typo(l);
+    return `${whoHtml(l[0], WHO_COL[whoBase(l[0])])}${typo(`« ${l[1]} »`)}`;
   }
-  let storyPages = [], storyPage = 0, storyExtra = [];
-  function showStory(mode) {
-    storyMode = mode;
-    const n = `<b>${rocketName()}</b>`;
-    if (mode === 'intro') { mode = 'prologue'; storyMode = mode; storyWorld = 0; }
-    const raw = mode === 'prologue' ? PROLOGUES[storyWorld](n) : mode === 'world' ? WORLD_STORY[world + 1](n) : [
-      'Le Dévoreur d\'étoiles pousse un dernier cri et explose en une pluie de lumière.',
-      'Toutes les étoiles qu\'il avait avalées reviennent : les cinq mondes brillent à nouveau.',
-      `Dans toutes les galaxies, on raconte maintenant la légende de ${n}.`,
-      '<b>Victoire totale !</b> La partie continue : les gardiens du Néant reviennent, plus forts.',
-    ];
-    // les textes en scènes avec dialogues se lisent une scène à la fois ; les autres d'un seul bloc
-    storyPages = mode === 'world' && raw.some(Array.isArray) ? raw.map(sceneLines) : [raw.flatMap(sceneLines)];
-    storyPage = 0; storyExtra = [];
-    $('storyKicker').textContent = mode === 'prologue' ? `Prologue · Monde ${storyWorld + 1}` : mode === 'world' ? `Monde ${world + 2}` : 'Épilogue';
-    setStoryTitle(mode === 'prologue' ? storyWorld : mode === 'world' ? world + 1 : -1);
-    // les gardiens du monde, pour donner envie
-    if (mode === 'prologue') {
-      const gs = WORLDS[storyWorld].bosses;
-      storyExtra.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
-    }
-    if (mode === 'world' && !cineReplay) storyExtra.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
-    showStoryPage();
-    for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
-    $('story').hidden = false;
-    if (mode !== 'prologue') { state = 'story'; $('pauseBtn').hidden = true; }
-    else state = 'hangar';
-  }
-  function showStoryPage() {
-    const lastPage = storyPage === storyPages.length - 1;
-    const lines = storyPages[storyPage].map(l => [lineHtml(l), Array.isArray(l)]);
-    if (lastPage) for (const x of storyExtra) lines.push([x, false]);
-    $('storyText').innerHTML = lines.map(([l, say], i) => `<p${say ? ' class="say"' : ''} style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
-    $('storySkip').hidden = storyMode !== 'prologue' && lastPage;
-    $('storyGo').textContent = !lastPage ? 'Suivant ›' : cineReplay ? 'Terminer' : storyMode === 'prologue' ? 'Décoller' : storyMode === 'world' ? 'En route !' : 'Continuer à jouer';
-  }
-  function storyNextPage() {
-    if (storyPage < storyPages.length - 1) { storyPage++; showStoryPage(); beep(523, .12, 'triangle', .06); }
-    else closeStory();
-  }
-  // ===== Cinématique de prologue : présentation de la galaxie, scène par scène =====
-  // images : 0. la galaxie  1. son tyran  2. ses gardiens  3. ta fusée part  4. la mission  5. la baie 07 du musée
-  // par défaut, 5 scènes (une image chacune) ; le Monde 1 en a 8
-  const PRO_VIS = [[0, 5, 5, 0, 1, 2, 3, 4]];
-  let proT = 0, proScene = 0, proCount = 5, proLines = [], proPts = [], proImgs = {}, proSil = {};
-  // la transition entre deux mondes réutilise le même cadre, avec ses propres images (10 à 15)
-  let proKind = 'prologue';
-  const proVis = i => proKind === 'world' ? 10 + Math.min(i, 5) : (PRO_VIS[storyWorld] || [])[i] ?? i;
+
+
+  // ===== Le lecteur de cinématiques (plein écran, le jeu attend derrière) =====
+  // film : { scenes, w (monde où ça se passe), next (monde de la dernière scène), clac (Clac à bord), go (texte du dernier bouton), note, end }
+  let film = null, proT = 0, proScene = 0, proCount = 0, proPts = [], proImgs = {}, proSil = {};
   function proImg(d) {
     if (!proImgs[d.id]) { const im = new Image(); im.src = bossPortrait(d); proImgs[d.id] = im; }
     return proImgs[d.id];
   }
   // silhouette noire d'un gardien (on garde le mystère)
-  function proSilhouette(d) {
-    if (proSil[d.id]) return proSil[d.id];
+  function proSilhouette(d, col = '#07051a') {
+    const key = d.id + col;
+    if (proSil[key]) return proSil[key];
     const im = proImg(d); if (!im.complete || !im.naturalWidth) return null;
     const c = document.createElement('canvas'); c.width = c.height = 128; const k = c.getContext('2d');
-    k.drawImage(im, 0, 0); k.globalCompositeOperation = 'source-in'; k.fillStyle = '#07051a'; k.fillRect(0, 0, 128, 128);
-    return (proSil[d.id] = c);
+    k.drawImage(im, 0, 0); k.globalCompositeOperation = 'source-in'; k.fillStyle = col; k.fillRect(0, 0, 128, 128);
+    return (proSil[key] = c);
   }
-  function startPrologue(w) {
-    storyWorld = w; storyMode = 'prologue';
-    const n = `<b>${rocketName()}</b>`;
-    proLines = PROLOGUES[w](n).map(sceneLines); proCount = proLines.length;
-    for (const id of ['menu', 'over', 'help', 'hangar', 'story']) $(id).hidden = true;
-    proKind = 'prologue'; $('proGo').textContent = cineReplay ? 'Terminer' : 'Décoller';
-    proOpen(); state = 'prologue';
-    proGoto(0);
-  }
-  function proOpen() {
+  const bossById = id => ALL_BOSSES.find(d => d.id === id);
+  function playFilm(scenes, opt) {
+    film = { w: 0, clac: true, go: 'Suivant', ...opt, scenes };
+    proCount = scenes.length;
+    for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'cinema', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine', 'talk', 'choice']) $(id).hidden = true;
+    $('banner').classList.remove('show');
+    document.querySelector('.hud').style.visibility = 'hidden';
+    mouseFire = btnFire = false;
     const R = Math.random;
-    proPts = Array.from({ length: reduce ? 260 : 600 }, () => {
+    proPts = Array.from({ length: 600 }, () => {
       const arm = Math.floor(R() * 3), rr = Math.pow(R(), .7);
       return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .55, r: rr, z: R() < .08 ? 2.6 : 1.3, white: R() < .35, d: R(), u: R(), v: R() };
     });
-    WORLDS[storyWorld].bosses.forEach(proImg);
+    for (const w of WORLDS) proImg(w.bosses[9]);
+    WORLDS[film.w].bosses.forEach(proImg); proImg(bossById('crabe'));
     $('proDots').innerHTML = '<i></i>'.repeat(proCount);
+    $('proGo').textContent = cineReplay && opt.replayGo !== false ? 'Terminer' : film.go;
     $('proCine').hidden = false;
-  }
-  // transition vers le monde suivant, scène par scène, en plein écran (le jeu attend derrière)
-  const hasScenes = w => WORLD_STORY[w] && WORLD_STORY[w]('').some(Array.isArray);
-  function startTransit() {
-    storyWorld = world; storyMode = 'world'; proKind = 'world';
-    proLines = WORLD_STORY[world + 1](`<b>${rocketName()}</b>`).map(sceneLines); proCount = proLines.length;
-    for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine']) $(id).hidden = true;
-    $('proGo').textContent = cineReplay ? 'Terminer' : 'En route !';
-    proOpen(); state = 'transit';
+    state = 'film';
     proGoto(0);
   }
-  function endCine() {
-    if (state === 'prologue') return endPrologue();
-    if (state !== 'transit') return;
-    if (cineReplay) return backToCinema();
-    $('proCine').hidden = true; proKind = 'prologue';
-    state = 'play'; last = performance.now();
-    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
-    enterWorld(world + 1); markPrologue(world); resetForNewWorld();
+  function endFilm() {
+    if (state !== 'film' || !film) return;
+    const f = film; film = null;
+    $('proCine').hidden = true;
+    document.querySelector('.hud').style.visibility = '';
+    f.end();
   }
   function proGoto(i) {
     proScene = i; proT = 0;
-    const last = i === proCount - 1, sub = $('proSub');
-    sub.innerHTML = (proLines[i] || []).map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${last ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
-      + (last && proKind === 'world' && !cineReplay ? '<p class="in note" style="animation-delay:.7s"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</p>' : '');
+    const sc = film.scenes[i], last = i === proCount - 1, sub = $('proSub');
+    sub.innerHTML = sc.l.map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${sc.v === 'mission' ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
+      + (last && film.note && !cineReplay ? `<p class="in note" style="animation-delay:${(sc.l.length * .7).toFixed(1)}s">${typo(film.note)}</p>` : '');
     [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
     $('proGo').hidden = !last; $('proNext').hidden = last;
     $('proSkip').textContent = last ? 'Revoir' : 'Passer';
     beep(last ? 784 : [392, 440, 523, 587, 659, 698, 740][i % 7], last ? .5 : .25, 'triangle', .08);
-    if (proVis(i) === 1) beep(110, .9, 'sawtooth', .08, -40);
+    if (sc.p === 'tyran' || sc.p === 'message') beep(110, .9, 'sawtooth', .08, -40);
+    if (sc.p === 'radio') beep(1200, .15, 'square', .03);
   }
-  function proNext() { if (proScene < proCount - 1) proGoto(proScene + 1); }
-  function endPrologue() {
-    if (state !== 'prologue') return;
-    $('proCine').hidden = true; markPrologue(storyWorld);
-    if (cineReplay) backToCinema(); else start();
-  }
-  function updatePrologue(dt) {
-    proT += dt;
-  }
-  function drawPrologue(t) {
-    const w = WORLDS[storyWorld], [c1, c2] = w.col, T = proT, sc = proVis(proScene), m = Math.min(W, H);
-    const gs = w.bosses, chief = gs[9];
-    ctx.save();
-    // fond : le ciel de la galaxie
-    const bg = ctx.createRadialGradient(W / 2, H * .42, 10, W / 2, H * .42, Math.max(W, H) * .8);
-    bg.addColorStop(0, sc === 1 ? '#2a0612' : sc === 10 ? '#7a5ab8' : sc === 12 ? '#0e1640' : sc === 15 ? WORLDS[Math.min(storyWorld + 1, WORLDS.length - 1)].col[0] : c1); bg.addColorStop(1, '#04020c');
-    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-    // étoiles de fond qui défilent (plus vite quand la fusée fonce)
-    const speed = sc === 3 ? 1.6 : .05;
-    for (let i = 0; i < 120; i++) {
-      const q = proPts[i], y = ((q.v + (t / 1000) * speed * (.3 + q.d)) % 1) * H;
-      ctx.globalAlpha = .3 + q.d * .5; ctx.fillStyle = q.white ? '#ffffff' : c2;
-      if (sc === 3) ctx.fillRect(q.u * W, y, 1.5, 6 + q.d * 18); else ctx.fillRect(q.u * W, y, 1.5, 1.5);
-    }
-    ctx.globalAlpha = 1;
-    if (sc === 0) {
-      // 1. la galaxie qui tourne, vue de loin, puis on s'approche
-      const z = m * (.32 + ease(T / 4) * .18), rot = t / 9000;
-      const core = ctx.createRadialGradient(W / 2, H * .42, 0, W / 2, H * .42, z * .5);
-      core.addColorStop(0, 'rgba(255, 255, 255, .9)'); core.addColorStop(.18, c2 + 'aa'); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.globalCompositeOperation = 'lighter';
-      for (const q of proPts) {
-        const a = q.a + rot, x = W / 2 + Math.cos(a) * q.r * z, y = H * .42 + Math.sin(a) * q.r * z * .45;
-        ctx.globalAlpha = (1 - q.r * .6) * Math.min(1, T * 1.5); ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1);
-        ctx.fillRect(x, y, q.z, q.z);
-      }
-      ctx.globalAlpha = Math.min(1, T) * .7; ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(W / 2, H * .42, z * .38, z * .18, 0, 0, 7); ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-      // titre (seulement à la première scène)
-      const k = proScene ? 0 : ease((T - .5) / .8);
-      ctx.globalAlpha = k; ctx.textAlign = 'center';
-      ctx.font = `600 ${Math.max(11, m * .022)}px Outfit, system-ui, sans-serif`; ctx.fillStyle = '#ff7aa8';
-      ctx.fillText(`MONDE ${storyWorld + 1}`.split('').join(' '), W / 2, H * .12);
-      const fs = Math.min(64, W / (w.name.length * .78));
-      ctx.font = `${fs}px Bungee, Impact, system-ui, sans-serif`;
-      const tg = ctx.createLinearGradient(0, H * .14, 0, H * .14 + fs); tg.addColorStop(0, '#ffffff'); tg.addColorStop(1, c2);
-      ctx.fillStyle = tg; ctx.shadowColor = c2; ctx.shadowBlur = 24;
-      ctx.fillText(w.name.toUpperCase(), W / 2, H * .12 + fs * 1.1 + (1 - k) * 20);
-      ctx.shadowBlur = 0;
-    } else if (sc === 1) {
-      // 2. le tyran de la galaxie surgit de l'ombre et aspire les étoiles
-      const im = proImg(chief), cx = W / 2, cy = H < 520 ? H * .24 : H * .32, size = Math.min(m * (.3 + ease(T / 3) * .1), H < 520 ? H * .26 : H * .36);
-      for (let i = 0; i < 70; i++) {
-        const q = proPts[i + 200], ph = (q.d + T * .35) % 1, ang = q.a * 3, rr = (1 - ph) * Math.max(W, H) * .6 + size * .3;
-        ctx.globalAlpha = ph; ctx.fillStyle = '#ffd86b';
-        drawStar(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * .7, 2 + q.z, t / 400 + i); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      const halo = ctx.createRadialGradient(cx, cy, size * .2, cx, cy, size * .9);
-      halo.addColorStop(0, chief.col + '88'); halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = halo; ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
-      if (im.complete && im.naturalWidth) {
-        ctx.globalAlpha = Math.min(1, T / 1.2);
-        const shake = T > 1.2 && T < 2 ? Math.sin(t / 50) * 3 * (2 - T) : 0;
-        ctx.drawImage(im, cx - size / 2 + shake, cy - size / 2 + Math.sin(t / 700) * 6, size, size);
-      }
-      ctx.globalAlpha = ease((T - .8) / .6); ctx.textAlign = 'center';
-      ctx.fillStyle = chief.col; ctx.shadowColor = chief.col; ctx.shadowBlur = 16;
-      ctx.font = `${Math.min(34, W / (chief.name.length * .72))}px Bungee, Impact, system-ui, sans-serif`;
-      ctx.fillText(chief.name.toUpperCase(), W / 2, cy + size * .58 + 10);
-      ctx.shadowBlur = 0;
-    } else if (sc === 2) {
-      // 3. les gardiens apparaissent un à un, en silhouette
-      const chiefToo = storyWorld === 0, cols = W > 700 ? 5 : 3, rows = Math.ceil(9 / cols) + (chiefToo ? 1.4 : 0);
-      const room = chiefToo ? $('proSub').getBoundingClientRect().top - 12 - H * .14 : H * .5, cell = Math.min(W / (cols + .6), room / rows, 150);
-      for (let i = 0; i < 9; i++) {
-        const k = ease((T - i * .22) / .5); if (k <= 0) continue;
-        const row = Math.floor(i / cols), inRow = Math.min(cols, 9 - row * cols), col = i % cols;
-        const x = W / 2 + (col - (inRow - 1) / 2) * cell, y = H * .14 + row * cell + cell / 2 + (1 - k) * 30 + Math.sin(t / 600 + i) * 4;
-        const sil = proSilhouette(gs[i]);
-        ctx.globalAlpha = k;
-        const gl = ctx.createRadialGradient(x, y, 0, x, y, cell * .55); gl.addColorStop(0, c2 + '55'); gl.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = gl; ctx.fillRect(x - cell / 2, y - cell / 2, cell, cell);
-        if (sil) { ctx.shadowColor = c2; ctx.shadowBlur = 10; ctx.drawImage(sil, x - cell * .45, y - cell * .45, cell * .9, cell * .9); ctx.shadowBlur = 0; }
-        // deux yeux qui s'allument
-        if (T > 1.6 + i * .1) { ctx.fillStyle = '#ff4f6d'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200 + i)); ctx.beginPath(); ctx.arc(x - cell * .07, y - cell * .04, 2.2, 0, 7); ctx.arc(x + cell * .07, y - cell * .04, 2.2, 0, 7); ctx.fill(); }
-      }
-      // le 10e : le tyran lui-même, plus grand, en dernier, cerclé d'or
-      if (chiefToo) {
-        const k = ease((T - 9 * .22 - .3) / .6), sil = proSilhouette(chief), z = cell * 1.4;
-        const x = W / 2, y = H * .14 + Math.ceil(9 / cols) * cell + z / 2 + (1 - k) * 30 + Math.sin(t / 600) * 4;
-        if (k > 0) {
-          ctx.globalAlpha = k;
-          const gl = ctx.createRadialGradient(x, y, 0, x, y, z * .6); gl.addColorStop(0, 'rgba(255, 216, 107, .35)'); gl.addColorStop(1, 'rgba(255, 216, 107, 0)');
-          ctx.fillStyle = gl; ctx.fillRect(x - z * .6, y - z * .6, z * 1.2, z * 1.2);
-          if (sil) { ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 16; ctx.drawImage(sil, x - z * .45, y - z * .45, z * .9, z * .9); ctx.shadowBlur = 0; }
-          if (T > 2.6) { ctx.fillStyle = '#b6ff6b'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200)); ctx.beginPath(); ctx.arc(x - z * .08, y - z * .02, 3, 0, 7); ctx.arc(x + z * .08, y - z * .02, 3, 0, 7); ctx.fill(); }
-        }
-      }
-      ctx.globalAlpha = ease((T - .3) / .5); ctx.textAlign = 'center';
-      ctx.font = `${Math.min(30, W / 18)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = c2;
-      ctx.fillText('10 GARDIENS', W / 2, Math.max(H * .1, Math.min(40, H * .05) + 30));
-    } else if (sc === 3) {
-      // 4. ta fusée fonce vers la galaxie
-      const k = ease(T / 1.4), y = H + 120 - k * (H * (H < 520 ? .7 : .62) + 120);
-      const glow = ctx.createRadialGradient(W / 2, y + 60, 0, W / 2, y + 60, 160); glow.addColorStop(0, 'rgba(255, 180, 80, .35)'); glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
-      ctx.fillStyle = glow; ctx.fillRect(W / 2 - 160, y - 100, 320, 320);
-      drawRocket(ctx, W / 2 + Math.sin(t / 500) * 10, y + Math.sin(t / 300) * 4, Math.min(4, m / 200), cfg, t, Math.sin(t / 700) * .06, 1);
-    } else if (sc === 5) {
-      // la baie 07 du musée : la fusée dort dans la pénombre, puis un voyant s'allume
-      const awake = proScene > 1 && T > .5, fy = H < 520 ? .8 : H > W ? .5 : .62;
-      drawBay(ctx, W, H, t, fy);
-      drawRocket(ctx, W / 2, H * fy - Math.min(4, m / 200) * 30, Math.min(4, m / 200), cfg, t, 0, 0);
-      ctx.fillStyle = '#04020c'; ctx.globalAlpha = awake ? .35 : .7; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
-      if (awake) {
-        const vx = W / 2 + Math.min(4, m / 200) * 26, vy = H * fy - 10, on = (t / 500) % 2 < 1.4;
-        const vg = ctx.createRadialGradient(vx, vy, 0, vx, vy, 26); vg.addColorStop(0, on ? 'rgba(125, 255, 138, .9)' : 'rgba(125, 255, 138, .25)'); vg.addColorStop(1, 'rgba(125, 255, 138, 0)');
-        ctx.fillStyle = vg; ctx.fillRect(vx - 26, vy - 26, 52, 52);
-        ctx.fillStyle = on ? '#b6ffbf' : '#2f6b36'; ctx.beginPath(); ctx.arc(vx, vy, 4, 0, 7); ctx.fill();
-      }
-      ctx.textAlign = 'center'; ctx.globalAlpha = .75; ctx.fillStyle = '#ffd86b';
-      ctx.font = `${Math.min(30, W / 14)}px Bungee, Impact, system-ui, sans-serif`;
-      ctx.fillText('BAIE 07', W / 2, Math.max(H * .12, Math.min(40, H * .05) + 34)); ctx.globalAlpha = 1;
-    } else if (sc >= 10) {
-      drawTransit(sc, T, t, m, c1, c2, chief);
-    } else {
-      // 5. la mission : la galaxie au loin, la fusée prête
-      const z = m * .3, rot = t / 9000, gy = H * .3;
-      ctx.globalCompositeOperation = 'lighter';
-      for (const q of proPts) {
-        const a = q.a + rot, x = W / 2 + Math.cos(a) * q.r * z, yy = gy + Math.sin(a) * q.r * z * .45;
-        ctx.globalAlpha = (1 - q.r * .6) * .8; ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1); ctx.fillRect(x, yy, q.z, q.z);
-      }
-      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-      drawRocket(ctx, W / 2, H * (H < 520 ? .4 : .55) + Math.sin(t / 500) * 6, Math.min(3.2, m / 250), cfg, t, 0, .5);
-      ctx.globalAlpha = ease(T / .6); ctx.textAlign = 'center';
-      ctx.font = `${Math.min(40, W / 12)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 18;
-      ctx.fillText('MISSION', W / 2, Math.max(H * .1, Math.min(40, H * .05) + 34)); ctx.shadowBlur = 0;
-    }
-    // fondu au noir entre deux scènes + bandes cinéma
-    ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; const bar = Math.min(40, H * .05); ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
-    ctx.restore();
-  }
-
-
-  function drawSmoke(x, y, r, a, q) {
-    if (a <= 0) return;
-    ctx.save(); ctx.translate(x, y); ctx.scale(1, 1 + q * 1.6);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    g.addColorStop(0, `rgba(0, 0, 0, ${(.95 * a).toFixed(3)})`); g.addColorStop(.55, `rgba(12, 4, 22, ${(.85 * a).toFixed(3)})`);
-    g.addColorStop(.8, `rgba(110, 50, 170, ${(.35 * a).toFixed(3)})`); g.addColorStop(1, 'rgba(110, 50, 170, 0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
-  }
-  // ===== Images de la transition Monde 1 → Monde 2 (une par scène) =====
-  // le tout se tient dans le haut de l'écran : le texte et les boutons restent en bas, sans rien cacher
-  function drawTransit(sc, T, t, m, c1, c2, chief) {
-    const top = Math.min(40, H * .05), zoneB = Math.min(H < 520 ? H * .62 : H * .56, $('proSub').getBoundingClientRect().top - 12), mid = (top + zoneB) / 2;
-    const rs = Math.min(3, m / 260);
-    const star = (x, y, r, a, glow = 10) => { ctx.globalAlpha = a; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = glow; drawStar(x, y, r, t / 700 + x); ctx.fill(); ctx.shadowBlur = 0; };
-    if (sc === 10) {
-      // 1. Zorg se dissout : fumée noire aspirée vers le haut de l'écran
-      const cy = mid + 20, size = Math.min(m * .34, (zoneB - top) * .55), im = proImg(chief), fade = 1 - ease(T / 1.8);
-      const vort = ctx.createRadialGradient(W / 2, top, 0, W / 2, top, m * .5);
-      vort.addColorStop(0, 'rgba(0, 0, 0, .95)'); vort.addColorStop(.5, 'rgba(60, 20, 90, .35)'); vort.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = vort; ctx.fillRect(0, 0, W, H * .6);
-      if (im.complete && im.naturalWidth && fade > 0) { ctx.globalAlpha = fade; ctx.drawImage(im, W / 2 - size / 2, cy - size / 2 - (1 - fade) * 30, size, size); }
-      const n = reduce ? 30 : 70, power = Math.max(.45, 1 - T / 6), sz = Math.min(1.4, m / 420);
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < n; i++) {
-        const q = proPts[i], p = (q.d + T * .45) % 1, e = p * p;
-        const sx = W / 2 + (q.u - .5) * size * 1.4, sy = cy + (q.v - .5) * size;
-        drawSmoke(sx + (W / 2 + (q.r - .5) * 40 - sx) * e + Math.sin(p * 9 + i) * 12 * (1 - p), sy + (top - 50 - sy) * e, (16 + q.z * 8) * sz, Math.min(1, p * 8) * Math.min(1, (1 - p) * 3) * power, p);
-      }
-    } else if (sc === 11) {
-      // 2. les étoiles du palais flottent autour de la fusée
-      const cx = W / 2, cy = mid + 10, R = Math.min(m * .3, (zoneB - top) * .42);
-      for (let i = 0; i < 26; i++) {
-        const q = proPts[i + 150], a = q.a * 2 + t / (2600 + q.d * 2000) * (i % 2 ? 1 : -1), rr = R * (.55 + q.d * .5);
-        star(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .8 + Math.sin(t / 500 + i) * 5, 2.5 + q.z * 1.5, (.5 + .5 * Math.sin(t / 300 + i * 2)) * Math.min(1, T * 2));
-      }
-      ctx.globalAlpha = 1;
-      drawRocket(ctx, cx, cy + Math.sin(t / 500) * 6, rs, cfg, t, Math.sin(t / 900) * .05, .3);
-    } else if (sc === 12) {
-      // 3. les étoiles montent dans le ciel, puis la Terre : Nina voit la première étoile s'allumer
-      const earthK = ease((T - 2.2) / 1);
-      if (earthK < 1) {
-        ctx.globalAlpha = 1 - earthK;
-        drawRocket(ctx, W / 2, zoneB - 40, rs * .7, cfg, t, 0, .3);
-        for (let i = 0; i < 40; i++) {
-          const q = proPts[i + 200], k = ease((T - q.d * .8) / 1.4);
-          const x = W / 2 + (q.u * W - W / 2) * k, y = zoneB - 60 + (top + 20 + q.v * (zoneB - top) * .5 - (zoneB - 60)) * k;
-          star(x, y, 2 + q.z, (1 - earthK) * Math.min(1, k * 3));
-        }
-      }
-      if (earthK > 0) {
-        ctx.globalAlpha = earthK;
-        // le ciel de la Terre, encore presque noir, et la planète en bas
-        const hy = zoneB - 30, R = Math.max(W, H) * 1.3;
-        const atm = ctx.createRadialGradient(W / 2, hy + R, R * .98, W / 2, hy + R, R * 1.06);
-        atm.addColorStop(0, 'rgba(122, 216, 255, .55)'); atm.addColorStop(1, 'rgba(122, 216, 255, 0)');
-        ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(W / 2, hy + R, R * 1.06, 0, 7); ctx.fill();
-        const eg = ctx.createLinearGradient(0, hy, 0, H); eg.addColorStop(0, '#1d5a8a'); eg.addColorStop(.25, '#123a5e'); eg.addColorStop(1, '#06121f');
-        ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(W / 2, hy + R, R, 0, 7); ctx.fill();
-        // Nina, une petite silhouette debout sur la Terre
-        const nx = W / 2 - Math.min(80, W * .12), ny = hy - 1, s = Math.max(1, m / 420);
-        ctx.fillStyle = '#05070f';
-        ctx.beginPath(); ctx.arc(nx, ny - 27 * s, 6 * s, 0, 7); ctx.fill();
-        for (const sx of [-1, 1]) { ctx.beginPath(); ctx.arc(nx + sx * 6 * s, ny - 30 * s, 3 * s, 0, 7); ctx.fill(); }
-        ctx.beginPath(); ctx.moveTo(nx - 3 * s, ny - 21 * s); ctx.lineTo(nx + 3 * s, ny - 21 * s); ctx.lineTo(nx + 8 * s, ny - 7 * s); ctx.lineTo(nx - 8 * s, ny - 7 * s); ctx.closePath(); ctx.fill();
-        ctx.fillRect(nx - 4 * s, ny - 7 * s, 2.5 * s, 7 * s); ctx.fillRect(nx + 1.5 * s, ny - 7 * s, 2.5 * s, 7 * s);
-        // un bras levé vers le ciel
-        ctx.strokeStyle = '#05070f'; ctx.lineWidth = 2.2 * s; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(nx + 3 * s, ny - 19 * s); ctx.lineTo(nx + 9 * s, ny - 30 * s); ctx.stroke(); ctx.lineCap = 'butt';
-        // la première étoile s'allume au-dessus d'elle
-        const sk = ease((T - 3) / 1.2), sx = nx + Math.min(150, W * .25), sy = top + (hy - top) * .3;
-        if (sk > 0) {
-          const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, 60 * sk);
-          halo.addColorStop(0, 'rgba(255, 246, 216, .7)'); halo.addColorStop(1, 'rgba(255, 216, 107, 0)');
-          ctx.globalAlpha = earthK; ctx.fillStyle = halo; ctx.fillRect(sx - 60, sy - 60, 120, 120);
-          star(sx, sy, 7 * sk + Math.sin(t / 250) * .8, earthK, 22);
-        }
-      }
-    } else if (sc === 13) {
-      // 4. à bord : la fusée parle avec Clac
-      const z = m * .38, gy = mid;
-      ctx.globalCompositeOperation = 'lighter';
-      for (const q of proPts) {
-        const a = q.a + t / 12000, x = W / 2 + Math.cos(a) * q.r * z, y = gy + Math.sin(a) * q.r * z * .45;
-        ctx.globalAlpha = (1 - q.r * .6) * .35; ctx.fillStyle = q.white ? '#ffffff' : c2; ctx.fillRect(x, y, q.z, q.z);
-      }
-      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-      drawRocket(ctx, W / 2, mid + Math.sin(t / 600) * 8, rs, cfg, t, Math.sin(t / 1100) * .08, .4);
-    } else if (sc === 14) {
-      // 5. la carte : 4 étapes reliées jusqu'au Néant
-      const mx = Math.max(16, W * .08), mw = W - mx * 2, my = top + 44, mh = zoneB - my - 10;
-      ctx.globalAlpha = Math.min(1, T * 2);
-      ctx.fillStyle = 'rgba(122, 216, 255, .06)'; ctx.strokeStyle = 'rgba(122, 216, 255, .45)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(mx, my, mw, mh, 16) : ctx.rect(mx, my, mw, mh); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgba(122, 216, 255, .1)'; ctx.lineWidth = 1;
-      for (let x = mx + 24; x < mx + mw; x += 24) { ctx.beginPath(); ctx.moveTo(x, my); ctx.lineTo(x, my + mh); ctx.stroke(); }
-      for (let y = my + 24; y < my + mh; y += 24) { ctx.beginPath(); ctx.moveTo(mx, y); ctx.lineTo(mx + mw, y); ctx.stroke(); }
-      const nodes = [1, 2, 3, 4].map((wi, i) => ({ wi, x: mx + mw * (.14 + i * .24), y: my + mh * (i % 2 ? .38 : .58) }));
-      const p = ease(T / 2.6) * 3, nr = Math.max(15, Math.min(28, mw / 16));
-      // le chemin pointillé qui se trace d'une étape à l'autre
-      ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 7]); ctx.lineDashOffset = -t / 60;
-      ctx.beginPath(); ctx.moveTo(nodes[0].x, nodes[0].y);
-      for (let i = 1; i < 4; i++) { const f = Math.max(0, Math.min(1, p - (i - 1))); if (f <= 0) break; ctx.lineTo(nodes[i - 1].x + (nodes[i].x - nodes[i - 1].x) * f, nodes[i - 1].y + (nodes[i].y - nodes[i - 1].y) * f); }
-      ctx.stroke(); ctx.setLineDash([]);
-      nodes.forEach((nd, i) => {
-        const k = ease((p - i + .3) * 2); if (k <= 0) return;
-        const { x, y } = nd, r = nr * (.6 + .4 * k), col = WORLDS[nd.wi].col[1];
-        ctx.globalAlpha = k;
-        if (i === 3) {
-          // le Néant : un point noir au bout, cerclé de violet
-          const g = ctx.createRadialGradient(x, y, r * .6, x, y, r * 1.8); g.addColorStop(0, 'rgba(200, 107, 255, .55)'); g.addColorStop(1, 'rgba(200, 107, 255, 0)');
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.8 + Math.sin(t / 300) * 3, 0, 7); ctx.fill();
-          ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
-        } else {
-          ctx.fillStyle = '#0b0820'; ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
-          ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; const u = r * .55;
-          if (i === 0) for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * u, y - Math.sin(a) * u); ctx.lineTo(x + Math.cos(a) * u, y + Math.sin(a) * u); ctx.stroke(); }
-          else if (i === 1) { ctx.beginPath(); ctx.moveTo(x - u, y + u * .7); ctx.lineTo(x - u * .25, y - u * .6); ctx.lineTo(x + u * .25, y - u * .6); ctx.lineTo(x + u, y + u * .7); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.arc(x, y - u * .8, u * .28, 0, 7); ctx.fill(); }
-          else { ctx.beginPath(); ctx.ellipse(x, y, u * .5, u, .6, 0, 7); ctx.fill(); ctx.strokeStyle = '#0b0820'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - u * .5, y + u * .7); ctx.lineTo(x + u * .5, y - u * .7); ctx.stroke(); }
-        }
-        ctx.fillStyle = i === 3 ? '#c86bff' : col; ctx.textAlign = 'center';
-        ctx.font = `600 ${Math.max(10, Math.min(14, mw / 34))}px Outfit, system-ui, sans-serif`;
-        ctx.fillText(['GIVRE', 'FORGE', 'JUNGLE', 'NÉANT'][i], x, y + r + 16);
-      });
-    } else if (sc === 15) {
-      // 6. une porte de glace s'ouvre sur le Royaume de Givre
-      const W2 = WORLDS[Math.min(storyWorld + 1, WORLDS.length - 1)], ice = W2.col[1];
-      const dw = Math.min(W * .7, 380), dh = Math.min(zoneB - top - 70, dw * 1.15), dx = W / 2 - dw / 2, dy = top + 50;
-      const o = ease((T - .5) / 1.8);
-      const light = ctx.createRadialGradient(W / 2, dy + dh * .6, 0, W / 2, dy + dh * .6, dw * .7);
-      light.addColorStop(0, '#ffffff'); light.addColorStop(.3, ice); light.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.globalAlpha = .25 + .75 * o; ctx.fillStyle = light; ctx.fillRect(dx - dw * .3, dy - 20, dw * 1.6, dh + 40);
-      ctx.globalAlpha = 1;
-      for (const sd of [-1, 1]) {
-        const pw = dw / 2, px = W / 2 + (sd < 0 ? -pw : 0) + sd * o * pw * .95;
-        ctx.save(); ctx.beginPath(); ctx.rect(dx - 4, dy, dw + 8, dh); ctx.clip();
-        const g = ctx.createLinearGradient(px, dy, px + pw, dy + dh); g.addColorStop(0, '#e6f9ff'); g.addColorStop(.5, '#7ad8ff'); g.addColorStop(1, '#2a6a9e');
-        ctx.fillStyle = g; ctx.fillRect(px, dy, pw, dh);
-        ctx.strokeStyle = 'rgba(255, 255, 255, .55)'; ctx.lineWidth = 1.2;
-        for (let j = 0; j < 6; j++) { ctx.beginPath(); ctx.moveTo(px + pw * (j % 3) / 3, dy + dh * j / 6); ctx.lineTo(px + pw * ((j + 1) % 3) / 3 + 10, dy + dh * (j + 1) / 6); ctx.stroke(); }
-        ctx.restore();
-      }
-      // l'arche de glace autour de la porte
-      ctx.strokeStyle = '#e6f9ff'; ctx.lineWidth = 5; ctx.shadowColor = ice; ctx.shadowBlur = 14;
-      ctx.strokeRect(dx - 4, dy, dw + 8, dh); ctx.shadowBlur = 0;
-      for (let i = 0; i < 9; i++) { const x = dx + dw * i / 8; ctx.fillStyle = '#e6f9ff'; ctx.beginPath(); ctx.moveTo(x - 6, dy); ctx.lineTo(x + 6, dy); ctx.lineTo(x, dy + 12 + (i % 3) * 6); ctx.closePath(); ctx.fill(); }
-      // flocons qui tombent
-      for (let i = 0; i < 40; i++) { const q = proPts[i + 300], y = (q.v * H + t * .03 * (1 + q.d)) % (zoneB + 20); ctx.globalAlpha = .7; ctx.fillStyle = '#ffffff'; ctx.fillRect(q.u * W + Math.sin(t / 700 + i) * 8, y, 2, 2); }
-      ctx.globalAlpha = 1;
-      if (o > .6) drawRocket(ctx, W / 2, dy + dh - 30 - (o - .6) * 40, rs * .55, cfg, t, 0, .8);
-    }
-    // en haut : où l'on est (Voie lactée jusqu'à la porte, Royaume de Givre à la dernière scène)
-    const wi = sc === 15 ? Math.min(storyWorld + 1, WORLDS.length - 1) : storyWorld;
-    ctx.globalAlpha = 1; ctx.textAlign = 'center'; ctx.shadowBlur = 0;
-    ctx.font = `600 ${Math.max(11, Math.min(14, W / 30))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = WORLDS[wi].col[1];
-    ctx.fillText(`MONDE ${wi + 1} · ${WORLDS[wi].name.toUpperCase()}`, W / 2, top + 26);
-  }
-
-  function closeStory() {
+  function proNext() { if (film && proScene < proCount - 1) proGoto(proScene + 1); }
+  function updatePrologue(dt) { proT += dt; }
+  // on revient dans la partie en cours
+  function resumePlay() {
     if (cineReplay) return backToCinema();
-    $('story').hidden = true;
-    if (storyMode === 'prologue') { markPrologue(storyWorld); start(); }
-    else {
-      state = 'play'; last = performance.now();
-      for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
-      if (storyMode === 'world') { enterWorld(world + 1); markPrologue(world); resetForNewWorld(); }
-    }
+    state = 'play'; last = performance.now();
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
   }
+
+  // le prologue d'un monde : depuis le menu (puis on décolle) ou en arrivant dans un nouveau monde
+  function startPrologue(w, end) {
+    playFilm(PROLOGUES[w](`<b>${rocketName()}</b>`), { w, clac: w > 0 && w < WORLDS.length - 1, go: 'Décoller', end: () => {
+      markPrologue(w);
+      if (end) end(); else if (cineReplay) backToCinema(); else start();
+    } });
+  }
+  // la fin d'un monde : la transition, puis le prologue du monde suivant s'il n'a jamais été vu, puis on joue
+  function startTransit() {
+    const w = world;
+    playFilm(TRANSITIONS[w](`<b>${rocketName()}</b>`), { w, next: w + 1, go: 'En route !', note: NOTE, end: () => {
+      if (cineReplay) return backToCinema();
+      const go = () => { enterWorld(w + 1); markPrologue(w + 1); resetForNewWorld(); resumePlay(); };
+      if (prologueSeen(w + 1)) go(); else startPrologue(w + 1, go);
+    } });
+  }
+  // à mi-vie du Dévoreur : Clac revient, puis le combat reprend
+  function startClacFilm() {
+    playFilm(FINALE.clac(), { w: WORLDS.length - 1, go: 'Reprendre le combat', replayGo: false, end: resumePlay });
+  }
+  // le Dévoreur est vaincu : la scène du choix, puis l'écran de choix
+  function startFinale() {
+    playFilm(FINALE.choix(`<b>${rocketName()}</b>`), { w: WORLDS.length - 1, go: 'Choisir', replayGo: false, end: showChoice });
+  }
+  function showChoice() {
+    state = 'choice';
+    document.querySelector('.hud').style.visibility = 'hidden';
+    $('choice').hidden = false;
+    beep(392, .6, 'triangle', .08);
+  }
+  function chooseEnd(fin) {
+    if (state !== 'choice') return;
+    $('choice').hidden = true;
+    // en relecture, on peut regarder les deux fins sans changer la sauvegarde
+    if (!cineReplay) { finChoice = fin; try { localStorage.setItem('comete-fin', fin); } catch (e) {} }
+    const n = `<b>${rocketName()}</b>`;
+    playFilm(FINALE[fin](n), { w: WORLDS.length - 1, go: 'Suivant ›', replayGo: false, end: () => {
+      playFilm(FINALE.epilogue(n, fin), { w: WORLDS.length - 1, go: 'Continuer à jouer', end: resumePlay });
+    } });
+  }
+
   // ===== Page Cinématiques : on revoit celles des mondes terminés =====
   // le prologue d'un monde se débloque quand le monde est ouvert, sa fin quand son dernier boss est battu
   let cineReplay = false, replayWorld = 0;
@@ -4090,12 +3877,12 @@ body:not(.jeu) .hud { opacity: 0; }
     $('cinemaList').innerHTML = WORLDS.map((w, i) => {
       const open = i < worldsOpen || prologueSeen(i), done = beaten.includes(w.bosses[9].id);
       if (done) ends++;
-      const fin = i === last ? 'Épilogue' : 'Fin du monde';
+      const fin = i === last ? 'Le choix et la fin' : 'Fin du monde';
       return `<div class="cinerow${open ? '' : ' locked'}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
         + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}</small><b>${open ? w.name : '???'}</b></div>`
         + `<div class="cinebtns"><button class="ghost" type="button" data-c="pro" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} Prologue</button>`
         + `<button class="play" type="button" data-c="fin" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button></div>`
-        + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'l\'épilogue' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
+        + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'le choix et la fin' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
         + '</div>';
     }).join('');
     $('cinemaCount').textContent = `${ends} cinématique${ends > 1 ? 's' : ''} de fin débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}. Termine un monde pour débloquer la sienne.`;
@@ -4105,169 +3892,684 @@ body:not(.jeu) .hud { opacity: 0; }
   function playCinema(kind, w) {
     cineReplay = true; replayWorld = world; $('cinema').hidden = true;
     if (kind === 'pro') { startPrologue(w); return; }
-    world = w; startOutro(w === WORLDS.length - 1 ? 'ending' : 'world');
+    world = w;
+    if (w === WORLDS.length - 1) startFinale(); else startTransit();
   }
   function backToCinema() {
-    cineReplay = false; proKind = 'prologue'; world = replayWorld;
-    for (const id of ['proCine', 'story']) $(id).hidden = true;
+    cineReplay = false; film = null; world = replayWorld;
+    for (const id of ['proCine', 'story', 'choice']) $(id).hidden = true;
     document.querySelector('.hud').style.visibility = '';
     openCinema();
   }
 
-  // ===== Cinématique de fin de monde =====
-  // 1. Mission accomplie : les étoiles volées reviennent dans le ciel
-  // 2. Saut dans l'hyperespace
-  // 3. Une nouvelle galaxie, déjà envahie par les méchants
-  let outroT = 0, outroNext = 'world', outroDur = 11, outroStars = [], outroFleet = [], outroGalaxy = [], outroSfx = 0;
-  function startOutro(next) {
-    state = 'outro'; outroT = 0; outroNext = next; outroSfx = 0;
-    document.querySelector('.hud').style.visibility = 'hidden';
-    outroDur = next === 'world' ? 11 : 5.5;
-    mouseFire = btnFire = false;
-    for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
-    $('banner').classList.remove('show');
-    const R = Math.random;
-    outroStars = Array.from({ length: reduce ? 30 : 70 }, () => ({ tx: R() * W, ty: R() * H * .85, d: R() * 1.4, z: 2 + R() * 4, tw: R() * 7 }));
-    outroFleet = Array.from({ length: 16 }, (_, i) => {
-      const side = i % 4, k = R();
-      const from = side === 0 ? [-60, k * H] : side === 1 ? [W + 60, k * H] : side === 2 ? [k * W, -60] : [k * W * .3 + (i % 2 ? W * .7 : 0), H + 60];
-      return { fx: from[0], fy: from[1], d: R() * 1.8, z: .7 + R() * .7, mother: i < 2 };
-    });
-    outroGalaxy = Array.from({ length: reduce ? 250 : 520 }, () => {
-      const arm = Math.floor(R() * 3), rr = Math.pow(R(), .7);
-      return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .5, r: rr, z: R() < .1 ? 2.5 : 1.3, white: R() < .3 };
-    });
-    beep(523, .15, 'triangle', .12); setTimeout(() => beep(659, .15, 'triangle', .12), 150);
-    setTimeout(() => beep(784, .15, 'triangle', .12), 300); setTimeout(() => beep(1046, .6, 'triangle', .14), 450);
-  }
-  function finishOutro() {
-    if (state !== 'outro') return;
-    document.querySelector('.hud').style.visibility = '';
-    if (outroNext === 'world' && hasScenes(world + 1)) startTransit(); else showStory(outroNext);
-  }
-  function updateOutro(dt) {
-    outroT += dt;
-    if (outroNext === 'world') {
-      if (outroSfx === 0 && outroT > 3.8) { outroSfx = 1; beep(90, 2.4, 'sawtooth', .12, 1400); beep(180, 2.4, 'sine', .08, 1800); }
-      if (outroSfx === 1 && outroT > 6.3) { outroSfx = 2; beep(60, 1, 'sawtooth', .2, -30); }
-      // sirène d'alerte dans la nouvelle galaxie
-      if (outroSfx >= 2 && outroT > 7 && outroT < 10.5 && Math.floor((outroT - 7) / .5) > outroSfx - 2) { outroSfx++; beep(outroSfx % 2 ? 660 : 440, .3, 'square', .06); }
-    }
-    if (outroT >= outroDur) finishOutro();
-  }
-  // le nom du capitaine : son nom de joueur, sinon le nom de sa fusée
-  const captain = () => (typeof joueur !== 'undefined' && joueur ? joueur.name : cfg.name) || DEFAULT.name;
-  const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
-  function outroText(txt, y, size, col, alpha, glow) {
-    ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-    ctx.font = `${size}px Bungee, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // le texte rétrécit s'il est trop large pour l'écran
-    const w = ctx.measureText(txt).width;
-    if (w > W - 32) ctx.font = `${size * (W - 32) / w}px Bungee, Impact, sans-serif`;
-    if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 24; }
-    ctx.fillStyle = col; ctx.fillText(txt, W / 2, y);
+  // ===== Les images des cinématiques : une mise en scène par plan =====
+  // tout se dessine dans le haut de l'écran : le texte et les boutons restent en bas, sans rien cacher
+  function drawPrologue(t) {
+    if (!film) return;
+    const sc = film.scenes[proScene], T = proT, m = Math.min(W, H);
+    const top = Math.min(40, H * .05), sub = $('proSub').getBoundingClientRect().top;
+    const zb = Math.max(top + 140, Math.min(H < 520 ? H * .66 : H * .6, sub - 12));
+    const Z = { T, t, m, top, zb, mid: (top + zb) / 2, h: zb - top, w: film.w, wd: WORLDS[film.w], clac: sc.clac ?? film.clac, last: proScene === proCount - 1 };
+    ctx.save();
+    const draw = PLANS[sc.p] || PLANS.decor;
+    draw(sc.v, Z);
+    ctx.restore();
+    // sous l'image, un fond sombre pour que le texte et les boutons se lisent toujours
+    const sh = ctx.createLinearGradient(0, zb - 20, 0, Math.min(H, zb + 120)); sh.addColorStop(0, 'rgba(4, 2, 12, 0)'); sh.addColorStop(1, 'rgba(4, 2, 12, .75)');
+    ctx.fillStyle = sh; ctx.fillRect(0, zb - 20, W, H - zb + 20);
+    ctx.save();
+    // en haut : où l'on est
+    const title = typeof sc.at === 'string' ? sc.at.toUpperCase() : (() => { const wi = Z.last && film.next != null ? film.next : sc.at ?? film.w; return `MONDE ${wi + 1} · ${WORLDS[wi].name.toUpperCase()}`; })();
+    const tcol = sc.p === 'flashback' ? '#e8c890' : typeof sc.at === 'string' ? '#ffd86b' : WORLDS[Z.last && film.next != null ? film.next : sc.at ?? film.w].col[1];
+    // fondu au noir entre deux scènes + bandes cinéma
+    ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, top); ctx.fillRect(0, H - top, W, top);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.font = `600 ${Math.max(11, Math.min(14, W / 30))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = tcol;
+    ctx.fillText(title, W / 2, top + 26);
     ctx.restore();
   }
-  function drawOutro(t) {
-    const T = outroT, W0 = WORLDS[world], next = WORLDS[Math.min(world + 1, WORLDS.length - 1)];
-    const big = Math.min(54, W / 11);
-    ctx.save();
-    // --- 1. Mission accomplie ---
-    if (T < 3.8 || outroNext !== 'world') {
-      const g = ctx.createRadialGradient(W / 2, H * .62, 10, W / 2, H * .5, Math.max(W, H));
-      g.addColorStop(0, W0.col[0]); g.addColorStop(1, '#05030f');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      const rx = W / 2, ry = H * .66 + Math.sin(T * 2) * 6;
-      // les étoiles libérées montent depuis la fusée et rallument le ciel
-      for (const st of outroStars) {
-        const q = ease((T - .3 - st.d) / 1.2);
-        if (q <= 0) continue;
-        const x = rx + (st.tx - rx) * q, y = ry + (st.ty - ry) * q;
-        const tw = q >= 1 ? .6 + Math.sin(t / 200 + st.tw) * .4 : 1;
-        ctx.globalAlpha = tw; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 12;
-        drawStar(x, y, st.z * (q < 1 ? 1.4 : 1), t / 600 + st.tw); ctx.fill();
-      }
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
-      // anneau de lumière au début
-      if (T < 1.2) { ctx.strokeStyle = `rgba(255, 216, 107, ${1 - T / 1.2})`; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(rx, ry, T * Math.max(W, H) * .7, 0, 7); ctx.stroke(); }
-      drawRocket(ctx, rx, ry, 1.8, cfg, t, Math.sin(T * 1.5) * .08, .5);
-      const k = ease((T - .4) / .6);
-      outroText('FÉLICITATIONS', H * .2, big * (1.4 - .4 * k), '#ffd86b', k, '#ffb020');
-      outroText(`Capitaine ${captain()} !`, H * .2 + big * .95, Math.max(18, big * .55), '#ffffff', ease((T - .8) / .6), '#ffd86b');
-      outroText(outroNext === 'world' ? `Tu as libéré : ${W0.name}` : 'Les 5 mondes sont libérés !', H * .2 + big * 1.65, Math.max(14, big * .36), '#d9d0ff', ease((T - 1.4) / .6));
-      outroText('10 gardiens vaincus · toutes les étoiles rendues', H * .2 + big * 2.15, Math.max(12, big * .26), '#d9d0ff', ease((T - 1.9) / .6));
-      if (outroNext === 'world') outroText('Nouveau départ : ton vaisseau repart de zéro', H * .9, Math.max(12, big * .28), '#7ad8ff', ease((T - 2.3) / .5));
-      // fondu vers l'hyperespace
-      if (outroNext === 'world' && T > 3.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(T - 3.3) / .5})`; ctx.fillRect(0, 0, W, H); }
+
+  // --- petits outils de dessin ---
+  function sky(c1, c2 = '#04020c', y = .42) {
+    const bg = ctx.createRadialGradient(W / 2, H * y, 10, W / 2, H * y, Math.max(W, H) * .8);
+    bg.addColorStop(0, c1); bg.addColorStop(1, c2); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  }
+  function starfield(Z, col = '#ffffff', speed = .05, n = 120, alpha = 1) {
+    for (let i = 0; i < n; i++) {
+      const q = proPts[i], y = ((q.v + (Z.t / 1000) * speed * (.3 + q.d)) % 1) * H;
+      ctx.globalAlpha = (.3 + q.d * .5) * alpha; ctx.fillStyle = q.white ? '#ffffff' : col;
+      if (speed > .5) ctx.fillRect(q.u * W, y, 1.5, 6 + q.d * 18); else ctx.fillRect(q.u * W, y, 1.5, 1.5);
     }
-    // --- 2. Saut dans l'hyperespace ---
-    else if (T < 6.3) {
-      const q = (T - 3.8) / 2.5;
-      ctx.fillStyle = '#05030f'; ctx.fillRect(0, 0, W, H);
-      const cx = W / 2, cy = H * .45;
-      ctx.lineCap = 'round';
-      for (let i = 0; i < (reduce ? 50 : 140); i++) {
-        const a = seeded(i) * Math.PI * 2, sp = seeded(i + 500);
-        const d = ((sp + T * (0.4 + q * 2.2)) % 1), r0 = d * Math.max(W, H) * .8, len = 6 + q * q * 160 * d;
-        ctx.strokeStyle = i % 5 ? `rgba(220, 230, 255, ${.3 + d * .7})` : next.col[1];
-        ctx.lineWidth = .8 + d * 2;
-        ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * (r0 + len), cy + Math.sin(a) * (r0 + len)); ctx.stroke();
-      }
-      ctx.lineCap = 'butt';
-      // la fusée file au loin, vers le centre
-      const z = 1.6 * (1 - ease(q) * .85);
-      drawRocket(ctx, cx, cy + (H * .25) * (1 - ease(q)), z, cfg, t, 0, 1.6);
-      outroText('SAUT HYPERESPACE', H * .85, Math.max(14, big * .35), '#7ad8ff', Math.min(1, q * 3) * (1 - Math.max(0, q - .8) * 5), '#7ad8ff');
-      // éclair blanc à l'arrivée
-      if (q > .85) { ctx.fillStyle = `rgba(255, 255, 255, ${(q - .85) / .15})`; ctx.fillRect(0, 0, W, H); }
+    ctx.globalAlpha = 1;
+  }
+  function galaxy(cx, cy, z, c1, c2, a = 1, rot = 0) {
+    ctx.globalCompositeOperation = 'lighter';
+    for (const q of proPts) {
+      const an = q.a + rot, x = cx + Math.cos(an) * q.r * z, y = cy + Math.sin(an) * q.r * z * .45;
+      ctx.globalAlpha = (1 - q.r * .6) * a; ctx.fillStyle = q.white ? '#ffffff' : (q.d < .5 ? c2 : c1); ctx.fillRect(x, y, q.z, q.z);
     }
-    // --- 3. Nouvelle galaxie envahie ---
-    else {
-      const q = T - 6.3;
-      const g = ctx.createRadialGradient(W / 2, H * .45, 10, W / 2, H * .45, Math.max(W, H) * .8);
-      g.addColorStop(0, next.col[0]); g.addColorStop(1, '#05030f');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      // galaxie en spirale aux couleurs du nouveau monde
-      const gx = W / 2, gy = H * .45, GR = Math.min(W, H) * .42, rot = t / 9000;
-      const core = ctx.createRadialGradient(gx, gy, 0, gx, gy, GR * .35);
-      core.addColorStop(0, '#ffffff'); core.addColorStop(.3, next.col[1]); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = core; ctx.beginPath(); ctx.arc(gx, gy, GR * .35, 0, 7); ctx.fill();
-      for (const pt of outroGalaxy) {
-        const a = pt.a + rot, x = gx + Math.cos(a) * pt.r * GR, y = gy + Math.sin(a) * pt.r * GR * .55;
-        ctx.globalAlpha = .4 + (1 - pt.r) * .6; ctx.fillStyle = pt.white ? '#ffffff' : next.col[1];
-        ctx.fillRect(x, y, pt.z, pt.z);
+    const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, z * .5);
+    core.addColorStop(0, 'rgba(255, 255, 255, .9)'); core.addColorStop(.18, c2 + 'aa'); core.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.globalAlpha = .7 * a; ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(cx, cy, z * .38, z * .18, 0, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  }
+  function star(x, y, r, a, t, glow = 10, col = '#ffd86b') { ctx.globalAlpha = Math.max(0, Math.min(1, a)); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = glow; drawStar(x, y, r, t / 700 + x); ctx.fill(); ctx.shadowBlur = 0; ctx.globalAlpha = 1; }
+  function label(txt, y, size, col) { ctx.textAlign = 'center'; ctx.font = `${size}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 16; ctx.fillText(txt, W / 2, y); ctx.shadowBlur = 0; }
+  function portrait(d, cx, cy, size, a = 1) { const im = proImg(d); if (im.complete && im.naturalWidth) { ctx.globalAlpha = a; ctx.drawImage(im, cx - size / 2, cy - size / 2, size, size); ctx.globalAlpha = 1; } }
+  function halo(cx, cy, r, col, a = 1) { const g = ctx.createRadialGradient(cx, cy, r * .1, cx, cy, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.globalAlpha = a; ctx.fillStyle = g; ctx.fillRect(cx - r, cy - r, r * 2, r * 2); ctx.globalAlpha = 1; }
+  function earth(k, x, y, r) {
+    const g = k.createRadialGradient(x - r * .3, y - r * .3, r * .1, x, y, r); g.addColorStop(0, '#5fb8ff'); g.addColorStop(1, '#123a6e');
+    k.fillStyle = g; k.beginPath(); k.arc(x, y, r, 0, 7); k.fill();
+    k.fillStyle = '#3fae5a'; for (const [dx, dy, s] of [[-.3, -.2, .35], [.25, .15, .3], [-.05, .45, .2]]) { k.beginPath(); k.ellipse(x + dx * r, y + dy * r, s * r, s * r * .6, .5, 0, 7); k.fill(); }
+    k.strokeStyle = 'rgba(160, 220, 255, .6)'; k.lineWidth = Math.max(1, r * .08); k.beginPath(); k.arc(x, y, r * 1.04, 0, 7); k.stroke();
+  }
+  // Elio, le premier Porteur de lumière : un vaisseau effilé, différent de la fusée du joueur
+  function drawElio(k, x, y, s, t = 0, old = 0) {
+    k.save(); k.translate(x, y); k.scale(s, s);
+    const hull = old ? '#8a8172' : '#fff2c8', edge = old ? '#4a4338' : '#ffd86b';
+    if (!old) { const g = k.createRadialGradient(0, 0, 2, 0, 0, 40); g.addColorStop(0, 'rgba(255, 236, 170, .7)'); g.addColorStop(1, 'rgba(255, 236, 170, 0)'); k.fillStyle = g; k.beginPath(); k.arc(0, 0, 40, 0, 7); k.fill(); }
+    k.fillStyle = edge; k.beginPath(); k.moveTo(-22, 10); k.lineTo(-6, -2); k.lineTo(-6, 12); k.closePath(); k.fill(); k.beginPath(); k.moveTo(22, 10); k.lineTo(6, -2); k.lineTo(6, 12); k.closePath(); k.fill();
+    k.fillStyle = hull; k.beginPath(); k.moveTo(0, -26); k.quadraticCurveTo(10, -6, 7, 16); k.lineTo(-7, 16); k.quadraticCurveTo(-10, -6, 0, -26); k.fill();
+    k.fillStyle = old ? '#3a342c' : '#ffb020'; k.beginPath(); k.arc(0, -4, 4, 0, 7); k.fill();
+    if (old) { k.strokeStyle = '#2a241c'; k.lineWidth = 1.2; k.beginPath(); k.moveTo(-4, -14); k.lineTo(1, -8); k.lineTo(-2, 0); k.moveTo(3, 4); k.lineTo(6, 10); k.stroke(); }
+    else { k.fillStyle = 'rgba(255, 216, 107, .8)'; k.beginPath(); k.moveTo(-4, 16); k.lineTo(0, 24 + Math.sin(t / 90) * 3); k.lineTo(4, 16); k.fill(); }
+    k.restore();
+  }
+  // une masse noire avec deux yeux : le Dévoreur caché dans l'ombre
+  function shadowEyes(k, x, y, r, col, open = 1) {
+    const g = k.createRadialGradient(x, y, r * .2, x, y, r * 1.6); g.addColorStop(0, 'rgba(0, 0, 0, 1)'); g.addColorStop(.6, 'rgba(30, 6, 40, .9)'); g.addColorStop(1, 'rgba(60, 10, 70, 0)');
+    k.fillStyle = g; k.beginPath(); k.arc(x, y, r * 1.6, 0, 7); k.fill();
+    if (open <= 0) return;
+    k.fillStyle = col; k.shadowColor = col; k.shadowBlur = r * .5;
+    for (const sx of [-1, 1]) { k.beginPath(); k.ellipse(x + sx * r * .38, y - r * .05, r * .2, r * .09 * open + .5, sx * -.25, 0, 7); k.fill(); }
+    k.shadowBlur = 0;
+  }
+  // un enfant en silhouette, avec sa lampe torche (Nina : deux couettes, Malo : cheveux en pics, Inès : cheveux longs)
+  function kid(x, y, s, who, beam = 0, t = 0) {
+    if (beam) {
+      const a = -Math.PI / 2 + beam, len = 220 * s, hx = x + 9 * s, hy = y - 22 * s;
+      const g = ctx.createLinearGradient(hx, hy, hx + Math.cos(a) * len, hy + Math.sin(a) * len); g.addColorStop(0, 'rgba(255, 240, 190, .45)'); g.addColorStop(1, 'rgba(255, 240, 190, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(a - .22) * len, hy + Math.sin(a - .22) * len); ctx.lineTo(hx + Math.cos(a + .22) * len, hy + Math.sin(a + .22) * len); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#05070f';
+    const hy = y - 33 * s + Math.sin(t / 300 + x) * s;
+    if (who === 'Inès') { ctx.beginPath(); ctx.ellipse(x, hy + 6 * s, 8 * s, 11 * s, 0, 0, 7); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(x, hy, 6.5 * s, 0, 7); ctx.fill();
+    if (who === 'Nina') for (const sx of [-1, 1]) { ctx.beginPath(); ctx.arc(x + sx * 7 * s, hy - 3 * s, 3.2 * s, 0, 7); ctx.fill(); }
+    if (who === 'Malo') for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 2.6 * s - 2 * s, hy - 4 * s); ctx.lineTo(x + i * 2.6 * s, hy - 10 * s); ctx.lineTo(x + i * 2.6 * s + 2 * s, hy - 4 * s); ctx.fill(); }
+    ctx.beginPath(); ctx.moveTo(x - 4 * s, y - 26 * s); ctx.lineTo(x + 4 * s, y - 26 * s); ctx.lineTo(x + 8 * s, y - 9 * s); ctx.lineTo(x - 8 * s, y - 9 * s); ctx.closePath(); ctx.fill();
+    ctx.fillRect(x - 5 * s, y - 9 * s, 3 * s, 9 * s); ctx.fillRect(x + 2 * s, y - 9 * s, 3 * s, 9 * s);
+    if (beam) { ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(x + 9 * s, y - 22 * s, 2 * s, 0, 7); ctx.fill(); }
+  }
+  // grésillement d'écran
+  function noise(x, y, w, h, a, t) {
+    for (let i = 0; i < (reduce ? 40 : 140); i++) { const q = seeded(i + Math.floor(t / 70) * 7); ctx.globalAlpha = a * (.2 + seeded(i * 3 + Math.floor(t / 90)) * .6); ctx.fillStyle = q > .5 ? '#d9d0ff' : '#5a5080'; ctx.fillRect(x + seeded(i * 5 + Math.floor(t / 60)) * w, y + q * h, 2 + seeded(i) * 18, 1.5); }
+    ctx.globalAlpha = a * .15; ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y + ((t / 8) % h), w, 3); ctx.globalAlpha = 1;
+  }
+  function rrect(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+  // fumée noire (la marque du Dévoreur)
+  function drawSmoke(x, y, r, a, q) {
+    if (a <= 0) return;
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, 1 + q * 1.6);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    g.addColorStop(0, `rgba(0, 0, 0, ${(.95 * a).toFixed(3)})`); g.addColorStop(.55, `rgba(12, 4, 22, ${(.85 * a).toFixed(3)})`);
+    g.addColorStop(.8, `rgba(110, 50, 170, ${(.35 * a).toFixed(3)})`); g.addColorStop(1, 'rgba(110, 50, 170, 0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
+  }
+  const rocketSize = Z => Math.min(3, Z.m / 260, Z.h / 110);
+
+  const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
+  const PLANS = {
+    // Décor : grande image du lieu
+    decor(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z, [c1, c2] = wd.col, rs = rocketSize(Z);
+      if (v === 'terre') {
+        // la Terre la nuit, sous un ciel presque noir où des étoiles s'éteignent
+        sky('#0a0c24', '#020208', .3);
+        for (let i = 0; i < 60; i++) { const q = proPts[i], off = ease((T - q.d * 3) / .8); star(q.u * W, top + q.v * h * .6, 1.2 + q.z * .4, (1 - off) * .8, t, 4, '#ffffff'); }
+        const R = Math.max(W, H) * 1.2, hy = zb - h * .12;
+        const atm = ctx.createRadialGradient(W / 2, hy + R, R * .98, W / 2, hy + R, R * 1.05); atm.addColorStop(0, 'rgba(122, 216, 255, .5)'); atm.addColorStop(1, 'rgba(122, 216, 255, 0)');
+        ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(W / 2, hy + R, R * 1.05, 0, 7); ctx.fill();
+        ctx.fillStyle = '#0d2440'; ctx.beginPath(); ctx.arc(W / 2, hy + R, R, 0, 7); ctx.fill();
+        for (let i = 0; i < 40; i++) { const q = proPts[i + 100]; ctx.globalAlpha = .5 + .5 * Math.sin(t / 400 + i); ctx.fillStyle = '#ffd86b'; ctx.fillRect(q.u * W, hy + 6 + q.v * (H - hy) * .4, 2, 2); }
+        ctx.globalAlpha = 1;
+      } else if (v === 'glace' || v === 'fonte') {
+        // des étoiles prisonnières de blocs de glace (qui fondent et s'envolent)
+        sky(c1, '#020a14'); starfield(Z, c2);
+        const melt = v === 'fonte' ? ease((T - .4) / 4) : 0, n = W > 700 ? 7 : 5, cw = Math.min(W / (n + 1), h * .3);
+        for (let i = 0; i < n * 2; i++) {
+          const row = Math.floor(i / n), col = i % n, x = W / 2 + (col - (n - 1) / 2) * cw * 1.15 + (row ? cw * .5 : 0), y = mid - cw * .2 + row * cw * .95 - (row ? 0 : cw * .4);
+          if (x < -cw || x > W + cw) continue;
+          ctx.globalAlpha = .75 * (1 - melt); ctx.fillStyle = 'rgba(190, 240, 255, .35)'; ctx.strokeStyle = '#e6f9ff'; ctx.lineWidth = 2;
+          rrect(x - cw / 2, y - cw / 2 + melt * cw * .4, cw, cw * (1 - melt * .5), 6); ctx.fill(); ctx.stroke();
+          ctx.globalAlpha = 1;
+          star(x, y - melt * (y - top) * ease((T - .8 - i * .08) / 1.5), cw * .16, .5 + melt * .5 + .2 * Math.sin(t / 300 + i), t, 10 + melt * 10, melt > .2 ? '#ffd86b' : '#cfefff');
+        }
+        if (melt) for (let i = 0; i < 30; i++) { const q = proPts[i + 250], y = (q.v * h + t * .05 * (1 + q.d)) % h; ctx.globalAlpha = .5; ctx.fillStyle = '#9fe8ff'; ctx.fillRect(q.u * W, top + y, 2, 5); }
+        ctx.globalAlpha = 1;
+      } else if (v === 'porte') {
+        // une porte de glace s'ouvre sur le Royaume de Givre
+        sky(WORLDS[1].col[0]); starfield(Z, '#9fe8ff');
+        const ice = WORLDS[1].col[1], dw = Math.min(W * .62, 360, h * .8), dh = Math.min(h - 50, dw * 1.15), dx = W / 2 - dw / 2, dy = top + 40;
+        const o = ease((T - .5) / 1.8);
+        halo(W / 2, dy + dh * .6, dw * .8, '#ffffff', .25 + .75 * o);
+        for (const sd of [-1, 1]) {
+          const pw = dw / 2, px = W / 2 + (sd < 0 ? -pw : 0) + sd * o * pw * .95;
+          ctx.save(); ctx.beginPath(); ctx.rect(dx - 4, dy, dw + 8, dh); ctx.clip();
+          const g = ctx.createLinearGradient(px, dy, px + pw, dy + dh); g.addColorStop(0, '#e6f9ff'); g.addColorStop(.5, '#7ad8ff'); g.addColorStop(1, '#2a6a9e');
+          ctx.fillStyle = g; ctx.fillRect(px, dy, pw, dh); ctx.restore();
+        }
+        ctx.strokeStyle = '#e6f9ff'; ctx.lineWidth = 5; ctx.shadowColor = ice; ctx.shadowBlur = 14; ctx.strokeRect(dx - 4, dy, dw + 8, dh); ctx.shadowBlur = 0;
+        for (let i = 0; i < 9; i++) { const x = dx + dw * i / 8; ctx.fillStyle = '#e6f9ff'; ctx.beginPath(); ctx.moveTo(x - 6, dy); ctx.lineTo(x + 6, dy); ctx.lineTo(x, dy + 12 + (i % 3) * 6); ctx.closePath(); ctx.fill(); }
+        if (o > .6) drawRocket(ctx, W / 2, dy + dh - 30 - (o - .6) * 40, rs * .55, cfg, t, 0, .8);
+      } else if (v === 'lave') {
+        // une planète en fusion sous un ciel rouge
+        sky('#5a0e04', '#140202', .2);
+        for (let i = 0; i < 50; i++) { const q = proPts[i], y = zb - ((q.v * h + t * .04 * (1 + q.d)) % h); ctx.globalAlpha = .7; ctx.fillStyle = q.d < .5 ? '#ffb020' : '#ff4f1a'; ctx.fillRect(q.u * W, y, 2, 2); }
+        const R = Math.min(W * .45, h * .55), py = zb + R * .35;
+        halo(W / 2, py, R * 1.5, 'rgba(255, 120, 30, .5)');
+        const g = ctx.createRadialGradient(W / 2 - R * .3, py - R * .4, R * .1, W / 2, py, R); g.addColorStop(0, '#ffcf5a'); g.addColorStop(.4, '#ff6a1a'); g.addColorStop(1, '#5a1004');
+        ctx.globalAlpha = 1; ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W / 2, py, R, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(40, 6, 0, .6)'; ctx.lineWidth = 3;
+        for (let i = 0; i < 6; i++) { const a = -Math.PI + i * .5 + .3; ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * R * .2, py + Math.sin(a) * R * .2); ctx.lineTo(W / 2 + Math.cos(a + .2) * R * .95, py + Math.sin(a + .2) * R * .95); ctx.stroke(); }
+      } else if (v === 'jungle' || v === 'fane') {
+        // une jungle géante entre deux galaxies (qui se fane)
+        const dead = v === 'fane' ? ease((T - .3) / 2.5) : 0;
+        sky(dead ? '#2a2410' : c1, '#020a04'); starfield(Z, c2);
+        const col = (a, b) => `rgb(${Math.round(a[0] + (b[0] - a[0]) * dead)}, ${Math.round(a[1] + (b[1] - a[1]) * dead)}, ${Math.round(a[2] + (b[2] - a[2]) * dead)})`;
+        for (let i = 0; i < 9; i++) {
+          const q = proPts[i + 40], x0 = (i + .5) / 9 * W, sway = Math.sin(t / 900 + i) * 14 * (1 - dead);
+          ctx.strokeStyle = col([30, 140, 60], [110, 80, 40]); ctx.lineWidth = 8 + q.d * 10; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(x0, zb + 20); ctx.bezierCurveTo(x0 + 60 * (q.u - .5) + sway, mid, x0 - 50 * (q.v - .5), top + h * .3, x0 + sway * 2, top + h * (.05 + q.d * .2) + dead * h * .3); ctx.stroke();
+          ctx.fillStyle = col([60, 200, 90], [140, 100, 40]);
+          for (let j = 0; j < 3; j++) { const ly = top + h * (.25 + j * .22) + dead * j * 10; ctx.beginPath(); ctx.ellipse(x0 + (j % 2 ? 14 : -14) + sway * .5, ly, 12, 5, j % 2 ? .6 : -.6, 0, 7); ctx.fill(); }
+        }
+        ctx.lineCap = 'butt';
+        // une planète prise dans les lianes
+        earth(ctx, W * .72, top + h * .3, Math.min(30, h * .1));
+      } else if (v === 'noir') {
+        // le noir total : seuls les phares de la fusée éclairent devant elle
+        ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+        const ry = zb - h * .22, k = ease(T / 1.5);
+        const g = ctx.createLinearGradient(0, ry, 0, top); g.addColorStop(0, `rgba(255, 246, 216, ${.35 * k})`); g.addColorStop(1, 'rgba(255, 246, 216, 0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(W / 2 - 6, ry - 20); ctx.lineTo(W / 2 - W * .3, top); ctx.lineTo(W / 2 + W * .3, top); ctx.lineTo(W / 2 + 6, ry - 20); ctx.closePath(); ctx.fill();
+        drawRocket(ctx, W / 2, ry, rs * .8, cfg, t, 0, .4);
+      } else if (v === 'epave') {
+        // il ne reste qu'un vieux vaisseau abîmé
+        ctx.fillStyle = '#05030c'; ctx.fillRect(0, 0, W, H); starfield(Z, '#c86bff', .02, 60, .5);
+        for (let i = 0; i < 20; i++) { const q = proPts[i + 300], d = ease((T + q.d) / 3) * Math.max(W, H) * .5, a = q.a * 3; star(W / 2 + Math.cos(a) * d, mid + Math.sin(a) * d, 2 + q.z, .8 - ease(T / 4) * .5, t, 8); }
+        drawElio(ctx, W / 2 + Math.sin(t / 900) * 3, mid + Math.sin(t / 700) * 4, Math.min(2.2, h / 90), t, 1);
+      } else if (v === 'rayon' || v === 'etoile') {
+        // fin A : la fusée offre sa lumière, Elio redevient une étoile
+        ctx.fillStyle = '#05030c'; ctx.fillRect(0, 0, W, H); starfield(Z, '#c86bff', .02, 60, .5);
+        const ex = W / 2, ey = top + h * .32, glow = v === 'etoile' ? ease(T / 2.5) : 0;
+        if (v === 'rayon') {
+          const ry = zb - h * .18, k = ease((T - .5) / 1.5);
+          const g = ctx.createLinearGradient(0, ry, 0, ey); g.addColorStop(0, 'rgba(255, 236, 170, .7)'); g.addColorStop(1, 'rgba(255, 236, 170, .15)');
+          ctx.globalAlpha = k; ctx.fillStyle = g; ctx.fillRect(ex - 6 - Math.sin(t / 200) * 2, ey, 12 + Math.sin(t / 200) * 4, (ry - ey) * k); ctx.globalAlpha = 1;
+          drawRocket(ctx, ex, ry, rocketSize(Z) * .7, cfg, t, 0, .2);
+          drawElio(ctx, ex, ey, Math.min(1.6, h / 120), t, 1);
+          halo(ex, ey, 60 * k, 'rgba(255, 236, 170, .6)');
+        } else {
+          drawElio(ctx, ex, mid, Math.min(1.8, h / 110), t, 1 - glow);
+          halo(ex, mid, 40 + glow * Math.min(W, h) * .45, 'rgba(255, 236, 170, .85)', glow);
+          star(ex, mid, 8 + glow * 18 + Math.sin(t / 250), glow, t, 30, '#fff2c8');
+        }
+      } else if (v === 'vide') {
+        // fin B : le Néant silencieux ; la fusée regarde l'endroit vide
+        ctx.fillStyle = '#030208'; ctx.fillRect(0, 0, W, H); starfield(Z, '#ffd86b', .01, 120, .8);
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(W * .62, top + h * .3, Math.min(60, h * .2), 0, 7); ctx.fill();
+        drawRocket(ctx, W * .35, zb - h * .2, rocketSize(Z) * .6, cfg, t, .5, 0);
+      } else if (v === 'cielA' || v === 'cielB') {
+        // le ciel de la Terre, plein d'étoiles
+        sky('#0e1640', '#020208', .2);
+        for (let i = 0; i < 160; i++) { const q = proPts[i]; star(q.u * W, top + q.v * h * .75, .8 + q.z * .5, .5 + .5 * Math.sin(t / 500 + i), t, 3, q.white ? '#ffffff' : '#ffd86b'); }
+        if (v === 'cielA') { halo(W * .68, top + h * .25, 50, 'rgba(255, 190, 110, .7)', ease(T / 2)); star(W * .68, top + h * .25, 7 + Math.sin(t / 300), ease(T / 2), t, 24, '#ffcf8a'); }
+        else { const g = ctx.createRadialGradient(W * .85, top + 20, 0, W * .85, top + 20, h * .35); g.addColorStop(0, 'rgba(0, 0, 0, 1)'); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+        const R = Math.max(W, H) * 1.2, hy = zb - h * .1;
+        ctx.fillStyle = '#0a1a14'; ctx.beginPath(); ctx.arc(W / 2, hy + R, R, 0, 7); ctx.fill();
+        kid(W * .4, hy + 2, Math.max(1, m / 380), 'Nina', 0, t);
+      } else if (v === 'victoire') {
+        // victoire totale : les galaxies brillent, mais le Néant bouge encore
+        sky('#2a1a4a'); starfield(Z, '#ffd86b');
+        for (let i = 0; i < WORLDS.length - 1; i++) galaxy(W * (.15 + i * .23), top + h * (.3 + (i % 2) * .15), Math.min(W * .1, h * .2), WORLDS[i].col[0], WORLDS[i].col[1], .9, t / 9000);
+        shadowEyes(ctx, W / 2, zb - h * .15, Math.min(40, h * .12), '#c86bff', Math.max(0, Math.sin(t / 700)));
+      } else if (v === 'etoiles') {
+        // les étoiles libérées tourbillonnent autour de la fusée, puis remontent dans le ciel
+        sky(c1); starfield(Z, c2);
+        const R = Math.min(m * .3, h * .42), up = ease((T - 3.4) / 2);
+        for (let i = 0; i < 26; i++) {
+          const q = proPts[i + 150], a = q.a * 2 + t / (2600 + q.d * 2000) * (i % 2 ? 1 : -1), rr = R * (.55 + q.d * .5);
+          star(W / 2 + Math.cos(a) * rr * (1 + up * 2), mid + Math.sin(a) * rr * .8 - up * h, 2.5 + q.z * 1.5, (.5 + .5 * Math.sin(t / 300 + i * 2)) * Math.min(1, T * 2), t);
+        }
+        drawRocket(ctx, W / 2, mid + Math.sin(t / 500) * 6, rs, cfg, t, Math.sin(t / 900) * .05, .3);
+      } else {
+        // la galaxie du monde (et la mission : la fusée au premier plan)
+        sky(c1); starfield(Z, c2);
+        galaxy(W / 2, v === 'mission' ? top + h * .32 : mid, m * (v === 'mission' ? .28 : .32 + ease(T / 4) * .14), c1, c2, Math.min(1, T * 1.5), t / 9000);
+        if (v === 'mission') {
+          drawRocket(ctx, W / 2, top + h * .75 + Math.sin(t / 500) * 6, rs, cfg, t, 0, .5);
+          ctx.globalAlpha = ease(T / .6); label('MISSION', top + 64, Math.min(36, W / 12), '#ffd86b'); ctx.globalAlpha = 1;
+        }
+      }
+    },
+    // Musée : l'intérieur sombre, les lampes torches et les trois enfants
+    musee(v, Z) {
+      const { T, t, m, top, zb, mid, h } = Z, s = Math.max(1, Math.min(2, h / 160)), rs = rocketSize(Z);
+      if (v === 'facade') {
+        sky('#0a0c24', '#020208', .2); starfield(Z, '#ffffff', .01, 40, .4);
+        // le bâtiment du musée, avec son dôme et ses colonnes
+        const bw = Math.min(W * .86, 520), bx = W / 2 - bw / 2, by = top + h * .3, bh = zb - by - 4;
+        ctx.fillStyle = '#141236'; ctx.fillRect(bx, by, bw, bh);
+        ctx.beginPath(); ctx.arc(W / 2, by, bw * .2, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#1e1b4a'; for (let i = 0; i < 6; i++) ctx.fillRect(bx + bw * (.08 + i * .17), by + 14, bw * .05, bh - 14);
+        ctx.fillStyle = '#ffd86b'; ctx.globalAlpha = .8; ctx.textAlign = 'center'; ctx.font = `${Math.max(10, Math.min(16, bw / 26))}px Bungee, Impact, sans-serif`;
+        ctx.fillText('MUSÉE DE L\'ESPACE', W / 2, by + 11); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#05070f'; ctx.fillRect(W / 2 - bw * .08, zb - bh * .45, bw * .16, bh * .45);
+        // les trois enfants devant la porte, lampes allumées
+        [['Malo', -.22, -.35], ['Nina', 0, .1], ['Inès', .22, .4]].forEach(([w, dx, b], i) => kid(W / 2 + dx * bw, zb - 2, s, w, b + Math.sin(t / 900 + i) * .12, t));
+      } else if (v === 'baie') {
+        // la baie 07 : la fusée couverte de poussière sous les projecteurs, et sa plaque
+        const fy = Math.min(.72, (zb - top) / H * .85 + top / H);
+        drawBay(ctx, W, H, t, fy);
+        drawRocket(ctx, W / 2, H * fy - rs * 30, rs, cfg, t, 0, 0);
+        ctx.fillStyle = 'rgba(130, 120, 100, .45)'; for (let i = 0; i < 60; i++) { const q = proPts[i + 400]; ctx.fillRect(W / 2 + (q.u - .5) * rs * 30, H * fy - rs * 30 + (q.v - .5) * rs * 50, 2, 2); }
+        ctx.fillStyle = '#04020c'; ctx.globalAlpha = .45; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+        // la plaque
+        const pw = Math.min(150, W * .32), px = W / 2 + rs * 24, py = H * fy - 30;
+        ctx.fillStyle = '#6a5a30'; ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 1.5; rrect(Math.min(px, W - pw - 8), py, pw, 34, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#ffe9a8'; ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'left';
+        ctx.fillText('BAIE 07 · PORTEUSE DE', Math.min(px, W - pw - 8) + 8, py + 14); ctx.fillText('LUMIÈRE · 1 000 ANS', Math.min(px, W - pw - 8) + 8, py + 27);
+        // les lampes torches des enfants balaient la baie
+        for (const [x, b] of [[W * .12, .5], [W * .88, -.5]]) { kid(x, zb, s * .9, x < W / 2 ? 'Malo' : 'Inès', b + Math.sin(t / 800 + x) * .15, t); }
+      } else {
+        // le lever du jour sur le musée : la fusée se pose dans la baie 07 (puis tout le monde est là)
+        const g = ctx.createLinearGradient(0, top, 0, zb); g.addColorStop(0, '#2a2a6a'); g.addColorStop(.6, '#ff9a6a'); g.addColorStop(1, '#ffd08a');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        const R = Math.min(W * .2, h * .25); ctx.fillStyle = '#fff2c8'; halo(W * .8, zb - 10, R * 2, 'rgba(255, 240, 200, .8)'); ctx.beginPath(); ctx.arc(W * .8, zb - 10, R * .5, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = '#2a1a3a'; const bw = Math.min(W * .9, 520); ctx.fillRect(W / 2 - bw / 2, zb - h * .18, bw, h * .18); ctx.beginPath(); ctx.arc(W / 2, zb - h * .18, bw * .15, Math.PI, 0); ctx.fill();
+        const land = v === 'aube' ? ease(T / 2.4) : 1, ry = top + 20 + land * (zb - h * .18 - 30 - top - 20);
+        drawRocket(ctx, v === 'aube' ? W / 2 : W * .3, ry, rs * .7, cfg, t, 0, v === 'aube' ? .6 * (1 - land) + .1 : 0);
+        if (v === 'aube') { const run = ease((T - 1) / 2); kid(W * .1 + run * W * .25, zb - 1, s, 'Malo', 0, t * 3); kid(W * .9 - run * W * .25, zb - 1, s, 'Inès', 0, t * 3); }
+        else {
+          kid(W * .46, zb - 1, s, 'Nina', 0, t); kid(W * .58, zb - 1, s, 'Malo', 0, t); kid(W * .7, zb - 1, s, 'Inès', 0, t);
+          portrait(bossById('crabe'), W * .84, zb - 18 * s, 34 * s);
+        }
+      }
+    },
+    // Cockpit : la vue de l'intérieur de la fusée, avec Nina (et Clac quand il est à bord)
+    cockpit(v, Z) {
+      const { T, t, m, top, zb, h, wd, clac } = Z, [c1, c2] = wd.col;
+      const dark = v === 'nuit' ? 1 : v === 'voyants' ? 1 - ease((T - .3) / 2.5) : v === 'rallume' ? 1 - ease((T - .4) / 1) * (.6 + .4 * Math.sin(t / 60) ** 2) : v === 'silence' ? .35 : 0;
+      // le hublot : l'espace dehors
+      if (v === 'nuit' || v === 'voyants') { ctx.fillStyle = '#0a0918'; ctx.fillRect(0, 0, W, H); drawBay(ctx, W, H, t, .9); }
+      else { sky(c1, '#04020c', .3); starfield(Z, c2, v === 'alarme' ? .2 : .03); }
+      if (v === 'terre') { const k = ease(T / 3); earth(ctx, W * .62, top + h * (.2 + k * .1), Math.min(W, h) * (.28 - k * .2)); }
+      if (v === 'plan') {
+        // sur l'écran : le plan d'un vaisseau qui ressemble à celui de la plaque
+        const sw = Math.min(W * .62, 340), sh = Math.min(h * .5, sw * .6), sx = W / 2 - sw / 2, sy = top + h * .08;
+        ctx.fillStyle = 'rgba(10, 40, 70, .9)'; ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 2; rrect(sx, sy, sw, sh, 10); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = 'rgba(122, 216, 255, .2)'; ctx.lineWidth = 1;
+        for (let x = sx + 16; x < sx + sw; x += 16) { ctx.beginPath(); ctx.moveTo(x, sy); ctx.lineTo(x, sy + sh); ctx.stroke(); }
+        ctx.save(); ctx.globalAlpha = .9; drawElio(ctx, W / 2, sy + sh / 2, Math.min(2.4, sh / 70), t, 0); ctx.restore();
+        ctx.fillStyle = '#7ad8ff'; ctx.font = '600 11px Outfit, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('SIGNATURE : PORTEUR DE LUMIÈRE Nº 1', sx + 10, sy + sh - 10);
+      }
+      // le cadre du hublot
+      ctx.fillStyle = '#0d0b22'; ctx.beginPath(); ctx.moveTo(0, top); ctx.lineTo(W * .12, top); ctx.lineTo(W * .04, zb - h * .3); ctx.lineTo(0, zb - h * .3); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(W, top); ctx.lineTo(W * .88, top); ctx.lineTo(W * .96, zb - h * .3); ctx.lineTo(W, zb - h * .3); ctx.fill();
+      // le tableau de bord
+      const dy = zb - h * .3;
+      ctx.fillStyle = '#16133a'; ctx.beginPath(); ctx.moveTo(0, dy); ctx.quadraticCurveTo(W / 2, dy - h * .08, W, dy); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+      const n = W > 700 ? 6 : 4;
+      for (let i = 0; i < n; i++) {
+        const x = W * (i + .5) / n, on = 1 - dark > (i + 1) / (n + 1) || dark < .05, sw = Math.min(70, W / n * .6);
+        ctx.fillStyle = v === 'alarme' && i % 2 ? (Math.floor(t / 250) % 2 ? '#ff2a4a' : '#5a0a14') : on ? (v === 'plan' ? '#0e3a5a' : '#123a4a') : '#0a0a14';
+        rrect(x - sw / 2, dy + h * .05, sw, h * .1, 4); ctx.fill();
+        if (on && v !== 'alarme') { ctx.fillStyle = '#7ad8ff'; ctx.globalAlpha = .7; for (let j = 0; j < 3; j++) ctx.fillRect(x - sw / 2 + 5, dy + h * .065 + j * h * .025, sw * (.3 + seeded(i * 7 + j + Math.floor(t / 600)) * .6), 2); ctx.globalAlpha = 1; }
+      }
+      for (let i = 0; i < 14; i++) {
+        const x = W * (i + .5) / 14, on = (1 - dark) * 14 > i;
+        ctx.fillStyle = on ? ['#7dff8a', '#ffd86b', '#ff7aa8', '#7ad8ff'][i % 4] : '#1a1830';
+        ctx.globalAlpha = on ? .6 + .4 * Math.sin(t / 200 + i) : 1; ctx.beginPath(); ctx.arc(x, dy + h * .2, 3, 0, 7); ctx.fill();
       }
       ctx.globalAlpha = 1;
-      // la flotte ennemie fonce vers la galaxie
-      for (const sh of outroFleet) {
-        const k = ease((q - sh.d * .6) / 2.6);
-        if (k <= 0) continue;
-        const x = sh.fx + (gx - sh.fx) * k * .8, y = sh.fy + (gy - sh.fy) * k * .8, a = Math.atan2(gy - sh.fy, gx - sh.fx);
-        ctx.save(); ctx.translate(x, y); ctx.rotate(a);
-        ctx.strokeStyle = 'rgba(125, 255, 138, .35)'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(-10 * sh.z, 0); ctx.lineTo(-60 * sh.z, 0); ctx.stroke();
-        const z = sh.z * (sh.mother ? 2.4 : 1);
-        ctx.fillStyle = '#1a1430'; ctx.strokeStyle = '#7dff8a'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(14 * z, 0); ctx.lineTo(-10 * z, -9 * z); ctx.lineTo(-5 * z, 0); ctx.lineTo(-10 * z, 9 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = Math.floor(t / 150 + sh.fx) % 2 ? '#7dff8a' : '#ff4f6d';
-        ctx.beginPath(); ctx.arc(2 * z, 0, 2.2 * z, 0, 7); ctx.fill();
-        ctx.restore();
+      // le gros bouton
+      ctx.fillStyle = v === 'nuit' && T > 1.4 ? '#ff7aa8' : '#c0304a'; ctx.beginPath(); ctx.arc(W / 2, dy + h * .26, Math.min(12, h * .04), 0, 7); ctx.fill();
+      // Nina, de dos dans son siège, et Clac sur le siège d'à côté
+      const ns = Math.max(1.4, Math.min(3, h / 110)), nx = W * .38, ny = zb + 4;
+      ctx.fillStyle = '#2a2450'; rrect(nx - 16 * ns, ny - 30 * ns, 32 * ns, 34 * ns, 8 * ns); ctx.fill();
+      ctx.fillStyle = '#05070f';
+      const bow = v === 'larmes' ? 4 * ns : 0;
+      ctx.beginPath(); ctx.arc(nx, ny - 34 * ns + bow, 9 * ns, 0, 7); ctx.fill();
+      for (const sx of [-1, 1]) { ctx.beginPath(); ctx.arc(nx + sx * 10 * ns, ny - 38 * ns + bow, 4.5 * ns, 0, 7); ctx.fill(); }
+      ctx.beginPath(); ctx.ellipse(nx, ny - 14 * ns, 14 * ns, 12 * ns, 0, Math.PI, 0); ctx.fill();
+      if (v === 'nuit') { ctx.strokeStyle = '#05070f'; ctx.lineWidth = 4 * ns; ctx.lineCap = 'round'; const k = ease(T / 1.4); ctx.beginPath(); ctx.moveTo(nx + 10 * ns, ny - 20 * ns); ctx.lineTo(nx + 10 * ns + (W / 2 - nx - 10 * ns) * k, ny - 20 * ns + (dy + h * .26 - ny + 20 * ns) * k); ctx.stroke(); ctx.lineCap = 'butt'; }
+      const cx = W * .66;
+      ctx.fillStyle = '#2a2450'; rrect(cx - 16 * ns, ny - 30 * ns, 32 * ns, 34 * ns, 8 * ns); ctx.fill();
+      if (clac && v !== 'vide') portrait(bossById('crabe'), cx, ny - 34 * ns + Math.sin(t / 400) * 2, 30 * ns);
+      else if (v === 'vide') { ctx.strokeStyle = 'rgba(255, 123, 74, .35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, ny - 34 * ns, 13 * ns, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
+      // effets : givre, alarme, écrans qui grésillent en se rallumant
+      if (v === 'givre') { const g = ctx.createRadialGradient(W / 2, mid0(Z), Math.min(W, h) * .3, W / 2, mid0(Z), Math.max(W, h) * .8); g.addColorStop(0, 'rgba(220, 245, 255, 0)'); g.addColorStop(1, 'rgba(220, 245, 255, .55)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+      if (v === 'alarme') { ctx.fillStyle = `rgba(255, 30, 60, ${.12 + .12 * Math.sin(t / 120)})`; ctx.fillRect(0, 0, W, H); }
+      if (v === 'rallume' && T < 1.4) noise(0, top, W, h, 1 - T / 1.4, t);
+      if (dark > 0 && v !== 'nuit' && v !== 'voyants') { ctx.fillStyle = `rgba(0, 0, 0, ${dark * .5})`; ctx.fillRect(0, 0, W, H); }
+      if (v === 'larmes') { ctx.fillStyle = '#9fe8ff'; const ty = ny - 30 * ns + bow + ((T * 40) % (20 * ns)); ctx.beginPath(); ctx.arc(nx + 4 * ns, ty, 2 * ns, 0, 7); ctx.fill(); }
+    },
+    // Radio : un petit écran incrusté qui grésille, avec Malo et Inès dans le musée
+    radio(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z;
+      if (v === 'gardiens') guardianWall(Z, true);
+      else if (v === 'clac') { ctx.fillStyle = '#05030c'; ctx.fillRect(0, 0, W, H); shadowEyes(ctx, W / 2, mid, Math.min(W, h) * .35, '#ff4f6d', 1); }
+      else { sky(wd.col[0]); starfield(Z, wd.col[1]); }
+      const small = v === 'gardiens', rw = small ? Math.min(W * .34, 170, h * .7) : Math.min(W * .7, 360, h * 1.2), rh = rw * .58, rx = small ? 14 : W / 2 - rw / 2, ry = small ? zb - rh - 24 : mid - rh / 2;
+      ctx.fillStyle = '#1a1830'; rrect(rx - 8, ry - 8, rw + 16, rh + 26, 12); ctx.fill();
+      ctx.save(); rrect(rx, ry, rw, rh, 8); ctx.clip();
+      if (v === 'clac') { ctx.fillStyle = '#2a0a14'; ctx.fillRect(rx, ry, rw, rh); portrait(bossById('crabe'), W / 2, ry + rh * .55, rh * .8); }
+      else {
+        // le musée (ou son toit sous un ciel plein d'étoiles)
+        const roof = v === 'toit';
+        ctx.fillStyle = roof ? '#0e1640' : '#0e0c22'; ctx.fillRect(rx, ry, rw, rh);
+        if (roof) for (let i = 0; i < 50; i++) { const q = proPts[i]; star(rx + q.u * rw, ry + q.v * rh * .6, 1 + q.z * .5, .6 + .4 * Math.sin(t / 300 + i), t, 3); }
+        else { ctx.fillStyle = '#1a1840'; for (let i = 0; i < 4; i++) ctx.fillRect(rx + rw * (.1 + i * .25), ry, rw * .06, rh); }
+        ctx.fillStyle = roof ? '#141030' : '#0a0818'; ctx.fillRect(rx, ry + rh * .82, rw, rh * .18);
+        const s = rh / 62;
+        kid(rx + rw * .36, ry + rh * .84, s, 'Malo', roof ? 0 : .3, t * 2); kid(rx + rw * .64, ry + rh * .84, s, 'Inès', roof ? 0 : -.3, t * 2);
       }
-      // alerte rouge sur les bords
-      const pulse = (Math.sin(t / 160) + 1) / 2;
-      const v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.max(W, H) * .75);
-      v.addColorStop(0, 'rgba(255, 40, 70, 0)'); v.addColorStop(1, `rgba(255, 40, 70, ${(.25 + pulse * .3) * Math.min(1, q)})`);
-      ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
-      // la fusée arrive par le bas
-      drawRocket(ctx, W / 2, H + 40 - ease((q - 1.5) / 2) * H * .22, 1.3, cfg, t, 0, 1);
-      outroText('⚠ ALERTE ⚠', H * .1, Math.max(16, big * .45), '#ff4f6d', Math.min(1, q * 2) * (.6 + pulse * .4), '#ff4f6d');
-      outroText(next.name.toUpperCase(), H * .7, big, '#ffffff', ease((q - .8) / .6), next.col[1]);
-      outroText('Ce nouveau monde a besoin de ton aide,', H * .7 + big * .85, Math.max(14, big * .34), '#ffd0d8', ease((q - 1.6) / .6));
-      outroText(`Capitaine ${captain()} !`, H * .7 + big * 1.4, Math.max(16, big * .45), '#ffd86b', ease((q - 2.1) / .6), '#ffb020');
-      if (q > 4.3) { ctx.fillStyle = `rgba(5, 3, 15, ${(q - 4.3) / .4})`; ctx.fillRect(0, 0, W, H); }
+      noise(rx, ry, rw, rh, .5, t);
+      ctx.restore();
+      ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 2; rrect(rx, ry, rw, rh, 8); ctx.stroke();
+      ctx.fillStyle = Math.floor(t / 400) % 2 ? '#ff2a4a' : '#5a0a14'; ctx.beginPath(); ctx.arc(rx + 10, ry + rh + 9, 4, 0, 7); ctx.fill();
+      ctx.fillStyle = '#7ad8ff'; ctx.font = '600 11px Outfit, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText(v === 'clac' ? 'RADIO · SIGNAL INCONNU' : 'RADIO · MUSÉE DE L\'ESPACE', rx + 20, ry + rh + 13);
+    },
+    // Tyran : son portrait en grand, sur un fond à ses couleurs
+    tyran(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z, dev = v === 'devoreur' || v === 'gardiens', chief = dev ? bossById('devoreur') : wd.bosses[9];
+      ctx.fillStyle = '#04020c'; ctx.fillRect(0, 0, W, H);
+      sky(dev ? '#14041a' : chief.col + '44', '#04020c', .35);
+      const cy = top + h * (v === 'gardiens' ? .36 : .45), size = Math.min(m * ((dev ? .5 : .32) + ease(T / 3) * .08), h * (dev ? .78 : .66));
+      if (dev) {
+        // le Dévoreur en entier : immense et sombre, des étoiles prisonnières brillent à travers lui
+        if (v === 'gardiens') guardianRing(Z, cy, size);
+        halo(W / 2, cy, size * .9, 'rgba(200, 107, 255, .35)');
+        portrait(chief, W / 2 + Math.sin(t / 900) * 4, cy, size, Math.min(1, T / 1.2));
+        for (let i = 0; i < 18; i++) { const q = proPts[i + 60]; star(W / 2 + (q.u - .5) * size * .7, cy + (q.v - .5) * size * .6, 1.5 + q.z, (.3 + .5 * Math.sin(t / 300 + i * 3)) * Math.min(1, T), t, 8); }
+        return;
+      }
+      // les étoiles volées sont aspirées vers lui
+      for (let i = 0; i < 50; i++) { const q = proPts[i + 200], ph = (q.d + T * .35) % 1, ang = q.a * 3, rr = (1 - ph) * Math.max(W, H) * .6 + size * .3; star(W / 2 + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * .7, 2 + q.z, ph, t); }
+      halo(W / 2, cy, size * .9, chief.col + '88');
+      if (v === 'soldats') fleet(Z, cy, size);
+      if (v === 'nid') {
+        // le nid : les larves autour d'elle, et dans une alvéole lumineuse, les yeux de son prince
+        for (let i = 0; i < 14; i++) { const q = proPts[i + 30], a = i / 14 * Math.PI * 2 + t / 4000, r = size * (.6 + q.d * .2); ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.ellipse(W / 2 + Math.cos(a) * r, cy + Math.sin(a) * r * .55 + size * .1, 7, 4, a, 0, 7); ctx.fill(); }
+        const ax = W / 2 + size * .62, ay = cy - size * .3, ar = Math.min(42, size * .22);
+        ctx.fillStyle = 'rgba(255, 176, 32, .35)'; ctx.strokeStyle = '#ffb020'; ctx.lineWidth = 3; ctx.beginPath();
+        for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.lineTo(ax + Math.cos(a) * ar, ay + Math.sin(a) * ar); } ctx.closePath(); ctx.fill(); ctx.stroke();
+        shadowEyes(ctx, ax, ay, ar * .55, '#ff4f6d', 1);
+      }
+      const shake = T > 1.2 && T < 2 ? Math.sin(t / 50) * 3 * (2 - T) : 0;
+      portrait(chief, W / 2 + shake, cy + Math.sin(t / 700) * 6, size, Math.min(1, T / 1.2));
+      if (v === 'cristal') {
+        // la boule de cristal : dedans, une petite planète bleue
+        const bx = W / 2 + size * .45, by = cy + size * .3, br = Math.min(34, size * .18);
+        halo(bx, by, br * 2, 'rgba(200, 240, 255, .6)'); earth(ctx, bx, by, br * .6);
+        ctx.strokeStyle = 'rgba(230, 250, 255, .9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(bx, by, br, 0, 7); ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 255, 255, .5)'; ctx.beginPath(); ctx.ellipse(bx - br * .4, by - br * .4, br * .25, br * .12, -.7, 0, 7); ctx.fill();
+      }
+      if (v === 'enclume') {
+        // l'enclume et ses étincelles à chaque coup
+        const ax = W / 2, ay = cy + size * .48, hit = (T * 1.2) % 1;
+        ctx.fillStyle = '#3a2a2a'; ctx.fillRect(ax - size * .25, ay, size * .5, size * .1); ctx.fillRect(ax - size * .1, ay + size * .1, size * .2, size * .08);
+        for (let i = 0; i < 16; i++) { const q = proPts[i + 70], d = hit * size * (.3 + q.d * .5), a = -Math.PI / 2 + (q.u - .5) * 2.4; ctx.globalAlpha = 1 - hit; ctx.fillStyle = q.d < .5 ? '#ffd86b' : '#ff7b2a'; ctx.fillRect(ax + Math.cos(a) * d, ay + Math.sin(a) * d, 3, 3); }
+        ctx.globalAlpha = 1;
+      }
+      if (v === 'trone') { ctx.fillStyle = 'rgba(220, 245, 255, .5)'; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * size * .14 - 8, cy + size * .45); ctx.lineTo(W / 2 + i * size * .14, cy + size * (.05 - Math.abs(i) * .04)); ctx.lineTo(W / 2 + i * size * .14 + 8, cy + size * .45); ctx.fill(); } }
+      ctx.globalAlpha = ease((T - .8) / .6);
+      label(chief.name.toUpperCase(), Math.min(zb - 8, cy + size * .58 + 14), Math.min(30, W / (chief.name.length * .72)), chief.col);
+      ctx.globalAlpha = 1;
+    },
+    // Carte : les 5 galaxies sur la route du Néant ; celles qu'on a libérées brillent
+    carte(v, Z) {
+      const { T, t, top, zb, h, w } = Z;
+      ctx.fillStyle = '#060818'; ctx.fillRect(0, 0, W, H);
+      const mx = Math.max(16, W * .06), mw = W - mx * 2, my = top + 40, mh = zb - my - 8;
+      ctx.fillStyle = 'rgba(122, 216, 255, .05)'; ctx.strokeStyle = 'rgba(122, 216, 255, .45)'; ctx.lineWidth = 1.5; rrect(mx, my, mw, mh, 16); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(122, 216, 255, .08)'; ctx.lineWidth = 1;
+      for (let x = mx + 24; x < mx + mw; x += 24) { ctx.beginPath(); ctx.moveTo(x, my); ctx.lineTo(x, my + mh); ctx.stroke(); }
+      for (let y = my + 24; y < my + mh; y += 24) { ctx.beginPath(); ctx.moveTo(mx, y); ctx.lineTo(mx + mw, y); ctx.stroke(); }
+      const nodes = WORLDS.map((wd, i) => ({ wd, x: mx + mw * (.1 + i * .2), y: my + mh * (i % 2 ? .36 : .62) })), nr = Math.max(14, Math.min(28, mw / 16, mh / 6));
+      const earthP = { x: nodes[0].x + nr * .2, y: nodes[0].y + nr * 1.9 };
+      // la route
+      ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 7]); ctx.lineDashOffset = -t / 60;
+      ctx.beginPath(); nodes.forEach((nd, i) => i ? ctx.lineTo(nd.x, nd.y) : ctx.moveTo(nd.x, nd.y)); ctx.stroke(); ctx.setLineDash([]);
+      // combien de galaxies sont libérées, et celle qui s'allume
+      const lit = v === 'allume' ? Math.floor(ease(T / 3) * 5.99) : v === 'verte' ? 3 : w + 1;
+      nodes.forEach((nd, i) => {
+        const { x, y } = nd, on = i < lit || (v === 'verte' && i === 3 && T > .8), neant = i === WORLDS.length - 1;
+        if (neant && !(v === 'allume' && on)) { halo(x, y, nr * 2, 'rgba(200, 107, 255, .5)'); ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(x, y, nr, 0, 7); ctx.fill(); }
+        else if (on) { halo(x, y, nr * 2, nd.wd.col[1] + '88', v === 'verte' && i === 3 ? .5 + .5 * Math.sin(t / 200) : 1); galaxySmall(x, y, nr, nd.wd.col[1], t); }
+        else { ctx.fillStyle = '#14122a'; ctx.strokeStyle = '#3a3660'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, nr, 0, 7); ctx.fill(); ctx.stroke(); }
+        ctx.fillStyle = on || neant ? (neant ? '#c86bff' : nd.wd.col[1]) : '#5a5680'; ctx.textAlign = 'center';
+        ctx.font = `600 ${Math.max(9, Math.min(13, mw / 40))}px Outfit, system-ui, sans-serif`;
+        ctx.fillText(['VOIE LACTÉE', 'GIVRE', 'FORGE', 'JUNGLE', 'NÉANT'][i], x, y + (i % 2 ? -nr - 8 : nr + 16));
+      });
+      // la Terre, petit point bleu près de la Voie lactée
+      earth(ctx, earthP.x, earthP.y, Math.max(5, nr * .32));
+      ctx.fillStyle = '#7ad8ff'; ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.fillText('TERRE', earthP.x + nr * .45, earthP.y + 4);
+      // l'ombre du Dévoreur
+      if (v === 'ombre' || v === 'toute') {
+        const end = v === 'toute' ? 1.15 : .92, p = ease(T / 3.5) * end, path = [...nodes].reverse().concat([earthP]);
+        const seg = p * (path.length - 1), i0 = Math.min(path.length - 2, Math.floor(seg)), f = seg - i0;
+        const x = path[i0].x + (path[i0 + 1].x - path[i0].x) * f, y = path[i0].y + (path[i0 + 1].y - path[i0].y) * f;
+        for (let i = 0; i <= i0; i++) drawSmoke(path[i].x, path[i].y, nr * 1.6, .8, 0);
+        drawSmoke(x, y, nr * 2, 1, 0);
+        if (v === 'toute' && p > .9) { ctx.fillStyle = `rgba(0, 0, 0, ${(p - .9) * 3})`; ctx.fillRect(mx, my, mw, mh); }
+      }
+      if (v === 'marque') nodes.slice(1, 4).forEach((nd, i) => { const k = ease((T - i * .4) / .8); drawSmoke(nd.x, nd.y, nr * 1.5, k * .9, 0); });
+    },
+    // Message : tous les écrans deviennent noirs et grésillent ; une silhouette géante, deux yeux
+    message(v, Z) {
+      const { T, t, top, zb, mid, h } = Z;
+      ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+      if (v === 'volcan') {
+        // en haut du volcan, l'ombre immense regarde
+        const g = ctx.createLinearGradient(0, top, 0, zb); g.addColorStop(0, '#1a0204'); g.addColorStop(1, '#5a1004'); ctx.fillStyle = g; ctx.fillRect(0, top, W, zb - top);
+        ctx.fillStyle = '#100404'; ctx.beginPath(); ctx.moveTo(0, zb); ctx.lineTo(W * .35, top + h * .55); ctx.lineTo(W * .65, top + h * .55); ctx.lineTo(W, zb); ctx.fill();
+        halo(W / 2, top + h * .55, W * .25, 'rgba(255, 100, 20, .7)');
+        shadowEyes(ctx, W / 2, top + h * .3, Math.min(W * .22, h * .22), '#ff4f6d', ease((T - .6) / .6));
+        return;
+      }
+      noise(0, top, W, zb - top, v === 'eteint' ? 1 : .5, t);
+      const R = Math.min(W * .45, h * .45), shake = v === 'eteint' ? Math.sin(t / 40) * 4 * Math.min(1, T) : 0;
+      ctx.save(); ctx.translate(shake, 0);
+      shadowEyes(ctx, W / 2, mid, R, '#ff4f6d', v === 'eteint' ? 0 : ease((T - .3) / .8));
+      ctx.restore();
+    },
+    // Poursuite : une image en mouvement, avec des lignes de vitesse
+    poursuite(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z, rs = rocketSize(Z);
+      sky(v === 'plonge' ? '#3a0a04' : v === 'clac' ? '#0f3a1a' : wd.col[0]); starfield(Z, wd.col[1], 1.6);
+      if (v === 'decollage') {
+        // le toit du musée s'ouvre, la fusée décolle ; Malo et Inès en bas
+        const o = ease(T / 1.2), roofY = zb - h * .12;
+        ctx.fillStyle = '#141236'; ctx.fillRect(0, roofY, W / 2 - o * W * .3, h * .14); ctx.fillRect(W / 2 + o * W * .3, roofY, W, h * .14);
+        const k = ease((T - .5) / 2);
+        drawRocket(ctx, W / 2, roofY - 20 - k * (roofY - top - 60), rs, cfg, t, 0, 1);
+        halo(W / 2, roofY, 120, 'rgba(255, 180, 80, .4)');
+        kid(W / 2 - W * .3 - 20, zb, 1.2, 'Malo', 0, t * 4); kid(W / 2 + W * .3 + 20, zb, 1.2, 'Inès', 0, t * 4);
+      } else if (v === 'fuite' || v === 'scan') {
+        // l'ombre géante se retourne et file dans un tourbillon noir
+        const vx = W / 2, vy = top + h * .3, k = ease(T / 3);
+        for (let i = 0; i < 4; i++) { ctx.strokeStyle = `rgba(200, 107, 255, ${.4 - i * .08})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(vx, vy, 20 + i * 18 + (t / 30) % 18, t / 300 + i, t / 300 + i + 4); ctx.stroke(); }
+        const r = Math.min(W, h) * .3 * (1 - k * .75);
+        shadowEyes(ctx, vx, vy + (1 - k) * h * .2, r, '#ff4f6d', v === 'scan' ? .3 : 1 - k);
+        if (v === 'scan') {
+          const sy = top + ((T * .5) % 1) * h; ctx.fillStyle = 'rgba(122, 216, 255, .35)'; ctx.fillRect(0, sy, W, 3);
+          ctx.strokeStyle = '#7ad8ff'; ctx.lineWidth = 2; const rr = r * 1.3, cy = vy + (1 - k) * h * .2;
+          for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(vx + a * rr, cy + b * rr * .6); ctx.lineTo(vx + a * rr, cy + b * rr * .3); ctx.moveTo(vx + a * rr, cy + b * rr * .6); ctx.lineTo(vx + a * rr * .7, cy + b * rr * .6); ctx.stroke(); }
+        }
+        drawRocket(ctx, W / 2, zb - h * .15, rs * .6, cfg, t, 0, 1);
+      } else if (v === 'plonge') {
+        // la fusée plonge vers une planète en fusion
+        const k = ease(T / 3), R = Math.min(W, h) * (.15 + k * .4);
+        const g = ctx.createRadialGradient(W / 2, zb + R * .3, R * .1, W / 2, zb + R * .3, R); g.addColorStop(0, '#ffcf5a'); g.addColorStop(.5, '#ff6a1a'); g.addColorStop(1, '#5a1004');
+        halo(W / 2, zb + R * .3, R * 1.4, 'rgba(255, 100, 20, .5)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W / 2, zb + R * .3, R, 0, 7); ctx.fill();
+        drawRocket(ctx, W / 2, top + h * .35 + k * h * .15, rs * (1 - k * .5), cfg, t, Math.PI, 1);
+      } else if (v === 'clac') {
+        // la fusée s'échappe ; derrière, Clac retient les lianes et rapetisse
+        const k = ease(T / 3.5);
+        for (let i = 0; i < 7; i++) { ctx.strokeStyle = '#1e8a3a'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(W * (i + .5) / 7, zb + 10); ctx.quadraticCurveTo(W / 2 + (i - 3) * 20, zb - h * .3, W / 2 + (i - 3) * 6, zb - h * .2 - k * 20); ctx.stroke(); }
+        portrait(bossById('crabe'), W / 2, zb - h * .2 - k * 20, Math.max(30, 70 * (1 - k * .6)));
+        drawRocket(ctx, W / 2, top + h * .4 - k * h * .1, rs * .8, cfg, t, 0, 1.2);
+      } else drawRocket(ctx, W / 2, mid, rs, cfg, t, 0, 1);
+    },
+    // Flashback : il y a mille ans, en couleurs passées, avec du grain et des bords arrondis
+    flashback(v, Z) {
+      const { T, t, m, top, zb, mid, h } = Z, s = Math.min(2.6, h / 80);
+      ctx.fillStyle = '#1a140c'; ctx.fillRect(0, 0, W, H); starfield(Z, '#ffe9a8', .02, 90);
+      if (v === 'porteur') {
+        for (let i = 0; i < 24; i++) { const q = proPts[i + 120], a = q.a * 2 + t / 6000, r = Math.min(W, h) * (.25 + q.d * .2); star(W / 2 + Math.cos(a) * r, mid + Math.sin(a) * r * .6, 2 + q.z, .8, t, 8); }
+        drawElio(ctx, W / 2, mid, s, t, 0);
+      } else if (v === 'etoile') {
+        // une étoile qui faiblit ; un filet de sa lumière entre dans Elio
+        const sx = W * .66, sy = mid - h * .05, k = ease(T / 3);
+        halo(sx, sy, 70 * (1 - k * .5), 'rgba(255, 216, 107, .8)'); star(sx, sy, 22 * (1 - k * .4), 1 - k * .5, t, 20);
+        ctx.strokeStyle = 'rgba(255, 236, 170, .7)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.quadraticCurveTo(W / 2, sy - 30, W * .34, mid); ctx.stroke();
+        drawElio(ctx, W * .34, mid, s * .8, t, 0); halo(W * .34, mid, 40 + k * 30, 'rgba(255, 236, 170, .5)');
+      } else if (v === 'aimant') {
+        // les étoiles viennent à lui comme vers un aimant
+        for (let i = 0; i < 50; i++) { const q = proPts[i + 160], p = (q.d + T * .4) % 1, a = q.a * 3, r = (1 - p) * Math.max(W, h) * .6; star(W / 2 + Math.cos(a) * r, mid + Math.sin(a) * r * .6, 2 + q.z, p, t, 8); }
+        drawElio(ctx, W / 2, mid, s * (1 + ease(T / 4) * .3), t, 0);
+      } else {
+        // il grossit et s'assombrit jusqu'à devenir l'ombre géante
+        const k = ease((T - .3) / 3);
+        ctx.globalAlpha = 1 - k; drawElio(ctx, W / 2, mid, s * (1 + k * 2), t, 0); ctx.globalAlpha = 1;
+        shadowEyes(ctx, W / 2, mid, Math.min(W, h) * .1 + k * Math.min(W, h) * .3, '#ff4f6d', k > .6 ? (k - .6) / .4 : 0);
+      }
+      // couleurs passées, grain et bords arrondis du vieux film
+      ctx.globalCompositeOperation = 'color'; ctx.fillStyle = '#a07848'; ctx.fillRect(0, top, W, zb - top); ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < (reduce ? 60 : 220); i++) { ctx.fillStyle = seeded(i + Math.floor(t / 80)) > .5 ? 'rgba(255, 240, 210, .12)' : 'rgba(0, 0, 0, .18)'; ctx.fillRect(seeded(i * 3 + Math.floor(t / 80)) * W, top + seeded(i * 7 + Math.floor(t / 80)) * (zb - top), 2, 2); }
+      ctx.fillStyle = '#000'; ctx.beginPath(); ctx.rect(0, 0, W, H);
+      if (ctx.roundRect) ctx.roundRect(10, top + 6, W - 20, zb - top - 6, 28); else ctx.rect(10, top + 6, W - 20, zb - top - 6);
+      ctx.fill('evenodd');
+      const vg = ctx.createRadialGradient(W / 2, mid, Math.min(W, h) * .3, W / 2, mid, Math.max(W, h) * .7); vg.addColorStop(0, 'rgba(26, 20, 12, 0)'); vg.addColorStop(1, 'rgba(26, 20, 12, .7)');
+      ctx.fillStyle = vg; ctx.fillRect(0, top, W, zb - top);
+    },
+    // Action : une scène de combat figée
+    action(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z, rs = rocketSize(Z);
+      if (v === 'effondre' || v === 'brise') {
+        // le tyran s'effondre ; sa marque noire s'échappe en fumée vers le fond de l'univers
+        sky(wd.col[0]); starfield(Z, wd.col[1], .02);
+        const chief = wd.bosses[9], cy = mid + 20, size = Math.min(m * .34, h * .55), fade = 1 - Math.max(0, Math.min(1, (T - 1.5) / 3.5));
+        const vort = ctx.createRadialGradient(W / 2, top, 0, W / 2, top, m * .5); vort.addColorStop(0, 'rgba(0, 0, 0, .95)'); vort.addColorStop(.5, 'rgba(60, 20, 90, .35)'); vort.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = vort; ctx.fillRect(0, 0, W, H * .6);
+        if (v === 'brise') {
+          // elle se brise en éclats de cristal
+          const im = proImg(chief), k = ease(T / 2);
+          if (im.complete && im.naturalWidth) for (let i = 0; i < 9; i++) {
+            const gx = i % 3, gy = Math.floor(i / 3), q = proPts[i + 20], dx = (gx - 1) * k * size * .5 + (q.u - .5) * k * 40, dy = (gy - 1) * k * size * .4 + k * k * 60;
+            ctx.save(); ctx.globalAlpha = 1 - k * .7; ctx.translate(W / 2 + dx, cy + dy); ctx.rotate((q.v - .5) * k * 1.4);
+            ctx.drawImage(im, gx * 128 / 3, gy * 128 / 3, 128 / 3, 128 / 3, -size / 6, -size / 6, size / 3, size / 3); ctx.restore();
+          }
+        }
+        const n = reduce ? 30 : 70, power = Math.max(.45, 1 - T / 6), sz = Math.min(1.4, m / 420);
+        for (let i = 0; i < n; i++) {
+          const q = proPts[i], p = (q.d + T * .45) % 1, e = p * p, sx = W / 2 + (q.u - .5) * size * 1.4, sy = cy + (q.v - .5) * size;
+          drawSmoke(sx + (W / 2 + (q.r - .5) * 40 - sx) * e + Math.sin(p * 9 + i) * 12 * (1 - p), sy + (top - 50 - sy) * e, (16 + q.z * 8) * sz, Math.min(1, p * 8) * Math.min(1, (1 - p) * 3) * power, p);
+        }
+        if (v === 'effondre') portrait(chief, W / 2, cy + (1 - fade) * 30, size, fade);
+      } else if (v === 'lianes' || v === 'pinces') {
+        // les lianes se referment sur la fusée (et Clac les retient avec ses pinces)
+        sky('#0f3a1a'); starfield(Z, '#7dff8a', .02);
+        const k = v === 'lianes' ? ease(T / 2) : 1, hold = v === 'pinces' ? ease(T / 1.5) : 0, rx = W / 2, ry = mid;
+        drawRocket(ctx, rx, ry, rs * .8, cfg, t, Math.sin(t / 120) * .05, .4);
+        for (let i = 0; i < 8; i++) {
+          const a = i / 8 * Math.PI * 2, far = Math.max(W, h) * .7, r = 40 + (1 - k) * far * .5 + hold * 50;
+          ctx.strokeStyle = '#1e8a3a'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath();
+          ctx.moveTo(rx + Math.cos(a) * far, ry + Math.sin(a) * far);
+          ctx.quadraticCurveTo(rx + Math.cos(a + .6) * r * 1.6, ry + Math.sin(a + .6) * r * 1.6, rx + Math.cos(a + 1) * r, ry + Math.sin(a + 1) * r); ctx.stroke();
+        }
+        ctx.lineCap = 'butt';
+        if (v === 'pinces') portrait(bossById('crabe'), rx + Math.min(W * .25, 110), ry - 10, Math.min(90, h * .3));
+      } else if (v === 'gueule' || v === 'renforts') {
+        // une gueule noire immense s'ouvre devant la fusée (puis Clac arrive avec tous les gardiens libérés)
+        ctx.fillStyle = '#05010a'; ctx.fillRect(0, 0, W, H);
+        const o = v === 'gueule' ? ease(T / 1.8) : 1, gw = W * .9, gh = h * .7 * o;
+        ctx.fillStyle = '#000'; ctx.strokeStyle = '#ff4f6d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(W / 2, mid - h * .05, gw / 2, Math.max(4, gh / 2), 0, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#d9d0ff';
+        for (let i = 0; i < 12; i++) for (const sd of [-1, 1]) { const x = W / 2 - gw * .42 + i * gw * .84 / 11, y = mid - h * .05 + sd * gh * .42 * Math.sqrt(1 - ((x - W / 2) / (gw / 2)) ** 2); ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y); ctx.lineTo(x, y - sd * 16 * o); ctx.fill(); }
+        drawRocket(ctx, W / 2, zb - h * .12, rs * .55, cfg, t, 0, 1);
+        if (v === 'renforts') {
+          const team = ['meduse', 'pingouin', 'phenix', 'mante', 'dragon', 'yeti'].map(bossById).filter(Boolean);
+          team.forEach((d, i) => { const k = ease((T - .3 - i * .15) / 1), sd = i % 2 ? 1 : -1, x = W / 2 + sd * (W * .7 - k * W * (.18 + Math.floor(i / 2) * .12)), y = top + h * (.25 + Math.floor(i / 2) * .2); portrait(d, x, y, Math.min(64, h * .2), k); });
+          const k = ease(T / 1); portrait(bossById('crabe'), W / 2, top + h * .2 + (1 - k) * -80, Math.min(90, h * .3), k);
+        }
+      } else if (v === 'hurle') {
+        // le Dévoreur hurle et rétrécit ; les étoiles volées s'échappent de partout
+        ctx.fillStyle = '#05010a'; ctx.fillRect(0, 0, W, H);
+        const k = ease(T / 3.5), size = Math.min(W * .8, h * .8) * (1 - k * .75);
+        for (let i = 0; i < 60; i++) { const q = proPts[i + 220], p = (q.d + T * .5) % 1, a = q.a * 3, r = size * .2 + p * Math.max(W, h) * .6; star(W / 2 + Math.cos(a) * r, mid + Math.sin(a) * r * .7, 2 + q.z, 1 - p, t, 10); }
+        portrait(bossById('devoreur'), W / 2 + Math.sin(t / 30) * 4 * (1 - k), mid, size);
+      } else if (v === 'tir') {
+        // fin B : un dernier tir, et une explosion de lumière
+        ctx.fillStyle = '#05010a'; ctx.fillRect(0, 0, W, H);
+        const k = ease(T / .8), boom = ease((T - .8) / 1.5), ex = W / 2, ey = top + h * .3;
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1 - boom; ctx.fillRect(ex - 2, ey + (zb - h * .15 - ey) * (1 - k), 4, (zb - h * .15 - ey) * k); ctx.globalAlpha = 1;
+        if (boom < .3) drawElio(ctx, ex, ey, Math.min(1.6, h / 120), t, 1);
+        halo(ex, ey, boom * Math.max(W, h) * .6, 'rgba(255, 246, 216, .9)', 1 - boom * .6);
+        for (let i = 0; i < 70; i++) { const q = proPts[i + 300], a = q.a * 3, r = boom * Math.max(W, h) * (.2 + q.d * .5); star(ex + Math.cos(a) * r, ey + Math.sin(a) * r, 2 + q.z, boom * (1 - boom * .3), t, 10); }
+        drawRocket(ctx, W / 2, zb - h * .15, rs * .6, cfg, t, 0, .4);
+      }
+    },
+  };
+  const mid0 = Z => (Z.top + Z.zb) / 2;
+  // une petite galaxie sur la carte
+  function galaxySmall(x, y, r, col, t) {
+    for (let i = 0; i < 40; i++) { const q = proPts[i], a = q.a + t / 4000, d = q.r * r; ctx.fillStyle = q.white ? '#ffffff' : col; ctx.globalAlpha = 1 - q.r * .5; ctx.fillRect(x + Math.cos(a) * d, y + Math.sin(a) * d * .5, 1.6, 1.6); }
+    ctx.globalAlpha = 1; halo(x, y, r * .5, 'rgba(255, 255, 255, .8)');
+  }
+  // les soldats de Zorg, des vaisseaux verts en formation
+  function fleet(Z, cy, size) {
+    const { t, h } = Z;
+    for (let i = 0; i < 10; i++) {
+      const sd = i % 2 ? 1 : -1, row = Math.floor(i / 2), x = W / 2 + sd * (size * .55 + row * 22), y = cy - size * .3 + row * h * .08 + Math.sin(t / 500 + i) * 3, z = Math.max(.8, h / 300);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 2);
+      ctx.fillStyle = '#1a1430'; ctx.strokeStyle = '#7dff8a'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(14 * z, 0); ctx.lineTo(-10 * z, -9 * z); ctx.lineTo(-5 * z, 0); ctx.lineTo(-10 * z, 9 * z); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
     }
-    outroText('Touche l\'écran pour passer', H - 26, 12, 'rgba(217, 208, 255, .6)', T > .8 ? 1 : 0);
-    ctx.restore();
+  }
+  // les 9 gardiens en silhouette, puis le tyran plus grand, en dernier (Monde 1, scène de la radio)
+  function guardianWall(Z) {
+    const { T, t, top, zb, h, wd } = Z, [c1, c2] = wd.col, gs = wd.bosses, chief = gs[9];
+    sky(c1); starfield(Z, c2);
+    const cols = 5, rows = Math.ceil(9 / cols) + 1.4, room = h - 40, cell = Math.min(W / (cols + .6), room / rows, 120);
+    for (let i = 0; i < 9; i++) {
+      const k = ease((T - i * .15) / .5); if (k <= 0) continue;
+      const row = Math.floor(i / cols), inRow = Math.min(cols, 9 - row * cols), col = i % cols;
+      const x = W / 2 + (col - (inRow - 1) / 2) * cell, y = top + 34 + row * cell + cell / 2 + (1 - k) * 30;
+      const sil = proSilhouette(gs[i]);
+      ctx.globalAlpha = k; halo(x, y, cell * .55, c2 + '55', k);
+      if (sil) { ctx.globalAlpha = k; ctx.drawImage(sil, x - cell * .45, y - cell * .45, cell * .9, cell * .9); }
+      if (T > 1.4 + i * .1) { ctx.fillStyle = '#ff4f6d'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200 + i)); ctx.beginPath(); ctx.arc(x - cell * .07, y - cell * .04, 2.2, 0, 7); ctx.arc(x + cell * .07, y - cell * .04, 2.2, 0, 7); ctx.fill(); }
+    }
+    // le 10e : le tyran avec sa couronne, plus grand, en dernier
+    const k = ease((T - 1.6) / .6), sil = proSilhouette(chief), z = cell * 1.4, x = W / 2, y = top + 34 + Math.ceil(9 / cols) * cell + z / 2;
+    if (k > 0 && sil) { ctx.globalAlpha = k; halo(x, y, z * .6, 'rgba(255, 216, 107, .35)', k); ctx.globalAlpha = k; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 16; ctx.drawImage(sil, x - z * .45, y - z * .45, z * .9, z * .9); ctx.shadowBlur = 0; }
+    ctx.globalAlpha = 1;
+  }
+  // les 9 gardiens ultimes du Néant, en silhouette autour du Dévoreur
+  function guardianRing(Z, cy, size) {
+    const { T, t } = Z, gs = WORLDS[WORLDS.length - 1].bosses;
+    for (let i = 0; i < 9; i++) {
+      const k = ease((T - .4 - i * .12) / .5), a = Math.PI + i / 8 * Math.PI, r = size * .72, sil = proSilhouette(gs[i], '#1a0a2a');
+      if (k <= 0 || !sil) continue;
+      const x = W / 2 + Math.cos(a) * r * 1.25, y = cy + Math.sin(a) * r * .5 + size * .3, s = Math.min(70, size * .32);
+      ctx.globalAlpha = k; ctx.shadowColor = '#c86bff'; ctx.shadowBlur = 12; ctx.drawImage(sil, x - s / 2, y - s / 2, s, s); ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
   }
 
   // arrivée dans un nouveau monde en pleine partie : le niveau repart à 1
@@ -5016,7 +5318,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (it.boss && (!it.entered || cineT > 0)) { if (dmg >= 1) burst(it.x, it.y + it.r * .5, '#ffffff', 2, 80, 2); return; }
     it.hp -= dmg; it.hitT = .08;
     // sous la moitié de sa vie, le boss lance sa réplique (le jeu continue)
-    if (it.boss && !it.midSaid && it.hp > 0 && it.hp < it.maxHp / 2) { it.midSaid = true; const tk = TALK[it.def.id]; if (tk && tk.mid) bossSay(it.def, tk.mid); }
+    if (it.boss && !it.midSaid && it.hp > 0 && it.hp < it.maxHp / 2) { it.midSaid = true; const tk = TALK[it.def.id]; if (it.def.id === 'devoreur') clacAt = time + .4; else if (tk && tk.mid) bossSay(it.def, tk.mid); }
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     // le Phénix renaît une fois
     if (it.boss && it.def.revive && !it.revived) {
@@ -5267,7 +5569,7 @@ body:not(.jeu) .hud { opacity: 0; }
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
     const record = score > run.bestBefore;
     saveRecord();
-    $('overTitle').innerHTML = `Système éteint…${whoHtml('Nina', WHO_COL.Nina)}«\u202fAllez, ${rocketName()}, relève-toi.\u202f»`;
+    $('overTitle').innerHTML = `Système éteint…${whoHtml('Nina', WHO_COL.Nina)}${typo(`«Allez, ${rocketName()}, relève-toi ! Je suis encore à bord, moi !»`)}`;
     $('finalScore').textContent = score;
     creditRun(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
@@ -5287,12 +5589,12 @@ body:not(.jeu) .hud { opacity: 0; }
   let seenTalks = [];
   try { const st = JSON.parse(localStorage.getItem('comete-dialogues') || '[]'); if (Array.isArray(st)) seenTalks = st; } catch (e) {}
   // couleur de l'étiquette de qui parle ('n' = la fusée)
-  const WHO_COL = { n: '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', '': '#a99fd0' };
+  const WHO_COL = { n: '#ffd86b', '???': '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', Malo: '#7dff8a', 'Inès': '#ff9ad8', 'Le Dévoreur': '#c86bff', Elio: '#ffe9a8', '': '#a99fd0' };
   // une réplique de boss dans une bulle en haut de l'écran, sans pause
   function bossSay(def, text) {
     const b = $('sayBubble');
     b.style.setProperty('--boss', def.col);
-    $('sayWho').innerHTML = whoHtml(def.name).replace(/^<span class="who">|<\/span>$/g, ''); $('sayText').textContent = `«\u202f${text}\u202f»`;
+    $('sayWho').innerHTML = whoHtml(def.name).replace(/^<span class="who">|<\/span>$/g, ''); $('sayText').textContent = typo(`«${text}»`);
     b.hidden = true; void b.offsetWidth; b.hidden = false;
     sayLeft = 3; placeSay();
   }
@@ -5316,7 +5618,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const [w, x, c] = talkQ[0], box = $('talkBox'), who = $('talkWho'), p = $('talkText');
     box.style.setProperty('--who', c || WHO_COL[w] || '#ff7aa8');
     who.innerHTML = w ? whoHtml(w).replace(/^<span class="who">|<\/span>$/g, '') : ''; who.hidden = !w;
-    p.textContent = w ? `«\u202f${x}\u202f»` : x; p.className = w ? '' : 'narr';
+    p.textContent = typo(w ? `«${x}»` : x); p.className = w ? '' : 'narr';
     box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     talkShownAt = performance.now();
     beep(w === 'n' ? 660 : w === 'Clac' ? 330 : 440, .08, 'triangle', .05);
@@ -5347,11 +5649,11 @@ body:not(.jeu) .hud { opacity: 0; }
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
-  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endCine(); };
+  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endFilm(); };
   $('proNext').onclick = () => proNext();
-  $('proGo').onclick = endCine;
-  $('storyGo').onclick = storyNextPage;
-  $('storySkip').onclick = closeStory;
+  $('proGo').onclick = endFilm;
+  $('choiceA').onclick = () => chooseEnd('A');
+  $('choiceB').onclick = () => chooseEnd('B');
   $('againBtn').onclick = start;
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
@@ -5433,7 +5735,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveNow() {
     // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
     if (loadingSave) return;
-    if (!cineReplay && ['play', 'pause', 'story', 'talk', 'transit', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
+    if (!cineReplay && ['play', 'pause', 'talk', 'film', 'choice', 'launch', 'dying'].includes(state)) { creditRun(); saveRecord(); }
     saveStats(); saveCfg(); saveShop();
   }
   // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
@@ -5498,16 +5800,16 @@ body:not(.jeu) .hud { opacity: 0; }
 
   // --- contrôles ---
   addEventListener('pointerdown', e => {
-    if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro();
+    if (state === 'launch') finishLaunch();
     else if (state === 'talk') talkNext();
-    else if ((state === 'prologue' || state === 'transit') && !e.target.closest('button') && proT > .5) proNext();
+    else if (state === 'film' && !e.target.closest('button') && proT > .5) proNext();
   });
   addEventListener('keydown', e => {
     if (state === 'talk') { if (!e.repeat) talkNext(e.key === 'Escape'); e.preventDefault(); return; }
-    if (state === 'outro') { if (!e.repeat && outroT > .8) finishOutro(); return; }
-    if (state === 'prologue' || state === 'transit') {
+    if (state === 'choice') return;
+    if (state === 'film') {
       if (e.repeat) return;
-      if (e.key === 'Escape') endCine(); else if (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' ')) endCine(); else if (proT > .5) proNext();
+      if (e.key === 'Escape' || (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' '))) endFilm(); else if (proT > .5) proNext();
       e.preventDefault(); return;
     }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
@@ -5562,7 +5864,8 @@ body:not(.jeu) .hud { opacity: 0; }
       m.x = bx + (m.tx - bx) * e + Math.sin(q * 9 + m.w) * 10 * (1 - q); m.y = by + (-60 - by) * e;
     }
     if (smokes.length) smokes = smokes.filter(m => m.life > 0);
-    if (storyAt && time >= storyAt) { storyAt = 0; startOutro(storyNext); return; }
+    if (clacAt && time >= clacAt) { clacAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startClacFilm(); return; }
+    if (storyAt && time >= storyAt) { storyAt = 0; storyNext === 'world' ? startTransit() : startFinale(); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss) lvT += dt;
     if (lvT >= levelSecs()) {
@@ -7656,8 +7959,7 @@ body:not(.jeu) .hud { opacity: 0; }
       fg.addColorStop(0, 'rgba(10, 4, 24, 0)'); fg.addColorStop(1, boss.pw.col === '#b6ff6b' ? 'rgba(14, 30, 8, .94)' : 'rgba(10, 4, 24, .94)');
       ctx.globalAlpha = q; ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
     }
-    if (state === 'outro') drawOutro(t);
-    if (state === 'prologue' || state === 'transit') drawPrologue(t);
+    if (state === 'film') drawPrologue(t);
     if (flash > 0) {
       ctx.fillStyle = `rgba(${flashColor}, ${(flash * .8).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
@@ -7724,11 +8026,10 @@ body:not(.jeu) .hud { opacity: 0; }
     if (state === 'play') update(dt);
     else if (state === 'launch') updateLaunch(dt);
     else if (state === 'dying') updateDying(dt);
-    else if (state === 'outro') updateOutro(dt);
-    else if (state === 'prologue' || state === 'transit') updatePrologue(dt);
+    else if (state === 'film') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story' && state !== 'talk') updateScenery(dt);
-    document.body.classList.toggle('jeu', !cineReplay && ['play', 'pause', 'launch', 'dying', 'story', 'talk', 'outro'].includes(state));
+    document.body.classList.toggle('jeu', !cineReplay && ['play', 'pause', 'launch', 'dying', 'talk'].includes(state));
     draw(t);
     if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); drawActs(t); }
     requestAnimationFrame(loop);
