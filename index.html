@@ -2314,6 +2314,8 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- état ---
   let state = 'menu';
   let mouseFire = false, btnFire = false, infAt = null, tapShots = 0, grab = null;
+  // au doigt : le premier doigt sur l'écran déplace la fusée, les autres doigts tirent
+  let moveId = null; const fireTouches = new Set();
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let zapT = 0, missT = 0, zaps = [];
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
@@ -5641,7 +5643,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // dialogue après la défaite : le jeu s'arrête, une ligne à la fois, on touche pour passer
   function openTalk() {
     if (!talkQ.length || state !== 'play') return;
-    state = 'talk'; mouseFire = btnFire = false; tapShots = 0; grab = null;
+    state = 'talk'; mouseFire = btnFire = false; tapShots = 0; grab = null; moveId = null; fireTouches.clear();
     for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
     if (!seenTalks.includes(talkId)) { seenTalks.push(talkId); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} }
     $('talk').hidden = false; talkShow();
@@ -5862,22 +5864,39 @@ body:not(.jeu) .hud { opacity: 0; }
     else target = { x: e.clientX, y: e.clientY - (e.pointerType === 'touch' ? 70 : 0) };
   };
   cv.addEventListener('pointerdown', e => {
-    // au doigt : toucher la fusée tire une fois (on peut taper plusieurs fois de suite)
-    if (e.pointerType === 'touch' && state === 'play' && Math.hypot(e.clientX - player.x, e.clientY - player.y) < 70) {
-      grab = { dx: player.x - e.clientX, dy: player.y - e.clientY };
-      tapShots = Math.min(3, tapShots + 1);
-      return;
+    if (e.pointerType === 'touch' && state === 'play') {
+      // un deuxième doigt pendant qu'un premier déplace la fusée : il tire (une tape = un tir, maintenu = tir continu)
+      if (moveId !== null && moveId !== e.pointerId) {
+        fireTouches.add(e.pointerId);
+        tapShots = Math.min(3, tapShots + 1);
+        return;
+      }
+      moveId = e.pointerId;
+      // au doigt : toucher la fusée tire une fois (on peut taper plusieurs fois de suite)
+      if (Math.hypot(e.clientX - player.x, e.clientY - player.y) < 70) {
+        grab = { dx: player.x - e.clientX, dy: player.y - e.clientY };
+        tapShots = Math.min(3, tapShots + 1);
+        return;
+      }
     }
     grab = null; pt(e);
     if (e.pointerType === 'mouse' && e.button === 0) mouseFire = true;
   });
-  addEventListener('pointerup', e => { if (e.pointerType === 'mouse') mouseFire = false; else grab = null; });
+  const touchUp = e => {
+    fireTouches.delete(e.pointerId);
+    if (e.pointerId === moveId) { moveId = null; grab = null; }
+  };
+  addEventListener('pointerup', e => { if (e.pointerType === 'mouse') mouseFire = false; else touchUp(e); });
+  addEventListener('pointercancel', e => { if (e.pointerType !== 'mouse') touchUp(e); });
   const fb = $('fireBtn');
   fb.addEventListener('pointerdown', e => { e.preventDefault(); btnFire = true; fb.classList.add('on'); try { fb.setPointerCapture(e.pointerId); } catch (err) {} });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) fb.addEventListener(ev, () => { btnFire = false; fb.classList.remove('on'); });
   $('ammoBtn').addEventListener('pointerdown', e => { e.preventDefault(); tryReload(); });
-  cv.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' || e.buttons) pt(e); });
-  addEventListener('blur', () => { mouseFire = btnFire = false; for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
+  cv.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') pt(e);
+    else if (e.buttons && (moveId === null || e.pointerId === moveId)) pt(e);
+  });
+  addEventListener('blur', () => { mouseFire = btnFire = false; moveId = null; grab = null; fireTouches.clear(); for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
 
   // un niveau dure plus longtemps dans les mondes lointains (20 s, puis 26, 32, 38, 44)
   const levelSecs = () => 20 + world * 6;
@@ -5958,7 +5977,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (reload) {
       reload.t += dt;
       if (reload.t >= reload.dur) finishReload(false);
-    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || nova || tapShots > 0) && fireT <= 0) {
+    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || nova || tapShots > 0) && fireT <= 0) {
       if (tapShots > 0) tapShots--;
       fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova) ammo--;
