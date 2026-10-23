@@ -303,6 +303,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .procine .dots { display: flex; gap: 6px; }
 .procine .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
 .procine .dots i.on { background: var(--star); }
+.procine p.note { font-size: 14px; font-style: normal; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .procine p.in { animation: none; } }
 @media (max-height: 520px) {
   .procine { gap: 6px; padding-bottom: 8px; }
@@ -311,13 +312,17 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 }
 
 /* Qui parle : l'étiquette au-dessus d'une réplique */
-.who { display: block; font-family: var(--display); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--tail); margin-bottom: 2px; font-style: normal; }
+.who { display: flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--tail); margin-bottom: 4px; font-style: normal; }
+.procine .who, .say-bubble .who, #overTitle .who { justify-content: center; }
+.who[hidden] { display: none; }
+/* petit portrait rond de qui parle */
+.ava { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid currentColor; background: #0b0820; object-fit: cover; }
 .procine .prosub { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .procine p.say, .storytext p.say { font-style: italic; }
 /* Réplique d'un boss en plein combat : une bulle en haut, le jeu continue */
-.say-bubble { position: fixed; left: 16px; right: 16px; top: calc(108px + env(safe-area-inset-top, 0px)); margin: 0 auto; width: fit-content; max-width: 30rem;
-  padding: 8px 14px; border-radius: 14px; border: 2px solid var(--boss, var(--tail)); background: rgba(5, 3, 15, .78); color: var(--ink);
-  font-size: 15px; line-height: 1.4; font-style: italic; text-align: center; pointer-events: none; animation: storyIn .35s ease both; }
+.say-bubble { position: fixed; z-index: 3; left: 16px; right: 16px; top: 200px; margin: 0 auto; width: fit-content; max-width: 30rem;
+  padding: 10px 16px; border-radius: 16px; border: 2px solid var(--boss, var(--tail)); background: rgba(5, 3, 15, .85); color: var(--ink);
+  font-size: 18px; line-height: 1.45; font-style: italic; text-align: center; pointer-events: none; animation: storyIn .35s ease both; }
 .say-bubble[hidden] { display: none; }
 .say-bubble .who { color: var(--boss, var(--tail)); }
 /* Dialogue après la défaite d'un boss : une ligne à la fois, on touche pour passer */
@@ -351,7 +356,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .cinecard small { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
 .cinecard b { font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 54px); line-height: 1; color: var(--boss, var(--tail)); text-shadow: 0 0 24px var(--boss, var(--tail)); }
 .cinecard span { font-size: 15px; color: var(--ink); }
-.cinecard q { font-size: 17px; font-style: italic; color: var(--ink); opacity: 0; animation: storyIn .6s ease 1.2s forwards; }
+.cinecard q { quotes: none; font-size: 17px; font-style: italic; color: var(--ink); opacity: 0; animation: storyIn .6s ease 1.2s forwards; }
 @keyframes cardIn { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .hazard, .cinecard, .cinecard q, .storytext p { animation: none; opacity: 1; }
@@ -2236,7 +2241,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
   // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
-  let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [];
+  let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -2244,7 +2249,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
-    sayLeft = 0; talkQ = []; talkAt = 0; smokes = [];
+    sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
@@ -3589,11 +3594,42 @@ body:not(.jeu) .hud { opacity: 0; }
   const rocketName = () => cfg.name.replace(/[<>&"]/g, '');
   // une scène est une liste de lignes (les anciens textes : une phrase = une scène)
   const sceneLines = sc => Array.isArray(sc) ? sc : [sc];
+  // portrait rond de qui parle : la fusée (avec son apparence du Hangar), Clac (le crabe), Nina ou un boss
+  const avaCache = {};
+  function avatar(who) {
+    const def = who === 'Clac' ? ALL_BOSSES.find(d => d.id === 'crabe') : ALL_BOSSES.find(d => d.name === who);
+    if (def) return bossPortrait(def);
+    if (who !== 'n' && who !== '???' && who !== 'Nina') return '';
+    const key = who === 'Nina' ? 'Nina' : 'n' + JSON.stringify(cfg);
+    if (avaCache[key]) return avaCache[key];
+    const c = document.createElement('canvas'); c.width = c.height = 96; const k = c.getContext('2d');
+    if (who === 'Nina') {
+      // Nina : une fillette aux cheveux bruns, avec deux couettes
+      k.fillStyle = '#1d2a5a'; k.fillRect(0, 0, 96, 96);
+      k.fillStyle = '#5a3420'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 30, 40, 12, 0, 7); k.fill(); }
+      k.beginPath(); k.arc(48, 46, 27, Math.PI, 0); k.fill();
+      k.fillStyle = '#ffd9b8'; k.beginPath(); k.ellipse(48, 52, 22, 24, 0, 0, 7); k.fill();
+      k.fillStyle = '#5a3420'; k.beginPath(); k.ellipse(48, 32, 24, 10, 0, Math.PI, 0); k.fill();
+      k.fillStyle = '#2a1a40'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 3.4, 0, 7); k.fill(); }
+      k.fillStyle = 'rgba(255, 120, 150, .5)'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 15, 60, 4, 0, 7); k.fill(); }
+      k.strokeStyle = '#a0405a'; k.lineWidth = 2; k.beginPath(); k.arc(48, 62, 6, .2, Math.PI - .2); k.stroke();
+      k.fillStyle = '#7ad8ff'; k.fillRect(26, 88, 44, 8);
+    } else {
+      // la fusée, avec l'apparence choisie au Hangar
+      k.fillStyle = '#141036'; k.fillRect(0, 0, 96, 96);
+      drawRocket(k, 48, 44, 1.25, cfg, 0, 0, 0);
+    }
+    return (avaCache[key] = c.toDataURL());
+  }
+  // l'étiquette de qui parle, avec son portrait
+  function whoHtml(w, col) {
+    const ava = avatar(w), name = w === 'n' ? rocketName() : w;
+    return `<span class="who"${col ? ` style="color:${col}"` : ''}>${ava ? `<img class="ava" src="${ava}" alt="">` : ''}${name}</span>`;
+  }
   // une ligne : narration (texte), ou réplique [qui parle, texte] ('n' = la fusée, avec le nom choisi par le joueur)
   function lineHtml(l) {
     if (!Array.isArray(l)) return l;
-    const col = WHO_COL[l[0]];
-    return `<span class="who"${col ? ` style="color:${col}"` : ''}>${l[0] === 'n' ? rocketName() : l[0]}</span>«\u00a0${l[1]}\u00a0»`;
+    return `${whoHtml(l[0], WHO_COL[l[0]])}«\u202f${l[1]}\u202f»`;
   }
   let storyPages = [], storyPage = 0, storyExtra = [];
   function showStory(mode) {
@@ -3640,7 +3676,9 @@ body:not(.jeu) .hud { opacity: 0; }
   // par défaut, 5 scènes (une image chacune) ; le Monde 1 en a 8
   const PRO_VIS = [[0, 5, 5, 0, 1, 2, 3, 4]];
   let proT = 0, proScene = 0, proCount = 5, proLines = [], proPts = [], proImgs = {}, proSil = {};
-  const proVis = i => (PRO_VIS[storyWorld] || [])[i] ?? i;
+  // la transition entre deux mondes réutilise le même cadre, avec ses propres images (10 à 15)
+  let proKind = 'prologue';
+  const proVis = i => proKind === 'world' ? 10 + Math.min(i, 5) : (PRO_VIS[storyWorld] || [])[i] ?? i;
   function proImg(d) {
     if (!proImgs[d.id]) { const im = new Image(); im.src = bossPortrait(d); proImgs[d.id] = im; }
     return proImgs[d.id];
@@ -3658,21 +3696,43 @@ body:not(.jeu) .hud { opacity: 0; }
     const n = `<b>${rocketName()}</b>`;
     proLines = PROLOGUES[w](n).map(sceneLines); proCount = proLines.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story']) $(id).hidden = true;
+    proKind = 'prologue'; $('proGo').textContent = 'Décoller';
+    proOpen(); state = 'prologue';
+    proGoto(0);
+  }
+  function proOpen() {
     const R = Math.random;
     proPts = Array.from({ length: reduce ? 260 : 600 }, () => {
       const arm = Math.floor(R() * 3), rr = Math.pow(R(), .7);
       return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .55, r: rr, z: R() < .08 ? 2.6 : 1.3, white: R() < .35, d: R(), u: R(), v: R() };
     });
-    WORLDS[w].bosses.forEach(proImg);
+    WORLDS[storyWorld].bosses.forEach(proImg);
     $('proDots').innerHTML = '<i></i>'.repeat(proCount);
     $('proCine').hidden = false;
-    state = 'prologue';
+  }
+  // transition vers le monde suivant, scène par scène, en plein écran (le jeu attend derrière)
+  const hasScenes = w => WORLD_STORY[w] && WORLD_STORY[w]('').some(Array.isArray);
+  function startTransit() {
+    storyWorld = world; storyMode = 'world'; proKind = 'world';
+    proLines = WORLD_STORY[world + 1](`<b>${rocketName()}</b>`).map(sceneLines); proCount = proLines.length;
+    for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine']) $(id).hidden = true;
+    $('proGo').textContent = 'En route !';
+    proOpen(); state = 'transit';
     proGoto(0);
+  }
+  function endCine() {
+    if (state === 'prologue') return endPrologue();
+    if (state !== 'transit') return;
+    $('proCine').hidden = true; proKind = 'prologue';
+    state = 'play'; last = performance.now();
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
+    enterWorld(world + 1); markPrologue(world); resetForNewWorld();
   }
   function proGoto(i) {
     proScene = i; proT = 0;
     const last = i === proCount - 1, sub = $('proSub');
-    sub.innerHTML = (proLines[i] || []).map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${last ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('');
+    sub.innerHTML = (proLines[i] || []).map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${last ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
+      + (last && proKind === 'world' ? '<p class="in note" style="animation-delay:.7s"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</p>' : '');
     [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
     $('proGo').hidden = !last; $('proNext').hidden = last;
     $('proSkip').textContent = last ? 'Revoir' : 'Passer';
@@ -3693,7 +3753,7 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.save();
     // fond : le ciel de la galaxie
     const bg = ctx.createRadialGradient(W / 2, H * .42, 10, W / 2, H * .42, Math.max(W, H) * .8);
-    bg.addColorStop(0, sc === 1 ? '#2a0612' : c1); bg.addColorStop(1, '#04020c');
+    bg.addColorStop(0, sc === 1 ? '#2a0612' : sc === 10 ? '#7a5ab8' : sc === 12 ? '#0e1640' : sc === 15 ? WORLDS[Math.min(storyWorld + 1, WORLDS.length - 1)].col[0] : c1); bg.addColorStop(1, '#04020c');
     ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
     // étoiles de fond qui défilent (plus vite quand la fusée fonce)
     const speed = sc === 3 ? 1.6 : .05;
@@ -3751,7 +3811,8 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.shadowBlur = 0;
     } else if (sc === 2) {
       // 3. les gardiens apparaissent un à un, en silhouette
-      const cols = W > 700 ? 5 : 3, rows = Math.ceil(9 / cols), cell = Math.min(W / (cols + .6), H * .5 / rows, 150);
+      const chiefToo = storyWorld === 0, cols = W > 700 ? 5 : 3, rows = Math.ceil(9 / cols) + (chiefToo ? 1.4 : 0);
+      const room = chiefToo ? $('proSub').getBoundingClientRect().top - 12 - H * .14 : H * .5, cell = Math.min(W / (cols + .6), room / rows, 150);
       for (let i = 0; i < 9; i++) {
         const k = ease((T - i * .22) / .5); if (k <= 0) continue;
         const row = Math.floor(i / cols), inRow = Math.min(cols, 9 - row * cols), col = i % cols;
@@ -3763,6 +3824,18 @@ body:not(.jeu) .hud { opacity: 0; }
         if (sil) { ctx.shadowColor = c2; ctx.shadowBlur = 10; ctx.drawImage(sil, x - cell * .45, y - cell * .45, cell * .9, cell * .9); ctx.shadowBlur = 0; }
         // deux yeux qui s'allument
         if (T > 1.6 + i * .1) { ctx.fillStyle = '#ff4f6d'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200 + i)); ctx.beginPath(); ctx.arc(x - cell * .07, y - cell * .04, 2.2, 0, 7); ctx.arc(x + cell * .07, y - cell * .04, 2.2, 0, 7); ctx.fill(); }
+      }
+      // le 10e : le tyran lui-même, plus grand, en dernier, cerclé d'or
+      if (chiefToo) {
+        const k = ease((T - 9 * .22 - .3) / .6), sil = proSilhouette(chief), z = cell * 1.4;
+        const x = W / 2, y = H * .14 + Math.ceil(9 / cols) * cell + z / 2 + (1 - k) * 30 + Math.sin(t / 600) * 4;
+        if (k > 0) {
+          ctx.globalAlpha = k;
+          const gl = ctx.createRadialGradient(x, y, 0, x, y, z * .6); gl.addColorStop(0, 'rgba(255, 216, 107, .35)'); gl.addColorStop(1, 'rgba(255, 216, 107, 0)');
+          ctx.fillStyle = gl; ctx.fillRect(x - z * .6, y - z * .6, z * 1.2, z * 1.2);
+          if (sil) { ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 16; ctx.drawImage(sil, x - z * .45, y - z * .45, z * .9, z * .9); ctx.shadowBlur = 0; }
+          if (T > 2.6) { ctx.fillStyle = '#b6ff6b'; ctx.globalAlpha = k * (.6 + .4 * Math.sin(t / 200)); ctx.beginPath(); ctx.arc(x - z * .08, y - z * .02, 3, 0, 7); ctx.arc(x + z * .08, y - z * .02, 3, 0, 7); ctx.fill(); }
+        }
       }
       ctx.globalAlpha = ease((T - .3) / .5); ctx.textAlign = 'center';
       ctx.font = `${Math.min(30, W / 18)}px Bungee, Impact, system-ui, sans-serif`; ctx.fillStyle = c2;
@@ -3788,6 +3861,8 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.textAlign = 'center'; ctx.globalAlpha = .75; ctx.fillStyle = '#ffd86b';
       ctx.font = `${Math.min(30, W / 14)}px Bungee, Impact, system-ui, sans-serif`;
       ctx.fillText('BAIE 07', W / 2, Math.max(H * .12, Math.min(40, H * .05) + 34)); ctx.globalAlpha = 1;
+    } else if (sc >= 10) {
+      drawTransit(sc, T, t, m, c1, c2, chief);
     } else {
       // 5. la mission : la galaxie au loin, la fusée prête
       const z = m * .3, rot = t / 9000, gy = H * .3;
@@ -3806,6 +3881,164 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1; ctx.fillStyle = '#000'; const bar = Math.min(40, H * .05); ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
     ctx.restore();
+  }
+
+
+  function drawSmoke(x, y, r, a, q) {
+    if (a <= 0) return;
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, 1 + q * 1.6);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    g.addColorStop(0, `rgba(0, 0, 0, ${(.95 * a).toFixed(3)})`); g.addColorStop(.55, `rgba(12, 4, 22, ${(.85 * a).toFixed(3)})`);
+    g.addColorStop(.8, `rgba(110, 50, 170, ${(.35 * a).toFixed(3)})`); g.addColorStop(1, 'rgba(110, 50, 170, 0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.restore();
+  }
+  // ===== Images de la transition Monde 1 → Monde 2 (une par scène) =====
+  // le tout se tient dans le haut de l'écran : le texte et les boutons restent en bas, sans rien cacher
+  function drawTransit(sc, T, t, m, c1, c2, chief) {
+    const top = Math.min(40, H * .05), zoneB = Math.min(H < 520 ? H * .62 : H * .56, $('proSub').getBoundingClientRect().top - 12), mid = (top + zoneB) / 2;
+    const rs = Math.min(3, m / 260);
+    const star = (x, y, r, a, glow = 10) => { ctx.globalAlpha = a; ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = glow; drawStar(x, y, r, t / 700 + x); ctx.fill(); ctx.shadowBlur = 0; };
+    if (sc === 10) {
+      // 1. Zorg se dissout : fumée noire aspirée vers le haut de l'écran
+      const cy = mid + 20, size = Math.min(m * .34, (zoneB - top) * .55), im = proImg(chief), fade = 1 - ease(T / 1.8);
+      const vort = ctx.createRadialGradient(W / 2, top, 0, W / 2, top, m * .5);
+      vort.addColorStop(0, 'rgba(0, 0, 0, .95)'); vort.addColorStop(.5, 'rgba(60, 20, 90, .35)'); vort.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = vort; ctx.fillRect(0, 0, W, H * .6);
+      if (im.complete && im.naturalWidth && fade > 0) { ctx.globalAlpha = fade; ctx.drawImage(im, W / 2 - size / 2, cy - size / 2 - (1 - fade) * 30, size, size); }
+      const n = reduce ? 30 : 70, power = Math.max(.45, 1 - T / 6), sz = Math.min(1.4, m / 420);
+      ctx.globalAlpha = 1;
+      for (let i = 0; i < n; i++) {
+        const q = proPts[i], p = (q.d + T * .45) % 1, e = p * p;
+        const sx = W / 2 + (q.u - .5) * size * 1.4, sy = cy + (q.v - .5) * size;
+        drawSmoke(sx + (W / 2 + (q.r - .5) * 40 - sx) * e + Math.sin(p * 9 + i) * 12 * (1 - p), sy + (top - 50 - sy) * e, (16 + q.z * 8) * sz, Math.min(1, p * 8) * Math.min(1, (1 - p) * 3) * power, p);
+      }
+    } else if (sc === 11) {
+      // 2. les étoiles du palais flottent autour de la fusée
+      const cx = W / 2, cy = mid + 10, R = Math.min(m * .3, (zoneB - top) * .42);
+      for (let i = 0; i < 26; i++) {
+        const q = proPts[i + 150], a = q.a * 2 + t / (2600 + q.d * 2000) * (i % 2 ? 1 : -1), rr = R * (.55 + q.d * .5);
+        star(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .8 + Math.sin(t / 500 + i) * 5, 2.5 + q.z * 1.5, (.5 + .5 * Math.sin(t / 300 + i * 2)) * Math.min(1, T * 2));
+      }
+      ctx.globalAlpha = 1;
+      drawRocket(ctx, cx, cy + Math.sin(t / 500) * 6, rs, cfg, t, Math.sin(t / 900) * .05, .3);
+    } else if (sc === 12) {
+      // 3. les étoiles montent dans le ciel, puis la Terre : Nina voit la première étoile s'allumer
+      const earthK = ease((T - 2.2) / 1);
+      if (earthK < 1) {
+        ctx.globalAlpha = 1 - earthK;
+        drawRocket(ctx, W / 2, zoneB - 40, rs * .7, cfg, t, 0, .3);
+        for (let i = 0; i < 40; i++) {
+          const q = proPts[i + 200], k = ease((T - q.d * .8) / 1.4);
+          const x = W / 2 + (q.u * W - W / 2) * k, y = zoneB - 60 + (top + 20 + q.v * (zoneB - top) * .5 - (zoneB - 60)) * k;
+          star(x, y, 2 + q.z, (1 - earthK) * Math.min(1, k * 3));
+        }
+      }
+      if (earthK > 0) {
+        ctx.globalAlpha = earthK;
+        // le ciel de la Terre, encore presque noir, et la planète en bas
+        const hy = zoneB - 30, R = Math.max(W, H) * 1.3;
+        const atm = ctx.createRadialGradient(W / 2, hy + R, R * .98, W / 2, hy + R, R * 1.06);
+        atm.addColorStop(0, 'rgba(122, 216, 255, .55)'); atm.addColorStop(1, 'rgba(122, 216, 255, 0)');
+        ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(W / 2, hy + R, R * 1.06, 0, 7); ctx.fill();
+        const eg = ctx.createLinearGradient(0, hy, 0, H); eg.addColorStop(0, '#1d5a8a'); eg.addColorStop(.25, '#123a5e'); eg.addColorStop(1, '#06121f');
+        ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(W / 2, hy + R, R, 0, 7); ctx.fill();
+        // Nina, une petite silhouette debout sur la Terre
+        const nx = W / 2 - Math.min(80, W * .12), ny = hy - 1, s = Math.max(1, m / 420);
+        ctx.fillStyle = '#05070f';
+        ctx.beginPath(); ctx.arc(nx, ny - 27 * s, 6 * s, 0, 7); ctx.fill();
+        for (const sx of [-1, 1]) { ctx.beginPath(); ctx.arc(nx + sx * 6 * s, ny - 30 * s, 3 * s, 0, 7); ctx.fill(); }
+        ctx.beginPath(); ctx.moveTo(nx - 3 * s, ny - 21 * s); ctx.lineTo(nx + 3 * s, ny - 21 * s); ctx.lineTo(nx + 8 * s, ny - 7 * s); ctx.lineTo(nx - 8 * s, ny - 7 * s); ctx.closePath(); ctx.fill();
+        ctx.fillRect(nx - 4 * s, ny - 7 * s, 2.5 * s, 7 * s); ctx.fillRect(nx + 1.5 * s, ny - 7 * s, 2.5 * s, 7 * s);
+        // un bras levé vers le ciel
+        ctx.strokeStyle = '#05070f'; ctx.lineWidth = 2.2 * s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(nx + 3 * s, ny - 19 * s); ctx.lineTo(nx + 9 * s, ny - 30 * s); ctx.stroke(); ctx.lineCap = 'butt';
+        // la première étoile s'allume au-dessus d'elle
+        const sk = ease((T - 3) / 1.2), sx = nx + Math.min(150, W * .25), sy = top + (hy - top) * .3;
+        if (sk > 0) {
+          const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, 60 * sk);
+          halo.addColorStop(0, 'rgba(255, 246, 216, .7)'); halo.addColorStop(1, 'rgba(255, 216, 107, 0)');
+          ctx.globalAlpha = earthK; ctx.fillStyle = halo; ctx.fillRect(sx - 60, sy - 60, 120, 120);
+          star(sx, sy, 7 * sk + Math.sin(t / 250) * .8, earthK, 22);
+        }
+      }
+    } else if (sc === 13) {
+      // 4. à bord : la fusée parle avec Clac
+      const z = m * .38, gy = mid;
+      ctx.globalCompositeOperation = 'lighter';
+      for (const q of proPts) {
+        const a = q.a + t / 12000, x = W / 2 + Math.cos(a) * q.r * z, y = gy + Math.sin(a) * q.r * z * .45;
+        ctx.globalAlpha = (1 - q.r * .6) * .35; ctx.fillStyle = q.white ? '#ffffff' : c2; ctx.fillRect(x, y, q.z, q.z);
+      }
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      drawRocket(ctx, W / 2, mid + Math.sin(t / 600) * 8, rs, cfg, t, Math.sin(t / 1100) * .08, .4);
+    } else if (sc === 14) {
+      // 5. la carte : 4 étapes reliées jusqu'au Néant
+      const mx = Math.max(16, W * .08), mw = W - mx * 2, my = top + 44, mh = zoneB - my - 10;
+      ctx.globalAlpha = Math.min(1, T * 2);
+      ctx.fillStyle = 'rgba(122, 216, 255, .06)'; ctx.strokeStyle = 'rgba(122, 216, 255, .45)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(mx, my, mw, mh, 16) : ctx.rect(mx, my, mw, mh); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(122, 216, 255, .1)'; ctx.lineWidth = 1;
+      for (let x = mx + 24; x < mx + mw; x += 24) { ctx.beginPath(); ctx.moveTo(x, my); ctx.lineTo(x, my + mh); ctx.stroke(); }
+      for (let y = my + 24; y < my + mh; y += 24) { ctx.beginPath(); ctx.moveTo(mx, y); ctx.lineTo(mx + mw, y); ctx.stroke(); }
+      const nodes = [1, 2, 3, 4].map((wi, i) => ({ wi, x: mx + mw * (.14 + i * .24), y: my + mh * (i % 2 ? .38 : .58) }));
+      const p = ease(T / 2.6) * 3, nr = Math.max(15, Math.min(28, mw / 16));
+      // le chemin pointillé qui se trace d'une étape à l'autre
+      ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 7]); ctx.lineDashOffset = -t / 60;
+      ctx.beginPath(); ctx.moveTo(nodes[0].x, nodes[0].y);
+      for (let i = 1; i < 4; i++) { const f = Math.max(0, Math.min(1, p - (i - 1))); if (f <= 0) break; ctx.lineTo(nodes[i - 1].x + (nodes[i].x - nodes[i - 1].x) * f, nodes[i - 1].y + (nodes[i].y - nodes[i - 1].y) * f); }
+      ctx.stroke(); ctx.setLineDash([]);
+      nodes.forEach((nd, i) => {
+        const k = ease((p - i + .3) * 2); if (k <= 0) return;
+        const { x, y } = nd, r = nr * (.6 + .4 * k), col = WORLDS[nd.wi].col[1];
+        ctx.globalAlpha = k;
+        if (i === 3) {
+          // le Néant : un point noir au bout, cerclé de violet
+          const g = ctx.createRadialGradient(x, y, r * .6, x, y, r * 1.8); g.addColorStop(0, 'rgba(200, 107, 255, .55)'); g.addColorStop(1, 'rgba(200, 107, 255, 0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r * 1.8 + Math.sin(t / 300) * 3, 0, 7); ctx.fill();
+          ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+        } else {
+          ctx.fillStyle = '#0b0820'; ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 2; const u = r * .55;
+          if (i === 0) for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3; ctx.beginPath(); ctx.moveTo(x - Math.cos(a) * u, y - Math.sin(a) * u); ctx.lineTo(x + Math.cos(a) * u, y + Math.sin(a) * u); ctx.stroke(); }
+          else if (i === 1) { ctx.beginPath(); ctx.moveTo(x - u, y + u * .7); ctx.lineTo(x - u * .25, y - u * .6); ctx.lineTo(x + u * .25, y - u * .6); ctx.lineTo(x + u, y + u * .7); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.arc(x, y - u * .8, u * .28, 0, 7); ctx.fill(); }
+          else { ctx.beginPath(); ctx.ellipse(x, y, u * .5, u, .6, 0, 7); ctx.fill(); ctx.strokeStyle = '#0b0820'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - u * .5, y + u * .7); ctx.lineTo(x + u * .5, y - u * .7); ctx.stroke(); }
+        }
+        ctx.fillStyle = i === 3 ? '#c86bff' : col; ctx.textAlign = 'center';
+        ctx.font = `600 ${Math.max(10, Math.min(14, mw / 34))}px Outfit, system-ui, sans-serif`;
+        ctx.fillText(['GIVRE', 'FORGE', 'JUNGLE', 'NÉANT'][i], x, y + r + 16);
+      });
+    } else if (sc === 15) {
+      // 6. une porte de glace s'ouvre sur le Royaume de Givre
+      const W2 = WORLDS[Math.min(storyWorld + 1, WORLDS.length - 1)], ice = W2.col[1];
+      const dw = Math.min(W * .7, 380), dh = Math.min(zoneB - top - 70, dw * 1.15), dx = W / 2 - dw / 2, dy = top + 50;
+      const o = ease((T - .5) / 1.8);
+      const light = ctx.createRadialGradient(W / 2, dy + dh * .6, 0, W / 2, dy + dh * .6, dw * .7);
+      light.addColorStop(0, '#ffffff'); light.addColorStop(.3, ice); light.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.globalAlpha = .25 + .75 * o; ctx.fillStyle = light; ctx.fillRect(dx - dw * .3, dy - 20, dw * 1.6, dh + 40);
+      ctx.globalAlpha = 1;
+      for (const sd of [-1, 1]) {
+        const pw = dw / 2, px = W / 2 + (sd < 0 ? -pw : 0) + sd * o * pw * .95;
+        ctx.save(); ctx.beginPath(); ctx.rect(dx - 4, dy, dw + 8, dh); ctx.clip();
+        const g = ctx.createLinearGradient(px, dy, px + pw, dy + dh); g.addColorStop(0, '#e6f9ff'); g.addColorStop(.5, '#7ad8ff'); g.addColorStop(1, '#2a6a9e');
+        ctx.fillStyle = g; ctx.fillRect(px, dy, pw, dh);
+        ctx.strokeStyle = 'rgba(255, 255, 255, .55)'; ctx.lineWidth = 1.2;
+        for (let j = 0; j < 6; j++) { ctx.beginPath(); ctx.moveTo(px + pw * (j % 3) / 3, dy + dh * j / 6); ctx.lineTo(px + pw * ((j + 1) % 3) / 3 + 10, dy + dh * (j + 1) / 6); ctx.stroke(); }
+        ctx.restore();
+      }
+      // l'arche de glace autour de la porte
+      ctx.strokeStyle = '#e6f9ff'; ctx.lineWidth = 5; ctx.shadowColor = ice; ctx.shadowBlur = 14;
+      ctx.strokeRect(dx - 4, dy, dw + 8, dh); ctx.shadowBlur = 0;
+      for (let i = 0; i < 9; i++) { const x = dx + dw * i / 8; ctx.fillStyle = '#e6f9ff'; ctx.beginPath(); ctx.moveTo(x - 6, dy); ctx.lineTo(x + 6, dy); ctx.lineTo(x, dy + 12 + (i % 3) * 6); ctx.closePath(); ctx.fill(); }
+      // flocons qui tombent
+      for (let i = 0; i < 40; i++) { const q = proPts[i + 300], y = (q.v * H + t * .03 * (1 + q.d)) % (zoneB + 20); ctx.globalAlpha = .7; ctx.fillStyle = '#ffffff'; ctx.fillRect(q.u * W + Math.sin(t / 700 + i) * 8, y, 2, 2); }
+      ctx.globalAlpha = 1;
+      if (o > .6) drawRocket(ctx, W / 2, dy + dh - 30 - (o - .6) * 40, rs * .55, cfg, t, 0, .8);
+    }
+    // en haut : où l'on est (Voie lactée jusqu'à la porte, Royaume de Givre à la dernière scène)
+    const wi = sc === 15 ? Math.min(storyWorld + 1, WORLDS.length - 1) : storyWorld;
+    ctx.globalAlpha = 1; ctx.textAlign = 'center'; ctx.shadowBlur = 0;
+    ctx.font = `600 ${Math.max(11, Math.min(14, W / 30))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = WORLDS[wi].col[1];
+    ctx.fillText(`MONDE ${wi + 1} · ${WORLDS[wi].name.toUpperCase()}`, W / 2, top + 26);
   }
 
   function closeStory() {
@@ -3846,7 +4079,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function finishOutro() {
     if (state !== 'outro') return;
     document.querySelector('.hud').style.visibility = '';
-    showStory(outroNext);
+    if (outroNext === 'world' && hasScenes(world + 1)) startTransit(); else showStory(outroNext);
   }
   function updateOutro(dt) {
     outroT += dt;
@@ -4051,7 +4284,7 @@ body:not(.jeu) .hud { opacity: 0; }
     $('cineNum').textContent = `Monde ${world + 1} · Boss ${idx + 1} sur 10 · ${def.place}`;
     $('cineName').textContent = def.name;
     $('cinePlace').textContent = cycle ? `Il revient, plus fort (${cycle + 1}e fois).` : '';
-    $('cineQuote').textContent = def.quote;
+    $('cineQuote').textContent = `«\u202f${def.quote}\u202f»`;
     c.hidden = true; void c.offsetWidth; c.hidden = false;
     for (const id of ['weapons', 'powerBtn']) $(id).hidden = true;
     $('banner').classList.remove('show');
@@ -4751,12 +4984,15 @@ body:not(.jeu) .hud { opacity: 0; }
       // sa réplique de défaite et la réaction à bord : en entier la première fois, ensuite juste sa réplique
       const tk = TALK[it.def.id];
       $('sayBubble').hidden = true; sayLeft = 0;
-      if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + 1.2; }
+      // un tyran se dissout d'abord en fumée noire aspirée vers le haut, puis il parle
+      const tyran = it.idx === 9 && world < WORLDS.length - 1, tyranTalk = tyran && !!tk, wait = tyranTalk ? 1.9 : 1.2;
+      if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + wait; }
+      else if (tyranTalk) { sayAt = time + wait; sayDef = { ...it.def, bye: tk.bye }; }
       else if (tk) bossSay(it.def, tk.bye);
-      // un tyran se dissout en fumée noire, aspirée vers le fond de l'univers
-      if (it.idx === 9 && world < WORLDS.length - 1) for (let i = 0; i < (reduce ? 16 : 40); i++) {
+      if (tyran) for (let i = 0; i < (reduce ? 24 : 70); i++) {
         const R = Math.random;
-        smokes.push({ x: it.x + (R() - .5) * it.r * 1.4, y: it.y + (R() - .5) * it.r, vx: (R() - .5) * 60, vy: -15 - R() * 45, r: 14 + R() * 20, life: 2 + R() * 1.4, max: 3.4, d: R() * .7 });
+        const a = R() * 7, d = it.r * (.6 + R() * 1.8), sx = it.x, sy = it.y;
+        smokes.push({ sx, sy, ox: Math.cos(a) * d, oy: Math.sin(a) * d * .8 + it.r * .4, x: sx, y: sy, tx: W / 2 + (R() - .5) * 80, r: 24 + R() * 26, life: 1.9, max: 1.9, d: R() * .2, w: R() * 6 });
       }
       sector++; bossInWorld++;
       if (sector >= 4 && run.clean) feat('intouchable');
@@ -4767,7 +5003,7 @@ body:not(.jeu) .hud { opacity: 0; }
           if (worldsOpen < world + 2) { worldsOpen = world + 2; saveWorlds(); renderWorldPick(); }
           storyNext = 'world';
         } else { bossInWorld = 0; cycle++; storyNext = 'ending'; }
-        storyAt = time + 1.8;
+        storyAt = time + (tyranTalk ? (sayAt ? 5.2 : 2.4) : 1.8);
       }
       // boss vaincu : on passe au niveau suivant 2,5 secondes plus tard
       lvT = 17.5; newSector = true;
@@ -4967,7 +5203,7 @@ body:not(.jeu) .hud { opacity: 0; }
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
     const record = score > run.bestBefore;
     saveRecord();
-    $('overTitle').innerHTML = `Système éteint…<span class="who" style="color:${WHO_COL.Nina}">Nina</span>«\u00a0Allez, ${rocketName()}, relève-toi.\u00a0»`;
+    $('overTitle').innerHTML = `Système éteint…${whoHtml('Nina', WHO_COL.Nina)}«\u202fAllez, ${rocketName()}, relève-toi.\u202f»`;
     $('finalScore').textContent = score;
     creditRun(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
@@ -4992,9 +5228,17 @@ body:not(.jeu) .hud { opacity: 0; }
   function bossSay(def, text) {
     const b = $('sayBubble');
     b.style.setProperty('--boss', def.col);
-    $('sayWho').textContent = def.name; $('sayText').textContent = `«\u00a0${text}\u00a0»`;
+    $('sayWho').innerHTML = whoHtml(def.name).replace(/^<span class="who">|<\/span>$/g, ''); $('sayText').textContent = `«\u202f${text}\u202f»`;
     b.hidden = true; void b.offsetWidth; b.hidden = false;
-    sayLeft = 3.6;
+    sayLeft = 3; placeSay();
+  }
+  // la bulle se place juste sous le boss (jamais sur lui, ni sur le bouton Pause en haut)
+  let sayY = 200;
+  function placeSay() {
+    const b = $('sayBubble');
+    if (boss) sayY = boss.y + boss.r * 1.15 + 18;
+    const top = Math.max(96, Math.min(sayY, H * .62 - b.offsetHeight));
+    b.style.top = top.toFixed(0) + 'px';
   }
   // dialogue après la défaite : le jeu s'arrête, une ligne à la fois, on touche pour passer
   function openTalk() {
@@ -5007,8 +5251,8 @@ body:not(.jeu) .hud { opacity: 0; }
   function talkShow() {
     const [w, x, c] = talkQ[0], box = $('talkBox'), who = $('talkWho'), p = $('talkText');
     box.style.setProperty('--who', c || WHO_COL[w] || '#ff7aa8');
-    who.textContent = w === 'n' ? cfg.name : w; who.hidden = !w;
-    p.textContent = w ? `«\u00a0${x}\u00a0»` : x; p.className = w ? '' : 'narr';
+    who.innerHTML = w ? whoHtml(w).replace(/^<span class="who">|<\/span>$/g, '') : ''; who.hidden = !w;
+    p.textContent = w ? `«\u202f${x}\u202f»` : x; p.className = w ? '' : 'narr';
     box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
     talkShownAt = performance.now();
     beep(w === 'n' ? 660 : w === 'Clac' ? 330 : 440, .08, 'triangle', .05);
@@ -5039,9 +5283,9 @@ body:not(.jeu) .hud { opacity: 0; }
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
-  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endPrologue(); };
+  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endCine(); };
   $('proNext').onclick = () => proNext();
-  $('proGo').onclick = endPrologue;
+  $('proGo').onclick = endCine;
   $('storyGo').onclick = storyNextPage;
   $('storySkip').onclick = closeStory;
   $('againBtn').onclick = start;
@@ -5125,7 +5369,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveNow() {
     // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
     if (loadingSave) return;
-    if (['play', 'pause', 'story', 'talk', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
+    if (['play', 'pause', 'story', 'talk', 'transit', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
     saveStats(); saveCfg(); saveShop();
   }
   // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
@@ -5192,14 +5436,14 @@ body:not(.jeu) .hud { opacity: 0; }
   addEventListener('pointerdown', e => {
     if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro();
     else if (state === 'talk') talkNext();
-    else if (state === 'prologue' && !e.target.closest('button') && proT > .5) proNext();
+    else if ((state === 'prologue' || state === 'transit') && !e.target.closest('button') && proT > .5) proNext();
   });
   addEventListener('keydown', e => {
     if (state === 'talk') { if (!e.repeat) talkNext(e.key === 'Escape'); e.preventDefault(); return; }
     if (state === 'outro') { if (!e.repeat && outroT > .8) finishOutro(); return; }
-    if (state === 'prologue') {
+    if (state === 'prologue' || state === 'transit') {
       if (e.repeat) return;
-      if (e.key === 'Escape') endPrologue(); else if (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' ')) endPrologue(); else if (proT > .5) proNext();
+      if (e.key === 'Escape') endCine(); else if (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' ')) endCine(); else if (proT > .5) proNext();
       e.preventDefault(); return;
     }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
@@ -5244,8 +5488,15 @@ body:not(.jeu) .hud { opacity: 0; }
   function update(dt) {
     time += dt;
     if (talkAt && time >= talkAt) { talkAt = 0; openTalk(); return; }
-    if (sayLeft > 0 && (sayLeft -= dt) <= 0) $('sayBubble').hidden = true;
-    for (const m of smokes) { if (m.d > 0) { m.d -= dt; continue; } m.vy -= 45 * dt; m.x += m.vx * dt; m.y += m.vy * dt; m.r += 16 * dt; m.life -= dt; }
+    if (sayLeft > 0) { if ((sayLeft -= dt) <= 0) $('sayBubble').hidden = true; else placeSay(); }
+    if (sayAt && time >= sayAt) { sayAt = 0; bossSay(sayDef, sayDef.bye); }
+    for (const m of smokes) {
+      if (m.d > 0) { m.d -= dt; continue; }
+      // d'abord un nuage qui gonfle autour du tyran, puis il est aspiré vers le haut de l'écran
+      m.life -= dt; const q = 1 - m.life / m.max, g = ease(q / .4), e = Math.pow(Math.max(0, (q - .3) / .7), 2);
+      const bx = m.sx + m.ox * g, by = m.sy + m.oy * g;
+      m.x = bx + (m.tx - bx) * e + Math.sin(q * 9 + m.w) * 10 * (1 - q); m.y = by + (-60 - by) * e;
+    }
     if (smokes.length) smokes = smokes.filter(m => m.life > 0);
     if (storyAt && time >= storyAt) { storyAt = 0; startOutro(storyNext); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
@@ -7328,10 +7579,8 @@ body:not(.jeu) .hud { opacity: 0; }
     // fumée noire d'un tyran vaincu
     for (const m of smokes) {
       if (m.d > 0) continue;
-      const a = Math.min(1, m.life / 1.2) * Math.min(1, (m.max - m.life) * 2);
-      const sg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
-      sg.addColorStop(0, `rgba(0, 0, 0, ${(.9 * a).toFixed(3)})`); sg.addColorStop(.65, `rgba(70, 25, 110, ${(.45 * a).toFixed(3)})`); sg.addColorStop(1, 'rgba(70, 25, 110, 0)');
-      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 7); ctx.fill();
+      const q = 1 - m.life / m.max;
+      drawSmoke(m.x, m.y, m.r * (.5 + .5 * Math.min(1, q * 4)) * (1 - Math.max(0, q - .5) * .5), Math.min(1, m.life / .3) * Math.min(1, q * 8), Math.max(0, q - .3));
     }
     // vignette : les bords de l'écran sont un peu plus sombres, comme un hublot
     if (vignette.w !== W || vignette.h !== H) { const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .45, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(5, 3, 15, 0)'); vg.addColorStop(1, 'rgba(5, 3, 15, .55)'); vignette.g = vg; vignette.w = W; vignette.h = H; }
@@ -7344,7 +7593,7 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.globalAlpha = q; ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
     }
     if (state === 'outro') drawOutro(t);
-    if (state === 'prologue') drawPrologue(t);
+    if (state === 'prologue' || state === 'transit') drawPrologue(t);
     if (flash > 0) {
       ctx.fillStyle = `rgba(${flashColor}, ${(flash * .8).toFixed(3)})`;
       ctx.fillRect(0, 0, W, H);
@@ -7390,6 +7639,21 @@ body:not(.jeu) .hud { opacity: 0; }
     drawRocket(pctx, pv.width / 2, pv.height * .42 + bob, 5, pcfg, t, reduce ? 0 : Math.sin(t / 900) * .12, .3);
   }
 
+  // typographie française : espace fine insécable avant ! ? ; : » et après «, dans tous les textes affichés
+  const typo = s => s
+    .replace(/«[ \u00a0\u202f]*/g, '«\u202f')
+    .replace(/(\S)[ \u00a0\u202f]*(»|[!?;]+|:(?=\s|$))/g, (m, a, b) => a === '\u202f' ? m : a + '\u202f' + b)
+    .replace(/^[ \u00a0]+(»|[!?;]+|:(?=\s|$))/, '\u202f$1');
+  const skipTypo = n => /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode ? n.parentNode.nodeName : '');
+  const typoText = n => { if (skipTypo(n)) return; const v = typo(n.data); if (v !== n.data) n.data = v; };
+  function typoTree(root) { const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); for (let n; (n = tw.nextNode());) typoText(n); }
+  typoTree(document.body);
+  new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') typoText(m.target); else for (const a of m.addedNodes) { if (a.nodeType === 3) typoText(a); else if (a.nodeType === 1) typoTree(a); } } })
+    .observe(document.body, { subtree: true, childList: true, characterData: true });
+  // et dans les textes dessinés sur le canvas
+  const fillTextRaw = CanvasRenderingContext2D.prototype.fillText;
+  CanvasRenderingContext2D.prototype.fillText = function (txt, ...a) { return fillTextRaw.call(this, typeof txt === 'string' ? typo(txt) : txt, ...a); };
+
   last = performance.now();
   function loop(t) {
     const dt = Math.min(.033, (t - last) / 1000); last = t;
@@ -7397,7 +7661,7 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'launch') updateLaunch(dt);
     else if (state === 'dying') updateDying(dt);
     else if (state === 'outro') updateOutro(dt);
-    else if (state === 'prologue') updatePrologue(dt);
+    else if (state === 'prologue' || state === 'transit') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
     if (state !== 'pause' && state !== 'story' && state !== 'talk') updateScenery(dt);
     document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'talk', 'outro'].includes(state));
