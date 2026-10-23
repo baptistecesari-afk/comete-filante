@@ -527,6 +527,27 @@ body:not(.jeu) .hud { opacity: 0; }
   animation: logoShine 6s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(11, 8, 32, .55)) drop-shadow(0 0 24px rgba(255, 122, 168, .25));
 }
 @keyframes logoShine { 0%, 60% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -50% 0, 0 0; } }
+/* Accueil rangé : Jouer, le monde, puis 4 boutons de même taille et les petits liens */
+#menu { grid-template-columns: minmax(0, 1fr); }
+#menu .card { width: 100%; }
+.menugrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 26rem; }
+.menugrid .ghost { font-size: 16px; padding: 12px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menulinks { gap: 6px 16px; }
+.menulinks .toggle { font-size: 13px; }
+.bosstoggle { background: none; border: 0; padding: 4px 8px; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
+.bosstoggle:hover, .bosstoggle[aria-expanded="true"] { color: var(--star); }
+.worlds { flex-wrap: nowrap; gap: 6px; padding-top: 8px; }
+.worlds .wcard { flex: 1 1 0; min-width: 0; max-width: 88px; }
+@media (max-width: 440px) {
+  .card { gap: 14px; }
+  .worlds .wcard { padding: 8px 2px 6px; border-radius: 12px; }
+  .wcard .wicon { font-size: 22px; }
+  .wcard .wnum { font-size: 8px; letter-spacing: .06em; }
+  .wcard .wname { font-size: 9.5px; }
+  .wcard .wprog { font-size: 9px; }
+  .wcard[aria-pressed="true"]::after { font-size: 8px; padding: 1px 6px; top: -8px; }
+  .menugrid .ghost { font-size: 14px; padding: 11px 6px; }
+}
 .bossdetails { width: 100%; }
 .bossdetails[hidden] { display: none; }
 .bossdetails .wbosses { margin-top: 4px; animation: bossOpen .25s ease-out; }
@@ -602,21 +623,20 @@ body:not(.jeu) .hud { opacity: 0; }
   <div class="card">
     <div class="logo"><i class="streak" aria-hidden="true"></i><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
-    <div class="row">
-      <button class="play" id="startBtn">Jouer</button>
-      <button class="ghost" id="hangarBtn">Hangar</button>
-      <button class="ghost" id="trophyBtn">Trophées</button>
-    </div>
+    <button class="play" id="startBtn">Jouer</button>
     <div class="worldpick" id="worldPick">
       <b>Choisis ton monde</b>
       <div class="worlds" id="worldChips"></div>
+      <button type="button" class="bosstoggle" id="bossToggle" aria-expanded="false" aria-controls="bossDetails"></button>
       <div class="bossdetails" id="bossDetails" hidden><div class="wbosses" id="worldBosses"></div></div>
     </div>
-    <div class="row">
-      <button class="ghost" id="rankBtn">🏆 Classement mondial</button>
+    <div class="menugrid">
+      <button class="ghost" id="hangarBtn">Hangar</button>
+      <button class="ghost" id="trophyBtn">Trophées</button>
+      <button class="ghost" id="rankBtn">🏆 Classement</button>
       <button class="ghost" id="cinemaBtn">🎬 Cinématiques</button>
     </div>
-    <div class="row">
+    <div class="row menulinks">
       <button class="toggle" id="storyBtn">Histoire</button>
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="saveBtn">Sauvegarde</button>
@@ -3519,14 +3539,18 @@ body:not(.jeu) .hud { opacity: 0; }
         + `<span class="wname">${open ? w.name : '???'}</span><span class="wprog">${open ? `${won}/10 boss` : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span>`;
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
-      // clic sur un monde : on le choisit et on montre ses 10 boss (re-clic sur le même monde : on les cache)
-      b.onclick = () => { bossShown = !(bossShown && startWorld === i); startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
+      // clic sur un monde : on le choisit (ses 10 boss s'ouvrent avec le bouton « Boss du monde » en dessous)
+      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
       el.appendChild(b);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
     $('bossDetails').hidden = !bossShown;
+    const won = WORLDS[startWorld].bosses.filter(d => beaten.includes(d.id)).length;
+    $('bossToggle').textContent = `👾 Boss du monde ${startWorld + 1} · ${won}/10 ${bossShown ? '▴' : '▾'}`;
+    $('bossToggle').setAttribute('aria-expanded', bossShown);
     renderWorldBosses();
   }
+  $('bossToggle').onclick = () => { bossShown = !bossShown; renderWorldPick(); };
   // collection du monde choisi : les boss vaincus en portrait, les autres en silhouette « ??? »
   function renderWorldBosses() {
     const w = WORLDS[startWorld], el = $('worldBosses');
