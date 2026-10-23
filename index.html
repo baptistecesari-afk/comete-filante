@@ -332,11 +332,12 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 #choice .card { text-align: center; max-width: 30rem; }
 #choice .choicebtns { display: flex; flex-direction: column; gap: 12px; margin-top: 18px; }
 #choice .choicebtns button { width: 100%; }
-/* Réplique d'un boss en plein combat : une bulle en haut, le jeu continue */
+/* Réplique d'un boss en plein combat : une bulle en bas, au-dessus des boutons, le jeu continue */
 .say-bubble { position: fixed; z-index: 3; left: 16px; right: 16px; top: 200px; margin: 0 auto; width: fit-content; max-width: 22rem;
   padding: 6px 12px; border-radius: 12px; border: 1.5px solid var(--boss, var(--tail)); background: rgba(5, 3, 15, .8); color: var(--ink);
-  font-size: 15px; line-height: 1.3; font-style: italic; text-align: center; pointer-events: none; animation: storyIn .35s ease both; }
+  font-size: 15px; line-height: 1.3; font-style: italic; text-align: center; pointer-events: none; animation: storyIn .35s ease backwards; transition: opacity .2s; }
 .say-bubble[hidden] { display: none; }
+.say-bubble.faded { opacity: .35; }
 .say-bubble .who, .talkbox .who { font-size: 10px; gap: 6px; margin-bottom: 2px; }
 .say-bubble .ava, .talkbox .ava { width: 22px; height: 22px; border-width: 1.5px; }
 .say-bubble .who { color: var(--boss, var(--tail)); }
@@ -5804,13 +5805,16 @@ body:not(.jeu) .hud { opacity: 0; }
     b.hidden = true; void b.offsetWidth; b.hidden = false;
     sayLeft = 3; placeSay();
   }
-  // la bulle se place juste sous le boss (jamais sur lui, ni sur le bouton Pause en haut)
-  let sayY = 200;
+  // la bulle se place en bas, juste au-dessus des boutons Tir et super-pouvoir (loin du combat au milieu)
   function placeSay() {
     const b = $('sayBubble');
-    if (boss) sayY = boss.y + boss.r * 1.15 + 18;
-    const top = Math.max(96, Math.min(sayY, H * .62 - b.offsetHeight));
+    let floor = H - 24;
+    for (const id of ['powerBtn', 'weapons']) { const el = $(id); if (!el.hidden) floor = Math.min(floor, el.getBoundingClientRect().top); }
+    const top = Math.max(96, floor - 10 - b.offsetHeight);
     b.style.top = top.toFixed(0) + 'px';
+    // si la fusée passe dessous, la bulle s'efface un peu pour la laisser voir
+    const r = player && b.getBoundingClientRect(), under = r && player.x > r.left - 30 && player.x < r.right + 30 && player.y > r.top - 40 && player.y < r.bottom + 40;
+    b.classList.toggle('faded', !!under);
   }
   // dialogue après la défaite : le jeu s'arrête, une ligne à la fois, on touche pour passer
   function openTalk() {
