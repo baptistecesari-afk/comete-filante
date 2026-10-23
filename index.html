@@ -303,6 +303,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 .procine .dots { display: flex; gap: 6px; }
 .procine .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .25); }
 .procine .dots i.on { background: var(--star); }
+.procine p.past { opacity: .55; }
 .procine p.note { font-size: 14px; font-style: normal; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .procine p.in { animation: none; } }
 @media (max-height: 520px) {
@@ -3796,7 +3797,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
   // ===== Le lecteur de cinématiques (plein écran, le jeu attend derrière) =====
   // film : { scenes, w (monde où ça se passe), next (monde de la dernière scène), clac (Clac à bord), go (texte du dernier bouton), note, end }
-  let film = null, proT = 0, proScene = 0, proCount = 0, proPts = [], proImgs = {}, proSil = {};
+  let film = null, proT = 0, proScene = 0, proLine = 0, proCount = 0, proPts = [], proImgs = {}, proSil = {};
   function proImg(d) {
     if (!proImgs[d.id]) { const im = new Image(); im.src = bossPortrait(d); proImgs[d.id] = im; }
     return proImgs[d.id];
@@ -3838,19 +3839,31 @@ body:not(.jeu) .hud { opacity: 0; }
     document.querySelector('.hud').style.visibility = '';
     f.end();
   }
-  function proGoto(i) {
-    proScene = i; proT = 0;
-    const sc = film.scenes[i], last = i === proCount - 1, sub = $('proSub');
-    sub.innerHTML = sc.l.map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${sc.v === 'mission' ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
-      + (last && film.note && !cineReplay ? `<p class="in note" style="animation-delay:${(sc.l.length * .7).toFixed(1)}s">${typo(film.note)}</p>` : '');
-    [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
+  // sur téléphone, les répliques d'une scène arrivent une par une (on garde la précédente) pour laisser de la place à l'image
+  const proPhone = () => matchMedia('(max-width: 699px)').matches;
+  const proLastStep = () => proScene === proCount - 1 && (!proPhone() || proLine >= film.scenes[proScene].l.length - 1);
+  function proShow() {
+    const sc = film.scenes[proScene], phone = proPhone(), first = phone ? Math.max(0, proLine - 1) : 0, end = phone ? proLine + 1 : sc.l.length;
+    const lines = sc.l.slice(first, end), last = proLastStep();
+    $('proSub').innerHTML = lines.map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${sc.v === 'mission' ? ' mission' : ''}${phone && first + j < proLine ? ' past' : ''}" style="animation-delay:${phone ? (first + j < proLine ? 0 : .1) : (j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('')
+      + (last && film.note && !cineReplay ? `<p class="in note" style="animation-delay:${phone ? .4 : (sc.l.length * .7).toFixed(1)}s">${typo(film.note)}</p>` : '');
     $('proGo').hidden = !last; $('proNext').hidden = last;
     $('proSkip').textContent = last ? 'Revoir' : 'Passer';
+  }
+  function proGoto(i) {
+    proScene = i; proLine = 0; proT = 0;
+    const sc = film.scenes[i], last = i === proCount - 1;
+    proShow();
+    [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
     beep(last ? 784 : [392, 440, 523, 587, 659, 698, 740][i % 7], last ? .5 : .25, 'triangle', .08);
     if (sc.p === 'tyran' || sc.p === 'message') beep(110, .9, 'sawtooth', .08, -40);
     if (sc.p === 'radio') beep(1200, .15, 'square', .03);
   }
-  function proNext() { if (film && proScene < proCount - 1) proGoto(proScene + 1); }
+  function proNext() {
+    if (!film) return;
+    if (proPhone() && proLine < film.scenes[proScene].l.length - 1) { proLine++; proShow(); beep(523, .12, 'triangle', .05); }
+    else if (proScene < proCount - 1) proGoto(proScene + 1);
+  }
   function updatePrologue(dt) { proT += dt; }
   // on revient dans la partie en cours
   function resumePlay() {
@@ -3955,7 +3968,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const tcol = sc.p === 'flashback' ? '#e8c890' : typeof sc.at === 'string' ? '#ffd86b' : WORLDS[Z.last && film.next != null ? film.next : sc.at ?? film.w].col[1];
     // fondu au noir entre deux scènes + bandes cinéma
     ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, top); ctx.fillRect(0, H - top, W, top);
+    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; if (W >= 700) { ctx.fillRect(0, 0, W, top); ctx.fillRect(0, H - top, W, top); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = `600 ${Math.max(11, Math.min(14, W / 30))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = tcol;
     ctx.fillText(title, W / 2, top + 26);
@@ -5681,7 +5694,7 @@ body:not(.jeu) .hud { opacity: 0; }
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
-  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endFilm(); };
+  $('proSkip').onclick = () => { if (proLastStep()) proGoto(0); else endFilm(); };
   $('proNext').onclick = () => proNext();
   $('proGo').onclick = endFilm;
   $('choiceA').onclick = () => chooseEnd('A');
@@ -5841,7 +5854,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (state === 'choice') return;
     if (state === 'film') {
       if (e.repeat) return;
-      if (e.key === 'Escape' || (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' '))) endFilm(); else if (proT > .5) proNext();
+      if (e.key === 'Escape' || (proLastStep() && (e.key === 'Enter' || e.key === ' '))) endFilm(); else if (proT > .5) proNext();
       e.preventDefault(); return;
     }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
