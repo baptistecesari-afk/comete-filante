@@ -824,7 +824,7 @@ body:not(.jeu) .hud { opacity: 0; }
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
       <span>Astros ✦</span><span>La monnaie de l'espace : chaque point marqué en partie te rapporte 1 Astro, à dépenser dans le Hangar pour débloquer des objets et acheter des améliorations. Les Astros sont des éclats de lumière trop petits pour rallumer une étoile, mais assez pour améliorer ta fusée.</span>
-      <span>Aliens</span><span>50 espèces, 10 dans chaque monde (pingouins, glaçons, diablotins, guêpes, glitchs…), avec 7 façons d'attaquer qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
+      <span>Aliens</span><span>60 espèces, 12 dans chaque monde (pingouins, glaçons, diablotins, guêpes, glitchs…), avec 7 façons d'attaquer qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile. Chaque monde a aussi son pouvoir à lui : phares qui tirent un rayon tout droit (Voie lactée), souffleurs de givre qui gèlent ta fusée (Givre), cracheurs de lave en cloche (Forge), plantes à spores qui te suivent (Jungle) et siphons qui t'aspirent (Néant).</span>
       <span>Trophées</span><span>5 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
       <span>Mondes</span><span>5 mondes de 10 boss : Voie lactée, Royaume de Givre, Forge Volcanique, Jungle Cosmique et Néant. Bats le 10e boss d'un monde pour passer au suivant et le débloquer : tu pourras ensuite le choisir comme départ dans le menu.</span>
@@ -2569,6 +2569,12 @@ body:not(.jeu) .hud { opacity: 0; }
     { type: 'ghost', from: 4, w: 1.5 },
     { type: 'sniper', from: 5, w: 1.5 },
     { type: 'bomber', from: 6, w: 1.2 },
+    // un pouvoir qu'on ne voit que dans un monde (à partir du niveau 2 de ce monde)
+    { type: 'beam', from: 2, w: 1.6, world: 0 },
+    { type: 'frost', from: 8, w: 1.8, world: 1 },
+    { type: 'lava', from: 14, w: 1.8, world: 2 },
+    { type: 'spore', from: 20, w: 1.8, world: 3 },
+    { type: 'vortex', from: 26, w: 1.4, world: 4 },
   ];
 
   const BOSSES = [
@@ -4603,7 +4609,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function spawnAlien() {
-    const pool = ALIEN_TYPES.filter(a => level + world * 6 >= a.from);
+    const pool = ALIEN_TYPES.filter(a => level + world * 6 >= a.from && (a.world === undefined || a.world === world));
     let r = Math.random() * pool.reduce((s, a) => s + a.w, 0);
     const kind = (pool.find(a => (r -= a.w) < 0) || pool[0]).type;
     const lvHp = Math.floor(level / 4) + world * 2;
@@ -4618,6 +4624,11 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (kind === 'splitter') items.push({ ...base, r: 22, hp: 4 + lvHp, pts: 40, vy: 55 + Math.random() * 25 });
     else if (kind === 'ghost') items.push({ ...base, r: 17, hp: 3 + lvHp, pts: 60, y: 120, tpT: .1, fireT: 0, stay: 11 });
     else if (kind === 'sniper') items.push({ ...base, r: 16, hp: 3 + lvHp, pts: 60, hoverY: 80 + Math.random() * 60, aimT: 1.6, aiming: 0, tx: 0, ty: 0, stay: 10 });
+    else if (kind === 'beam') items.push({ ...base, r: 17, hp: 3 + lvHp, pts: 60, hoverY: 70 + Math.random() * 60, fireT: 1.4, charge: 0, beam: 0, aimT: 0, stay: 9 });
+    else if (kind === 'frost') items.push({ ...base, r: 18, hp: 3 + lvHp, pts: 50, hoverY: 100 + Math.random() * H * .2, fireT: 1.2, stay: 9 });
+    else if (kind === 'lava') items.push({ ...base, r: 19, hp: 4 + lvHp, pts: 60, hoverY: 90 + Math.random() * 80, fireT: 1, stay: 9 });
+    else if (kind === 'spore') items.push({ ...base, r: 19, hp: 4 + lvHp, pts: 60, vy: 38 + Math.random() * 15, fireT: 1.2 });
+    else if (kind === 'vortex') items.push({ ...base, r: 20, hp: 5 + lvHp, pts: 80, hoverY: 120 + Math.random() * H * .15, fireT: 2, stay: 8 });
     else {
       const left = Math.random() < .5;
       items.push({ ...base, x: left ? -30 : W + 30, y: 100 + Math.random() * 60, dir: left ? 1 : -1, r: 20, hp: 5 + lvHp, pts: 70, fireT: .8 });
@@ -4728,6 +4739,65 @@ body:not(.jeu) .hud { opacity: 0; }
         it.fireT -= sp;
         if (it.fireT <= 0 && it.x > 20 && it.x < W - 20) { ebullets.push({ x: it.x, y: it.y + 14, vx: 0, vy: 90, c: '#ff9a3c', s: 7, fuse: 1.6 }); it.fireT = 1.3; }
         if ((it.dir > 0 && it.x > W + 40) || (it.dir < 0 && it.x < -40)) it.dead = true;
+        break;
+      case 'beam':
+        // phare : se place au-dessus de la fusée, prévient avec une ligne bleue, puis tire un rayon tout droit
+        if (it.t > it.stay && !(it.charge > 0) && !(it.beam > 0)) { it.y -= 200 * sp; if (it.y < -60) it.dead = true; break; }
+        if (it.y < it.hoverY) it.y += 130 * sp;
+        if (it.charge > 0) {
+          it.charge -= sp;
+          if (it.charge <= 0) { it.beam = .7; beep(1400, .5, 'sawtooth', .05, -1100); }
+        } else if (it.beam > 0) {
+          it.beam -= sp; it.aimT -= sp;
+          if (it.aimT <= 0) { eshot(it.x, it.y + 16, 0, 720, '#bfe6ff', 6); it.aimT = .025; }
+          if (it.beam <= 0) it.fireT = 2.4;
+        } else {
+          const dx = player.x - it.x;
+          it.x += Math.sign(dx) * Math.min(Math.abs(dx), 70 * sp);
+          it.fireT -= sp;
+          if (it.fireT <= 0 && it.y > 40) { it.charge = 1; beep(600, .3, 'sine', .04, 600); }
+        }
+        break;
+      case 'frost':
+        // souffleur de givre : ses flocons ne font pas mal mais gèlent la fusée (elle avance moins vite)
+        if (it.t > it.stay) { it.y -= 180 * sp; if (it.y < -60) it.dead = true; break; }
+        if (it.y < it.hoverY) it.y += 120 * sp;
+        it.x = Math.max(30, Math.min(W - 30, it.x + Math.cos(it.t * 1.3) * 60 * sp));
+        it.fireT -= sp;
+        if (it.fireT <= 0 && it.y > 40 && it.y < player.y - 80) {
+          const a0 = Math.atan2(player.y - it.y, player.x - it.x);
+          for (let i = 0; i < 5; i++) { const a = a0 + (i / 4 - .5) * .9; shot(it.x, it.y + 12, Math.cos(a) * 170, Math.sin(a) * 170, '#e6f9ff', 7, { chill: 2.2, flake: true }); }
+          it.fireT = 2.4; beep(1100, .3, 'sine', .04, 500);
+        }
+        break;
+      case 'lava':
+        // cracheur de lave : lance une bombe en cloche qui retombe près de la fusée et éclate en morceaux
+        if (it.t > it.stay) { it.y -= 180 * sp; if (it.y < -60) it.dead = true; break; }
+        if (it.y < it.hoverY) it.y += 110 * sp;
+        it.x = Math.max(30, Math.min(W - 30, it.x + Math.sin(it.t) * 30 * sp));
+        it.fireT -= sp;
+        if (it.fireT <= 0 && it.y > 40 && it.y < player.y - 120) {
+          const g = 420, v0 = 260, dy = player.y - 40 - it.y, tt = (v0 + Math.sqrt(v0 * v0 + 2 * g * dy)) / g;
+          shot(it.x, it.y - 10, Math.max(-220, Math.min(220, (player.x - it.x) / tt)), -v0, '#ff7b2a', 8, { ay: g, fuse: tt * .92, fn: 7, fs: 150, fc: '#ffb020' });
+          it.fireT = 2.6; beep(120, .35, 'sawtooth', .07, 80);
+        }
+        break;
+      case 'spore':
+        // plante à spores : descend doucement et lâche des spores qui suivent la fusée un moment
+        it.y += it.vy * speed * sp;
+        it.x += Math.sin(it.t * 1.5) * 25 * sp;
+        it.fireT -= sp;
+        if (it.fireT <= 0 && it.y > 30 && it.y < player.y - 120) {
+          for (const s of [-1, 0, 1]) shot(it.x + s * 12, it.y, s * 90, -40, '#b6ff6b', 5, { home: 2.2, hsp: 120 });
+          it.fireT = 3; beep(380, .25, 'sine', .05, -200);
+        }
+        break;
+      case 'vortex':
+        // siphon du vide : aspire la fusée vers lui (voir les déplacements de la fusée) et lâche des anneaux
+        if (it.t > it.stay) { it.y -= 160 * sp; if (it.y < -60) it.dead = true; break; }
+        if (it.y < it.hoverY) it.y += 100 * sp;
+        it.fireT -= sp;
+        if (it.fireT <= 0 && it.y > 40) { ring(it.x, it.y, 8, 120, it.t, '#c86bff', 5); it.fireT = 2.8; beep(160, .4, 'sine', .06, -60); }
         break;
       default: updateBoss(it, dt, slow);
     }
@@ -4856,8 +4926,23 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.fillStyle = pc; ctx.beginPath(); ctx.arc(x + dx / d * r * .4, y + dy / d * r * .4, r * .5, 0, 7); ctx.fill();
   }
 
-  // ===== 50 espèces d'aliens : 10 par monde =====
-  // chaque espèce garde un des 7 comportements (type) et a son propre look
+  // phare : ligne d'alerte pendant qu'il charge, puis le rayon
+  function drawBeam(it) {
+    if (!(it.charge > 0) && !(it.beam > 0)) return;
+    ctx.save();
+    if (it.charge > 0) {
+      ctx.strokeStyle = `rgba(191, 230, 255, ${.25 + .5 * (1 - it.charge)})`; ctx.lineWidth = 2; ctx.setLineDash([10, 8]);
+      ctx.beginPath(); ctx.moveTo(it.x, it.y + 16); ctx.lineTo(it.x, H); ctx.stroke(); ctx.setLineDash([]);
+    } else {
+      const g = ctx.createLinearGradient(it.x - 14, 0, it.x + 14, 0);
+      g.addColorStop(0, 'rgba(191, 230, 255, 0)'); g.addColorStop(.5, 'rgba(191, 230, 255, .35)'); g.addColorStop(1, 'rgba(191, 230, 255, 0)');
+      ctx.fillStyle = g; ctx.fillRect(it.x - 14, it.y + 16, 28, H);
+    }
+    ctx.restore();
+  }
+
+  // ===== 60 espèces d'aliens : 12 par monde =====
+  // chaque espèce garde un des comportements (type) et a son propre look
   // [id, nom, type, monde, couleur, accent, corps, yeux, dessus, dessous, côtés, bouche, motif]
   const SPECIES = [
     // Monde 1 · Voie lactée (les 7 d'origine + 3 nouveaux)
@@ -4915,6 +5000,17 @@ body:not(.jeu) .hud { opacity: 0; }
     ['pixelfou', 'Pixel fou', 'chaser', 4, '#ff4fd8', '#4fe0f0', 'pixel', 2, 'antennae', 'none', 'none', 'smile', 'glitch'],
     ['tentacule', 'Tentaculaire', 'splitter', 4, '#7a3ab8', '#ff7ad9', 'squid', 4, 'none', 'tentacles', 'none', 'o', 'spots'],
     ['masque', 'Masque sans visage', 'kamikaze', 4, '#e8e2ff', '#140a24', 'mask', 2, 'halo', 'none', 'none', 'none', 'cracks'],
+    // le pouvoir propre à chaque monde : 2 espèces par monde
+    ['phare', 'Phare cosmique', 'beam', 0, '#ffe9a8', '#7ad8ff', 'oval', 1, 'antennae', 'jet', 'none', 'o', 'glow'],
+    ['lampion', 'Lampion lunaire', 'beam', 0, '#bfe6ff', '#ffd86b', 'round', 3, 'halo', 'none', 'arms', 'smile', 'none'],
+    ['souffleur', 'Souffleur de givre', 'frost', 1, '#bfefff', '#ffffff', 'fluffy', 2, 'ice', 'none', 'none', 'o', 'none'],
+    ['hibou', 'Hibou des neiges', 'frost', 1, '#f3eefe', '#7ad8ff', 'round', 2, 'horns', 'legs', 'fins', 'beak', 'belly'],
+    ['cracheur', 'Cracheur de lave', 'lava', 2, '#c4301a', '#ffd86b', 'round', 2, 'flame', 'legs', 'arms', 'fangs', 'cracks'],
+    ['volcan', 'Volcan ambulant', 'lava', 2, '#5a3a30', '#ff7b2a', 'crystal', 2, 'flame', 'legs', 'none', 'teeth', 'cracks'],
+    ['vesse', 'Vesse-de-loup', 'spore', 3, '#d8c890', '#9dff6b', 'mushroom', 2, 'none', 'legs', 'none', 'o', 'spots'],
+    ['carnivore', 'Plante carnivore', 'spore', 3, '#2f9a3a', '#ff4f6d', 'flower', 1, 'leaves', 'tentacles', 'none', 'fangs', 'none'],
+    ['siphon', 'Siphon du vide', 'vortex', 4, '#4a2a7a', '#c86bff', 'star', 1, 'halo', 'none', 'none', 'none', 'glow'],
+    ['gouffre', 'Gouffre vivant', 'vortex', 4, '#2a1a40', '#4fe0f0', 'blob', 3, 'tentacles', 'tentacles', 'none', 'teeth', 'glow'],
   ].map(([id, name, type, world, col, acc, body, eyes = 2, top = 'none', bottom = 'none', side = 'none', mouth = 'none', pattern = 'none']) =>
     ({ id, name, type, world, col, acc, body, eyes, top, bottom, side, mouth, pattern }));
   // une espèce du monde en cours qui a ce comportement
@@ -4927,6 +5023,12 @@ body:not(.jeu) .hud { opacity: 0; }
   // dessin d'une espèce à partir de ses morceaux (taille de base : rayon 18)
   function drawSpecies(it, t) {
     const sp = it.sp, k = it.r / 18, T = it.t || 0, wob = reduce ? 0 : 1;
+    // siphon : un tourbillon autour de lui
+    if (it.type === 'vortex') {
+      ctx.save(); ctx.translate(it.x, it.y); ctx.strokeStyle = sp.acc; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { const rr = it.r * (1.5 + ((T * .8 + i / 3) % 1) * 1.6); ctx.globalAlpha = .5 * (1 - (rr / it.r - 1.5) / 1.6); ctx.beginPath(); ctx.arc(0, 0, rr, T * 3 + i * 2, T * 3 + i * 2 + 4); ctx.stroke(); }
+      ctx.restore();
+    }
     ctx.save(); ctx.translate(it.x, it.y);
     if (it.type === 'kamikaze') {
       const warn = !it.dash && it.y >= it.hoverY;
@@ -5064,6 +5166,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function drawAlien(it, t) {
+    if (it.type === 'beam') drawBeam(it);
     if (it.sp && it.sp.body !== 'classic') { drawSpecies(it, t); return; }
     if (it.type === 'chaser') { drawChaser(it, t); return; }
     if (it.type === 'saucer') { drawSaucer(it, t, 1, false); return; }
@@ -5893,14 +5996,21 @@ body:not(.jeu) .hud { opacity: 0; }
     // déplacement de la fusée
     const ax = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
     const ay = (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['z'] || keys['w'] ? 1 : 0);
-    const thrust = (hyper ? 3600 : 2600) * (bossPw('freeze') ? .45 : 1);
+    if (player.chill > 0) player.chill -= dt;
+    const chilled = player.chill > 0;
+    const thrust = (hyper ? 3600 : 2600) * (bossPw('freeze') || chilled ? .45 : 1);
+    // siphons du Néant : la fusée est aspirée vers eux
+    for (const it of items) if (it.type === 'vortex' && !it.dead && it.y > 0 && it.t <= it.stay) {
+      const dx = it.x - player.x, dy = it.y - player.y, dd = Math.hypot(dx, dy) || 1;
+      if (dd > 40 && dd < 420) { player.x += dx / dd * 80 * dt; player.y += dy / dd * 80 * dt; }
+    }
     if (bossPw('gravity')) { const dx = boss.x - player.x, dy = boss.y - player.y, dd = Math.hypot(dx, dy) || 1; player.x += dx / dd * (90 + boss.pw.tier * 40) * dt; player.y += dy / dd * (90 + boss.pw.tier * 40) * dt; }
     if (ax || ay) {
       target = null;
       player.vx += ax * thrust * dt; player.vy += ay * thrust * dt;
       player.vx *= .86; player.vy *= .86;
     } else if (target) {
-      const fz = bossPw('freeze') ? .4 : 1;
+      const fz = bossPw('freeze') || chilled ? .4 : 1;
       player.vx = (target.x - player.x) * 10 * fz; player.vy = (target.y - player.y) * 10 * fz;
     } else { player.vx *= .86; player.vy *= .86; }
     player.x = Math.max(player.r, Math.min(W - player.r, player.x + player.vx * dt));
@@ -6159,6 +6269,12 @@ body:not(.jeu) .hud { opacity: 0; }
         const sp = Math.max(500, Math.hypot(b.vx, b.vy) * 2);
         shots.push({ x: b.x, y: b.y, vx: (b.x - player.x) * 3, vy: -sp, dmg: 3, gold: true });
         beep(1500, .05, 'triangle', .05, 300);
+        continue;
+      }
+      // flocon de givre : ne fait pas perdre de vie, mais gèle la fusée
+      if (b.chill && Math.hypot(b.x - player.x, b.y - player.y) < player.r + b.s - 1) {
+        b.dead = true; burst(b.x, b.y, '#e6f9ff', 8, 120, 3);
+        if (!invincible) { if (!(player.chill > 0)) pop(player.x, player.y - 34, 'Gelée !', '#bfefff'); player.chill = b.chill; beep(1600, .15, 'triangle', .05, -800); }
         continue;
       }
       if (Math.hypot(b.x - player.x, b.y - player.y) < player.r + (b.s || 5) - 1) {
@@ -7829,6 +7945,11 @@ body:not(.jeu) .hud { opacity: 0; }
       for (const b of ebullets) {
         const c = b.c || '#7dff8a', sz = b.s || 5;
         ctx.shadowColor = c; ctx.shadowBlur = 12; ctx.fillStyle = c;
+        if (b.flake) {
+          ctx.strokeStyle = c; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
+          for (let i = 0; i < 3; i++) { const a = i * Math.PI / 3 + t / 300; ctx.moveTo(b.x - Math.cos(a) * sz, b.y - Math.sin(a) * sz); ctx.lineTo(b.x + Math.cos(a) * sz, b.y + Math.sin(a) * sz); }
+          ctx.stroke(); ctx.lineCap = 'butt'; ctx.shadowBlur = 0; continue;
+        }
         if (b.sq) { ctx.fillRect(b.x - sz, b.y - sz, sz * 2, sz * 2); ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff'; ctx.fillRect(b.x - sz * .4, b.y - sz * .4, sz * .8, sz * .8); continue; }
         ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, 7); ctx.fill();
         ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
@@ -7878,6 +7999,13 @@ body:not(.jeu) .hud { opacity: 0; }
       }
       ctx.globalAlpha = 1;
 
+      // fusée gelée par un souffleur de givre
+      if (player.chill > 0 && state === 'play') {
+        ctx.save(); ctx.globalAlpha = Math.min(1, player.chill) * (.5 + .2 * Math.sin(t / 90));
+        ctx.strokeStyle = '#bfefff'; ctx.fillStyle = 'rgba(191, 239, 255, .15)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(player.x, player.y, 30, 0, 7); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
       // fusée
       const blink = player.hurt > 0 && Math.floor(player.hurt * 12) % 2;
       if (!blink && state !== 'over' && state !== 'dying') {
