@@ -158,6 +158,15 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   .power { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); min-width: 0; padding: 8px 14px; font-size: 13px; }
   .ammo { min-width: 0; width: 150px; max-width: calc(100vw - 124px); box-sizing: border-box; }
 }
+/* Gaucher : le bouton Tir et le chargeur passent à droite, le super-pouvoir à gauche */
+body.gaucher .weapons { left: auto; right: calc(16px + env(safe-area-inset-right, 0px)); flex-direction: row-reverse; }
+body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0px)); }
+/* Écran tactile : le super-pouvoir est juste au-dessus du bouton Tir, sous le même pouce */
+@media (pointer: coarse) {
+  .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    min-width: 0; padding: 8px 14px; font-size: 13px; }
+  body.gaucher .power { left: auto; right: calc(16px + env(safe-area-inset-right, 0px)); }
+}
 
 /* Atelier */
 /* une seule colonne pour Comment jouer et Trophées (doit l'emporter sur .hangar) */
@@ -635,6 +644,7 @@ body:not(.jeu) .hud { opacity: 0; }
       <button class="toggle" id="helpBtn">Comment jouer</button>
       <button class="toggle" id="saveBtn">Sauvegarde</button>
       <button class="toggle" id="soundBtn">Son : activé</button>
+      <button class="toggle" id="handBtn">Droitier</button>
     </div>
   </div>
 </div>
@@ -834,7 +844,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <h2>Comment jouer</h2>
     <div class="rules">
       <span>Bouger</span><span>Souris, doigt, ou flèches / ZQSD</span>
-      <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : tape sur ta fusée, une fois par tir. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
+      <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : un doigt déplace la fusée et un autre doigt tape n'importe où pour tirer. Avec un stylet posé, la fusée tire toute seule. Gaucher ? Change de côté dans le menu. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
       <span>Astros ✦</span><span>La monnaie de l'espace : chaque point marqué en partie te rapporte 1 Astro, à dépenser dans le Hangar pour débloquer des objets et acheter des améliorations. Les Astros sont des éclats de lumière trop petits pour rallumer une étoile, mais assez pour améliorer ta fusée.</span>
@@ -842,7 +852,7 @@ body:not(.jeu) .hud { opacity: 0; }
       <span>Trophées</span><span>5 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
       <span>Mondes</span><span>5 mondes de 10 boss : Voie lactée, Royaume de Givre, Forge Volcanique, Jungle Cosmique et Néant. Bats le 10e boss d'un monde pour passer au suivant et le débloquer : tu pourras ensuite le choisir comme départ dans le menu.</span>
-      <span>Pouvoir</span><span>Espace, ou le bouton en bas à droite. Il se recharge tout seul.</span>
+      <span>Pouvoir</span><span>Espace, ou son bouton (sur écran tactile : juste au-dessus du bouton Tir). Il se recharge tout seul.</span>
       <span>★</span><span>+10 points, multiplié par ton combo</span>
       <span>◆</span><span>Bouclier pendant 5 secondes</span>
       <span>⚡</span><span>Recharge ton super-pouvoir tout de suite</span>
@@ -882,6 +892,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <h1 style="font-size:56px">Pause</h1>
     <button class="play" id="resumeBtn">Reprendre</button>
     <button class="ghost" id="quitBtn">Quitter la partie</button>
+    <button class="toggle" id="handBtn2">Droitier</button>
     <p>Si tu quittes, les points de cette partie sont quand même ajoutés au Hangar.</p>
   </div>
 </div>
@@ -1373,6 +1384,18 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   function initAudio() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } }
   $('soundBtn').onclick = () => { soundOn = !soundOn; $('soundBtn').textContent = 'Son : ' + (soundOn ? 'activé' : 'coupé'); };
+  // droitier : on déplace la fusée avec la main droite, le bouton Tir est à gauche ; gaucher : tout passe de l'autre côté
+  let gaucher = false;
+  try { gaucher = localStorage.getItem('comete-main') === 'gaucher'; } catch (e) {}
+  const showHand = () => {
+    document.body.classList.toggle('gaucher', gaucher);
+    for (const id of ['handBtn', 'handBtn2']) $(id).textContent = gaucher ? 'Gaucher : Tir à droite' : 'Droitier : Tir à gauche';
+  };
+  for (const id of ['handBtn', 'handBtn2']) $(id).onclick = () => {
+    gaucher = !gaucher; showHand();
+    try { localStorage.setItem('comete-main', gaucher ? 'gaucher' : 'droitier'); } catch (e) {}
+  };
+  showHand();
 
   // --- dessin de la fusée ---
   function shade(hex, k) {
@@ -2569,12 +2592,13 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   let lastPowerUi = '';
+  const coarse = matchMedia('(pointer: coarse)');
   function updatePowerUi() {
     const b = $('powerBtn');
     let cls, label, p;
     if (power.active > 0) { cls = 'active'; label = 'En cours'; p = power.active / power.def.dur; }
     else if (power.cd > 0) { cls = ''; label = Math.ceil(power.cd) + ' s'; p = 1 - power.cd / power.maxCd; }
-    else { cls = 'ready'; label = 'Prêt · Espace'; p = 1; }
+    else { cls = 'ready'; label = coarse.matches ? 'Prêt' : 'Prêt · Espace'; p = 1; }
     b.style.setProperty('--p', p.toFixed(3));
     const key = cls + label;
     if (key !== lastPowerUi) {
