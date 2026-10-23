@@ -6476,7 +6476,8 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.globalAlpha = .09; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
     for (const o of scenery) {
-      if (o.type === 'planet') { ctx.globalAlpha = .85; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
+      // dans le Néant, les planètes restent presque invisibles
+      if (o.type === 'planet') { ctx.globalAlpha = world === WORLDS.length - 1 ? .18 : .85; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
       else if (o.type === 'cruiser') { ctx.globalAlpha = .55; drawCruiser(o); }
       else if (o.type === 'fighter') { ctx.globalAlpha = .65; drawFighter(o); }
       else if (o.type === 'bolt') {
@@ -7577,6 +7578,248 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.restore();
   }
 
+  // ===== Décor propre à chaque monde (derrière le jeu, avec un fondu quand on change de monde) =====
+  // une image fixe par monde, dessinée une seule fois à la taille de l'écran, et quelques éléments animés par-dessus
+  const decorCache = {};
+  let decorW = 0, decorPrev = 0, decorStart = -1e9;
+  // relief irrégulier (montagnes, volcans) : hauteur entre 0 et 1 pour une position u entre 0 et 1
+  const ridge = (u, seed, n) => { let h = 0; for (let i = 1; i <= n; i++) h += Math.sin(u * i * 6.1 + seeded(seed + i) * 6.28) / i; return .5 + h * .35; };
+  function decorLayer(w) {
+    const key = w + ':' + W + 'x' + H + ':' + DPR;
+    if (decorCache[w] && decorCache[w].key === key) return decorCache[w].c;
+    const c = document.createElement('canvas'); c.width = Math.ceil(W * DPR); c.height = Math.ceil(H * DPR);
+    const k = c.getContext('2d'); k.scale(DPR, DPR);
+    const S = Math.min(W, H);
+    if (w === 0) {
+      // Voie lactée : une grande bande de poussière d'étoiles en diagonale, avec son cœur lumineux et une traînée sombre
+      k.save(); k.translate(W / 2, H / 2); k.rotate(-.55);
+      const L = Math.hypot(W, H) * .65, B = S * .2;
+      for (const [col, a, y, r] of [['#7a52c8', .45, 0, 1.3], ['#ff7aa8', .24, -.3, .8], ['#7ad8ff', .18, .35, .7], ['#ffe9c8', .3, 0, .45]]) {
+        for (let i = 0; i < 9; i++) {
+          const x = (i / 8 - .5) * 2 * L, rr = B * r * (1.2 - Math.abs(i / 8 - .5)), g = k.createRadialGradient(x, y * B, 0, x, y * B, rr * 1.6);
+          g.addColorStop(0, col); g.addColorStop(1, col + '00'); k.globalAlpha = a; k.fillStyle = g; k.fillRect(x - rr * 1.6, y * B - rr * 1.6, rr * 3.2, rr * 3.2);
+        }
+      }
+      // cœur de la galaxie
+      const g = k.createRadialGradient(L * .15, 0, 0, L * .15, 0, B * 1.4);
+      g.addColorStop(0, '#fff2d8'); g.addColorStop(.25, '#ffb8c8'); g.addColorStop(1, 'rgba(255, 122, 168, 0)');
+      k.globalAlpha = .32; k.fillStyle = g; k.fillRect(L * .15 - B * 1.4, -B * 1.4, B * 2.8, B * 2.8);
+      // poussière d'étoiles, plus serrée au milieu de la bande
+      for (let i = 0; i < 1400; i++) {
+        const u = seeded(i * 3 + 1) * 2 - 1, v = (seeded(i * 3 + 2) + seeded(i * 3 + 3) + seeded(i * 7 + 5) - 1.5) * 1.3;
+        k.globalAlpha = .25 + seeded(i + 77) * .55 * (1 - Math.abs(v) * .5); k.fillStyle = seeded(i + 31) < .15 ? '#ffd0e0' : seeded(i + 41) < .15 ? '#c8e8ff' : '#ffffff';
+        const z = seeded(i + 51) < .06 ? 1.8 : 1; k.fillRect(u * L, v * B, z, z);
+      }
+      // traînée de poussière sombre au milieu, faite de nuages doux
+      for (let i = 0; i < 90; i++) {
+        const x = (i / 89 - .5) * 2 * L, y = Math.sin(x / (L * .3)) * B * .15 + (seeded(i + 150) - .5) * B * .1, r = B * (.22 + seeded(i + 160) * .18);
+        const d = k.createRadialGradient(x, y, 0, x, y, r); d.addColorStop(0, 'rgba(11, 8, 32, .22)'); d.addColorStop(1, 'rgba(11, 8, 32, 0)');
+        k.globalAlpha = 1; k.fillStyle = d; k.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      k.restore();
+    } else if (w === 1) {
+      // Royaume de Givre : ciel froid, montagnes de glace en bas, stalactites de glace en haut, givre dans les coins
+      let g = k.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, 'rgba(160, 220, 255, .10)'); g.addColorStop(.6, 'rgba(120, 190, 255, 0)'); g.addColorStop(1, 'rgba(200, 240, 255, .22)');
+      k.fillStyle = g; k.fillRect(0, 0, W, H);
+      for (const [hh, top, bot, seed, a] of [[.2, '#5f8fc0', '#1a3858', 10, .55], [.13, '#a8d8f5', '#2a5478', 30, .7]]) {
+        const base = H, peak = H * hh; k.globalAlpha = a; k.beginPath(); k.moveTo(0, base);
+        const pts = [];
+        for (let i = 0; i <= 24; i++) { const u = i / 24, y = base - peak * (.35 + .65 * Math.abs(ridge(u, seed, 3) * 2 - 1) ** .7) * (i % 2 ? .78 : 1); pts.push([u * W, y]); k.lineTo(u * W, y); }
+        k.lineTo(W, base); k.closePath();
+        g = k.createLinearGradient(0, base - peak, 0, base); g.addColorStop(0, top); g.addColorStop(1, bot); k.fillStyle = g; k.fill();
+        // arêtes éclairées et neige sur les sommets
+        k.strokeStyle = '#e8f8ff'; k.lineWidth = 1.5; k.globalAlpha = a * .8; k.beginPath(); pts.forEach(([x, y], i) => i ? k.lineTo(x, y) : k.moveTo(x, y)); k.stroke();
+        k.fillStyle = '#f4fbff';
+        pts.forEach(([x, y], i) => { if (i % 2 === 0 && i && i < 24) { k.globalAlpha = a * .7; k.beginPath(); k.moveTo(x, y); k.lineTo(x - 10, y + 12); k.lineTo(x - 3, y + 9); k.lineTo(x + 2, y + 14); k.lineTo(x + 9, y + 10); k.closePath(); k.fill(); } });
+      }
+      // stalactites de glace le long du haut
+      k.globalAlpha = .55;
+      for (let x = 0, i = 0; x < W + 20; i++) {
+        const wd = 8 + seeded(i + 200) * 16, ln = H * (.02 + seeded(i + 300) ** 2 * .07);
+        g = k.createLinearGradient(0, 0, 0, ln); g.addColorStop(0, '#e8f8ff'); g.addColorStop(1, 'rgba(159, 232, 255, 0)');
+        k.fillStyle = g; k.beginPath(); k.moveTo(x, 0); k.lineTo(x + wd / 2, ln); k.lineTo(x + wd, 0); k.closePath(); k.fill();
+        x += wd * .8;
+      }
+      // givre dans les coins : petites branches de cristal
+      k.strokeStyle = '#dff6ff'; k.lineWidth = 1;
+      for (const [cx, cy, sx, sy] of [[0, 0, 1, 1], [W, 0, -1, 1], [0, H, 1, -1], [W, H, -1, -1]]) {
+        for (let i = 0; i < 14; i++) {
+          const an = seeded(i + cx + cy * 3 + 500) * Math.PI / 2, len = S * (.05 + seeded(i + 600) * .12);
+          const dx = Math.cos(an) * sx, dy = Math.sin(an) * sy;
+          k.globalAlpha = .28; k.beginPath(); k.moveTo(cx, cy); k.lineTo(cx + dx * len, cy + dy * len);
+          for (let j = 1; j < 4; j++) { const px = cx + dx * len * j / 4, py = cy + dy * len * j / 4, b = len * .18 * (1 - j / 4); k.moveTo(px, py); k.lineTo(px + (dx - dy) * b, py + (dy + dx) * b); k.moveTo(px, py); k.lineTo(px + (dx + dy) * b, py + (dy - dx) * b); }
+          k.stroke();
+        }
+      }
+    } else if (w === 2) {
+      // Forge Volcanique : ciel rouge et volcans avec leurs coulées de lave
+      let g = k.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, 'rgba(90, 8, 4, .55)'); g.addColorStop(.55, 'rgba(160, 30, 8, .32)'); g.addColorStop(.85, 'rgba(255, 90, 20, .35)'); g.addColorStop(1, 'rgba(255, 140, 40, .45)');
+      k.fillStyle = g; k.fillRect(0, 0, W, H);
+      // nuages de fumée sombres en haut
+      for (let i = 0; i < 9; i++) {
+        const x = seeded(i + 700) * W, y = H * (.02 + seeded(i + 710) * .15), r = S * (.15 + seeded(i + 720) * .2);
+        g = k.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(30, 10, 8, .55)'); g.addColorStop(1, 'rgba(30, 10, 8, 0)');
+        k.fillStyle = g; k.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+      // volcans
+      const cones = [[.2, .22, .16], [.72, .3, .2], [1.02, .17, .14]];
+      for (const [u, hh, wd] of cones) {
+        const cx = u * W, top = H * (1 - hh), half = Math.max(W * wd, H * hh * .9), mouth = half * .12;
+        k.globalAlpha = 1; k.beginPath(); k.moveTo(cx - half * 1.4, H); k.quadraticCurveTo(cx - half * .4, top + H * hh * .25, cx - mouth, top);
+        k.lineTo(cx + mouth, top); k.quadraticCurveTo(cx + half * .4, top + H * hh * .25, cx + half * 1.4, H); k.closePath();
+        g = k.createLinearGradient(0, top, 0, H); g.addColorStop(0, '#2a0d08'); g.addColorStop(1, '#120404'); k.fillStyle = g; k.fill();
+        // lueur du cratère
+        g = k.createRadialGradient(cx, top, 0, cx, top, half * .5); g.addColorStop(0, 'rgba(255, 200, 80, .9)'); g.addColorStop(.3, 'rgba(255, 90, 20, .5)'); g.addColorStop(1, 'rgba(255, 60, 10, 0)');
+        k.fillStyle = g; k.fillRect(cx - half * .5, top - half * .5, half, half);
+        // coulées de lave
+        k.lineCap = 'round';
+        for (let j = 0; j < 3; j++) {
+          const side = j - 1, sx = cx + side * mouth * .7;
+          for (const [lw, col, a] of [[7, '#ff4f1a', .35], [3, '#ffb040', .9], [1.2, '#fff0a0', .8]]) {
+            k.globalAlpha = a; k.strokeStyle = col; k.lineWidth = lw; k.beginPath(); k.moveTo(sx, top + 2);
+            for (let s = 1; s <= 8; s++) { const q = s / 8; k.lineTo(sx + side * half * .9 * q + Math.sin(q * 9 + j + u * 10) * 6, top + (H - top) * q); }
+            k.stroke();
+          }
+        }
+      }
+      // lac de lave tout en bas
+      g = k.createLinearGradient(0, H * .94, 0, H); g.addColorStop(0, 'rgba(255, 90, 20, 0)'); g.addColorStop(1, 'rgba(255, 150, 40, .75)');
+      k.globalAlpha = 1; k.fillStyle = g; k.fillRect(0, H * .94, W, H * .06);
+    } else if (w === 3) {
+      // Jungle Cosmique : brume verte, feuilles géantes dans les coins du bas, mousse le long des bords
+      let g = k.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, 'rgba(10, 60, 25, .35)'); g.addColorStop(.5, 'rgba(20, 90, 40, .08)'); g.addColorStop(1, 'rgba(60, 200, 90, .25)');
+      k.fillStyle = g; k.fillRect(0, 0, W, H);
+      const leaf = (x, y, len, an, col, a) => {
+        k.save(); k.translate(x, y); k.rotate(an); k.globalAlpha = a;
+        const lg = k.createLinearGradient(0, 0, len, 0); lg.addColorStop(0, '#0a3a18'); lg.addColorStop(1, col);
+        k.fillStyle = lg; k.beginPath(); k.moveTo(0, 0); k.quadraticCurveTo(len * .5, -len * .32, len, 0); k.quadraticCurveTo(len * .5, len * .32, 0, 0); k.fill();
+        k.strokeStyle = '#7dff8a'; k.globalAlpha = a * .45; k.lineWidth = 1.2; k.beginPath(); k.moveTo(0, 0); k.lineTo(len * .95, 0);
+        for (let i = 1; i < 6; i++) { const px = len * i / 6, sp = len * .18 * Math.sin(i / 6 * Math.PI); k.moveTo(px, 0); k.lineTo(px + sp * .6, -sp); k.moveTo(px, 0); k.lineTo(px + sp * .6, sp); }
+        k.stroke(); k.restore();
+      };
+      for (let i = 0; i < 6; i++) {
+        const len = S * (.2 + seeded(i + 800) * .14);
+        leaf(-10, H + 10, len, -.3 - i * .22, i % 2 ? '#1f7a34' : '#2fbf71', .7);
+        leaf(W + 10, H + 10, len, Math.PI + .3 + i * .22, i % 2 ? '#2fbf71' : '#1f7a34', .7);
+      }
+      // mousse et petites fleurs lumineuses en bas
+      for (let i = 0; i < 40; i++) {
+        const x = seeded(i + 850) * W, y = H - seeded(i + 860) * H * .05, r = 6 + seeded(i + 870) * 18;
+        g = k.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(40, 140, 60, .55)'); g.addColorStop(1, 'rgba(40, 140, 60, 0)');
+        k.globalAlpha = 1; k.fillStyle = g; k.fillRect(x - r, y - r, r * 2, r * 2);
+      }
+    } else {
+      // Le Néant : presque tout noir, seulement une très faible lueur violette sur les bords
+      k.fillStyle = 'rgba(0, 0, 0, .86)'; k.fillRect(0, 0, W, H);
+      const g = k.createRadialGradient(W / 2, H / 2, S * .35, W / 2, H / 2, Math.max(W, H) * .8);
+      g.addColorStop(0, 'rgba(60, 20, 100, 0)'); g.addColorStop(1, 'rgba(70, 20, 120, .35)');
+      k.fillStyle = g; k.fillRect(0, 0, W, H);
+    }
+    decorCache[w] = { key, c };
+    return c;
+  }
+  // lianes de la jungle, fixées une fois : position, longueur, couleur des fleurs
+  const VINES = Array.from({ length: 9 }, (_, i) => ({ u: (i + .5) / 9 + (seeded(i + 900) - .5) * .06, len: .12 + seeded(i + 910) ** 1.5 * .3, ph: seeded(i + 920) * 6.28, fl: ['#ff7aa8', '#ffd86b', '#c86bff'][i % 3] }));
+  function drawDecorLive(w, t, a) {
+    const T = reduce ? 0 : t / 1000, S = Math.min(W, H);
+    ctx.save();
+    if (w === 0) {
+      // quelques étoiles plus brillantes qui scintillent sur la bande
+      for (let i = 0; i < 14; i++) {
+        const u = seeded(i + 1000) * 2 - 1, v = (seeded(i + 1010) - .5) * .8, L = Math.hypot(W, H) * .65, B = S * .2, c = Math.cos(-.55), s = Math.sin(-.55);
+        const x = W / 2 + u * L * c - v * B * s, y = H / 2 + u * L * s + v * B * c, tw = .5 + .5 * Math.sin(T * 2 + i * 1.7);
+        ctx.globalAlpha = a * tw * .9; ctx.drawImage(softSprite('#ffe9f0'), x - 5, y - 5, 10, 10);
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = a * tw * .5; ctx.fillRect(x - 6, y, 13, 1); ctx.fillRect(x, y - 6, 1, 13);
+      }
+    } else if (w === 1) {
+      // flocons qui tombent en zigzag et ruban d'aurore qui ondule en haut
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = a * .12; ctx.strokeStyle = i % 2 ? '#9fb8ff' : '#4fe0c8'; ctx.lineWidth = 30 - i * 8; ctx.beginPath();
+        for (let x = -20; x <= W + 20; x += 24) ctx.lineTo(x, H * (.12 + i * .05) + Math.sin(x / 110 + T * .5 + i * 1.3) * 22);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+      for (let i = 0; i < 45; i++) {
+        const sp = .03 + seeded(i + 1100) * .05, y = ((seeded(i + 1110) + T * sp) % 1) * (H + 20) - 10, x = seeded(i + 1120) * W + Math.sin(T * .8 + i) * 18, z = 1.5 + seeded(i + 1130) * 2.5;
+        ctx.globalAlpha = a * (.35 + seeded(i + 1140) * .4);
+        if (z > 3) { ctx.beginPath(); for (let j = 0; j < 3; j++) { const an = j * Math.PI / 3 + T * .5; ctx.moveTo(x - Math.cos(an) * z, y - Math.sin(an) * z); ctx.lineTo(x + Math.cos(an) * z, y + Math.sin(an) * z); } ctx.stroke(); }
+        else { ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, z * .8, z * .8); }
+      }
+    } else if (w === 2) {
+      // la lave du bas respire, des braises montent et un volcan crache des étincelles de temps en temps
+      const p = .6 + .4 * Math.sin(T * 1.6), g = ctx.createLinearGradient(0, H * .8, 0, H);
+      g.addColorStop(0, 'rgba(255, 80, 20, 0)'); g.addColorStop(1, 'rgba(255, 110, 30, .3)');
+      ctx.globalAlpha = a * p; ctx.fillStyle = g; ctx.fillRect(0, H * .8, W, H * .2);
+      for (let i = 0; i < 36; i++) {
+        const q = (seeded(i + 1200) + T * (.05 + seeded(i + 1210) * .08)) % 1, x = seeded(i + 1220) * W + Math.sin(T * 1.4 + i) * 16, y = H - q * H * 1.05;
+        ctx.globalAlpha = a * (1 - q) * .9; ctx.fillStyle = i % 3 ? '#ff9a3c' : '#ffe08a'; ctx.fillRect(x, y, 2 + (i % 3), 2 + (i % 3));
+      }
+      const cyc = (T * .25) % 1, cone = [[.2, .22], [.72, .3]][Math.floor(T * .25) % 2];
+      if (cyc < .35) {
+        const cx = cone[0] * W, top = H * (1 - cone[1]), q = cyc / .35;
+        for (let j = 0; j < 16; j++) {
+          const an = -Math.PI / 2 + (seeded(j + Math.floor(T * .25) * 20) - .5) * 1.2, d = q * S * (.12 + seeded(j + 1300) * .12);
+          ctx.globalAlpha = a * (1 - q); ctx.fillStyle = j % 2 ? '#ffd86b' : '#ff4f1a';
+          ctx.fillRect(cx + Math.cos(an) * d, top + Math.sin(an) * d + q * q * S * .1, 3, 3);
+        }
+      }
+    } else if (w === 3) {
+      // lianes qui pendent du haut et se balancent, avec des feuilles et des fleurs lumineuses ; lucioles
+      ctx.lineCap = 'round';
+      for (const v of VINES) {
+        const x0 = v.u * W, len = v.len * H, sw = Math.sin(T * .7 + v.ph) * S * .025;
+        const pt = q => [x0 + sw * q * q + Math.sin(q * 5 + v.ph) * 8, q * len];
+        ctx.globalAlpha = a * .8; ctx.strokeStyle = '#1d5a2a'; ctx.lineWidth = 3; ctx.beginPath();
+        for (let s = 0; s <= 10; s++) { const [x, y] = pt(s / 10); s ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        ctx.stroke();
+        for (let s = 1; s <= 7; s++) {
+          const [x, y] = pt(s / 7.5), side = s % 2 ? 1 : -1, z = 7 + (s % 3) * 2;
+          ctx.save(); ctx.translate(x, y); ctx.rotate(side * .9 + Math.sin(T + s) * .1); ctx.globalAlpha = a * .75;
+          ctx.fillStyle = s % 2 ? '#2fbf71' : '#1f8a3e'; ctx.beginPath(); ctx.ellipse(z * .7, 0, z * .7, z * .32, 0, 0, 7); ctx.fill(); ctx.restore();
+        }
+        const [fx, fy] = pt(1);
+        ctx.globalAlpha = a * (.6 + .3 * Math.sin(T * 2 + v.ph)); ctx.drawImage(softSprite(v.fl), fx - 9, fy - 9, 18, 18);
+        ctx.globalAlpha = a; ctx.fillStyle = v.fl; ctx.beginPath(); ctx.arc(fx, fy, 3, 0, 7); ctx.fill();
+      }
+      for (let i = 0; i < 22; i++) {
+        const x = seeded(i + 1400) * W + Math.sin(T * .5 + i * 2) * 30, y = H * (.3 + seeded(i + 1410) * .65) + Math.cos(T * .4 + i) * 20;
+        ctx.globalAlpha = a * (.3 + .7 * Math.abs(Math.sin(T * 1.3 + i))); ctx.drawImage(softSprite('#d8ff6b'), x - 4, y - 4, 8, 8);
+      }
+    } else {
+      // tourbillon très sombre au centre et poussières qui s'y font aspirer ; une fissure violette de temps en temps
+      ctx.translate(W / 2, H * .4);
+      for (let i = 0; i < 40; i++) {
+        const q = (seeded(i + 1500) + T * .04) % 1, an = seeded(i + 1510) * 6.28 + q * 4, d = (1 - q) * Math.max(W, H) * .6;
+        ctx.globalAlpha = a * q * .45; ctx.fillStyle = i % 4 ? '#5b3a9e' : '#c86bff'; ctx.fillRect(Math.cos(an) * d, Math.sin(an) * d * .6, 1.6, 1.6);
+      }
+      ctx.strokeStyle = '#3a1d5a'; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) { ctx.globalAlpha = a * .25; ctx.beginPath(); ctx.ellipse(0, 0, S * (.08 + i * .06), S * (.04 + i * .03), T * .15 * (i % 2 ? 1 : -1), 0, 7); ctx.stroke(); }
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const cyc = (T * .2) % 1;
+      if (cyc < .1 && !reduce) {
+        const n = Math.floor(T * .2); let x = seeded(n + 1600) * W, y = 0;
+        ctx.globalAlpha = a * (1 - cyc / .1) * .5; ctx.strokeStyle = '#c86bff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, y);
+        for (let j = 0; j < 7; j++) { x += (seeded(n * 7 + j + 1700) - .5) * 50; y += H * .1; ctx.lineTo(x, y); }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  function drawWorldDecor(t, on) {
+    const w = Math.max(0, Math.min(WORLDS.length - 1, world));
+    if (w !== decorW) { decorPrev = decorW; decorW = w; decorStart = t; }
+    const k = Math.min(1, Math.max(0, (t - decorStart) / 2000)), A = on ? 1 : 0;
+    for (const [ww, a] of [[decorPrev, (1 - k) * A], [decorW, k * A]]) {
+      if (a <= .01) continue;
+      ctx.globalAlpha = a; ctx.drawImage(decorLayer(ww), 0, 0, W, H); ctx.globalAlpha = 1;
+      drawDecorLive(ww, t, a);
+    }
+  }
+
   function draw(t) {
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
@@ -7616,6 +7859,8 @@ body:not(.jeu) .hud { opacity: 0; }
     // animation d'ambiance du décor (change à chaque niveau, avec un fondu)
     drawAmbient(AMBIENTS[bgPrev % AMBIENTS.length], t, 1 - th.k, th.a.neb);
     drawAmbient(AMBIENTS[bgIdx % AMBIENTS.length], t, th.k, th.b.neb);
+    // décor propre au monde en cours : glace, volcans, lianes, vide…
+    drawWorldDecor(t, inGame);
     drawScenery(t, th.neb);
     if (state === 'launch') drawLaunch(t);
     if (state === 'menu' && W > 900 && !reduce) {
