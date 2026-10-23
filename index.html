@@ -310,6 +310,28 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
   .procine .row button { padding: 8px 18px; font-size: 14px; }
 }
 
+/* Qui parle : l'étiquette au-dessus d'une réplique */
+.who { display: block; font-family: var(--display); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--tail); margin-bottom: 2px; font-style: normal; }
+.procine .prosub { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.procine p.say, .storytext p.say { font-style: italic; }
+/* Réplique d'un boss en plein combat : une bulle en haut, le jeu continue */
+.say-bubble { position: fixed; left: 16px; right: 16px; top: calc(108px + env(safe-area-inset-top, 0px)); margin: 0 auto; width: fit-content; max-width: 30rem;
+  padding: 8px 14px; border-radius: 14px; border: 2px solid var(--boss, var(--tail)); background: rgba(5, 3, 15, .78); color: var(--ink);
+  font-size: 15px; line-height: 1.4; font-style: italic; text-align: center; pointer-events: none; animation: storyIn .35s ease both; }
+.say-bubble[hidden] { display: none; }
+.say-bubble .who { color: var(--boss, var(--tail)); }
+/* Dialogue après la défaite d'un boss : une ligne à la fois, on touche pour passer */
+.talk { position: fixed; inset: 0; z-index: 5; display: flex; align-items: flex-end; justify-content: center; cursor: pointer;
+  padding: 0 16px calc(96px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(transparent 50%, rgba(5, 3, 15, .55)); }
+.talk[hidden] { display: none; }
+.talkbox { width: min(34rem, 100%); padding: 14px 18px 10px; border-radius: 18px; border: 2px solid var(--who, var(--tail)); background: rgba(5, 3, 15, .88); animation: storyIn .3s ease both; }
+.talkbox .who { color: var(--who, var(--tail)); }
+.talkbox p { margin: 0; font-size: 18px; line-height: 1.45; color: var(--ink); }
+.talkbox p.narr { font-style: italic; color: var(--muted); }
+.talkbox small { display: block; margin-top: 6px; text-align: right; font-size: 12px; color: var(--muted); }
+#overTitle .who { margin-top: 10px; color: var(--tail); }
+@media (prefers-reduced-motion: reduce) { .say-bubble, .talkbox { animation: none; } }
+
 /* Cinématique d'arrivée d'un boss */
 .cine { position: fixed; inset: 0; pointer-events: none; display: grid; grid-template-rows: auto 1fr auto; }
 .hazard {
@@ -649,8 +671,18 @@ body:not(.jeu) .hud { opacity: 0; }
   <div class="hazard"><span>Boss</span></div>
 </div>
 
+<div class="say-bubble" id="sayBubble" hidden><span class="who" id="sayWho"></span><span id="sayText"></span></div>
+
+<div class="talk" id="talk" hidden>
+  <div class="talkbox" id="talkBox">
+    <span class="who" id="talkWho"></span>
+    <p id="talkText"></p>
+    <small>Touche ou clique pour continuer</small>
+  </div>
+</div>
+
 <div class="procine" id="proCine" hidden>
-  <p id="proSub"></p>
+  <div class="prosub" id="proSub"></div>
   <div class="dots" id="proDots"></div>
   <div class="row">
     <button class="ghost" id="proSkip">Passer</button>
@@ -741,7 +773,7 @@ body:not(.jeu) .hud { opacity: 0; }
       <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : tape sur ta fusée, une fois par tir. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
-      <span>Astros ✦</span><span>La monnaie de l'espace : chaque point marqué en partie te rapporte 1 Astro, à dépenser dans le Hangar pour débloquer des objets et acheter des améliorations.</span>
+      <span>Astros ✦</span><span>La monnaie de l'espace : chaque point marqué en partie te rapporte 1 Astro, à dépenser dans le Hangar pour débloquer des objets et acheter des améliorations. Les Astros sont des éclats de lumière trop petits pour rallumer une étoile, mais assez pour améliorer ta fusée.</span>
       <span>Aliens</span><span>50 espèces, 10 dans chaque monde (pingouins, glaçons, diablotins, guêpes, glitchs…), avec 7 façons d'attaquer qui arrivent au fil des niveaux : bestioles vertes qui te poursuivent, soucoupes qui tirent, fonceurs rouges qui chargent (bouge quand ils tremblent !), gélatines violettes qui se divisent, fantômes qui se téléportent, tireurs d'élite qui visent (sors de la ligne rouge !) et poseurs de mines qui explosent en étoile.</span>
       <span>Trophées</span><span>5 collections (bronze, argent, or, diamant) débloquent des objets exclusifs qu'on ne peut pas acheter : super-pouvoirs ultimes, couleurs spéciales, couleurs de tirs, flammes et vaisseaux de légende.</span>
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
@@ -769,7 +801,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="over" hidden>
   <div class="card">
-    <p id="overTitle">Ta fusée s'est écrasée</p>
+    <p id="overTitle">Système éteint…</p>
     <div class="final" id="finalScore">0</div>
     <p id="finalInfo"></p>
     <div class="row">
@@ -2203,6 +2235,8 @@ body:not(.jeu) .hud { opacity: 0; }
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '';
+  // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
+  let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [];
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
@@ -2210,6 +2244,8 @@ body:not(.jeu) .hud { opacity: 0; }
 
   function reset() {
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
+    sayLeft = 0; talkQ = []; talkAt = 0; smokes = [];
+    for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
@@ -2492,8 +2528,32 @@ body:not(.jeu) .hud { opacity: 0; }
     { id: 'spectre', place: 'Cimetière d\'étoiles', quote: 'Tu ne peux pas toucher ce que tu ne vois pas…', name: 'Le Spectre', col: '#d9d0ff', r: 40, desc: 'Se téléporte et tire dès qu\'il réapparaît.' },
     { id: 'forteresse', place: 'Mur de fer', quote: 'PROTOCOLE ÉLIMINATION ACTIVÉ. AUCUNE ISSUE.', name: 'Forteresse Mécanique', col: '#ffd86b', r: 48, desc: 'Murs de tirs : passe par le trou !' },
     { id: 'dragon', place: 'Soleil rouge', quote: 'Je vais réduire ta fusée en cendres !', name: 'Dragon Stellaire', col: '#ff9a3c', r: 46, desc: 'Souffle de feu en rafale.' },
-    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé quelques étoiles. Je vais toutes les éteindre !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le maître de la Voie lactée. Devient furieux à mi-vie.' },
+    { id: 'zorg', place: 'Palais de Zorg', quote: 'Tu as rallumé MES étoiles ? Tout ce qui brille est à moi !', name: 'Empereur Zorg', col: '#b6ff6b', r: 50, desc: 'Le maître de la Voie lactée. Devient furieux à mi-vie.' },
   ];
+  // ce que disent les boss : en plein combat (sous la moitié de leur vie), à leur défaite, puis la réaction à bord
+  // qui parle : 'n' = la fusée (son nom choisi au Hangar), 'Clac', 'Nina', '' = narration
+  // (les Mondes 2 à 5 auront leurs textes plus tard : sans texte, rien ne s'affiche)
+  const TALK = {
+    mere: { mid: 'Tous les canons sur cette vieille boîte de conserve !', bye: 'Impossible… battu par une épave de musée…',
+      after: [['n', 'Épave de musée. Je crois que c\'est une insulte. Je crois que je n\'aime pas ça.']] },
+    reine: { mid: 'Mes petits, à table ! Le dessert arrive tout seul !', bye: 'Mes enfants n\'avaient jamais faim… avant que Zorg nous donne sa lumière…',
+      after: [['n', 'La lumière volée les a changés. Note pour plus tard : ne jamais garder ce qui ne m\'appartient pas.']] },
+    oeil: { mid: 'Je vois tout… Alors pourquoi je ne vois pas ta peur ?', bye: 'Je vois plus loin, maintenant… Quelqu\'un te regarde, toi aussi. Depuis le bout du vide.',
+      after: [['n', 'Mes capteurs ne détectent rien. Pourtant, j\'ai l\'impression d\'être observée. C\'est quoi, une impression ?']] },
+    crabe: { mid: 'Clac ! Clac ! Arrête de bouger, j\'arrive pas à te pincer !', bye: 'Aïe, ma tête… Pourquoi j\'ai obéi à ce tas de ferraille dorée ? Hé, la fusée ! Tu vas chez Zorg ? Je viens. J\'ai deux pinces à lui rendre.',
+      after: [['n', 'Passager non autorisé.'], ['Clac', 'Trop tard, je suis à bord.']] },
+    meduse: { mid: 'Mon courant monte… dix mille volts… vingt mille…', bye: 'Merci… La lumière de Zorg me brûlait de l\'intérieur.',
+      after: [['Clac', 'Tu vois ? Tu les détruis pas, tu les libères. T\'es une gentille fusée.'], ['n', 'Je suis une fusée de classe IV.'], ['Clac', 'Une gentille fusée de classe IV.']] },
+    pieuvre: { mid: 'Encore de l\'encre ! Encore plus de noir !', bye: 'J\'aimais le noir, avant… Mais le noir de Zorg est vide. Il n\'y a rien dedans. Rien du tout.',
+      after: [['Clac', 'Brr, elle me donne des frissons.'], ['n', 'Moi aussi. Je crois.']] },
+    spectre: { mid: 'Écoute… Les étoiles mortes chuchotent. Elles t\'attendaient.', bye: 'Ici reposent les étoiles que personne n\'a sauvées… Tu lui ressembles. À celle d\'il y a mille ans.',
+      after: [['n', 'Quelle autre ?'], ['', 'Le Spectre a disparu.'], ['Clac', 'Les fantômes, ça dit toujours des trucs bizarres.']] },
+    forteresse: { mid: 'ALERTE. DÉGÂTS CRITIQUES. CETTE FUSÉE NE RESPECTE PAS LES CALCULS.', bye: 'ERREUR… TU ES UNE MACHINE… POURQUOI DÉSOBÉIS-TU ?',
+      after: [['n', 'Je ne désobéis pas. Je choisis.'], ['Clac', 'Ooh, elle choisit ! Ça grandit vite, les fusées.']] },
+    dragon: { mid: 'Mon feu vient du soleil rouge ! Et le tien, il vient d\'où ?!', bye: 'Zorg m\'avait promis toute la lumière du soleil… Il ne m\'en a jamais donné une miette. Il garde tout. Toujours.',
+      after: [['n', 'Prendre et ne jamais rendre. Pourquoi quelqu\'un voudrait-il ça ?']] },
+    zorg: { mid: 'Plus j\'en prends, plus j\'en veux ! Pourquoi ça ne s\'arrête jamais ?!', bye: 'Non… Le Maître va avoir faim… Il a toujours faim…', after: [] },
+  };
 
   // ===== Mondes 2 à 5 : chaque boss a ses attaques (move) et son dessin (draw) =====
   // petits outils de dessin
@@ -3445,10 +3505,15 @@ body:not(.jeu) .hud { opacity: 0; }
   // texte affiché en arrivant dans le monde w (1 à 4), puis la fin après le dernier boss du Néant
   const WORLD_STORY = [
     null,
-    n => ['L\'Empereur Zorg s\'écrase dans les ruines de son palais. Les étoiles de la Voie lactée se rallument.',
-      'Dans les débris, tu trouves une carte : Zorg n\'était qu\'un serviteur. Quatre royaumes gardent la route vers le <b>Néant</b>, où dort le <b>Dévoreur d\'étoiles</b>.',
-      `Une porte de glace s'ouvre devant ${n}…`,
-      '<b>Monde 2 : Royaume de Givre.</b> L\'Impératrice Glacia et ses gardiens t\'attendent.'],
+    // Monde 1 → Monde 2 : une suite de scènes ; chaque scène est une liste de lignes (texte = narration, [qui, texte] = dialogue)
+    n => [
+      ['Zorg s\'effondre. Son corps se dissout en fumée noire, aspirée vers le fond de l\'univers.'],
+      [`Les étoiles du palais flottent autour de ${n}. Avec elles, elle serait invincible. Elle hésite une seconde, puis ouvre ses soutes.`],
+      ['Toute son énergie part vers le ciel : ses armes, ses super-pouvoirs, ses améliorations. Elle ne garde que sa coque et ses couleurs. La <b>Voie lactée</b> se rallume. Sur Terre, Nina voit apparaître la première étoile.'],
+      [['Clac', 'T\'as tout rendu ? Toutes ces étoiles, et même tes armes ?'], ['n', 'Les étoiles n\'étaient pas à moi.'], ['Clac', 'T\'es bizarre, toi. J\'aime bien.']],
+      ['Dans les ruines, ils trouvent une carte : quatre royaumes sur la route du <b>Néant</b>. Tout au bout, un nom gravé : le <b>Dévoreur d\'étoiles</b>.'],
+      ['Une porte de glace s\'ouvre. <b>Monde 2 : Royaume de Givre.</b>'],
+    ],
     n => ['Glacia se brise en mille éclats de cristal.',
       'Sous la glace, le sol se met à trembler : une chaleur terrible monte des profondeurs.',
       `${n} plonge vers une planète en fusion…`,
@@ -3464,12 +3529,16 @@ body:not(.jeu) .hud { opacity: 0; }
   ];
   // un prologue pour chacun des 5 mondes (n = nom de la fusée)
   const PROLOGUES = [
+    // Monde 1 : 8 scènes ; chaque scène est une liste de lignes (texte = narration, [qui, texte] = dialogue, 'n' = la fusée)
     n => [
-      'An 2187. Dans la <b>Voie lactée</b>, les étoiles s\'éteignent une par une. Le ciel de la Terre devient noir.',
-      'Le coupable : l\'<b>Empereur Zorg</b>. Il a volé toutes les étoiles pour les cacher dans son palais.',
-      'Pour garder son trésor, il a placé <b>10 gardiens</b> dans 10 secteurs de l\'espace, de l\'orbite terrestre jusqu\'à son palais.',
-      `Une seule fusée est encore prête à décoller : ${n}.`,
-      '<b>Mission :</b> rattraper les étoiles volées, vaincre les 10 gardiens et rallumer le ciel.',
+      ['Terre, an 2187. Une à une, les étoiles s\'éteignent. Les enfants ne savent plus ce qu\'est une constellation.'],
+      ['En pleine nuit, une fillette, <b>Nina</b>, se glisse dans un vieux musée de l\'espace. Une plaque raconte : « Les Porteuses de lumière rallumaient les étoiles. La première n\'est jamais revenue. » Nina s\'arrête devant la baie 07, où dort la dernière Porteuse de lumière.'],
+      ['Nina appuie sur un bouton. Un voyant s\'allume.', ['???', 'Système réveillé. Bonjour. Je n\'ai pas de nom.'], ['Nina', `Maintenant, si. Tu t'appelles ${n}.`]],
+      [['n', 'Étoiles manquantes : 100 milliards. Responsable : l\'Empereur Zorg.']],
+      ['Zorg apparaît sur tous les écrans, couvert d\'étoiles volées comme de bijoux.', ['Empereur Zorg', 'Tout ce qui brille est à moi. Et ce qui est à moi, je le garde.']],
+      [['n', 'Il a placé 10 gardiens entre la Terre et son palais. Probabilité de succès : 0,3 %.'], ['Nina', 'Et si tu essayais quand même ?']],
+      [['n', 'Cette réponse n\'est pas logique. Je l\'enregistre quand même.'], 'Les réacteurs s\'allument.'],
+      ['<b>Mission :</b> franchir les 10 gardiens, reprendre les étoiles et rallumer le ciel de Nina.'],
     ],
     n => [
       'Au-delà de la Voie lactée s\'étend le <b>Royaume de Givre</b>, un océan d\'étoiles gelées où plus rien ne bouge.',
@@ -3496,7 +3565,7 @@ body:not(.jeu) .hud { opacity: 0; }
       'Au bout de l\'univers, il n\'y a plus rien. Ni étoile, ni lumière, ni bruit. C\'est le <b>Néant</b>.',
       'Là dort le <b>Dévoreur d\'étoiles</b>, le maître de Zorg, de Glacia, de Magmor et de la Reine-Ruche. Toutes les étoiles volées finissent dans son ventre.',
       'Ses gardiens sont étranges : un miroir noir, une horloge brisée, un glitch qui déforme l\'espace…',
-      `${n} allume tous ses phares. C\'est le dernier voyage.`,
+      `${n} allume tous ses capteurs. C\'est le dernier voyage.`,
       '<b>Mission :</b> vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.',
     ],
   ];
@@ -3516,36 +3585,62 @@ body:not(.jeu) .hud { opacity: 0; }
     t.hidden = false; t.textContent = W0.name;
     t.style.setProperty('--w1', W0.col[1]); t.style.setProperty('--w2', '#ffffff');
   }
+  // le nom choisi au Hangar, sans caractères qui casseraient la page
+  const rocketName = () => cfg.name.replace(/[<>&"]/g, '');
+  // une scène est une liste de lignes (les anciens textes : une phrase = une scène)
+  const sceneLines = sc => Array.isArray(sc) ? sc : [sc];
+  // une ligne : narration (texte), ou réplique [qui parle, texte] ('n' = la fusée, avec le nom choisi par le joueur)
+  function lineHtml(l) {
+    if (!Array.isArray(l)) return l;
+    const col = WHO_COL[l[0]];
+    return `<span class="who"${col ? ` style="color:${col}"` : ''}>${l[0] === 'n' ? rocketName() : l[0]}</span>«\u00a0${l[1]}\u00a0»`;
+  }
+  let storyPages = [], storyPage = 0, storyExtra = [];
   function showStory(mode) {
     storyMode = mode;
-    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
+    const n = `<b>${rocketName()}</b>`;
     if (mode === 'intro') { mode = 'prologue'; storyMode = mode; storyWorld = 0; }
-    const lines = mode === 'prologue' ? PROLOGUES[storyWorld](n) : mode === 'world' ? WORLD_STORY[world + 1](n) : [
+    const raw = mode === 'prologue' ? PROLOGUES[storyWorld](n) : mode === 'world' ? WORLD_STORY[world + 1](n) : [
       'Le Dévoreur d\'étoiles pousse un dernier cri et explose en une pluie de lumière.',
       'Toutes les étoiles qu\'il avait avalées reviennent : les cinq mondes brillent à nouveau.',
       `Dans toutes les galaxies, on raconte maintenant la légende de ${n}.`,
       '<b>Victoire totale !</b> La partie continue : les gardiens du Néant reviennent, plus forts.',
     ];
+    // les textes en scènes avec dialogues se lisent une scène à la fois ; les autres d'un seul bloc
+    storyPages = mode === 'world' && raw.some(Array.isArray) ? raw.map(sceneLines) : [raw.flatMap(sceneLines)];
+    storyPage = 0; storyExtra = [];
     $('storyKicker').textContent = mode === 'prologue' ? `Prologue · Monde ${storyWorld + 1}` : mode === 'world' ? `Monde ${world + 2}` : 'Épilogue';
     setStoryTitle(mode === 'prologue' ? storyWorld : mode === 'world' ? world + 1 : -1);
     // les gardiens du monde, pour donner envie
     if (mode === 'prologue') {
       const gs = WORLDS[storyWorld].bosses;
-      lines.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
+      storyExtra.push(`<span class="guards">Ses 10 gardiens : ${gs.slice(0, 9).map(b => b.name).join(', ')}… et pour finir, <b>${gs[9].name}</b>.</span>`);
     }
-    if (mode === 'world') lines.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
-    $('storyText').innerHTML = lines.map((l, i) => `<p style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
-    $('storySkip').hidden = mode !== 'prologue';
-    $('storyGo').textContent = mode === 'prologue' ? 'Décoller' : mode === 'world' ? 'En route !' : 'Continuer à jouer';
+    if (mode === 'world') storyExtra.push('<span class="guards"><b>Nouveau départ :</b> tes compétences, pistolets, super-pouvoirs et points repartent à zéro. Tes vaisseaux et couleurs sont gardés. Ce monde est plus dur : à toi de jouer !</span>');
+    showStoryPage();
     for (const id of ['menu', 'over', 'help']) $(id).hidden = true;
     $('story').hidden = false;
     if (mode !== 'prologue') { state = 'story'; $('pauseBtn').hidden = true; }
     else state = 'hangar';
   }
-  // ===== Cinématique de prologue : présentation de la galaxie en 5 scènes =====
-  // 1. la galaxie  2. son tyran  3. ses gardiens  4. ta fusée arrive  5. la mission
-  const PRO_SCENE = 5;
-  let proT = 0, proScene = 0, proLines = [], proPts = [], proImgs = {}, proSil = {};
+  function showStoryPage() {
+    const lastPage = storyPage === storyPages.length - 1;
+    const lines = storyPages[storyPage].map(l => [lineHtml(l), Array.isArray(l)]);
+    if (lastPage) for (const x of storyExtra) lines.push([x, false]);
+    $('storyText').innerHTML = lines.map(([l, say], i) => `<p${say ? ' class="say"' : ''} style="animation-delay:${(i * .8).toFixed(1)}s">${l}</p>`).join('');
+    $('storySkip').hidden = storyMode !== 'prologue' && lastPage;
+    $('storyGo').textContent = !lastPage ? 'Suivant ›' : storyMode === 'prologue' ? 'Décoller' : storyMode === 'world' ? 'En route !' : 'Continuer à jouer';
+  }
+  function storyNextPage() {
+    if (storyPage < storyPages.length - 1) { storyPage++; showStoryPage(); beep(523, .12, 'triangle', .06); }
+    else closeStory();
+  }
+  // ===== Cinématique de prologue : présentation de la galaxie, scène par scène =====
+  // images : 0. la galaxie  1. son tyran  2. ses gardiens  3. ta fusée part  4. la mission  5. la baie 07 du musée
+  // par défaut, 5 scènes (une image chacune) ; le Monde 1 en a 8
+  const PRO_VIS = [[0, 5, 5, 0, 1, 2, 3, 4]];
+  let proT = 0, proScene = 0, proCount = 5, proLines = [], proPts = [], proImgs = {}, proSil = {};
+  const proVis = i => (PRO_VIS[storyWorld] || [])[i] ?? i;
   function proImg(d) {
     if (!proImgs[d.id]) { const im = new Image(); im.src = bossPortrait(d); proImgs[d.id] = im; }
     return proImgs[d.id];
@@ -3560,8 +3655,8 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   function startPrologue(w) {
     storyWorld = w; storyMode = 'prologue';
-    const n = `<b>${cfg.name.replace(/[<>&"]/g, '')}</b>`;
-    proLines = PROLOGUES[w](n);
+    const n = `<b>${rocketName()}</b>`;
+    proLines = PROLOGUES[w](n).map(sceneLines); proCount = proLines.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story']) $(id).hidden = true;
     const R = Math.random;
     proPts = Array.from({ length: reduce ? 260 : 600 }, () => {
@@ -3569,23 +3664,22 @@ body:not(.jeu) .hud { opacity: 0; }
       return { a: arm * Math.PI * 2 / 3 + rr * 4.2 + (R() - .5) * .55, r: rr, z: R() < .08 ? 2.6 : 1.3, white: R() < .35, d: R(), u: R(), v: R() };
     });
     WORLDS[w].bosses.forEach(proImg);
-    $('proDots').innerHTML = '<i></i>'.repeat(PRO_SCENE);
+    $('proDots').innerHTML = '<i></i>'.repeat(proCount);
     $('proCine').hidden = false;
     state = 'prologue';
     proGoto(0);
   }
   function proGoto(i) {
     proScene = i; proT = 0;
-    const last = i === PRO_SCENE - 1, sub = $('proSub');
-    sub.innerHTML = proLines[i] || ''; sub.className = last ? 'mission' : '';
-    void sub.offsetWidth; sub.classList.add('in');
+    const last = i === proCount - 1, sub = $('proSub');
+    sub.innerHTML = (proLines[i] || []).map((l, j) => `<p class="in${Array.isArray(l) ? ' say' : ''}${last ? ' mission' : ''}" style="animation-delay:${(j * .7).toFixed(1)}s">${lineHtml(l)}</p>`).join('');
     [...$('proDots').children].forEach((d, j) => d.classList.toggle('on', j === i));
     $('proGo').hidden = !last; $('proNext').hidden = last;
     $('proSkip').textContent = last ? 'Revoir' : 'Passer';
-    beep([392, 440, 523, 587, 784][i], last ? .5 : .25, 'triangle', .08);
-    if (i === 1) beep(110, .9, 'sawtooth', .08, -40);
+    beep(last ? 784 : [392, 440, 523, 587, 659, 698, 740][i % 7], last ? .5 : .25, 'triangle', .08);
+    if (proVis(i) === 1) beep(110, .9, 'sawtooth', .08, -40);
   }
-  function proNext() { if (proScene < PRO_SCENE - 1) proGoto(proScene + 1); }
+  function proNext() { if (proScene < proCount - 1) proGoto(proScene + 1); }
   function endPrologue() {
     if (state !== 'prologue') return;
     $('proCine').hidden = true; markPrologue(storyWorld); start();
@@ -3594,7 +3688,7 @@ body:not(.jeu) .hud { opacity: 0; }
     proT += dt;
   }
   function drawPrologue(t) {
-    const w = WORLDS[storyWorld], [c1, c2] = w.col, T = proT, sc = proScene, m = Math.min(W, H);
+    const w = WORLDS[storyWorld], [c1, c2] = w.col, T = proT, sc = proVis(proScene), m = Math.min(W, H);
     const gs = w.bosses, chief = gs[9];
     ctx.save();
     // fond : le ciel de la galaxie
@@ -3622,8 +3716,8 @@ body:not(.jeu) .hud { opacity: 0; }
       }
       ctx.globalAlpha = Math.min(1, T) * .7; ctx.fillStyle = core; ctx.beginPath(); ctx.ellipse(W / 2, H * .42, z * .38, z * .18, 0, 0, 7); ctx.fill();
       ctx.globalCompositeOperation = 'source-over';
-      // titre
-      const k = ease((T - .5) / .8);
+      // titre (seulement à la première scène)
+      const k = proScene ? 0 : ease((T - .5) / .8);
       ctx.globalAlpha = k; ctx.textAlign = 'center';
       ctx.font = `600 ${Math.max(11, m * .022)}px Outfit, system-ui, sans-serif`; ctx.fillStyle = '#ff7aa8';
       ctx.fillText(`MONDE ${storyWorld + 1}`.split('').join(' '), W / 2, H * .12);
@@ -3679,6 +3773,21 @@ body:not(.jeu) .hud { opacity: 0; }
       const glow = ctx.createRadialGradient(W / 2, y + 60, 0, W / 2, y + 60, 160); glow.addColorStop(0, 'rgba(255, 180, 80, .35)'); glow.addColorStop(1, 'rgba(255, 180, 80, 0)');
       ctx.fillStyle = glow; ctx.fillRect(W / 2 - 160, y - 100, 320, 320);
       drawRocket(ctx, W / 2 + Math.sin(t / 500) * 10, y + Math.sin(t / 300) * 4, Math.min(4, m / 200), cfg, t, Math.sin(t / 700) * .06, 1);
+    } else if (sc === 5) {
+      // la baie 07 du musée : la fusée dort dans la pénombre, puis un voyant s'allume
+      const awake = proScene > 1 && T > .5, fy = H < 520 ? .8 : H > W ? .5 : .62;
+      drawBay(ctx, W, H, t, fy);
+      drawRocket(ctx, W / 2, H * fy - Math.min(4, m / 200) * 30, Math.min(4, m / 200), cfg, t, 0, 0);
+      ctx.fillStyle = '#04020c'; ctx.globalAlpha = awake ? .35 : .7; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+      if (awake) {
+        const vx = W / 2 + Math.min(4, m / 200) * 26, vy = H * fy - 10, on = (t / 500) % 2 < 1.4;
+        const vg = ctx.createRadialGradient(vx, vy, 0, vx, vy, 26); vg.addColorStop(0, on ? 'rgba(125, 255, 138, .9)' : 'rgba(125, 255, 138, .25)'); vg.addColorStop(1, 'rgba(125, 255, 138, 0)');
+        ctx.fillStyle = vg; ctx.fillRect(vx - 26, vy - 26, 52, 52);
+        ctx.fillStyle = on ? '#b6ffbf' : '#2f6b36'; ctx.beginPath(); ctx.arc(vx, vy, 4, 0, 7); ctx.fill();
+      }
+      ctx.textAlign = 'center'; ctx.globalAlpha = .75; ctx.fillStyle = '#ffd86b';
+      ctx.font = `${Math.min(30, W / 14)}px Bungee, Impact, system-ui, sans-serif`;
+      ctx.fillText('BAIE 07', W / 2, Math.max(H * .12, Math.min(40, H * .05) + 34)); ctx.globalAlpha = 1;
     } else {
       // 5. la mission : la galaxie au loin, la fusée prête
       const z = m * .3, rot = t / 9000, gy = H * .3;
@@ -3718,7 +3827,7 @@ body:not(.jeu) .hud { opacity: 0; }
     document.querySelector('.hud').style.visibility = 'hidden';
     outroDur = next === 'world' ? 11 : 5.5;
     mouseFire = btnFire = false;
-    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
     $('banner').classList.remove('show');
     const R = Math.random;
     outroStars = Array.from({ length: reduce ? 30 : 70 }, () => ({ tx: R() * W, ty: R() * H * .85, d: R() * 1.4, z: 2 + R() * 4, tw: R() * 7 }));
@@ -3750,7 +3859,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (outroT >= outroDur) finishOutro();
   }
   // le nom du capitaine : son nom de joueur, sinon le nom de sa fusée
-  const captain = () => (typeof joueur !== 'undefined' && joueur ? joueur.name : cfg.name) || 'Aurore';
+  const captain = () => (typeof joueur !== 'undefined' && joueur ? joueur.name : cfg.name) || DEFAULT.name;
   const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
   function outroText(txt, y, size, col, alpha, glow) {
     ctx.save(); ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
@@ -4609,6 +4718,8 @@ body:not(.jeu) .hud { opacity: 0; }
     if (it.boss && it.pw && it.pw.t >= it.pw.warn && it.pw.kind === 'mirror') { if (dmg >= 1) shot(it.x + (Math.random() - .5) * it.r, it.y + it.r, (Math.random() - .5) * 80, 260, '#ffffff', 5); return; }
     if (it.boss && (!it.entered || cineT > 0)) { if (dmg >= 1) burst(it.x, it.y + it.r * .5, '#ffffff', 2, 80, 2); return; }
     it.hp -= dmg; it.hitT = .08;
+    // sous la moitié de sa vie, le boss lance sa réplique (le jeu continue)
+    if (it.boss && !it.midSaid && it.hp > 0 && it.hp < it.maxHp / 2) { it.midSaid = true; const tk = TALK[it.def.id]; if (tk && tk.mid) bossSay(it.def, tk.mid); }
     if (it.hp > 0) { if (dmg >= 1) burst(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : it.boss ? it.def.col : '#7dff8a', 4, 120, 3); return; }
     // le Phénix renaît une fois
     if (it.boss && it.def.revive && !it.revived) {
@@ -4637,6 +4748,16 @@ body:not(.jeu) .hud { opacity: 0; }
       run.bosses++; if (run.bosses >= 2) feat('boss2'); if (run.bosses >= 5) feat('boss5');
       if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
+      // sa réplique de défaite et la réaction à bord : en entier la première fois, ensuite juste sa réplique
+      const tk = TALK[it.def.id];
+      $('sayBubble').hidden = true; sayLeft = 0;
+      if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + 1.2; }
+      else if (tk) bossSay(it.def, tk.bye);
+      // un tyran se dissout en fumée noire, aspirée vers le fond de l'univers
+      if (it.idx === 9 && world < WORLDS.length - 1) for (let i = 0; i < (reduce ? 16 : 40); i++) {
+        const R = Math.random;
+        smokes.push({ x: it.x + (R() - .5) * it.r * 1.4, y: it.y + (R() - .5) * it.r, vx: (R() - .5) * 60, vy: -15 - R() * 45, r: 14 + R() * 20, life: 2 + R() * 1.4, max: 3.4, d: R() * .7 });
+      }
       sector++; bossInWorld++;
       if (sector >= 4 && run.clean) feat('intouchable');
       // 10e boss du monde : histoire puis monde suivant (ou fin après le Néant)
@@ -4676,7 +4797,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function startDeath() {
     state = 'dying'; dieT = 0; dieBooms = 0;
     mouseFire = btnFire = false;
-    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
     $('banner').classList.remove('show');
     const x = player.x, y = player.y, body = byId(COLORS, cfg.color).hex || '#ff5a6e';
     flash = .5; flashColor = '255, 236, 200'; shake = 1.3;
@@ -4846,7 +4967,7 @@ body:not(.jeu) .hud { opacity: 0; }
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
     const record = score > run.bestBefore;
     saveRecord();
-    $('overTitle').textContent = `${cfg.name} a explosé !`;
+    $('overTitle').innerHTML = `Système éteint…<span class="who" style="color:${WHO_COL.Nina}">Nina</span>«\u00a0Allez, ${rocketName()}, relève-toi.\u00a0»`;
     $('finalScore').textContent = score;
     creditRun(); renderAtelier();
     $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
@@ -4860,6 +4981,45 @@ body:not(.jeu) .hud { opacity: 0; }
       if (j && j.me && state === 'over') $('finalInfo').innerHTML += `<br>🏆 Classement mondial : <span class="best">${j.me.rank}e</span> sur ${j.total}`;
     });
     else $('finalInfo').innerHTML += '<br>Entre dans le <b>classement mondial</b> pour comparer ton score !';
+  }
+
+  // ===== Ce que disent les boss =====
+  let seenTalks = [];
+  try { const st = JSON.parse(localStorage.getItem('comete-dialogues') || '[]'); if (Array.isArray(st)) seenTalks = st; } catch (e) {}
+  // couleur de l'étiquette de qui parle ('n' = la fusée)
+  const WHO_COL = { n: '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', '': '#a99fd0' };
+  // une réplique de boss dans une bulle en haut de l'écran, sans pause
+  function bossSay(def, text) {
+    const b = $('sayBubble');
+    b.style.setProperty('--boss', def.col);
+    $('sayWho').textContent = def.name; $('sayText').textContent = `«\u00a0${text}\u00a0»`;
+    b.hidden = true; void b.offsetWidth; b.hidden = false;
+    sayLeft = 3.6;
+  }
+  // dialogue après la défaite : le jeu s'arrête, une ligne à la fois, on touche pour passer
+  function openTalk() {
+    if (!talkQ.length || state !== 'play') return;
+    state = 'talk'; mouseFire = btnFire = false; tapShots = 0; grab = null;
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
+    if (!seenTalks.includes(talkId)) { seenTalks.push(talkId); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} }
+    $('talk').hidden = false; talkShow();
+  }
+  function talkShow() {
+    const [w, x, c] = talkQ[0], box = $('talkBox'), who = $('talkWho'), p = $('talkText');
+    box.style.setProperty('--who', c || WHO_COL[w] || '#ff7aa8');
+    who.textContent = w === 'n' ? cfg.name : w; who.hidden = !w;
+    p.textContent = w ? `«\u00a0${x}\u00a0»` : x; p.className = w ? '' : 'narr';
+    box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+    talkShownAt = performance.now();
+    beep(w === 'n' ? 660 : w === 'Clac' ? 330 : 440, .08, 'triangle', .05);
+  }
+  function talkNext(all) {
+    if (state !== 'talk' || (!all && performance.now() - talkShownAt < 350)) return;
+    talkQ.shift();
+    if (talkQ.length && !all) { talkShow(); return; }
+    talkQ = []; $('talk').hidden = true;
+    state = 'play'; last = performance.now();
+    for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
   }
 
   function showBanner(title, sub) {
@@ -4879,10 +5039,10 @@ body:not(.jeu) .hud { opacity: 0; }
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
-  $('proSkip').onclick = () => { if (proScene === PRO_SCENE - 1) proGoto(0); else endPrologue(); };
+  $('proSkip').onclick = () => { if (proScene === proCount - 1) proGoto(0); else endPrologue(); };
   $('proNext').onclick = () => proNext();
   $('proGo').onclick = endPrologue;
-  $('storyGo').onclick = closeStory;
+  $('storyGo').onclick = storyNextPage;
   $('storySkip').onclick = closeStory;
   $('againBtn').onclick = start;
   $('pauseBtn').onclick = togglePause;
@@ -4965,7 +5125,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveNow() {
     // pendant le chargement d'un code, on ne réécrit surtout pas l'ancienne partie par-dessus
     if (loadingSave) return;
-    if (['play', 'pause', 'story', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
+    if (['play', 'pause', 'story', 'talk', 'launch', 'dying', 'outro'].includes(state)) { creditRun(); saveRecord(); }
     saveStats(); saveCfg(); saveShop();
   }
   // quand on ferme l'onglet, change d'appli ou de page, et toutes les 10 secondes pendant une partie
@@ -5031,13 +5191,15 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- contrôles ---
   addEventListener('pointerdown', e => {
     if (state === 'launch') finishLaunch(); else if (state === 'outro' && outroT > .8) finishOutro();
+    else if (state === 'talk') talkNext();
     else if (state === 'prologue' && !e.target.closest('button') && proT > .5) proNext();
   });
   addEventListener('keydown', e => {
+    if (state === 'talk') { if (!e.repeat) talkNext(e.key === 'Escape'); e.preventDefault(); return; }
     if (state === 'outro') { if (!e.repeat && outroT > .8) finishOutro(); return; }
     if (state === 'prologue') {
       if (e.repeat) return;
-      if (e.key === 'Escape') endPrologue(); else if (proScene === PRO_SCENE - 1 && (e.key === 'Enter' || e.key === ' ')) endPrologue(); else if (proT > .5) proNext();
+      if (e.key === 'Escape') endPrologue(); else if (proScene === proCount - 1 && (e.key === 'Enter' || e.key === ' ')) endPrologue(); else if (proT > .5) proNext();
       e.preventDefault(); return;
     }
     if (state === 'launch') { if (!e.repeat) { finishLaunch(); if (e.key === 'p' || e.key === 'Escape') togglePause(); } return; }
@@ -5081,6 +5243,10 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- boucle ---
   function update(dt) {
     time += dt;
+    if (talkAt && time >= talkAt) { talkAt = 0; openTalk(); return; }
+    if (sayLeft > 0 && (sayLeft -= dt) <= 0) $('sayBubble').hidden = true;
+    for (const m of smokes) { if (m.d > 0) { m.d -= dt; continue; } m.vy -= 45 * dt; m.x += m.vx * dt; m.y += m.vy * dt; m.r += 16 * dt; m.life -= dt; }
+    if (smokes.length) smokes = smokes.filter(m => m.life > 0);
     if (storyAt && time >= storyAt) { storyAt = 0; startOutro(storyNext); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss) lvT += dt;
@@ -6797,7 +6963,7 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'dying';
+    const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'talk' || state === 'dying';
     const th = bgNow(t);
     g.addColorStop(0, th.top); g.addColorStop(1, th.bottom);
     ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
@@ -7159,6 +7325,14 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.restore();
     }
     if (slow < 1) { ctx.fillStyle = 'rgba(122, 216, 255, .08)'; ctx.fillRect(0, 0, W, H); }
+    // fumée noire d'un tyran vaincu
+    for (const m of smokes) {
+      if (m.d > 0) continue;
+      const a = Math.min(1, m.life / 1.2) * Math.min(1, (m.max - m.life) * 2);
+      const sg = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r);
+      sg.addColorStop(0, `rgba(0, 0, 0, ${(.9 * a).toFixed(3)})`); sg.addColorStop(.65, `rgba(70, 25, 110, ${(.45 * a).toFixed(3)})`); sg.addColorStop(1, 'rgba(70, 25, 110, 0)');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, 7); ctx.fill();
+    }
     // vignette : les bords de l'écran sont un peu plus sombres, comme un hublot
     if (vignette.w !== W || vignette.h !== H) { const vg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .45, W / 2, H / 2, Math.max(W, H) * .75); vg.addColorStop(0, 'rgba(5, 3, 15, 0)'); vg.addColorStop(1, 'rgba(5, 3, 15, .55)'); vignette.g = vg; vignette.w = W; vignette.h = H; }
     ctx.fillStyle = vignette.g; ctx.fillRect(0, 0, W, H);
@@ -7225,8 +7399,8 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'outro') updateOutro(dt);
     else if (state === 'prologue') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
-    if (state !== 'pause' && state !== 'story') updateScenery(dt);
-    document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'outro'].includes(state));
+    if (state !== 'pause' && state !== 'story' && state !== 'talk') updateScenery(dt);
+    document.body.classList.toggle('jeu', ['play', 'pause', 'launch', 'dying', 'story', 'talk', 'outro'].includes(state));
     draw(t);
     if (state === 'hangar' && !$('hangar').hidden) { drawPreview(t); drawCarousel(t); drawActs(t); }
     requestAnimationFrame(loop);
