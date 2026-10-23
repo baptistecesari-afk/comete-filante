@@ -5859,13 +5859,18 @@ body:not(.jeu) .hud { opacity: 0; }
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
   const pt = e => {
-    // si on a attrapé la fusée, elle garde sa place sous le doigt
-    if (grab && e.pointerType === 'touch') target = { x: e.clientX + grab.dx, y: e.clientY + grab.dy };
+    // si on a attrapé la fusée, elle garde sa place sous le doigt (ou le stylet)
+    if (grab && e.pointerType !== 'mouse') target = { x: e.clientX + grab.dx, y: e.clientY + grab.dy };
     else target = { x: e.clientX, y: e.clientY - (e.pointerType === 'touch' ? 70 : 0) };
   };
+  // doigts et stylet posés en ce moment (écoutés en premier, pour ne jamais en perdre un)
+  const downIds = new Set();
+  addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') downIds.add(e.pointerId); }, true);
   cv.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'touch' && state === 'play') {
-      // un deuxième doigt pendant qu'un premier déplace la fusée : il tire (une tape = un tir, maintenu = tir continu)
+    if (e.pointerType !== 'mouse' && state === 'play') {
+      // un doigt levé sans qu'on l'ait vu ne doit pas bloquer le déplacement
+      if (moveId !== null && !downIds.has(moveId)) { moveId = null; grab = null; }
+      // un doigt (ou le stylet) déplace déjà la fusée : celui-ci tire (une tape = un tir, maintenu = tir continu)
       if (moveId !== null && moveId !== e.pointerId) {
         fireTouches.add(e.pointerId);
         tapShots = Math.min(3, tapShots + 1);
@@ -5883,11 +5888,16 @@ body:not(.jeu) .hud { opacity: 0; }
     if (e.pointerType === 'mouse' && e.button === 0) mouseFire = true;
   });
   const touchUp = e => {
+    downIds.delete(e.pointerId);
     fireTouches.delete(e.pointerId);
     if (e.pointerId === moveId) { moveId = null; grab = null; }
   };
-  addEventListener('pointerup', e => { if (e.pointerType === 'mouse') mouseFire = false; else touchUp(e); });
-  addEventListener('pointercancel', e => { if (e.pointerType !== 'mouse') touchUp(e); });
+  addEventListener('pointerup', e => { if (e.pointerType === 'mouse') mouseFire = false; else touchUp(e); }, true);
+  addEventListener('pointercancel', e => { if (e.pointerType !== 'mouse') touchUp(e); }, true);
+  // sur iPhone et iPad : empêcher le zoom, la loupe et les gestes à deux doigts, qui coupent les doigts posés sur le jeu
+  for (const ev of ['touchstart', 'touchmove']) cv.addEventListener(ev, e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
+  addEventListener('gesturestart', e => e.preventDefault());
+  cv.addEventListener('dblclick', e => e.preventDefault());
   const fb = $('fireBtn');
   fb.addEventListener('pointerdown', e => { e.preventDefault(); btnFire = true; fb.classList.add('on'); try { fb.setPointerCapture(e.pointerId); } catch (err) {} });
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) fb.addEventListener(ev, () => { btnFire = false; fb.classList.remove('on'); });
@@ -5896,7 +5906,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (e.pointerType === 'mouse') pt(e);
     else if (e.buttons && (moveId === null || e.pointerId === moveId)) pt(e);
   });
-  addEventListener('blur', () => { mouseFire = btnFire = false; moveId = null; grab = null; fireTouches.clear(); for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
+  addEventListener('blur', () => { mouseFire = btnFire = false; moveId = null; grab = null; fireTouches.clear(); downIds.clear(); for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
 
   // un niveau dure plus longtemps dans les mondes lointains (20 s, puis 26, 32, 38, 44)
   const levelSecs = () => 20 + world * 6;
