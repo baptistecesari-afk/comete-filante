@@ -3805,7 +3805,7 @@ body:not(.jeu) .hud { opacity: 0; }
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
       // clic sur un monde : on le choisit (ses 10 boss s'ouvrent avec le bouton « Boss du monde » en dessous)
-      b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) popDetail(); beep(500 + i * 120, .08, 'triangle', .08); };
+      b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) { popDetail(); menuWorld(); } beep(500 + i * 120, .08, 'triangle', .08); };
       stop.innerHTML = `<span class="wlabel"><span class="wnum">Monde ${i + 1}</span><span class="wname">${open ? w.name : '???'}</span>`
         + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? '★ 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
         + `<span class="wdeco" aria-hidden="true">${MAP_DECO[i]}</span>` + (i === startWorld ? '<span class="wship" aria-hidden="true">🚀</span>' : '');
@@ -6850,7 +6850,25 @@ body:not(.jeu) .hud { opacity: 0; }
     { c: ['#ffd86b', '#a8642a'], ring: '#ffe9b0' },
   ];
   const EARTH = { c: ['#6fc0ff', '#1f4f98'], land: '#4fd27a' };
-  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3, cometT = 3, swarmT = 9;
+  // ce qui passe derrière le jeu change avec le monde : planètes, vaisseaux, escadrilles, météores et particules
+  const SCENE_SETS = [
+    // Voie lactée : chasseurs aliens poursuivis par nos chasseurs, croiseur gris, étoiles filantes
+    { planets: PLANET_STYLES, bolt: ['#ff4f6d', '#7dff8a'], swarm: '#c9c3ea', meteor: '#ffffff', drift: null },
+    // Royaume de Givre : vaisseaux de cristal, forteresse de glace, neige
+    { planets: [{ c: ['#e6f9ff', '#4f8fc8'], craters: true }, { c: ['#bfefff', '#2a5a8a'], ring: '#e6f9ff' }, { c: ['#9fe8ff', '#1d4f7a'], bands: true }, { c: ['#ffffff', '#7ab8e0'], land: '#cfefff' }],
+      bolt: ['#ffd86b', '#7ad8ff'], swarm: '#e6f9ff', meteor: '#9fe8ff', drift: 'neige' },
+    // Forge Volcanique : vaisseaux de feu, arche de magma, braises qui montent
+    { planets: [{ c: ['#ffb36b', '#6a1a08'], land: '#2a0a04' }, { c: ['#ff7b2a', '#3a0a04'], craters: true }, { c: ['#ffd86b', '#8a2a08'], bands: true }, { c: ['#ff4f1a', '#2a0804'], ring: '#ff9a3c' }],
+      bolt: ['#7ad8ff', '#ff7b2a'], swarm: '#ff9a3c', meteor: '#ff7b2a', drift: 'braises' },
+    // Jungle Cosmique : vaisseaux-insectes, cosse géante, feuilles qui tombent
+    { planets: [{ c: ['#9dff8a', '#0f4a24'], land: '#1f6a2a' }, { c: ['#7dffb0', '#0a3a2a'], bands: true }, { c: ['#d8ff6b', '#3a5a08'], land: '#2f9a3a' }, { c: ['#4fe0c8', '#0f3a3a'], ring: '#b6ff6b' }],
+      bolt: ['#ff7ad9', '#b6ff6b'], swarm: '#d8ff6b', meteor: '#b6ff6b', drift: 'feuilles' },
+    // Le Néant : drones d'ombre, monolithe à l'œil, pixels qui bugguent
+    { planets: [{ c: ['#c86bff', '#140a24'], bands: true }, { c: ['#4a2a6a', '#05020c'], craters: true }, { c: ['#2a1a40', '#000000'], ring: '#c86bff' }],
+      bolt: ['#ffffff', '#c86bff'], swarm: '#c86bff', meteor: '#c86bff', drift: 'glitch' },
+  ];
+  const sceneSet = () => SCENE_SETS[world] || SCENE_SETS[0];
+  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3, cometT = 3, swarmT = 9, driftT = 0;
 
   // une planète est dessinée une seule fois dans une image, puis réutilisée
   function makePlanet(style, r) {
@@ -6906,20 +6924,21 @@ body:not(.jeu) .hud { opacity: 0; }
   function randomPlanet(y) {
     const big = Math.random() < .25;
     const r = big ? 70 + Math.random() * 60 : 18 + Math.random() * 40;
-    addPlanet(PLANET_STYLES[Math.floor(Math.random() * PLANET_STYLES.length)], r, Math.random() * W, y ?? -r * 2, 5 + r * .1);
+    const pool = sceneSet().planets;
+    addPlanet(pool[Math.floor(Math.random() * pool.length)], r, Math.random() * W, y ?? -r * 2, 5 + r * .1);
   }
   function addFight() {
     const fromLeft = Math.random() < .5, dir = fromLeft ? 1 : -1;
     const y0 = H * (.1 + Math.random() * .5), vx = dir * (150 + Math.random() * 60), vy = 30 + Math.random() * 50;
     const x0 = fromLeft ? -40 : W + 40;
     // un chasseur alien poursuivi par deux chasseurs alliés
-    scenery.push({ type: 'fighter', kind: 'alien', x: x0, y: y0, vx, vy, fireT: .4 + Math.random() });
-    for (let i = 1; i <= 2; i++) scenery.push({ type: 'fighter', kind: 'ally', x: x0 - dir * (60 * i), y: y0 - 18 * i + (i === 2 ? 30 : 0), vx, vy, fireT: Math.random() * .5 });
+    scenery.push({ type: 'fighter', kind: 'alien', w: world, x: x0, y: y0, vx, vy, fireT: .4 + Math.random() });
+    for (let i = 1; i <= 2; i++) scenery.push({ type: 'fighter', kind: 'ally', w: world, x: x0 - dir * (60 * i), y: y0 - 18 * i + (i === 2 ? 30 : 0), vx, vy, fireT: Math.random() * .5 });
   }
   function addCruiser() {
     const fromLeft = Math.random() < .5;
     const len = Math.min(260, W * .55) * (.8 + Math.random() * .4);
-    scenery.push({ type: 'cruiser', dir: fromLeft ? 1 : -1, len, x: fromLeft ? -len : W + len, y: H * (.12 + Math.random() * .4), vx: (fromLeft ? 1 : -1) * (18 + Math.random() * 12) });
+    scenery.push({ type: 'cruiser', w: world, dir: fromLeft ? 1 : -1, len, x: fromLeft ? -len : W + len, y: H * (.12 + Math.random() * .4), vx: (fromLeft ? 1 : -1) * (18 + Math.random() * 12) });
   }
   // planète de départ de chaque monde
   const HOME_PLANETS = [EARTH, { c: ['#e6f9ff', '#4f8fc8'], craters: true }, { c: ['#ffb36b', '#6a1a08'], land: '#2a0a04' },
@@ -6931,6 +6950,12 @@ body:not(.jeu) .hud { opacity: 0; }
     planetT = withEarth ? 14 : 8; fightT = 3 + Math.random() * 3; cruiserT = withEarth ? 10 : 4; meteorT = 2;
   }
 
+  // hors partie, le fond montre le monde choisi sur la carte
+  function menuWorld() {
+    if (['play', 'pause', 'talk', 'story', 'transit', 'outro', 'dying', 'launch'].includes(state)) return;
+    if (world === startWorld) return;
+    world = startWorld; setTheme(1); resetScenery(false);
+  }
   function updateScenery(dt) {
     const k = state === 'play' ? speed : .6, m = reduce ? .3 : 1;
     planetT -= dt; fightT -= dt; cruiserT -= dt; meteorT -= dt;
@@ -6945,11 +6970,24 @@ body:not(.jeu) .hud { opacity: 0; }
     swarmT = (swarmT ?? 9) - dt;
     if (!reduce && swarmT <= 0) {
       const left = Math.random() < .5;
-      scenery.push({ type: 'swarm', x: left ? -80 : W + 80, y: H * (.15 + Math.random() * .45), vx: (left ? 1 : -1) * (70 + Math.random() * 40), vy: 10, n: 5 + Math.floor(Math.random() * 5), life: 14, ph: Math.random() * 6 });
+      scenery.push({ type: 'swarm', w: world, x: left ? -80 : W + 80, y: H * (.15 + Math.random() * .45), vx: (left ? 1 : -1) * (70 + Math.random() * 40), vy: 10, n: 5 + Math.floor(Math.random() * 5), life: 14, ph: Math.random() * 6 });
       swarmT = 12 + Math.random() * 10;
     }
     if (cruiserT <= 0) { if (!scenery.some(o => o.type === 'cruiser')) addCruiser(); cruiserT = 22 + Math.random() * 18; }
-    if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 1.2 + Math.random() * 3; }
+    // particules du monde : neige, braises, feuilles ou pixels qui bugguent
+    driftT -= dt;
+    const dk = sceneSet().drift;
+    if (dk && driftT <= 0) {
+      driftT = reduce ? .9 : .22;
+      if (scenery.filter(o => o.type === 'drift').length < (reduce ? 8 : 30)) {
+        const R = Math.random;
+        if (dk === 'neige') scenery.push({ type: 'drift', dk, x: R() * W, y: -10, vx: -10 + R() * 20, vy: 25 + R() * 35, z: 1.2 + R() * 2.4, ph: R() * 6, life: 40 });
+        else if (dk === 'braises') scenery.push({ type: 'drift', dk, x: R() * W, y: H + 10, vx: -15 + R() * 30, vy: -(40 + R() * 60), z: 1 + R() * 2, ph: R() * 6, life: 40 });
+        else if (dk === 'feuilles') scenery.push({ type: 'drift', dk, x: R() * W * 1.2 - W * .1, y: -14, vx: 15 + R() * 30, vy: 35 + R() * 30, z: 4 + R() * 4, ph: R() * 6, rot: R() * 6, col: ['#7dff8a', '#b6ff6b', '#2f9a3a', '#d8ff6b'][Math.floor(R() * 4)], life: 40 });
+        else scenery.push({ type: 'drift', dk, x: R() * W, y: R() * H, vx: 0, vy: 0, z: 3 + R() * 10, ph: R() * 6, col: R() < .5 ? '#4fe0f0' : '#ff4fd8', life: .25 + R() * .5 });
+      }
+    }
+    if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', col: sceneSet().meteor, x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 1.2 + Math.random() * 3; }
     for (const o of scenery) {
       if (o.type === 'planet') o.y += o.vy * k * m * dt;
       else if (o.type === 'cruiser') { o.x += o.vx * m * dt; o.y += 4 * k * dt; }
@@ -6959,14 +6997,17 @@ body:not(.jeu) .hud { opacity: 0; }
           o.fireT -= dt;
           if (o.fireT <= 0) {
             const a = Math.atan2(o.vy, o.vx), sp = 520;
-            scenery.push({ type: 'bolt', x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6, col: o.kind === 'ally' ? '#ff4f6d' : '#7dff8a' });
+            const bc = (SCENE_SETS[o.w] || SCENE_SETS[0]).bolt;
+            scenery.push({ type: 'bolt', x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: .6, col: o.kind === 'ally' ? bc[0] : bc[1] });
             o.fireT = .35 + Math.random() * .6;
           }
         }
+        if (o.type === 'drift' && o.dk !== 'glitch') { o.ph += dt * 1.6; o.x += Math.sin(o.ph) * (o.dk === 'feuilles' ? 30 : 12) * dt; }
         if (o.life !== undefined) o.life -= dt;
       }
     }
     scenery = scenery.filter(o => {
+      if (o.type === 'drift' && o.dk === 'braises') return o.life > 0 && o.y > -20;
       if (o.life !== undefined && o.life <= 0) return false;
       if (o.type === 'planet') return o.y - o.r * 2 < H + 20;
       if (o.type === 'cruiser') return o.dir > 0 ? o.x - o.len < W + 40 : o.x + o.len > -40;
@@ -6974,28 +7015,70 @@ body:not(.jeu) .hud { opacity: 0; }
     });
   }
 
+  // palette du grand vaisseau de chaque monde : coque, réacteurs, hublots
+  const CRUISERS = [
+    { hull: ['#8f86b8', '#4a4270', '#2a2350'], tower: '#6a6290', jet: '122, 216, 255', win: '#ffd86b', line: '#3a3062' },
+    { hull: ['#f3fbff', '#9fd8f0', '#4f8fc8'], tower: '#cfefff', jet: '159, 232, 255', win: '#ffffff', line: '#7ab8e0' },
+    { hull: ['#4a2418', '#2a1008', '#140604'], tower: '#3a1a10', jet: '255, 123, 42', win: '#ff9a3c', line: '#ff4f1a' },
+    { hull: ['#5ad86b', '#1f6a2a', '#0f3a1a'], tower: '#2f9a3a', jet: '182, 255, 107', win: '#d8ff6b', line: '#0f4a24' },
+    { hull: ['#2a1a40', '#140a24', '#05020c'], tower: '#1a0f2e', jet: '200, 107, 255', win: '#c86bff', line: '#c86bff' },
+  ];
   function drawCruiser(o) {
-    const L = o.len, h = L * .28;
+    const L = o.len, h = L * .28, P = CRUISERS[o.w] || CRUISERS[0], w = o.w || 0, T = performance.now();
     ctx.save(); ctx.translate(o.x, o.y); ctx.scale(o.dir, 1);
+    if (w === 3) {
+      // Jungle : une cosse géante avec ses feuilles et ses lianes
+      for (const sd of [-1, 1]) { ctx.fillStyle = '#2f9a3a'; ctx.beginPath(); ctx.ellipse(-L * .1, sd * h * .55, L * .28, h * .22, sd * .35, 0, 7); ctx.fill(); }
+      const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2); g.addColorStop(0, P.hull[0]); g.addColorStop(.6, P.hull[1]); g.addColorStop(1, P.hull[2]);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, L * .5, h * .42, 0, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#0f3a1a'; ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(-L * .45, i * h * .12); ctx.quadraticCurveTo(0, i * h * .2 + Math.sin(T / 600 + i) * 3, L * .45, i * h * .08); ctx.stroke(); }
+      for (let i = 0; i < 9; i++) { ctx.fillStyle = P.win; ctx.beginPath(); ctx.arc(-L * .35 + i * L * .09, Math.sin(i * 2.1) * h * .2, 2.2, 0, 7); ctx.fill(); }
+      const jg = ctx.createRadialGradient(-L * .52, 0, 0, -L * .52, 0, h * .35); jg.addColorStop(0, `rgba(${P.jet}, .9)`); jg.addColorStop(1, `rgba(${P.jet}, 0)`);
+      ctx.fillStyle = jg; ctx.beginPath(); ctx.arc(-L * .52, 0, h * .35, 0, 7); ctx.fill();
+      ctx.restore(); return;
+    }
+    if (w === 4) {
+      // Néant : un monolithe noir avec un œil violet qui regarde
+      const jg = ctx.createRadialGradient(0, 0, h * .2, 0, 0, L * .55); jg.addColorStop(0, `rgba(${P.jet}, .35)`); jg.addColorStop(1, `rgba(${P.jet}, 0)`);
+      ctx.fillStyle = jg; ctx.beginPath(); ctx.ellipse(0, 0, L * .55, h * .9, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = P.hull[2]; ctx.strokeStyle = P.line; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(0, -h * .6); ctx.lineTo(-L * .5, 0); ctx.lineTo(0, h * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
+      const open = .25 + .75 * Math.abs(Math.sin(T / 1400));
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(0, 0, h * .32, h * .2 * open, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = P.win; ctx.beginPath(); ctx.arc(h * .05 * o.dir, 0, h * .14 * Math.max(.4, open), 0, 7); ctx.fill();
+      ctx.fillStyle = '#05020c'; ctx.beginPath(); ctx.arc(h * .05 * o.dir, 0, h * .06 * Math.max(.4, open), 0, 7); ctx.fill();
+      ctx.restore(); return;
+    }
     // réacteurs
     for (const yy of [-h * .22, 0, h * .22]) {
       const g = ctx.createRadialGradient(-L * .5, yy, 0, -L * .5, yy, h * .3);
-      g.addColorStop(0, 'rgba(122, 216, 255, .9)'); g.addColorStop(1, 'rgba(122, 216, 255, 0)');
+      g.addColorStop(0, `rgba(${P.jet}, .9)`); g.addColorStop(1, `rgba(${P.jet}, 0)`);
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(-L * .5, yy, h * .3, 0, 7); ctx.fill();
     }
     // coque en pointe
     const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-    g.addColorStop(0, '#8f86b8'); g.addColorStop(.55, '#4a4270'); g.addColorStop(1, '#2a2350');
+    g.addColorStop(0, P.hull[0]); g.addColorStop(.55, P.hull[1]); g.addColorStop(1, P.hull[2]);
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, -h / 2); ctx.lineTo(-L * .5, h / 2); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#3a3062'; ctx.lineWidth = 1;
+    ctx.strokeStyle = P.line; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, 0); ctx.stroke();
+    if (w === 1) {
+      // Givre : des pics de glace sur le dos de la forteresse
+      ctx.fillStyle = '#e6f9ff';
+      for (let i = 0; i < 6; i++) { const fx = -L * .4 + i * L * .13, top = (h / 2) * (1 - (fx + L * .5) / L); ctx.beginPath(); ctx.moveTo(fx - 5, -top + 2); ctx.lineTo(fx, -top - 10 - (i % 3) * 7); ctx.lineTo(fx + 5, -top + 2); ctx.closePath(); ctx.fill(); }
+    } else if (w === 2) {
+      // Forge : des fissures de lave qui rougeoient sur la coque
+      ctx.strokeStyle = `rgba(255, 123, 42, ${(.6 + .4 * Math.sin(T / 300)).toFixed(2)})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-L * .45, -h * .25); ctx.lineTo(-L * .2, -h * .1); ctx.lineTo(0, -h * .18); ctx.lineTo(L * .25, -h * .04);
+      ctx.moveTo(-L * .4, h * .3); ctx.lineTo(-L * .1, h * .12); ctx.lineTo(L * .15, h * .14); ctx.stroke();
+    }
     // tour de commandement
-    ctx.fillStyle = '#6a6290';
+    ctx.fillStyle = P.tower;
     ctx.fillRect(-L * .42, -h * .5 - h * .28, L * .16, h * .28);
     ctx.fillRect(-L * .38, -h * .5 - h * .42, L * .08, h * .16);
     // hublots
-    ctx.fillStyle = '#ffd86b';
+    ctx.fillStyle = P.win;
     for (let i = 0; i < 14; i++) {
       const fx = -L * .45 + i * L * .055, maxY = (h / 2) * (1 - (fx + L * .5) / L);
       if (Math.floor(i * 7.3) % 3) ctx.fillRect(fx, maxY * .45, 2, 1.5);
@@ -7011,6 +7094,27 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(-5, -7); ctx.lineTo(3, 7); ctx.moveTo(-5, 7); ctx.lineTo(3, -7); ctx.stroke();
       ctx.fillStyle = '#ff4f6d'; ctx.fillRect(-10, -1.5, 3, 3);
+    } else if (o.w === 1) {
+      // Givre : un éclat de cristal
+      ctx.fillStyle = '#bfefff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(0, -8); ctx.lineTo(-8, 0); ctx.lineTo(0, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#4f8fc8'; ctx.beginPath(); ctx.arc(1, 0, 2.5, 0, 7); ctx.fill();
+    } else if (o.w === 2) {
+      // Forge : une boule de feu à ailerons
+      ctx.drawImage(softSprite('#ff7b2a'), -12, -12, 24, 24);
+      ctx.fillStyle = '#3a1a10'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, -7); ctx.lineTo(-3, 0); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.arc(2, 0, 2.4, 0, 7); ctx.fill();
+    } else if (o.w === 3) {
+      // Jungle : un insecte avec ses ailes qui battent
+      const fl = Math.sin(performance.now() / 40) * 4;
+      ctx.fillStyle = 'rgba(220, 255, 220, .55)'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(-1, sd * (5 + fl * .3), 6, 3, sd * .5, 0, 7); ctx.fill(); }
+      ctx.fillStyle = '#2f9a3a'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 3.5, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#ffd86b'; ctx.fillRect(-4, -3, 2, 6); ctx.fillRect(0, -3, 2, 6);
+    } else if (o.w === 4) {
+      // Néant : un drone d'ombre à l'œil violet
+      ctx.drawImage(softSprite('#c86bff'), -11, -11, 22, 22);
+      ctx.fillStyle = '#05020c'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-7, -7); ctx.lineTo(-7, 7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, 7); ctx.fill();
     } else {
       ctx.fillStyle = '#5a5478';
       ctx.fillRect(-2, -9, 4, 18);
@@ -7051,18 +7155,28 @@ body:not(.jeu) .hud { opacity: 0; }
       } else if (o.type === 'swarm') {
         // escadrille lointaine en formation en V
         ctx.globalAlpha = .55 * Math.min(1, o.life);
-        const d = Math.sign(o.vx);
+        const d = Math.sign(o.vx), sc = (SCENE_SETS[o.w] || SCENE_SETS[0]).swarm, glow = o.w === 3 || o.w === 4;
         for (let i = 0; i < o.n; i++) {
           const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, x = o.x - d * row * 14, y = o.y + side * row * 9 + Math.sin(o.life * 3 + i + o.ph) * 2;
-          ctx.fillStyle = '#c9c3ea'; ctx.beginPath(); ctx.moveTo(x + d * 5, y); ctx.lineTo(x - d * 4, y - 3); ctx.lineTo(x - d * 4, y + 3); ctx.closePath(); ctx.fill();
+          // lucioles dans la jungle, yeux dans le Néant, petits vaisseaux ailleurs
+          if (glow) { ctx.drawImage(softSprite(sc), x - 6, y - 6, 12, 12); continue; }
+          ctx.fillStyle = sc; ctx.beginPath(); ctx.moveTo(x + d * 5, y); ctx.lineTo(x - d * 4, y - 3); ctx.lineTo(x - d * 4, y + 3); ctx.closePath(); ctx.fill();
           ctx.fillStyle = neb[0]; ctx.fillRect(x - d * 6, y - .8, 2, 1.6);
         }
       } else if (o.type === 'meteor') {
         ctx.globalAlpha = Math.min(1, o.life);
         const g = ctx.createLinearGradient(o.x, o.y, o.x - o.vx * .15, o.y - o.vy * .15);
-        g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        g.addColorStop(0, o.col || '#ffffff'); g.addColorStop(1, 'rgba(255, 255, 255, 0)');
         ctx.strokeStyle = g; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .15, o.y - o.vy * .15); ctx.stroke();
+      } else if (o.type === 'drift') {
+        if (o.dk === 'neige') { ctx.globalAlpha = .75; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(o.x, o.y, o.z, 0, 7); ctx.fill(); }
+        else if (o.dk === 'braises') { ctx.globalAlpha = .5 + .5 * Math.abs(Math.sin(o.ph * 3)); ctx.drawImage(softSprite(o.z > 2 ? '#ffd86b' : '#ff7b2a'), o.x - o.z * 3, o.y - o.z * 3, o.z * 6, o.z * 6); }
+        else if (o.dk === 'feuilles') {
+          ctx.globalAlpha = .7; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot + o.ph);
+          ctx.fillStyle = o.col; ctx.beginPath(); ctx.ellipse(0, 0, o.z, o.z * .45, 0, 0, 7); ctx.fill();
+          ctx.strokeStyle = 'rgba(15, 58, 26, .7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-o.z, 0); ctx.lineTo(o.z, 0); ctx.stroke(); ctx.restore();
+        } else { ctx.globalAlpha = .55 * Math.min(1, o.life * 4); ctx.fillStyle = o.col; ctx.fillRect(o.x, o.y, o.z * 2, o.z * .4); ctx.fillRect(o.x + o.z * .6, o.y + o.z * .6, o.z, o.z * .3); }
       }
     }
     ctx.globalAlpha = 1;
@@ -8850,6 +8964,7 @@ body:not(.jeu) .hud { opacity: 0; }
     requestAnimationFrame(loop);
   }
   reset();
+  world = startWorld; setTheme(1, true);
   resetScenery(false);
   if (firstCheck) checkTrophies(true);
   renderAtelier();
