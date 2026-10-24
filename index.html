@@ -4183,7 +4183,7 @@ body:not(.jeu) .hud { opacity: 0; }
     } });
   }
   // à mi-vie du Dévoreur : Clac revient, puis le combat reprend
-  // la première victoire contre le Crabe : Clac monte à bord, puis la partie reprend
+  // chaque victoire contre le Crabe : Clac monte à bord, puis la partie reprend
   function startClacBord() {
     playFilm(CLAC_BORD(), { w: 0, clac: false, go: 'Reprendre', replayGo: false, end: resumePlay });
   }
@@ -5827,7 +5827,8 @@ body:not(.jeu) .hud { opacity: 0; }
       $('sayBubble').hidden = true; sayLeft = 0;
       // un tyran se dissout d'abord en fumée noire aspirée vers le haut, puis il parle
       const tyran = it.idx === 9 && world < WORLDS.length - 1, tyranTalk = tyran && !!tk, wait = tyranTalk ? 1.9 : 1.2;
-      if (it.def.id === 'crabe' && !seenTalks.includes('crabe')) { seenTalks.push('crabe'); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} bordAt = time + wait; }
+      // Clac monte à bord : la cinématique se joue à chaque victoire contre le Crabe
+      if (it.def.id === 'crabe') { if (!seenTalks.includes('crabe')) { seenTalks.push('crabe'); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} } bordAt = time + wait; }
       else if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + wait; }
       else if (tyranTalk) { sayAt = time + wait; sayDef = { ...it.def, bye: tk.bye }; }
       else if (tk) bossSay(it.def, tk.bye);
