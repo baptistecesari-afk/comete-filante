@@ -1292,26 +1292,26 @@ body:not(.jeu) .hud { opacity: 0; }
 
   // --- atelier : améliorations permanentes ---
   const UPGRADES = [
-    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 800, now: L => `+${20 * L} % de balles` },
-    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 800, now: L => `−${12 * L} % de temps` },
-    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 650, now: L => `+${25 * L} % de zone` },
-    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 900, now: L => `+${8 * L} % de cadence` },
-    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 1150, now: L => `+${25 * L} % de dégâts` },
-    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 2350, now: L => `${3 + L} vies` },
-    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 1000, now: L => `−${10 * L} % de recharge` },
-    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 1000, now: L => `${30 + 5 * L} s illimités` },
+    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 5, base: 1600, now: L => `+${20 * L} % de balles` },
+    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 4, base: 1600, now: L => `−${12 * L} % de temps` },
+    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 4, base: 1300, now: L => `+${25 * L} % de zone` },
+    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 5, base: 1800, now: L => `+${8 * L} % de cadence` },
+    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 4, base: 2300, now: L => `+${25 * L} % de dégâts` },
+    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 2, base: 4700, now: L => `${3 + L} vies` },
+    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 4, base: 2000, now: L => `−${10 * L} % de recharge` },
+    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 3, base: 2000, now: L => `${30 + 5 * L} s illimités` },
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 2900, eclair: 5850, aile: 2350, ovni: 3500, tie: 3900, faucon: 4900, requin: 6800, abeille: 2900, chevalier: 5450, galion: 5850, mecha: 6250, cristal: 7800, arcade: 19500, pixel: 3900, coeur: 50000 },
-    color: { or: 600, turquoise: 600, violet: 1000, orange: 1000, blanc: 1550, bleunuit: 600, rosebonbon: 600, citron: 600, corail: 600, menthe: 600, noir: 1150, lave: 1550, ocean: 1550, galaxie: 1950, neon: 1750 },
-    accent: { noir: 250, blanc: 250, or: 500, cyan: 500, rose: 500, vert: 500, violet: 500, rouge: 500 },
-    motif: { rayures: 600, etoiles: 800, damier: 1000, eclair: 1150, camo: 1150, flammes: 1350, course: 1550 },
-    glass: { cyan: 250, or: 400, rouge: 250, vert: 250, miroir: 600 },
-    trail: { etincelles: 800, bulles: 600, pixels: 600, coeurs: 1000, comete: 1350 },
-    flame: { plasma: 1150, toxique: 1150, rose: 1750 },
-    gun: { double: 2600, eventail: 3900, mitrailleuse: 5850, vague: 7150, plasma: 7800, ricochet: 9750, quintuple: 11700 },
-    power: { aimant: 1550, temps: 1950, hyper: 3250, nova: 5200, miroir: 2600, gel: 2850, dragon: 3650, foudre: 3900, missiles: 4550 },
+    model: { navette: 5800, eclair: 11700, aile: 4700, ovni: 7000, tie: 7800, faucon: 9800, requin: 13600, abeille: 5800, chevalier: 10900, galion: 11700, mecha: 12500, cristal: 15600, arcade: 39000, pixel: 7800, coeur: 100000 },
+    color: { or: 1200, turquoise: 1200, violet: 2000, orange: 2000, blanc: 3100, bleunuit: 1200, rosebonbon: 1200, citron: 1200, corail: 1200, menthe: 1200, noir: 2300, lave: 3100, ocean: 3100, galaxie: 3900, neon: 3500 },
+    accent: { noir: 500, blanc: 500, or: 1000, cyan: 1000, rose: 1000, vert: 1000, violet: 1000, rouge: 1000 },
+    motif: { rayures: 1200, etoiles: 1600, damier: 2000, eclair: 2300, camo: 2300, flammes: 2700, course: 3100 },
+    glass: { cyan: 500, or: 800, rouge: 500, vert: 500, miroir: 1200 },
+    trail: { etincelles: 1600, bulles: 1200, pixels: 1200, coeurs: 2000, comete: 2700 },
+    flame: { plasma: 2300, toxique: 2300, rose: 3500 },
+    gun: { double: 5200, eventail: 7800, mitrailleuse: 11700, vague: 14300, plasma: 15600, ricochet: 19500, quintuple: 23400 },
+    power: { aimant: 3100, temps: 3900, hyper: 6500, nova: 10400, miroir: 5200, gel: 5700, dragon: 7300, foudre: 7800, missiles: 9100 },
     shot: {},
   };
   const CATS = [
