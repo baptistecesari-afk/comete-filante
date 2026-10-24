@@ -2376,7 +2376,7 @@ body:not(.jeu) .hud { opacity: 0; }
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
-  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0;
+  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0;
   // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
   let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
@@ -2388,7 +2388,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -3776,6 +3776,15 @@ body:not(.jeu) .hud { opacity: 0; }
     ],
   ];
   // le combat final : Clac revient à mi-vie du Dévoreur, puis le choix, les deux fins et l'épilogue
+  // Monde 1, gardien n°4 : Clac monte à bord et devient ami avec Nina (les répliques sont celles de TALK.crabe)
+  const CLAC_BORD = n => {
+    const tk = TALK.crabe;
+    return [
+      S('action:etourdi', ['Crabe Cosmique', tk.bye]),
+      S('decor:sas', [tk.after[0][0], tk.after[0][1]]),
+      S('cockpit:amis', [tk.after[1][0], tk.after[1][1]], [tk.after[2][0], tk.after[2][1]]),
+    ];
+  };
   const FINALE = {
     clac: () => [
       noClac(S('action:gueule', ['Le Dévoreur', 'Assez joué ! Je vais t\'avaler !'])),
@@ -3884,7 +3893,8 @@ body:not(.jeu) .hud { opacity: 0; }
     proCount = scenes.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'cinema', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine', 'talk', 'choice']) $(id).hidden = true;
     $('banner').classList.remove('show');
-    document.querySelector('.hud').style.visibility = 'hidden';
+    // les annonces de trophées attendent la fin de la cinématique
+    document.querySelector('.hud').style.visibility = $('toast').style.visibility = 'hidden';
     mouseFire = btnFire = false;
     const R = Math.random;
     proPts = Array.from({ length: 600 }, () => {
@@ -3903,7 +3913,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (state !== 'film' || !film) return;
     const f = film; film = null;
     $('proCine').hidden = true;
-    document.querySelector('.hud').style.visibility = '';
+    document.querySelector('.hud').style.visibility = $('toast').style.visibility = '';
     f.end();
   }
   // sur téléphone, les répliques d'une scène arrivent une par une (on garde la précédente) pour laisser de la place à l'image
@@ -3956,6 +3966,10 @@ body:not(.jeu) .hud { opacity: 0; }
     } });
   }
   // à mi-vie du Dévoreur : Clac revient, puis le combat reprend
+  // la première victoire contre le Crabe : Clac monte à bord, puis la partie reprend
+  function startClacBord() {
+    playFilm(CLAC_BORD(), { w: 0, clac: false, go: 'Reprendre', replayGo: false, end: resumePlay });
+  }
   function startClacFilm() {
     playFilm(FINALE.clac(), { w: WORLDS.length - 1, go: 'Reprendre le combat', replayGo: false, end: resumePlay });
   }
@@ -4010,7 +4024,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function backToCinema() {
     cineReplay = false; film = null; world = replayWorld;
     for (const id of ['proCine', 'story', 'choice']) $(id).hidden = true;
-    document.querySelector('.hud').style.visibility = '';
+    document.querySelector('.hud').style.visibility = $('toast').style.visibility = '';
     openCinema();
   }
 
@@ -4136,7 +4150,18 @@ body:not(.jeu) .hud { opacity: 0; }
     // Décor : grande image du lieu
     decor(v, Z) {
       const { T, t, m, top, zb, mid, h, wd } = Z, [c1, c2] = wd.col, rs = rocketSize(Z);
-      if (v === 'terre') {
+      if (v === 'sas') {
+        // la fusée en grand ; une lumière chaude s'ouvre sur son flanc et Clac grimpe dedans en agitant la pince
+        sky(c1); starfield(Z, c2, .02);
+        const big = Math.min(rs * 1.6, h / 75), rx = W * .58, ry = mid + h * .05, dx = rx - 6 * big, dy = ry + 6 * big;
+        drawRocket(ctx, rx, ry, big, cfg, t, 0, .2);
+        const o = ease(T / .8);
+        halo(dx, dy, 22 * big * o, 'rgba(255, 236, 170, .75)');
+        ctx.fillStyle = `rgba(255, 246, 216, ${o})`; ctx.beginPath(); ctx.ellipse(dx, dy, 5 * big * o, 7 * big * o, 0, 0, 7); ctx.fill();
+        const k = ease((T - .4) / 3), sz = Math.max(20, Math.min(m * .22, h * .38) * (1 - k * .75));
+        const x = W * .14 + (dx - W * .14) * k, y = mid + h * .1 + (dy - mid - h * .1) * k - Math.sin(k * Math.PI) * h * .12;
+        if (k < .98) { ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t / 150) * .15); portrait(bossById('crabe'), 0, 0, sz, 1 - Math.max(0, k - .85) * 6); ctx.restore(); }
+      } else if (v === 'terre') {
         // la Terre la nuit, sous un ciel presque noir où des étoiles s'éteignent
         sky('#0a0c24', '#020208', .3);
         for (let i = 0; i < 60; i++) { const q = proPts[i], off = ease((T - q.d * 3) / .8); star(q.u * W, top + q.v * h * .6, 1.2 + q.z * .4, (1 - off) * .8, t, 4, '#ffffff'); }
@@ -4359,7 +4384,20 @@ body:not(.jeu) .hud { opacity: 0; }
       if (v === 'nuit') { ctx.strokeStyle = '#05070f'; ctx.lineWidth = 4 * ns; ctx.lineCap = 'round'; const k = ease(T / 1.4); ctx.beginPath(); ctx.moveTo(nx + 10 * ns, ny - 20 * ns); ctx.lineTo(nx + 10 * ns + (W / 2 - nx - 10 * ns) * k, ny - 20 * ns + (dy + h * .26 - ny + 20 * ns) * k); ctx.stroke(); ctx.lineCap = 'butt'; }
       const cx = W * .66;
       ctx.fillStyle = '#2a2450'; rrect(cx - 16 * ns, ny - 30 * ns, 32 * ns, 34 * ns, 8 * ns); ctx.fill();
-      if (clac && v !== 'vide') portrait(bossById('crabe'), cx, ny - 34 * ns + Math.sin(t / 400) * 2, 30 * ns);
+      if (v === 'amis') {
+        // Clac saute sur le siège d'à côté, puis Nina tend la main et lui tape dans la pince
+        const hop = ease(T / .9), cy = ny - 34 * ns - Math.sin(Math.min(1, T / .9) * Math.PI) * 50 * ns + (1 - hop) * -60 * ns;
+        portrait(bossById('crabe'), cx + (1 - hop) * 60 * ns, cy + Math.sin(t / 300) * 2, 30 * ns);
+        const reach = ease((T - 1.2) / .6), hx = nx + 12 * ns + (cx - 16 * ns - nx - 12 * ns) * reach * .5, hy = ny - 22 * ns - reach * 14 * ns;
+        if (T > 1.2) { ctx.strokeStyle = '#05070f'; ctx.lineWidth = 4 * ns; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(nx + 10 * ns, ny - 20 * ns); ctx.lineTo(hx, hy); ctx.stroke(); ctx.lineCap = 'butt'; }
+        if (T > 1.8) {
+          const k = Math.min(1, (T - 1.8) / .4), gx = (hx + cx - 12 * ns) / 2, gy = hy - 4 * ns;
+          halo(gx, gy, 30 * ns * k, 'rgba(255, 216, 107, .8)', 1 - Math.max(0, T - 2.6));
+          for (let i = 0; i < 6; i++) { const q = proPts[i + 500], a = i / 6 * Math.PI * 2, d = k * 22 * ns; star(gx + Math.cos(a) * d, gy + Math.sin(a) * d, 3 * ns * (1 - k * .5), 1 - k * .6, t, 8); }
+          // de petits cœurs montent au-dessus des deux amis
+          for (let i = 0; i < 5; i++) { const q = proPts[i + 520], p = ((T - 1.8) * .35 + q.d) % 1; heart(gx + (q.u - .5) * 70 * ns, gy - 10 - p * 70 * ns, (3 + q.z) * ns, (1 - p) * .9); }
+        }
+      } else if (clac && v !== 'vide') portrait(bossById('crabe'), cx, ny - 34 * ns + Math.sin(t / 400) * 2, 30 * ns);
       else if (v === 'vide') { ctx.strokeStyle = 'rgba(255, 123, 74, .35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, ny - 34 * ns, 13 * ns, 0, 7); ctx.stroke(); ctx.setLineDash([]); }
       // effets : givre, alarme, écrans qui grésillent en se rallumant
       if (v === 'givre') { const g = ctx.createRadialGradient(W / 2, mid0(Z), Math.min(W, h) * .3, W / 2, mid0(Z), Math.max(W, h) * .8); g.addColorStop(0, 'rgba(220, 245, 255, 0)'); g.addColorStop(1, 'rgba(220, 245, 255, .55)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
@@ -4571,7 +4609,14 @@ body:not(.jeu) .hud { opacity: 0; }
     // Action : une scène de combat figée
     action(v, Z) {
       const { T, t, m, top, zb, mid, h, wd } = Z, rs = rocketSize(Z);
-      if (v === 'effondre' || v === 'brise') {
+      if (v === 'etourdi') {
+        // Clac, sonné, des étoiles qui tournent autour de la tête, se secoue et s'approche de la fusée
+        sky(wd.col[0]); starfield(Z, wd.col[1], .02);
+        const sz = Math.min(m * .3, h * .5), come = ease((T - 1) / 3), cx = W * .32 + come * W * .12, cy = mid + 10 + Math.sin(t / 500) * 4;
+        drawRocket(ctx, W * .76, mid, rs * .7, cfg, t, -.15, .2);
+        ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.sin(t / 250) * .12 * (1 - come)); portrait(bossById('crabe'), 0, 0, sz); ctx.restore();
+        for (let i = 0; i < 3; i++) { const a = t / 300 + i * 2.1; star(cx + Math.cos(a) * sz * .32, cy - sz * .42 + Math.sin(a) * sz * .08, 5, (1 - come) * .9, t, 8); }
+      } else if (v === 'effondre' || v === 'brise') {
         // le tyran s'effondre ; sa marque noire s'échappe en fumée vers le fond de l'univers
         sky(wd.col[0]); starfield(Z, wd.col[1], .02);
         const chief = wd.bosses[9], cy = mid + 20, size = Math.min(m * .34, h * .55), fade = 1 - Math.max(0, Math.min(1, (T - 1.5) / 3.5));
@@ -4637,6 +4682,10 @@ body:not(.jeu) .hud { opacity: 0; }
     },
   };
   const mid0 = Z => (Z.top + Z.zb) / 2;
+  function heart(x, y, r, a) {
+    ctx.globalAlpha = Math.max(0, a); ctx.fillStyle = '#ff7aa8'; ctx.beginPath();
+    ctx.moveTo(x, y + r); ctx.bezierCurveTo(x - r * 2, y - r * .2, x - r * .8, y - r * 1.6, x, y - r * .5); ctx.bezierCurveTo(x + r * .8, y - r * 1.6, x + r * 2, y - r * .2, x, y + r); ctx.fill(); ctx.globalAlpha = 1;
+  }
   // une petite galaxie sur la carte
   function galaxySmall(x, y, r, col, t) {
     for (let i = 0; i < 40; i++) { const q = proPts[i], a = q.a + t / 4000, d = q.r * r; ctx.fillStyle = q.white ? '#ffffff' : col; ctx.globalAlpha = 1 - q.r * .5; ctx.fillRect(x + Math.cos(a) * d, y + Math.sin(a) * d * .5, 1.6, 1.6); }
@@ -5561,7 +5610,8 @@ body:not(.jeu) .hud { opacity: 0; }
       $('sayBubble').hidden = true; sayLeft = 0;
       // un tyran se dissout d'abord en fumée noire aspirée vers le haut, puis il parle
       const tyran = it.idx === 9 && world < WORLDS.length - 1, tyranTalk = tyran && !!tk, wait = tyranTalk ? 1.9 : 1.2;
-      if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + wait; }
+      if (it.def.id === 'crabe' && !seenTalks.includes('crabe')) { seenTalks.push('crabe'); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} bordAt = time + wait; }
+      else if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + wait; }
       else if (tyranTalk) { sayAt = time + wait; sayDef = { ...it.def, bye: tk.bye }; }
       else if (tk) bossSay(it.def, tk.bye);
       if (tyran) for (let i = 0; i < (reduce ? 24 : 70); i++) {
@@ -6135,6 +6185,7 @@ body:not(.jeu) .hud { opacity: 0; }
       m.x = bx + (m.tx - bx) * e + Math.sin(q * 9 + m.w) * 10 * (1 - q); m.y = by + (-60 - by) * e;
     }
     if (smokes.length) smokes = smokes.filter(m => m.life > 0);
+    if (bordAt && time >= bordAt) { bordAt = 0; startClacBord(); return; }
     if (clacAt && time >= clacAt) { clacAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startClacFilm(); return; }
     if (storyAt && time >= storyAt) { storyAt = 0; storyNext === 'world' ? startTransit() : startFinale(); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
