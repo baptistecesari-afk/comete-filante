@@ -231,8 +231,6 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .worldhead { grid-column: 1 / -1; margin: 10px 0 0; font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--tail); }
 .worldlock { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
 /* Choix du monde de départ, dans le menu */
-.worldpick { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-.worldpick > b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--star); letter-spacing: .04em; }
 /* Carte des mondes : un chemin qui serpente d'un monde à l'autre */
 .wmap {
   --nd: 62px; position: relative; width: 100%; height: 280px; border-radius: 20px; overflow: hidden;
@@ -283,8 +281,8 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
   position: absolute; left: 50%; width: 110px; margin-left: -55px; display: flex; flex-direction: column; align-items: center; gap: 1px; pointer-events: none; text-align: center;
 }
 .wlabel > span { max-width: 100%; }
-.wstop.up .wlabel { bottom: calc(var(--nd) / 2 + 6px); }
-.wstop.down .wlabel { top: calc(var(--nd) / 2 + 6px); }
+.wstop.up .wlabel { bottom: calc(var(--nd) / 2 + 9px); }
+.wstop.down .wlabel { top: calc(var(--nd) / 2 + 9px); }
 .wlabel .wnum { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
 .wlabel .wname { font-family: var(--display); font-size: 12px; line-height: 1.05; color: var(--ink); }
 .wlabel .wprog { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -306,9 +304,6 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 @media (prefers-reduced-motion: reduce) {
   .wnode, .wmap .seg.done, .wstop .wdeco, .wstop .wship, .wstop.w2 .wnode:not(:disabled), .wstop.w4 .wplanet::before { animation: none; transition: none; }
 }
-.wbosses { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.wbosses > span { font-size: 13px; color: var(--muted); }
-.wbosses > span b { color: var(--star); font-weight: 600; }
 .bgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 76px)); gap: 6px; justify-content: center; width: 100%; }
 .btile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; background: var(--night); border: 2px solid color-mix(in srgb, var(--w2) 45%, transparent); }
 .btile img { width: 52px; height: 52px; }
@@ -612,8 +607,61 @@ body:not(.jeu) .hud { opacity: 0; }
 .menugrid .ghost { font-size: 16px; padding: 12px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menulinks { gap: 6px 16px; }
 .menulinks .toggle { font-size: 13px; }
-.bosstoggle { background: none; border: 0; padding: 4px 8px; font: inherit; font-size: 14px; color: var(--muted); cursor: pointer; }
-.bosstoggle:hover, .bosstoggle[aria-expanded="true"] { color: var(--star); }
+/* bouton « Choisis ton monde » de l'accueil : il ouvre la page de la carte */
+.worldbtn {
+  display: flex; align-items: center; gap: 12px; width: 100%; max-width: 26rem; padding: 10px 16px; box-sizing: border-box; cursor: pointer;
+  font: inherit; color: var(--ink); text-align: left; border-radius: 18px; border: 2px solid color-mix(in srgb, var(--w2, var(--star)) 60%, transparent);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--w1, #5b3a9e) 80%, var(--night)), var(--night));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent); transition: transform .15s, box-shadow .15s;
+}
+.worldbtn:hover { transform: translateY(-2px); box-shadow: 0 0 26px color-mix(in srgb, var(--w2, var(--star)) 55%, transparent); }
+.worldbtn:focus-visible { outline: 3px solid var(--star); outline-offset: 3px; }
+.worldbtn .wbmap { font-size: 30px; line-height: 1; }
+.worldbtn .wbtxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.worldbtn b { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--star); letter-spacing: .04em; }
+.worldbtn small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.worldbtn .wbgo { font-family: var(--display); font-size: 30px; color: var(--star); line-height: 1; }
+@media (prefers-reduced-motion: reduce) { .worldbtn { transition: none; } }
+/* page de la carte : la carte en grand, puis le détail du monde choisi */
+.mappage .wmap { --nd: 78px; height: 330px; }
+.mappage .wlabel { width: 140px; margin-left: -70px; }
+.mappage .wlabel .wname { font-size: 14px; }
+.mappage .wlabel .wprog { font-size: 12px; }
+.mappage .wstop .wdeco { font-size: 18px; }
+.mappage .wstop .wship { font-size: 26px; }
+.wdetail {
+  display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; text-align: left;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--w1) 55%, var(--night)), var(--night) 70%);
+  border: 2px solid color-mix(in srgb, var(--w2) 45%, transparent);
+}
+.wdhead { display: flex; align-items: center; gap: 12px; }
+.wdhead .wdicon { font-size: 40px; line-height: 1; filter: drop-shadow(0 0 10px var(--w2)); }
+.wdhead small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
+.wdhead b { font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--ink); }
+.wdline { margin: 0; font-style: italic; color: var(--muted); font-size: 14px; }
+.wdbar { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+.wdbar b { color: var(--star); font-weight: 600; }
+.wdbar i { display: block; height: 10px; border-radius: 999px; background: #ffffff1a; overflow: hidden; }
+.wdbar i::before { content: ''; display: block; height: 100%; width: calc(var(--p) * 1%); border-radius: inherit; background: linear-gradient(90deg, var(--w2), var(--star)); }
+.wdinfo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wdinfo > div { padding: 10px 12px; border-radius: 12px; background: #0b082099; border: 1px solid #ffffff14; font-size: 13px; color: var(--muted); }
+.wdinfo > div b { display: block; font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 2px; }
+.wdinfo > div.ok b { color: var(--star); }
+.wdsec { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--w2); margin: 4px 0 -4px; }
+.wdaliens { display: flex; flex-wrap: wrap; gap: 6px; }
+.wdaliens span { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #0b082099; border: 1px solid color-mix(in srgb, var(--w2) 35%, transparent); color: var(--ink); }
+.wdetail .bgrid { grid-template-columns: repeat(5, minmax(0, 96px)); }
+@media (max-width: 440px) {
+  .mappage .wmap { --nd: 50px; height: 244px; }
+  .mappage .wlabel { width: 84px; margin-left: -42px; }
+  .mappage .wlabel .wname { font-size: 10px; }
+  .mappage .wlabel .wprog { font-size: 9.5px; }
+  .mappage .wstop .wdeco { font-size: 14px; }
+  .mappage .wstop .wship { font-size: 16px; }
+  .wdetail { padding: 12px; }
+  .wdinfo { grid-template-columns: 1fr; }
+  .worldbtn b { font-size: 16px; }
+}
 @media (max-width: 440px) {
   .card { gap: 14px; }
   .wmap { --nd: 50px; height: 244px; }
@@ -624,11 +672,6 @@ body:not(.jeu) .hud { opacity: 0; }
   .wstop .wship { font-size: 16px; }
   .menugrid .ghost { font-size: 14px; padding: 11px 6px; }
 }
-.bossdetails { width: 100%; }
-.bossdetails[hidden] { display: none; }
-.bossdetails .wbosses { margin-top: 4px; animation: bossOpen .25s ease-out; }
-@keyframes bossOpen { from { opacity: 0; transform: translateY(-6px); } }
-@media (prefers-reduced-motion: reduce) { .bossdetails .wbosses { animation: none; } }
 
 /* Hangar : un vrai hangar, en métal, avec bande de sécurité et voyants */
 .hangar {
@@ -700,12 +743,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <div class="logo"><i class="streak" aria-hidden="true"></i><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
-    <div class="worldpick" id="worldPick">
-      <b>Choisis ton monde</b>
-      <div class="wmap" id="worldChips"></div>
-      <button type="button" class="bosstoggle" id="bossToggle" aria-expanded="false" aria-controls="bossDetails"></button>
-      <div class="bossdetails" id="bossDetails" hidden><div class="wbosses" id="worldBosses"></div></div>
-    </div>
+    <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
     <div class="menugrid">
       <button class="ghost" id="hangarBtn">Hangar</button>
       <button class="ghost" id="trophyBtn">Trophées</button>
@@ -842,6 +880,19 @@ body:not(.jeu) .hud { opacity: 0; }
 <div class="toast" id="toast" hidden>
   <i class="medal"></i>
   <div><small>Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
+</div>
+
+<div class="panel" id="mapPanel" hidden>
+  <div class="hangar atelier mappage">
+    <h2>Carte des mondes</h2>
+    <p class="wallet" id="mapCount"></p>
+    <div class="wmap" id="worldChips"></div>
+    <div class="wdetail" id="worldDetail"></div>
+    <div class="row">
+      <button class="play" id="mapGo">Jouer</button>
+      <button class="ghost" id="mapBack">Retour</button>
+    </div>
+  </div>
 </div>
 
 <div class="panel" id="cinema" hidden>
@@ -2396,7 +2447,7 @@ body:not(.jeu) .hud { opacity: 0; }
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
-  function closePanels() { $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -3634,7 +3685,7 @@ body:not(.jeu) .hud { opacity: 0; }
   try { const b = JSON.parse(localStorage.getItem('comete-boss') || '[]'); if (Array.isArray(b)) beaten = b.filter(x => ALL_BOSSES.some(d => d.id === x)); } catch (e) {}
 
   // --- mondes débloqués : battre le 10e boss d'un monde ouvre le suivant ---
-  let worldsOpen = 1, startWorld = 0, bossShown = false;
+  let worldsOpen = 1, startWorld = 0;
   try {
     const m = JSON.parse(localStorage.getItem('comete-mondes') || '{}');
     worldsOpen = Math.max(1, Math.min(WORLDS.length, m.open | 0));
@@ -3682,24 +3733,47 @@ body:not(.jeu) .hud { opacity: 0; }
       el.appendChild(stop);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
-    $('bossDetails').hidden = !bossShown;
-    const won = WORLDS[startWorld].bosses.filter(d => beaten.includes(d.id)).length;
-    $('bossToggle').textContent = `👾 Boss du monde ${startWorld + 1} · ${won}/10 ${bossShown ? '▴' : '▾'}`;
-    $('bossToggle').setAttribute('aria-expanded', bossShown);
-    renderWorldBosses();
+    $('mapGo').textContent = `Jouer · Monde ${startWorld + 1}`;
+    const w = WORLDS[startWorld], won = w.bosses.filter(d => beaten.includes(d.id)).length;
+    $('worldNow').textContent = `${w.icon} Monde ${startWorld + 1} · ${w.name} · ${won}/10 boss`;
+    $('worldBtn').style.setProperty('--w1', w.col[0]); $('worldBtn').style.setProperty('--w2', w.col[1]);
+    if (!$('mapPanel').hidden) renderWorldDetail();
   }
-  $('bossToggle').onclick = () => { bossShown = !bossShown; renderWorldPick(); };
-  // collection du monde choisi : les boss vaincus en portrait, les autres en silhouette « ??? »
-  function renderWorldBosses() {
-    const w = WORLDS[startWorld], el = $('worldBosses');
-    const won = w.bosses.filter(d => beaten.includes(d.id)).length;
-    el.style.setProperty('--w2', w.col[1]);
-    el.innerHTML = `<span>${w.icon} ${w.name} · <b>${won}/10</b> boss vaincus</span><div class="bgrid">` + w.bosses.map((d, i) => {
-      const ok = beaten.includes(d.id);
-      return `<div class="btile${ok ? '' : ' hide'}" title="${ok ? `${d.name} · ${d.place}` : `Boss ${i + 1} : pas encore vaincu`}">`
-        + `<img src="${bossPortrait(d)}" alt="${ok ? d.name : 'Boss inconnu'}"><i>${ok ? d.name : '???'}</i></div>`;
-    }).join('') + '</div>';
+  // détail du monde choisi, sous la carte : son histoire, sa progression, son trophée, ses aliens et ses 10 gardiens
+  function renderWorldDetail() {
+    const w = WORLDS[startWorld], el = $('worldDetail');
+    const won = w.bosses.filter(d => beaten.includes(d.id)).length, total = beaten.length;
+    $('mapCount').innerHTML = `<b>${worldsOpen}</b> / ${WORLDS.length} mondes ouverts · <b>${total}</b> / ${ALL_BOSSES.length} gardiens vaincus`;
+    el.style.setProperty('--w1', w.col[0]); el.style.setProperty('--w2', w.col[1]);
+    // la première phrase du prologue du monde
+    const intro = (PROLOGUES[startWorld]('').find(sc => typeof sc.l[0] === 'string') || { l: [''] }).l[0];
+    const next = w.bosses.findIndex(d => !beaten.includes(d.id));
+    const tro = TROPHIES.find(t => t.feat === 'monde' + (startWorld + 1));
+    const nextWorld = WORLDS[startWorld + 1];
+    const aliens = SPECIES.filter(sp => sp.world === startWorld).map(sp => `<span>${sp.name}</span>`).join('');
+    el.innerHTML = `<div class="wdhead"><span class="wdicon">${w.icon}</span><div><small>Monde ${startWorld + 1}</small><b>${w.name}</b></div></div>`
+      + (intro ? `<p class="wdline">« ${intro} »</p>` : '')
+      + `<div class="wdbar" style="--p:${won * 10}"><span><b>${won}/10</b> gardiens vaincus</span><i></i></div>`
+      + '<div class="wdinfo">'
+      + `<div${next < 0 ? ' class="ok"' : ''}>Prochain gardien<b>${next < 0 ? '★ Tous vaincus !' : `Gardien ${next + 1} sur 10`}</b></div>`
+      + (nextWorld ? `<div${startWorld + 1 < worldsOpen ? ' class="ok"' : ''}>Monde suivant<b>${startWorld + 1 < worldsOpen ? `${nextWorld.icon} ${nextWorld.name} ouvert` : `Bats ${w.bosses[9].name.split(' ').pop()} pour l'ouvrir`}</b></div>`
+        : `<div>Dernier monde<b>Le combat final</b></div>`)
+      + (tro ? `<div${stats.feats.includes(tro.feat) ? ' class="ok"' : ''}>Trophée « ${tro.name} »<b>${stats.feats.includes(tro.feat) ? 'Gagné : ' : ''}${rewardText(tro)}</b></div>` : '')
+      + '</div>'
+      + `<p class="wdsec">Les aliens du coin</p><div class="wdaliens">${aliens}</div>`
+      + `<p class="wdsec">Les 10 gardiens</p><div class="bgrid">` + w.bosses.map((d, i) => {
+        const ok = beaten.includes(d.id);
+        return `<div class="btile${ok ? '' : ' hide'}" title="${ok ? `${d.name} · ${d.place}` : `Boss ${i + 1} : pas encore vaincu`}">`
+          + `<img src="${bossPortrait(d)}" alt="${ok ? d.name : 'Boss inconnu'}"><i>${ok ? d.name : '???'}</i></div>`;
+      }).join('') + '</div>';
   }
+  function openMap() {
+    initAudio(); state = 'hangar';
+    $('menu').hidden = true; $('mapPanel').hidden = false;
+    renderWorldPick();
+  }
+  $('worldBtn').onclick = openMap;
+  $('mapBack').onclick = () => closePanels();
   // portrait d'un boss : on le dessine une seule fois dans une petite image
   const portraits = {};
   function bossPortrait(d) {
@@ -5972,6 +6046,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
   const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   $('startBtn').onclick = play;
+  $('mapGo').onclick = () => { $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
   $('proSkip').onclick = () => { if (proLastStep()) proGoto(0); else endFilm(); };
   $('proNext').onclick = () => proNext();
