@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Comète Filante</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Inline&family=Outfit:wght@400;600&display=swap">
 <style>
 /* Layout : un écran unique, le ciel en plein cadre, HUD en haut, bouton de super-pouvoir en bas à droite, panneaux centraux (menu, hangar, fin) */
 :root {
@@ -622,44 +622,123 @@ body:not(.jeu) .hud { opacity: 0; }
 .worldbtn small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .worldbtn .wbgo { font-family: var(--display); font-size: 30px; color: var(--star); line-height: 1; }
 @media (prefers-reduced-motion: reduce) { .worldbtn { transition: none; } }
-/* page de la carte : la carte en grand, puis le détail du monde choisi */
-.mappage .wmap { --nd: 78px; height: 330px; }
+/* page de la carte : ses couleurs suivent le monde choisi (fondu doux grâce à @property) */
+@property --w1 { syntax: '<color>'; inherits: true; initial-value: #5b3a9e; }
+@property --w2 { syntax: '<color>'; inherits: true; initial-value: #ff7aa8; }
+#mapPanel {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -5%, color-mix(in srgb, var(--w2) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 110%, color-mix(in srgb, var(--w1) 70%, transparent), transparent 70%),
+    color-mix(in srgb, var(--night) 82%, transparent);
+  transition: --w1 .6s ease, --w2 .6s ease;
+  align-items: start; /* la page est plus haute que l'écran : on la colle en haut pour pouvoir voir le titre */
+}
+.mappage {
+  position: relative; width: 100%; max-width: 46rem; margin-block: auto; box-sizing: border-box; padding: 26px 24px 22px; border-radius: 28px;
+  display: flex; flex-direction: column; gap: 18px; text-align: left; isolation: isolate; overflow: hidden;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--w1) 50%, #120d2c), #0e0a24 55%, color-mix(in srgb, var(--w1) 30%, #0b0820));
+  border: 2px solid color-mix(in srgb, var(--w2) 50%, transparent);
+  box-shadow: 0 0 0 1px #ffffff0a inset, 0 0 60px color-mix(in srgb, var(--w2) 22%, transparent), 0 30px 80px #0008;
+}
+/* motif de fond propre à chaque monde */
+.mappage::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .5; transition: opacity .4s; }
+#mapPanel[data-w="0"] .mappage::before { background:
+  radial-gradient(1.5px 1.5px at 8% 12%, #fff, transparent), radial-gradient(1px 1px at 28% 40%, #fff, transparent), radial-gradient(2px 2px at 72% 8%, #ffd86b, transparent),
+  radial-gradient(1px 1px at 90% 30%, #fff, transparent), radial-gradient(1.5px 1.5px at 55% 62%, #fff, transparent), radial-gradient(1px 1px at 18% 85%, #fff, transparent),
+  radial-gradient(2px 2px at 84% 78%, #ff7aa8, transparent), radial-gradient(1px 1px at 40% 94%, #fff, transparent),
+  linear-gradient(160deg, transparent 30%, #ff7aa81a 45%, #c86bff1a 55%, transparent 70%); }
+#mapPanel[data-w="1"] .mappage::before { background:
+  repeating-linear-gradient(60deg, transparent 0 46px, #ffffff0d 46px 47px), repeating-linear-gradient(-60deg, transparent 0 46px, #ffffff0d 46px 47px),
+  radial-gradient(3px 3px at 12% 20%, #e9fbff, transparent), radial-gradient(2px 2px at 82% 14%, #e9fbff, transparent), radial-gradient(2.5px 2.5px at 64% 70%, #e9fbff, transparent),
+  radial-gradient(2px 2px at 30% 88%, #e9fbff, transparent), linear-gradient(180deg, #9fe8ff14, transparent 40%); }
+#mapPanel[data-w="2"] .mappage::before { background:
+  radial-gradient(2px 2px at 14% 70%, #ffd06b, transparent), radial-gradient(2.5px 2.5px at 36% 86%, #ff7b2a, transparent), radial-gradient(1.5px 1.5px at 62% 78%, #ffd06b, transparent),
+  radial-gradient(2px 2px at 88% 64%, #ff7b2a, transparent), radial-gradient(1.5px 1.5px at 76% 92%, #ffd06b, transparent),
+  linear-gradient(115deg, transparent 47%, #ff7b2a22 48%, transparent 50%), linear-gradient(35deg, transparent 62%, #ff7b2a1c 63%, transparent 65%),
+  radial-gradient(ellipse 80% 40% at 50% 105%, #ff7b2a40, transparent 70%); }
+#mapPanel[data-w="3"] .mappage::before { background:
+  radial-gradient(ellipse 22% 9% at 4% 18%, #7dff8a26, transparent 70%), radial-gradient(ellipse 18% 8% at 96% 34%, #7dff8a22, transparent 70%),
+  radial-gradient(ellipse 24% 10% at 8% 82%, #7dff8a22, transparent 70%), radial-gradient(ellipse 20% 8% at 92% 90%, #7dff8a26, transparent 70%),
+  repeating-radial-gradient(circle at 0% 0%, transparent 0 60px, #7dff8a0c 60px 62px), radial-gradient(2px 2px at 40% 30%, #c6ffb0, transparent), radial-gradient(2px 2px at 70% 55%, #c6ffb0, transparent); }
+#mapPanel[data-w="4"] .mappage::before { background:
+  repeating-radial-gradient(circle at 50% 0%, transparent 0 34px, #c86bff12 34px 36px), radial-gradient(circle at 50% 0%, #000a, transparent 45%),
+  radial-gradient(1px 1px at 20% 60%, #c86bff, transparent), radial-gradient(1px 1px at 80% 40%, #c86bff, transparent); opacity: .8; }
+.mphead { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.mphead small { font-size: 12px; letter-spacing: .32em; text-transform: uppercase; color: color-mix(in srgb, var(--w2) 75%, #fff); }
+.mphead h2 {
+  margin: 0; font-family: "Bungee Inline", var(--display); font-weight: 400; font-size: clamp(28px, 7vw, 42px); line-height: 1;
+  background: linear-gradient(180deg, #fff 10%, color-mix(in srgb, var(--w2) 70%, var(--star))); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 color-mix(in srgb, var(--w1) 80%, #000)) drop-shadow(0 0 18px color-mix(in srgb, var(--w2) 45%, transparent));
+}
+.mpcount { margin: 4px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.mpcount span { padding: 5px 12px; border-radius: 999px; font-size: 13px; color: var(--muted); background: #0b0820aa; border: 1px solid color-mix(in srgb, var(--w2) 35%, transparent); }
+.mpcount b { font-family: var(--display); font-weight: 400; color: var(--star); font-size: 15px; margin-right: 2px; }
+.mappage .wmap { --nd: 78px; height: 330px; border-color: color-mix(in srgb, var(--w2) 30%, transparent); box-shadow: inset 0 0 40px #0008; }
 .mappage .wlabel { width: 140px; margin-left: -70px; }
 .mappage .wlabel .wname { font-size: 14px; }
 .mappage .wlabel .wprog { font-size: 12px; }
 .mappage .wstop .wdeco { font-size: 18px; }
 .mappage .wstop .wship { font-size: 26px; }
+/* fiche du monde choisi */
 .wdetail {
-  display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; text-align: left;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--w1) 55%, var(--night)), var(--night) 70%);
+  position: relative; display: flex; flex-direction: column; gap: 16px; padding: 20px; border-radius: 22px; overflow: hidden;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--w1) 65%, var(--night)), #0b0820e6 65%);
   border: 2px solid color-mix(in srgb, var(--w2) 45%, transparent);
 }
-.wdhead { display: flex; align-items: center; gap: 12px; }
-.wdhead .wdicon { font-size: 40px; line-height: 1; filter: drop-shadow(0 0 10px var(--w2)); }
-.wdhead small { display: block; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--w2); }
-.wdhead b { font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--ink); }
-.wdline { margin: 0; font-style: italic; color: var(--muted); font-size: 14px; }
-.wdbar { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
-.wdbar b { color: var(--star); font-weight: 600; }
-.wdbar i { display: block; height: 10px; border-radius: 999px; background: #ffffff1a; overflow: hidden; }
-.wdbar i::before { content: ''; display: block; height: 100%; width: calc(var(--p) * 1%); border-radius: inherit; background: linear-gradient(90deg, var(--w2), var(--star)); }
-.wdinfo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.wdinfo > div { padding: 10px 12px; border-radius: 12px; background: #0b082099; border: 1px solid #ffffff14; font-size: 13px; color: var(--muted); }
-.wdinfo > div b { display: block; font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 2px; }
+.wdetail.pop { animation: wdPop .35s ease-out; }
+@keyframes wdPop { from { opacity: .3; transform: translateY(8px) scale(.98); } }
+.wdbig { position: absolute; right: -18px; top: -26px; font-size: 150px; line-height: 1; opacity: .13; transform: rotate(12deg); pointer-events: none; filter: blur(1px); }
+.wdhead { position: relative; display: flex; align-items: center; gap: 16px; }
+.wdhead .wdicon {
+  flex: none; display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; font-size: 34px;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--w2) 70%, #fff), var(--w1) 70%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--w2) 60%, transparent), 0 0 26px color-mix(in srgb, var(--w2) 55%, transparent);
+}
+.wdhead small { display: block; font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: color-mix(in srgb, var(--w2) 80%, #fff); }
+.wdhead b { display: block; font-family: "Bungee Inline", var(--display); font-weight: 400; font-size: 30px; line-height: 1.05; color: #fff; text-shadow: 0 0 16px color-mix(in srgb, var(--w2) 55%, transparent); }
+.wdline { position: relative; margin: 0; padding: 2px 0 2px 14px; border-left: 3px solid var(--w2); font-size: 15px; line-height: 1.45; color: #d9d2f5; font-style: italic; }
+.wdbar { display: flex; flex-direction: column; gap: 8px; }
+.wdbar > span { display: flex; justify-content: space-between; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.wdbar > span b { font-family: var(--display); font-weight: 400; letter-spacing: 0; font-size: 16px; color: var(--star); }
+/* 10 cases, une par gardien */
+.wdpips { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }
+.wdpips i { height: 12px; border-radius: 4px; background: #ffffff14; border: 1px solid #ffffff12; }
+.wdpips i.on { background: linear-gradient(180deg, color-mix(in srgb, var(--w2) 60%, #fff), var(--w2)); border-color: transparent; box-shadow: 0 0 10px color-mix(in srgb, var(--w2) 70%, transparent); }
+.wdinfo { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.wdinfo > div {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 16px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  background: #0b0820b3; border: 1px solid color-mix(in srgb, var(--w2) 22%, transparent);
+}
+.wdinfo > div::before { content: attr(data-i); font-size: 22px; letter-spacing: 0; }
+.wdinfo > div b { font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 600; line-height: 1.25; }
+.wdinfo > div.ok { border-color: color-mix(in srgb, var(--star) 45%, transparent); }
 .wdinfo > div.ok b { color: var(--star); }
-.wdsec { font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--w2); margin: 4px 0 -4px; }
-.wdaliens { display: flex; flex-wrap: wrap; gap: 6px; }
-.wdaliens span { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #0b082099; border: 1px solid color-mix(in srgb, var(--w2) 35%, transparent); color: var(--ink); }
-.wdetail .bgrid { grid-template-columns: repeat(5, minmax(0, 96px)); }
+.wdsec { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 400; font-size: 15px; color: color-mix(in srgb, var(--w2) 80%, #fff); margin: 2px 0 -4px; }
+.wdsec::after { content: ''; flex: 1; height: 2px; border-radius: 2px; background: linear-gradient(90deg, color-mix(in srgb, var(--w2) 50%, transparent), transparent); }
+.wdetail .bgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.wdetail .btile { background: #0b0820b3; border-color: color-mix(in srgb, var(--w2) 50%, transparent); padding: 8px 4px; border-radius: 14px; }
+.wdetail .btile:not(.hide) { box-shadow: 0 0 14px color-mix(in srgb, var(--w2) 25%, transparent); }
+.wdetail .btile img { width: 56px; height: 56px; }
+.mpbtns { justify-content: center; }
+.mpbtns .play { box-shadow: 0 6px 0 #c89a2c, 0 0 30px color-mix(in srgb, var(--w2) 50%, transparent); }
+@media (prefers-reduced-motion: reduce) { #mapPanel { transition: none; } .wdetail.pop { animation: none; } }
 @media (max-width: 440px) {
+  .mappage { padding: 20px 14px 16px; border-radius: 22px; gap: 14px; }
   .mappage .wmap { --nd: 50px; height: 244px; }
   .mappage .wlabel { width: 84px; margin-left: -42px; }
   .mappage .wlabel .wname { font-size: 10px; }
   .mappage .wlabel .wprog { font-size: 9.5px; }
   .mappage .wstop .wdeco { font-size: 14px; }
   .mappage .wstop .wship { font-size: 16px; }
-  .wdetail { padding: 12px; }
-  .wdinfo { grid-template-columns: 1fr; }
+  .wdetail { padding: 14px; gap: 14px; }
+  .wdhead .wdicon { width: 54px; height: 54px; font-size: 27px; }
+  .wdhead b { font-size: 22px; }
+  .wdbig { font-size: 110px; }
+  .wdinfo { grid-template-columns: 1fr; gap: 8px; }
+  .wdinfo > div { display: grid; grid-template-columns: 30px 1fr; column-gap: 10px; align-items: center; padding: 10px 12px; }
+  .wdinfo > div::before { grid-row: span 2; }
+  .wdetail .bgrid { gap: 5px; }
+  .wdetail .btile img { width: 40px; height: 40px; }
   .worldbtn b { font-size: 16px; }
 }
 @media (max-width: 440px) {
@@ -882,13 +961,12 @@ body:not(.jeu) .hud { opacity: 0; }
   <div><small>Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
 </div>
 
-<div class="panel" id="mapPanel" hidden>
-  <div class="hangar atelier mappage">
-    <h2>Carte des mondes</h2>
-    <p class="wallet" id="mapCount"></p>
+<div class="panel" id="mapPanel" data-w="0" hidden>
+  <div class="mappage">
+    <header class="mphead"><small>Carte des mondes</small><h2>Choisis ton monde</h2><p class="mpcount" id="mapCount"></p></header>
     <div class="wmap" id="worldChips"></div>
     <div class="wdetail" id="worldDetail"></div>
-    <div class="row">
+    <div class="row mpbtns">
       <button class="play" id="mapGo">Jouer</button>
       <button class="ghost" id="mapBack">Retour</button>
     </div>
@@ -3725,7 +3803,7 @@ body:not(.jeu) .hud { opacity: 0; }
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
       // clic sur un monde : on le choisit (ses 10 boss s'ouvrent avec le bouton « Boss du monde » en dessous)
-      b.onclick = () => { startWorld = i; saveWorlds(); renderWorldPick(); beep(500 + i * 120, .08, 'triangle', .08); };
+      b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) popDetail(); beep(500 + i * 120, .08, 'triangle', .08); };
       stop.innerHTML = `<span class="wlabel"><span class="wnum">Monde ${i + 1}</span><span class="wname">${open ? w.name : '???'}</span>`
         + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? '★ 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
         + `<span class="wdeco" aria-hidden="true">${MAP_DECO[i]}</span>` + (i === startWorld ? '<span class="wship" aria-hidden="true">🚀</span>' : '');
@@ -3743,30 +3821,33 @@ body:not(.jeu) .hud { opacity: 0; }
   function renderWorldDetail() {
     const w = WORLDS[startWorld], el = $('worldDetail');
     const won = w.bosses.filter(d => beaten.includes(d.id)).length, total = beaten.length;
-    $('mapCount').innerHTML = `<b>${worldsOpen}</b> / ${WORLDS.length} mondes ouverts · <b>${total}</b> / ${ALL_BOSSES.length} gardiens vaincus`;
-    el.style.setProperty('--w1', w.col[0]); el.style.setProperty('--w2', w.col[1]);
+    $('mapCount').innerHTML = `<span><b>${worldsOpen}</b>/${WORLDS.length} mondes ouverts</span><span><b>${total}</b>/${ALL_BOSSES.length} gardiens vaincus</span>`;
+    // toute la page prend les couleurs du monde choisi
+    const pan = $('mapPanel'); pan.dataset.w = startWorld;
+    pan.style.setProperty('--w1', w.col[0]); pan.style.setProperty('--w2', w.col[1]);
     // la première phrase du prologue du monde
     const intro = (PROLOGUES[startWorld]('').find(sc => typeof sc.l[0] === 'string') || { l: [''] }).l[0];
     const next = w.bosses.findIndex(d => !beaten.includes(d.id));
     const tro = TROPHIES.find(t => t.feat === 'monde' + (startWorld + 1));
     const nextWorld = WORLDS[startWorld + 1];
-    const aliens = SPECIES.filter(sp => sp.world === startWorld).map(sp => `<span>${sp.name}</span>`).join('');
-    el.innerHTML = `<div class="wdhead"><span class="wdicon">${w.icon}</span><div><small>Monde ${startWorld + 1}</small><b>${w.name}</b></div></div>`
+    el.innerHTML = `<span class="wdbig" aria-hidden="true">${w.icon}</span>`
+      + `<div class="wdhead"><span class="wdicon">${w.icon}</span><div><small>Monde ${startWorld + 1}</small><b>${w.name}</b></div></div>`
       + (intro ? `<p class="wdline">« ${intro} »</p>` : '')
-      + `<div class="wdbar" style="--p:${won * 10}"><span><b>${won}/10</b> gardiens vaincus</span><i></i></div>`
+      + `<div class="wdbar"><span>Gardiens vaincus <b>${won}/10</b></span><div class="wdpips">${w.bosses.map(d => `<i${beaten.includes(d.id) ? ' class="on"' : ''}></i>`).join('')}</div></div>`
       + '<div class="wdinfo">'
-      + `<div${next < 0 ? ' class="ok"' : ''}>Prochain gardien<b>${next < 0 ? '★ Tous vaincus !' : `Gardien ${next + 1} sur 10`}</b></div>`
-      + (nextWorld ? `<div${startWorld + 1 < worldsOpen ? ' class="ok"' : ''}>Monde suivant<b>${startWorld + 1 < worldsOpen ? `${nextWorld.icon} ${nextWorld.name} ouvert` : `Bats ${w.bosses[9].name.split(' ').pop()} pour l'ouvrir`}</b></div>`
-        : `<div>Dernier monde<b>Le combat final</b></div>`)
-      + (tro ? `<div${stats.feats.includes(tro.feat) ? ' class="ok"' : ''}>Trophée « ${tro.name} »<b>${stats.feats.includes(tro.feat) ? 'Gagné : ' : ''}${rewardText(tro)}</b></div>` : '')
+      + `<div data-i="🎯"${next < 0 ? ' class="ok"' : ''}>Prochain gardien<b>${next < 0 ? '★ Tous vaincus !' : `Gardien ${next + 1} sur 10`}</b></div>`
+      + (nextWorld ? `<div data-i="🚪"${startWorld + 1 < worldsOpen ? ' class="ok"' : ''}>Monde suivant<b>${startWorld + 1 < worldsOpen ? `${nextWorld.icon} ${nextWorld.name} ouvert` : `Bats ${w.bosses[9].name.split(' ').pop()} pour l'ouvrir`}</b></div>`
+        : `<div data-i="⚔️">Dernier monde<b>Le combat final</b></div>`)
+      + (tro ? `<div data-i="🏆"${stats.feats.includes(tro.feat) ? ' class="ok"' : ''}>Trophée « ${tro.name} »<b>${stats.feats.includes(tro.feat) ? 'Gagné : ' : ''}${rewardText(tro)}</b></div>` : '')
       + '</div>'
-      + `<p class="wdsec">Les aliens du coin</p><div class="wdaliens">${aliens}</div>`
       + `<p class="wdsec">Les 10 gardiens</p><div class="bgrid">` + w.bosses.map((d, i) => {
         const ok = beaten.includes(d.id);
         return `<div class="btile${ok ? '' : ' hide'}" title="${ok ? `${d.name} · ${d.place}` : `Boss ${i + 1} : pas encore vaincu`}">`
           + `<img src="${bossPortrait(d)}" alt="${ok ? d.name : 'Boss inconnu'}"><i>${ok ? d.name : '???'}</i></div>`;
       }).join('') + '</div>';
   }
+  // petit effet quand on change de monde sur la carte
+  function popDetail() { const el = $('worldDetail'); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
   function openMap() {
     initAudio(); state = 'hangar';
     $('menu').hidden = true; $('mapPanel').hidden = false;
