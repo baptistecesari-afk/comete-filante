@@ -4060,22 +4060,78 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   // le visage d'un des trois enfants
   function kidFace(k, b) {
-    const hair = { Nina: '#5a3420', Malo: '#1e1410', Inès: '#c0702a' }[b], skin = { Nina: '#ffd9b8', Malo: '#c98a5a', Inès: '#f6cfa8' }[b];
-    k.fillStyle = { Nina: '#1d2a5a', Malo: '#173a22', Inès: '#3a1d4a' }[b]; k.fillRect(0, 0, 96, 96);
-    k.fillStyle = hair;
-    if (b === 'Nina') for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 30, 40, 12, 0, 7); k.fill(); }
-    if (b === 'Inès') { k.beginPath(); k.ellipse(48, 58, 30, 34, 0, 0, 7); k.fill(); }
-    k.beginPath(); k.arc(48, 46, 27, Math.PI, 0); k.fill();
-    k.fillStyle = skin; k.beginPath(); k.ellipse(48, 52, 22, 24, 0, 0, 7); k.fill();
-    k.fillStyle = hair;
-    if (b === 'Malo') { for (let i = 0; i < 5; i++) { k.beginPath(); k.moveTo(26 + i * 11, 36); k.lineTo(31 + i * 11, 18); k.lineTo(37 + i * 11, 36); k.fill(); } }
-    else { k.beginPath(); k.ellipse(48, 32, 24, 10, 0, Math.PI, 0); k.fill(); }
-    k.fillStyle = '#2a1a40'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 3.4, 0, 7); k.fill(); }
-    if (b === 'Inès') { k.strokeStyle = '#2a1a40'; k.lineWidth = 2; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 52, 7, 0, 7); k.stroke(); } k.beginPath(); k.moveTo(46, 52); k.lineTo(50, 52); k.stroke(); }
-    k.fillStyle = 'rgba(255, 120, 150, .45)'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 15, 61, 4, 0, 7); k.fill(); }
-    k.strokeStyle = '#a0405a'; k.lineWidth = 2; k.beginPath();
-    if (b === 'Malo') k.arc(48, 60, 8, .1, Math.PI - .1); else k.arc(48, 62, 6, .2, Math.PI - .2); k.stroke();
-    k.fillStyle = WHO_COL[b]; k.fillRect(26, 88, 44, 8);
+    const hair = { Nina: '#5a3420', Malo: '#1e1410', Inès: '#a85a24' }[b], skin = { Nina: '#f6caa4', Malo: '#b97a4c', Inès: '#efc29a' }[b];
+    const iris = { Nina: '#6a4a2a', Malo: '#3a2414', Inès: '#4a7a3a' }[b], shirt = WHO_COL[b];
+    const rg = (x, y, r0, r1, stops) => { const g = k.createRadialGradient(x, y, r0, x, y, r1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+    const lg = (x0, y0, x1, y1, stops) => { const g = k.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, c]) => g.addColorStop(o, c)); return g; };
+    // fond : la lumière du cockpit derrière
+    k.fillStyle = rg(36, 30, 4, 80, [[0, shade({ Nina: '#2c3f80', Malo: '#24603a', Inès: '#5a2f72' }[b], .1)], [1, { Nina: '#0e1430', Malo: '#0b1e12', Inès: '#1c0e26' }[b]]]);
+    k.fillRect(0, 0, 96, 96);
+    // cheveux de derrière
+    k.fillStyle = lg(0, 20, 0, 96, [[0, shade(hair, .12)], [1, shade(hair, -.35)]]);
+    if (b === 'Inès') { k.beginPath(); k.moveTo(22, 40); k.bezierCurveTo(14, 70, 18, 90, 26, 96); k.lineTo(70, 96); k.bezierCurveTo(78, 90, 82, 70, 74, 40); k.closePath(); k.fill(); }
+    if (b === 'Nina') for (const sx of [-1, 1]) { k.beginPath(); k.ellipse(48 + sx * 30, 44, 10, 13, sx * .3, 0, 7); k.fill(); }
+    // cou et épaules (tee-shirt de sa couleur)
+    k.fillStyle = lg(0, 66, 0, 96, [[0, shade(skin, -.3)], [1, shade(skin, -.12)]]); k.fillRect(40, 64, 16, 18);
+    k.fillStyle = lg(14, 0, 82, 0, [[0, shade(shirt, -.15)], [.5, shirt], [1, shade(shirt, -.45)]]);
+    k.beginPath(); k.moveTo(10, 96); k.quadraticCurveTo(14, 78, 38, 76); k.quadraticCurveTo(48, 82, 58, 76); k.quadraticCurveTo(82, 78, 86, 96); k.closePath(); k.fill();
+    k.strokeStyle = shade(shirt, -.4); k.lineWidth = 1.5; k.beginPath(); k.moveTo(38, 77); k.quadraticCurveTo(48, 85, 58, 77); k.stroke();
+    // oreilles
+    for (const sx of [-1, 1]) { k.fillStyle = rg(48 + sx * 22, 52, 1, 7, [[0, shade(skin, -.05)], [1, shade(skin, -.3)]]); k.beginPath(); k.ellipse(48 + sx * 22, 52, 4.5, 6.5, 0, 0, 7); k.fill(); }
+    // visage : peau éclairée en haut à gauche, joues roses, ombre sous le menton
+    k.fillStyle = rg(42, 44, 2, 30, [[0, shade(skin, .18)], [.55, skin], [1, shade(skin, -.28)]]);
+    k.beginPath(); k.moveTo(27, 46); k.bezierCurveTo(27, 26, 69, 26, 69, 46); k.bezierCurveTo(69, 62, 58, 72, 48, 72); k.bezierCurveTo(38, 72, 27, 62, 27, 46); k.fill();
+    for (const sx of [-1, 1]) { k.fillStyle = rg(48 + sx * 13, 59, 0, 7, [[0, 'rgba(235, 110, 120, .38)'], [1, 'rgba(235, 110, 120, 0)']]); k.beginPath(); k.arc(48 + sx * 13, 59, 7, 0, 7); k.fill(); }
+    // yeux : blanc ombré, iris coloré, pupille, reflet
+    for (const sx of [-1, 1]) {
+      const ex = 48 + sx * 9, ey = 51;
+      k.fillStyle = '#fbf6f0'; k.beginPath(); k.ellipse(ex, ey, 5.2, 3.6, 0, 0, 7); k.fill();
+      k.save(); k.clip();
+      k.fillStyle = rg(ex + .5, ey + .3, .5, 3.4, [[0, shade(iris, .25)], [.7, iris], [1, shade(iris, -.5)]]); k.beginPath(); k.arc(ex + .5, ey + .3, 3.2, 0, 7); k.fill();
+      k.fillStyle = '#0d0806'; k.beginPath(); k.arc(ex + .5, ey + .3, 1.5, 0, 7); k.fill();
+      k.fillStyle = 'rgba(60, 30, 20, .3)'; k.fillRect(ex - 6, ey - 4, 12, 1.6);
+      k.restore();
+      k.fillStyle = '#ffffff'; k.beginPath(); k.arc(ex - .6, ey - .9, .9, 0, 7); k.fill();
+      k.strokeStyle = '#2a160e'; k.lineWidth = 1.2; k.beginPath(); k.ellipse(ex, ey, 5.2, 3.6, 0, Math.PI * 1.08, Math.PI * 1.92); k.stroke();
+      // sourcils
+      k.strokeStyle = shade(hair, -.1); k.lineWidth = 1.8; k.lineCap = 'round';
+      k.beginPath(); k.moveTo(ex - sx * 4.5, ey - 7); k.quadraticCurveTo(ex, ey - 9.5, ex + sx * 5.5, ey - 7.5); k.stroke(); k.lineCap = 'butt';
+    }
+    // nez : ombre douce et petite lumière
+    k.strokeStyle = shade(skin, -.3); k.lineWidth = 1.3; k.beginPath(); k.moveTo(49, 53); k.quadraticCurveTo(51.5, 60, 48.5, 61); k.stroke();
+    k.fillStyle = 'rgba(255, 255, 255, .35)'; k.beginPath(); k.ellipse(47, 58, 1.2, 2, 0, 0, 7); k.fill();
+    // bouche
+    k.fillStyle = b === 'Malo' ? '#7a2a2a' : '#c45a62';
+    if (b === 'Malo') { k.beginPath(); k.moveTo(41, 64); k.quadraticCurveTo(48, 70, 55, 64); k.quadraticCurveTo(48, 66, 41, 64); k.fill(); }
+    else { k.beginPath(); k.moveTo(43, 65); k.quadraticCurveTo(48, 68.5, 53, 65); k.quadraticCurveTo(48, 66.2, 43, 65); k.fill(); }
+    // cheveux de devant, avec mèches et reflet
+    k.fillStyle = lg(30, 18, 66, 44, [[0, shade(hair, .25)], [.5, hair], [1, shade(hair, -.3)]]);
+    if (b === 'Malo') {
+      k.beginPath(); k.moveTo(25, 46); k.quadraticCurveTo(24, 26, 36, 22);
+      for (let i = 0; i < 6; i++) k.lineTo(34 + i * 6, 14 + (i % 2) * 5), k.lineTo(37 + i * 6, 23);
+      k.quadraticCurveTo(72, 28, 71, 46); k.quadraticCurveTo(66, 34, 48, 33); k.quadraticCurveTo(32, 34, 25, 46); k.fill();
+    } else {
+      k.beginPath(); k.moveTo(24, 50); k.bezierCurveTo(16, 12, 80, 12, 72, 50); k.quadraticCurveTo(66, 36, 54, 35); k.quadraticCurveTo(44, 42, 30, 38); k.quadraticCurveTo(26, 42, 24, 50); k.fill();
+    }
+    k.save(); k.clip();
+    k.strokeStyle = 'rgba(255, 230, 200, .3)'; k.lineWidth = 1.2;
+    for (let i = 0; i < 5; i++) { k.beginPath(); k.moveTo(28 + i * 5, 36 - i); k.quadraticCurveTo(34 + i * 5, 24, 44 + i * 5, 24); k.stroke(); }
+    k.strokeStyle = 'rgba(0, 0, 0, .25)'; k.lineWidth = 1;
+    for (let i = 0; i < 4; i++) { k.beginPath(); k.moveTo(50 + i * 5, 24); k.quadraticCurveTo(60 + i * 3, 30, 64 + i * 2, 44); k.stroke(); }
+    k.restore();
+    // élastiques des couettes de Nina, lunettes d'Inès
+    if (b === 'Nina') { k.fillStyle = '#7ad8ff'; for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 24, 38, 2.4, 0, 7); k.fill(); } }
+    if (b === 'Inès') {
+      k.strokeStyle = '#2a1a40'; k.lineWidth = 1.6;
+      for (const sx of [-1, 1]) { k.beginPath(); k.ellipse(48 + sx * 9, 51, 7.5, 6, 0, 0, 7); k.stroke(); }
+      k.beginPath(); k.moveTo(45.5, 50); k.quadraticCurveTo(48, 48.5, 50.5, 50); k.stroke();
+      k.strokeStyle = 'rgba(255, 255, 255, .5)'; k.lineWidth = 1;
+      for (const sx of [-1, 1]) { k.beginPath(); k.arc(48 + sx * 9, 51, 5.5, Math.PI * 1.1, Math.PI * 1.4); k.stroke(); }
+    }
+    // lumière froide des écrans sur le côté droit du visage
+    k.globalCompositeOperation = 'soft-light';
+    k.fillStyle = lg(30, 0, 80, 0, [[0, 'rgba(255, 230, 190, .35)'], [1, 'rgba(90, 160, 255, .45)']]); k.fillRect(0, 0, 96, 96);
+    k.globalCompositeOperation = 'source-over';
   }
   // l'étiquette de qui parle, avec son portrait
   function whoHtml(w, col) {
@@ -4336,14 +4392,25 @@ body:not(.jeu) .hud { opacity: 0; }
       const g = ctx.createLinearGradient(hx, hy, hx + Math.cos(a) * len, hy + Math.sin(a) * len); g.addColorStop(0, 'rgba(255, 240, 190, .45)'); g.addColorStop(1, 'rgba(255, 240, 190, 0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(a - .22) * len, hy + Math.sin(a - .22) * len); ctx.lineTo(hx + Math.cos(a + .22) * len, hy + Math.sin(a + .22) * len); ctx.closePath(); ctx.fill();
     }
-    ctx.fillStyle = '#05070f';
     const hy = y - 33 * s + Math.sin(t / 300 + x) * s;
-    if (who === 'Inès') { ctx.beginPath(); ctx.ellipse(x, hy + 6 * s, 8 * s, 11 * s, 0, 0, 7); ctx.fill(); }
-    ctx.beginPath(); ctx.arc(x, hy, 6.5 * s, 0, 7); ctx.fill();
-    if (who === 'Nina') for (const sx of [-1, 1]) { ctx.beginPath(); ctx.arc(x + sx * 7 * s, hy - 3 * s, 3.2 * s, 0, 7); ctx.fill(); }
-    if (who === 'Malo') for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * 2.6 * s - 2 * s, hy - 4 * s); ctx.lineTo(x + i * 2.6 * s, hy - 10 * s); ctx.lineTo(x + i * 2.6 * s + 2 * s, hy - 4 * s); ctx.fill(); }
-    ctx.beginPath(); ctx.moveTo(x - 4 * s, y - 26 * s); ctx.lineTo(x + 4 * s, y - 26 * s); ctx.lineTo(x + 8 * s, y - 9 * s); ctx.lineTo(x - 8 * s, y - 9 * s); ctx.closePath(); ctx.fill();
-    ctx.fillRect(x - 5 * s, y - 9 * s, 3 * s, 9 * s); ctx.fillRect(x + 2 * s, y - 9 * s, 3 * s, 9 * s);
+    // la silhouette, dessinée une première fois décalée en couleur claire : un liseré de lumière
+    // (lune et lampes) souligne le contour, comme un vrai contre-jour
+    const body = (col, ox) => {
+      ctx.fillStyle = col; const X = x + ox;
+      if (who === 'Inès') { ctx.beginPath(); ctx.ellipse(X, hy + 6 * s, 8 * s, 11 * s, 0, 0, 7); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(X, hy, 6.5 * s, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(X - 2.5 * s, hy + 5 * s); ctx.lineTo(X + 2.5 * s, hy + 5 * s); ctx.lineTo(X + 2.5 * s, y - 25 * s); ctx.lineTo(X - 2.5 * s, y - 25 * s); ctx.fill();
+      if (who === 'Nina') for (const sx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(X + sx * 7.5 * s, hy - 1 * s, 3 * s, 4 * s, sx * .4, 0, 7); ctx.fill(); }
+      if (who === 'Malo') for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(X + i * 2.6 * s - 2 * s, hy - 4 * s); ctx.lineTo(X + i * 2.6 * s, hy - 10 * s); ctx.lineTo(X + i * 2.6 * s + 2 * s, hy - 4 * s); ctx.fill(); }
+      // buste, bras (l'un tient la lampe), jambes et chaussures
+      ctx.beginPath(); ctx.moveTo(X - 5 * s, y - 26 * s); ctx.quadraticCurveTo(X, y - 27.5 * s, X + 5 * s, y - 26 * s); ctx.lineTo(X + 7 * s, y - 10 * s); ctx.lineTo(X - 7 * s, y - 10 * s); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(X - 5 * s, y - 25 * s); ctx.lineTo(X - 8 * s, y - 14 * s); ctx.lineTo(X - 6 * s, y - 13 * s); ctx.lineTo(X - 3.5 * s, y - 22 * s); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(X + 5 * s, y - 25 * s); ctx.lineTo(X + 9 * s, y - 21 * s); ctx.lineTo(X + 8 * s, y - 19 * s); ctx.lineTo(X + 4 * s, y - 22 * s); ctx.fill();
+      ctx.fillRect(X - 5 * s, y - 10 * s, 3.2 * s, 9.5 * s); ctx.fillRect(X + 1.8 * s, y - 10 * s, 3.2 * s, 9.5 * s);
+      ctx.beginPath(); ctx.ellipse(X - 4 * s, y - .5 * s, 2.8 * s, 1.3 * s, 0, 0, 7); ctx.ellipse(X + 4 * s, y - .5 * s, 2.8 * s, 1.3 * s, 0, 0, 7); ctx.fill();
+    };
+    body(beam ? 'rgba(255, 233, 168, .55)' : 'rgba(170, 190, 255, .4)', -.9 * s);
+    body('#05070f', 0);
     if (beam) { ctx.fillStyle = '#ffe9a8'; ctx.beginPath(); ctx.arc(x + 9 * s, y - 22 * s, 2 * s, 0, 7); ctx.fill(); }
   }
   // grésillement d'écran
@@ -5574,18 +5641,129 @@ body:not(.jeu) .hud { opacity: 0; }
       else for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(mx + d * 4 - 1.5, my - 3); ctx.lineTo(mx + d * 4, my + 4); ctx.lineTo(mx + d * 4 + 1.5, my - 3); ctx.fill(); }
     } else if (sp.mouth === 'beak') { ctx.fillStyle = '#ffb020'; ctx.beginPath(); ctx.moveTo(-4, 4); ctx.lineTo(4, 4); ctx.lineTo(0, 10); ctx.closePath(); ctx.fill(); }
     ctx.restore();
-    // ligne de visée du tireur d'élite
-    if (it.type === 'sniper' && it.aiming > 0) {
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 79, 109, ${.3 + .5 * (1 - it.aiming / .9)})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
-      ctx.beginPath(); ctx.moveTo(it.x, it.y + 14); ctx.lineTo(it.tx, it.ty); ctx.stroke();
-      ctx.setLineDash([]); ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(it.tx, it.ty, 4, 0, 7); ctx.fill();
-      ctx.restore();
+  }
+
+  // ligne de visée du tireur d'élite
+  function drawAim(it) {
+    if (it.type !== 'sniper' || !(it.aiming > 0)) return;
+    ctx.save();
+    ctx.strokeStyle = `rgba(255, 79, 109, ${.3 + .5 * (1 - it.aiming / .9)})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+    ctx.beginPath(); ctx.moveTo(it.x, it.y + 14); ctx.lineTo(it.tx, it.ty); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(it.tx, it.ty, 4, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  // ===== Rendu réaliste des ennemis =====
+  // chaque alien (ou boss) est d'abord dessiné à part, sans halo, puis on l'éclaire comme un vrai objet :
+  // lumière douce en haut à gauche, ombre propre en bas à droite, bord biseauté, liseré de lumière froide
+  // (le reflet de l'espace), grain de peau, et enfin son halo coloré quand on le pose dans le jeu.
+  // une petite image de travail par taille (arrondie à la puissance de 2 au-dessus)
+  const LITS = {};
+  function litCanvas(w, h) {
+    const S = 2 ** Math.ceil(Math.log2(Math.max(w, h, 16))), key = S;
+    let LIT = LITS[key];
+    if (!LIT) {
+      const c = document.createElement('canvas'), e = document.createElement('canvas');
+      const k = c.getContext('2d');
+      // pas de halo pendant le dessin : il est ajouté à la fin, autour de la forme éclairée
+      Object.defineProperty(k, 'shadowBlur', { get: () => 0, set: () => {} });
+      c.width = c.height = e.width = e.height = S;
+      LIT = LITS[key] = { c, k, e, ek: e.getContext('2d') };
     }
+    return LIT;
+  }
+  let grain = null;
+  function grainPattern(k) {
+    if (!grain) {
+      grain = document.createElement('canvas'); grain.width = grain.height = 64;
+      const g = grain.getContext('2d'), im = g.createImageData(64, 64);
+      for (let i = 0; i < 64 * 64; i++) { const v = seeded(i * 7 + 3) > .5 ? 255 : 0; im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 40 + seeded(i * 13 + 1) * 150; }
+      g.putImageData(im, 0, 0);
+    }
+    return k.createPattern(grain, 'repeat');
+  }
+  // un bord de la forme, dans le cadre (x, y, w, h) : ce qui est dessiné en un point mais plus en (point + dx, dy)
+  function litEdge(L, x, y, w, h, dx, dy, col) {
+    const e = L.ek;
+    e.globalCompositeOperation = 'source-over';
+    e.clearRect(x, y, w, h); e.drawImage(L.c, x, y, w, h, x, y, w, h);
+    e.globalCompositeOperation = 'destination-out'; e.drawImage(L.c, x, y, w, h, x - dx, y - dy, w, h);
+    e.globalCompositeOperation = 'source-in'; e.fillStyle = col; e.fillRect(x, y, w, h);
+    L.k.drawImage(L.e, x, y, w, h, x, y, w, h);
+  }
+  // sécurité : si l'éclairage coûte trop cher sur cet appareil (vieux téléphone), on revient au dessin simple
+  let litOK = true, litFrame = 0, litEma = 0, frameEma = 16;
+  function litCheck(t, dt) {
+    litEma = litEma * .95 + litFrame * .05; litFrame = 0;
+    if (state === 'play') frameEma = frameEma * .97 + dt * 1000 * .03;
+    if (litOK && (litEma > 8 || (frameEma > 28 && litEma > 2.5))) litOK = false;
+  }
+  // [x0, y0, x1, y1] : le cadre (dans les coordonnées du jeu) où l'ennemi peut dessiner
+  function drawLit(draw, x, y, R, glow, blur, box) {
+    if (!litOK) { draw(); return; }
+    const t0 = performance.now();
+    try { drawLitBox(draw, x, y, R, glow, blur, box); } finally { litFrame += performance.now() - t0; }
+  }
+  function drawLitBox(draw, x, y, R, glow, blur, [x0, y0, x1, y1]) {
+    const main = ctx, T = main.getTransform(), sc = Math.hypot(T.a, T.b) || 1, cw = main.canvas.width, ch = main.canvas.height;
+    let bx0 = cw, by0 = ch, bx1 = 0, by1 = 0;
+    for (const [px, py] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { const q = T.transformPoint(new DOMPoint(px, py)); bx0 = Math.min(bx0, q.x); by0 = Math.min(by0, q.y); bx1 = Math.max(bx1, q.x); by1 = Math.max(by1, q.y); }
+    bx0 = Math.max(0, Math.floor(bx0)); by0 = Math.max(0, Math.floor(by0)); bx1 = Math.min(cw, Math.ceil(bx1)); by1 = Math.min(ch, Math.ceil(by1));
+    const w = bx1 - bx0, h = by1 - by0;
+    if (w <= 0 || h <= 0) return;
+    // on travaille dans une petite image de la taille du cadre (bien plus rapide qu'une image de tout l'écran)
+    const L = litCanvas(w, h), k = L.k, ox = bx0, oy = by0;
+    k.save();
+    k.setTransform(1, 0, 0, 1, 0, 0); k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
+    k.clearRect(0, 0, w, h);
+    k.beginPath(); k.rect(0, 0, w, h); k.clip();
+    k.setTransform(new DOMMatrix([T.a, T.b, T.c, T.d, T.e - ox, T.f - oy]));
+    ctx = k;
+    try { draw(); } finally { ctx = main; k.restore(); }
+    k.setTransform(1, 0, 0, 1, 0, 0); k.globalAlpha = 1; k.globalCompositeOperation = 'source-atop';
+    const Q = T.transformPoint(new DOMPoint(x, y)), P = { x: Q.x - ox, y: Q.y - oy }, Rd = R * sc, d = Math.max(.6, Rd * .032);
+    bx0 = by0 = 0;
+    // grain de peau, attaché à l'ennemi pour qu'il ne glisse pas quand il bouge
+    const pat = grainPattern(k);
+    if (pat.setTransform) pat.setTransform(new DOMMatrix([sc * .5, 0, 0, sc * .5, P.x, P.y]));
+    k.globalAlpha = .08; k.fillStyle = pat; k.fillRect(bx0, by0, w, h); k.globalAlpha = 1;
+    // lumière et ombre sur tout le volume
+    const g = k.createRadialGradient(P.x - Rd * .4, P.y - Rd * .5, Rd * .05, P.x, P.y, Rd * 1.6);
+    g.addColorStop(0, 'rgba(255, 250, 235, .3)'); g.addColorStop(.3, 'rgba(255, 250, 235, 0)');
+    g.addColorStop(.6, 'rgba(8, 4, 24, .2)'); g.addColorStop(1, 'rgba(8, 4, 24, .32)');
+    k.fillStyle = g; k.fillRect(bx0, by0, w, h);
+    // bords : ombre propre en bas à droite, arête éclairée en haut à gauche
+    litEdge(L, bx0, by0, w, h, -d * 2.2, -d * 2.2, 'rgba(8, 4, 24, .3)');
+    litEdge(L, bx0, by0, w, h, -d * .7, -d * .7, 'rgba(150, 210, 255, .2)');
+    litEdge(L, bx0, by0, w, h, d, d, 'rgba(255, 252, 240, .5)');
+    k.globalCompositeOperation = 'source-over';
+    // on pose l'ennemi éclairé dans le jeu, avec son halo
+    main.save(); main.setTransform(1, 0, 0, 1, 0, 0);
+    if (glow) { main.shadowColor = glow; main.shadowBlur = blur; }
+    main.drawImage(L.c, 0, 0, w, h, ox, oy, w, h);
+    main.restore();
   }
 
   function drawAlien(it, t) {
     if (it.type === 'beam') drawBeam(it);
+    const sp = it.sp, col = sp ? sp.col : { chaser: '#7dff8a', saucer: '#7dff8a', kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
+    const warn = it.type === 'kamikaze' && !it.dash && it.y >= it.hoverY;
+    const m = it.r * (it.type === 'vortex' ? 3.3 : 2.1) + 8;
+    drawLit(() => drawAlienFlat(it, t), it.x, it.y, it.r * (sp && sp.body === 'saucer' ? 1.3 : 1), warn ? '#ff4f6d' : col, warn ? 26 : sp && sp.pattern === 'glow' ? 20 : 12, [it.x - m, it.y - m, it.x + m, it.y + m]);
+    drawAim(it);
+  }
+  // le cadre d'un boss : son corps, mais aussi sa traînée, son reflet (Glacia) et sa ligne de visée
+  function drawBoss(it, t) {
+    const d = it.def, m = it.r * 2.6 + 20;
+    let x0 = it.x - m, y0 = it.y - m, x1 = it.x + m, y1 = it.y + m;
+    const add = (px, py, pad) => { x0 = Math.min(x0, px - pad); y0 = Math.min(y0, py - pad); x1 = Math.max(x1, px + pad); y1 = Math.max(y1, py + pad); };
+    if (it.trail) for (const p of it.trail) add(p.x, p.y - 90, 60), add(p.x, p.y, 60);
+    if (d.id === 'glacia') add(W - it.x, it.y, m);
+    if (it.aiming > 0 && it.tx !== undefined) add(it.tx, it.ty, 12);
+    drawLit(() => drawBossFlat(it, t), it.x, it.y, it.r, d.col, 20, [x0, y0, x1, y1]);
+  }
+
+  function drawAlienFlat(it, t) {
     if (it.sp && it.sp.body !== 'classic') { drawSpecies(it, t); return; }
     if (it.type === 'chaser') { drawChaser(it, t); return; }
     if (it.type === 'saucer') { drawSaucer(it, t, 1, false); return; }
@@ -5641,17 +5819,9 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.fillStyle = it.fireT < .3 ? '#ffffff' : '#3a3062'; ctx.fillRect(-4, 8, 8, 4);
     }
     ctx.restore();
-    // ligne de visée du tireur d'élite
-    if (it.type === 'sniper' && it.aiming > 0) {
-      ctx.save();
-      ctx.strokeStyle = `rgba(255, 79, 109, ${.3 + .5 * (1 - it.aiming / .9)})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
-      ctx.beginPath(); ctx.moveTo(it.x, it.y + 14); ctx.lineTo(it.tx, it.ty); ctx.stroke();
-      ctx.setLineDash([]); ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(it.tx, it.ty, 4, 0, 7); ctx.fill();
-      ctx.restore();
-    }
   }
 
-  function drawBoss(it, t) {
+  function drawBossFlat(it, t) {
     const d = it.def;
     if (d.id === 'mere') { drawSaucer(it, t, 2.3, true); return; }
     ctx.save(); ctx.translate(it.x, it.y);
@@ -9100,6 +9270,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
   last = performance.now();
   function loop(t) {
+    litCheck(t, (t - last) / 1000);
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (state === 'play') update(dt);
     else if (state === 'launch') updateLaunch(dt);
