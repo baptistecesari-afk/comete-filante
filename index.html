@@ -6188,6 +6188,12 @@ body:not(.jeu) .hud { opacity: 0; }
         size: (3 + R() * 4) * Math.sqrt(sc), shape: 'debris', rot: R() * 7, vr: (R() - .5) * 14 });
     }
     parts.push({ x, y, vx: 0, vy: 0, life: .45, max: .45, color: kind === 'feu' ? '#ffe6a0' : '#d9d0ff', size: 60 * sc, shape: 'ring' });
+    // l'éclair du premier instant, puis des braises qui flottent et s'éteignent doucement
+    parts.push({ x, y, vx: 0, vy: 0, life: .12, max: .12, color: kind === 'feu' ? '#fff2c8' : '#e6e0ff', size: (kind === 'feu' ? 42 : 24) * sc, shape: 'flash' });
+    if (kind === 'feu') for (let i = 0; i < Math.ceil(8 * sc * m); i++) {
+      const a = R() * 7, v = 40 + R() * 140 * Math.sqrt(sc);
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1 + R() * .9, max: 1.9, color: R() < .5 ? '#ffb020' : '#ff7a1f', size: 1.2 + R() * 1.2, shape: 'ember' });
+    }
   }
 
   function pop(x, y, text, color = '#ff7aa8') { pops.push({ x, y, text, color, life: 1.1 }); }
@@ -7138,7 +7144,6 @@ body:not(.jeu) .hud { opacity: 0; }
     updateAmmoUi();
   }
 
-  // astéroïde réaliste : roche éclairée par le haut à gauche, cratères en relief, ombre sur le côté
   // petite image ronde et floue d'une couleur, réutilisée pour le feu et la fumée
   const softCache = {};
   function softSprite(col) {
@@ -7149,40 +7154,284 @@ body:not(.jeu) .hud { opacity: 0; }
     g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
     return (softCache[col] = c);
   }
+  // contour arrondi de la roche (une pomme de terre de l'espace, pas un polygone)
+  function rockPath(k, it, r, rot) {
+    const n = it.shape.length, pt = i => { const a = rot + (i % n) / n * Math.PI * 2, f = r * it.shape[i % n]; return [Math.cos(a) * f, Math.sin(a) * f]; };
+    const mid = i => { const p = pt(i), q = pt(i + 1); return [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; };
+    k.beginPath(); k.moveTo(...mid(0));
+    for (let i = 1; i <= n; i++) k.quadraticCurveTo(...pt(i), ...mid(i));
+    k.closePath();
+  }
+  // la roche est peinte une seule fois dans une petite image (teinte, taches, grains, fonds de cratères), puis tournée à chaque image ;
+  // la lumière, elle, ne tourne pas : elle vient toujours d'en haut à gauche
+  function rockTex(it) {
+    const r = it.r, S = r * 2.6, c = document.createElement('canvas'), R = Math.random;
+    c.width = c.height = Math.ceil(S * DPR);
+    const k = c.getContext('2d'); k.scale(DPR, DPR); k.translate(S / 2, S / 2);
+    rockPath(k, it, r, 0); k.fillStyle = ['#6d6684', '#736a66', '#5f6274'][Math.floor(R() * 3)]; k.fill();
+    k.save(); k.clip();
+    for (let i = 0; i < 14; i++) {
+      const x = (R() - .5) * r * 1.8, y = (R() - .5) * r * 1.8, z = r * (.2 + R() * .45), g = k.createRadialGradient(x, y, 0, x, y, z);
+      g.addColorStop(0, R() < .5 ? 'rgba(210, 200, 225, .22)' : 'rgba(20, 14, 34, .3)'); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      k.fillStyle = g; k.fillRect(x - z, y - z, z * 2, z * 2);
+    }
+    for (let i = 0; i < r * 5; i++) {
+      k.fillStyle = R() < .5 ? 'rgba(235, 228, 250, .16)' : 'rgba(8, 4, 20, .28)';
+      const z = .6 + R() * 1.4; k.fillRect((R() - .5) * r * 2, (R() - .5) * r * 2, z, z);
+    }
+    for (const [a, d, z] of it.cr) {
+      const x = Math.cos(a) * d * r, y = Math.sin(a) * d * r, cr = z * r, g = k.createRadialGradient(x, y, 0, x, y, cr);
+      g.addColorStop(0, 'rgba(12, 8, 26, .55)'); g.addColorStop(.75, 'rgba(12, 8, 26, .3)'); g.addColorStop(1, 'rgba(12, 8, 26, 0)');
+      k.fillStyle = g; k.beginPath(); k.arc(x, y, cr, 0, 7); k.fill();
+    }
+    k.restore();
+    return c;
+  }
+  // astéroïde réaliste : roche tachée et granuleuse, cratères creusés, éclairée par le haut à gauche, côté nuit dans le noir
   function drawAsteroid(it) {
-    const r = it.r;
-    if (!it.cr) {
-      it.cr = Array.from({ length: 3 + Math.floor(r / 10) }, () => [Math.random() * 7, Math.random() * .6, .1 + Math.random() * .16]);
-      it.dots = Array.from({ length: 10 }, () => [Math.random() * 7, Math.random() * .85, Math.random() < .5]);
-    }
+    const r = it.r, S = r * 2.6;
+    if (!it.cr) it.cr = Array.from({ length: 3 + Math.floor(r / 10) }, () => [Math.random() * 7, Math.random() * .6, .1 + Math.random() * .16]);
+    if (!it.tex || it.texR !== r) { it.tex = rockTex(it); it.texR = r; }
     ctx.save(); ctx.translate(it.x, it.y);
-    ctx.beginPath();
-    it.shape.forEach((k, i) => { const a = it.rot + i / it.shape.length * Math.PI * 2; ctx.lineTo(Math.cos(a) * r * k, Math.sin(a) * r * k); });
-    ctx.closePath();
-    const g = ctx.createRadialGradient(-r * .4, -r * .45, r * .1, 0, 0, r * 1.15);
-    g.addColorStop(0, '#a49cc0'); g.addColorStop(.45, '#625a82'); g.addColorStop(1, '#241d3e');
-    ctx.fillStyle = g; ctx.fill();
+    ctx.save(); ctx.rotate(it.rot); ctx.drawImage(it.tex, -S / 2, -S / 2, S, S); ctx.restore();
+    rockPath(ctx, it, r, it.rot);
     ctx.save(); ctx.clip();
-    // grain de la roche
-    for (const [a, d, light] of it.dots) {
-      const x = Math.cos(a + it.rot) * d * r, y = Math.sin(a + it.rot) * d * r;
-      ctx.fillStyle = light ? 'rgba(220, 214, 240, .18)' : 'rgba(10, 6, 24, .25)'; ctx.fillRect(x, y, 1.6, 1.6);
-    }
-    // cratères : creux sombre et bord éclairé du côté opposé à la lumière
+    const g = ctx.createRadialGradient(-r * .45, -r * .5, r * .05, -r * .2, -r * .2, r * 1.5);
+    g.addColorStop(0, 'rgba(255, 244, 228, .5)'); g.addColorStop(.3, 'rgba(255, 244, 228, .1)'); g.addColorStop(.55, 'rgba(8, 4, 22, .12)'); g.addColorStop(1, 'rgba(8, 4, 22, .85)');
+    ctx.fillStyle = g; ctx.fillRect(-r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
+    // cratères : le bord du haut fait de l'ombre dans le creux, la paroi d'en face prend la lumière
     for (const [a, d, z] of it.cr) {
       const x = Math.cos(a + it.rot) * d * r, y = Math.sin(a + it.rot) * d * r, cr = z * r;
-      ctx.fillStyle = 'rgba(16, 10, 34, .45)'; ctx.beginPath(); ctx.arc(x, y, cr, 0, 7); ctx.fill();
-      ctx.strokeStyle = 'rgba(230, 224, 250, .28)'; ctx.lineWidth = Math.max(1, cr * .25);
-      ctx.beginPath(); ctx.arc(x, y, cr, -.4, 2.2); ctx.stroke();
+      const sg = ctx.createRadialGradient(x + cr * .3, y + cr * .3, cr * .4, x, y, cr);
+      sg.addColorStop(0, 'rgba(4, 2, 14, 0)'); sg.addColorStop(1, 'rgba(4, 2, 14, .45)');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(x, y, cr, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(240, 232, 250, .2)'; ctx.lineWidth = Math.max(.8, cr * .16); ctx.beginPath(); ctx.arc(x, y, cr * .92, -.2, 1.9); ctx.stroke();
     }
-    // ombre propre (côté nuit)
-    const sh = ctx.createLinearGradient(-r, -r, r, r);
-    sh.addColorStop(.35, 'rgba(5, 3, 20, 0)'); sh.addColorStop(1, 'rgba(5, 3, 20, .7)');
-    ctx.fillStyle = sh; ctx.fillRect(-r * 1.3, -r * 1.3, r * 2.6, r * 2.6);
     ctx.restore();
-    // liseré de lumière pour bien voir l'astéroïde sur le fond
-    ctx.strokeStyle = 'rgba(190, 182, 230, .45)'; ctx.lineWidth = 1.2; ctx.stroke();
+    // liseré : chaud du côté du soleil, bleuté de l'autre (la lumière renvoyée), pour bien voir la roche sur le fond
+    const e = ctx.createLinearGradient(-r, -r, r, r);
+    e.addColorStop(0, 'rgba(255, 240, 220, .7)'); e.addColorStop(.5, 'rgba(190, 182, 230, .15)'); e.addColorStop(1, 'rgba(150, 170, 255, .4)');
+    ctx.strokeStyle = e; ctx.lineWidth = 1.2; ctx.stroke();
     ctx.restore();
+  }
+
+  // halo de lumière qui s'ajoute au décor comme une vraie lumière (marche avec n'importe quelle couleur)
+  function glowAt(x, y, r, col, a = 1) {
+    const op = ctx.globalCompositeOperation, ga = ctx.globalAlpha;
+    ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * a;
+    // une couleur fixe : on réutilise une petite image toute prête (plus rapide)
+    if (/^#[0-9a-f]{6}$/i.test(col)) ctx.drawImage(softSprite(col), x - r, y - r, r * 2, r * 2);
+    else {
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    ctx.globalCompositeOperation = op; ctx.globalAlpha = ga;
+  }
+
+  // tirs de la fusée : des traits d'énergie avec une tête brûlante et une queue qui s'efface
+  function drawShot(s, t, fl) {
+    const a = Math.atan2(s.vx, -s.vy);
+    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
+    if (s.big) {
+      const pr = 9 + Math.sin(t / 60) * 1.5;
+      glowAt(0, 0, pr * 3.2, '#a24bff', .6);
+      ctx.globalCompositeOperation = 'lighter';
+      const pg = ctx.createRadialGradient(0, 0, 1, 0, 0, pr * 1.8);
+      pg.addColorStop(0, '#ffffff'); pg.addColorStop(.35, '#e2a6ff'); pg.addColorStop(.7, '#a24bff'); pg.addColorStop(1, 'rgba(162, 75, 255, 0)');
+      ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.8, 0, 7); ctx.fill();
+      // filaments d'énergie qui tournent autour du cœur
+      ctx.strokeStyle = 'rgba(255, 220, 255, .55)'; ctx.lineWidth = 1.2;
+      for (let i = 0; i < 3; i++) { const b = t / 90 + i * 2.1; ctx.beginPath(); ctx.arc(0, 0, pr * (.75 + .25 * Math.sin(t / 70 + i)), b, b + 1.3); ctx.stroke(); }
+      ctx.restore(); return;
+    }
+    if (s.missile) {
+      // petit moteur : halo, puis flamme blanche au départ et orange au bout
+      const fz = 6 + Math.random() * 5;
+      glowAt(0, 9, 12, '#ff9a3c', .7);
+      ctx.globalCompositeOperation = 'lighter';
+      const fg = ctx.createLinearGradient(0, 6, 0, 6 + fz);
+      fg.addColorStop(0, '#fff6d8'); fg.addColorStop(.4, '#ffb020'); fg.addColorStop(1, 'rgba(255, 80, 20, 0)');
+      ctx.fillStyle = fg; ctx.beginPath(); ctx.moveTo(-2, 6); ctx.quadraticCurveTo(0, 6 + fz * 1.6, 2, 6); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      // corps en métal arrondi, éclairé par la gauche, ailerons et nez rouges
+      ctx.fillStyle = '#b02840';
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.moveTo(d * 2.5, 1); ctx.lineTo(d * 5.5, 7); ctx.lineTo(d * 2.5, 5.5); ctx.fill(); }
+      const mg = ctx.createLinearGradient(-2.5, 0, 2.5, 0);
+      mg.addColorStop(0, '#8c8ca0'); mg.addColorStop(.35, '#ffffff'); mg.addColorStop(.7, '#c8c8d6'); mg.addColorStop(1, '#5a5a6e');
+      ctx.fillStyle = mg; ctx.beginPath(); ctx.roundRect(-2.5, -8, 5, 14, 1); ctx.fill();
+      const ng = ctx.createLinearGradient(-2.5, 0, 2.5, 0);
+      ng.addColorStop(0, '#a8203a'); ng.addColorStop(.4, '#ff8098'); ng.addColorStop(1, '#8a1830');
+      ctx.fillStyle = ng; ctx.beginPath(); ctx.moveTo(-2.5, -8); ctx.quadraticCurveTo(-2, -12, 0, -13.5); ctx.quadraticCurveTo(2, -12, 2.5, -8); ctx.fill();
+      ctx.restore(); return;
+    }
+    if (s.star) {
+      glowAt(0, 0, 18, '#ffd86b', .7);
+      ctx.fillStyle = '#fff2b0'; ctx.beginPath();
+      for (let i = 0; i < 10; i++) { const b = i * Math.PI / 5 + t / 200, rr = i % 2 ? 3 : 7; ctx.lineTo(Math.cos(b) * rr, Math.sin(b) * rr); }
+      ctx.closePath(); ctx.fill(); ctx.restore(); return;
+    }
+    const sh = byId(SHOTS, cfg.shot);
+    const base = sh.rainbow ? ['#ffffff', `hsl(${(t / 3 + s.x + s.y) % 360}, 100%, 62%)`] : sh.c || [fl[0], fl[1]];
+    const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : base[1], c0 = s.gold || s.inf ? '#fffaf0' : base[0], k = s.gold ? 1.4 : 1;
+    glowAt(0, -2 * k, (s.gold || sh.rainbow ? 20 : 14) * k, c1, .55);
+    ctx.globalCompositeOperation = 'lighter';
+    const bg = ctx.createLinearGradient(0, -9 * k, 0, 12 * k);
+    bg.addColorStop(0, c1); bg.addColorStop(.45, c1); bg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(-2.6 * k, -9 * k, 5.2 * k, 21 * k, 2.6 * k); ctx.fill();
+    ctx.fillStyle = c0; ctx.beginPath(); ctx.roundRect(-1.1 * k, -7.5 * k, 2.2 * k, 11 * k, 1.1 * k); ctx.fill();
+    if (sh.zap && !s.gold && !s.inf) {
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -10);
+      for (let i = 1; i <= 4; i++) ctx.lineTo((Math.random() - .5) * 8, -10 + i * 5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // tirs ennemis : des boules de plasma au cœur blanc, entourées de leur lumière
+  function drawEBullet(b, t) {
+    const c = b.c || '#7dff8a', sz = b.s || 5;
+    glowAt(b.x, b.y, sz * 3, c, .6);
+    ctx.fillStyle = c; ctx.strokeStyle = c;
+    if (b.flake) {
+      ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
+      for (let i = 0; i < 3; i++) { const a = i * Math.PI / 3 + t / 300; ctx.moveTo(b.x - Math.cos(a) * sz, b.y - Math.sin(a) * sz); ctx.lineTo(b.x + Math.cos(a) * sz, b.y + Math.sin(a) * sz); }
+      ctx.stroke(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = .8; ctx.stroke(); ctx.lineCap = 'butt'; return;
+    }
+    if (b.sq) { ctx.fillRect(b.x - sz, b.y - sz, sz * 2, sz * 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(b.x - sz * .4, b.y - sz * .4, sz * .8, sz * .8); return; }
+    const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, sz);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.35, '#ffffff'); g.addColorStop(.7, c); g.addColorStop(1, c);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, 7); ctx.fill();
+    if (b.fuse !== undefined && b.fuse < .6 && Math.floor(b.fuse * 10) % 2) {
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, sz + 4, 0, 7); ctx.stroke();
+    }
+  }
+
+  // bonus : de vrais objets qui brillent (étoile en or facetté, cristal, cœur verni, orbe de verre)
+  const PICKUPS = ['star', 'shield', 'vie', 'charge', 'infini'];
+  // un petit éclat de lumière qui passe de temps en temps sur le bonus
+  function glint(x, y, z, t, ph) {
+    const q = Math.sin(t / 420 + ph);
+    if (reduce || q < .75) return;
+    const a = (q - .75) * 4, op = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255, 255, 255, ${a})`; ctx.lineWidth = 1.2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - z, y); ctx.lineTo(x + z, y); ctx.moveTo(x, y - z); ctx.lineTo(x, y + z); ctx.stroke();
+    glowAt(x, y, z * .6, '#ffffff', a);
+    ctx.globalCompositeOperation = op; ctx.lineCap = 'butt';
+  }
+  // facette éclairée : plus claire quand elle regarde la lumière (en haut à gauche)
+  const facet = (dark, light, ang, bias = 0) => mixHex(dark, light, Math.max(0, Math.min(1, .5 + .5 * Math.cos(ang + 2.36) + bias)));
+  function drawPickup(it, t) {
+    const x = it.x, y = it.y, r = it.r;
+    if (it.kind === 'star') {
+      glowAt(x, y, r * 2.6, '#ffb830', .55);
+      const P = i => { const a = it.rot + i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; return [x + Math.cos(a) * rr, y + Math.sin(a) * rr]; };
+      for (let i = 0; i < 10; i++) {
+        const p = P(i), q = P(i + 1), m = it.rot + (i + .5) * Math.PI / 5 - Math.PI / 2;
+        ctx.fillStyle = facet('#d8961c', '#fff8d8', m, i % 2 ? -.15 : .15);
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(...p); ctx.lineTo(...q); ctx.closePath(); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(255, 236, 160, .7)'; ctx.lineWidth = 1; drawStar(x, y, r, it.rot); ctx.stroke();
+      glint(...P(8), r * .7, t, x * .05);
+    } else if (it.kind === 'shield') {
+      glowAt(x, y, r * 2.6, '#7ad8ff', .55);
+      const V = [[x, y - r], [x + r, y], [x, y + r], [x - r, y]], I = V.map(([a, b]) => [x + (a - x) * .45, y + (b - y) * .45]);
+      // les biseaux du cristal, puis la table du dessus
+      for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4, m = -Math.PI / 4 + i * Math.PI / 2;
+        ctx.fillStyle = facet('#0b3f66', '#e8fbff', m);
+        ctx.beginPath(); ctx.moveTo(...V[i]); ctx.lineTo(...V[j]); ctx.lineTo(...I[j]); ctx.lineTo(...I[i]); ctx.closePath(); ctx.fill();
+      }
+      const tg = ctx.createLinearGradient(x - r * .45, y - r * .45, x + r * .45, y + r * .45);
+      tg.addColorStop(0, '#f2fdff'); tg.addColorStop(1, '#5cc4f2');
+      ctx.fillStyle = tg; ctx.beginPath(); I.forEach(p => ctx.lineTo(...p)); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(220, 248, 255, .8)'; ctx.lineWidth = 1; ctx.beginPath(); V.forEach(p => ctx.lineTo(...p)); ctx.closePath(); ctx.stroke();
+      glint(x - r * .35, y - r * .35, r * .8, t, x * .05 + 1);
+    } else if (it.kind === 'vie') {
+      const z = r * (1 + (reduce ? 0 : Math.abs(Math.sin(t / 180)) * .18));
+      glowAt(x, y, z * 2.4, '#ff4f8a', .5);
+      const g = ctx.createRadialGradient(x - z * .4, y - z * .45, z * .05, x, y, z * 1.3);
+      g.addColorStop(0, '#ffc2d6'); g.addColorStop(.4, '#ff4f8a'); g.addColorStop(1, '#9a0f3c');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(x, y + z * .8);
+      ctx.bezierCurveTo(x - z * 1.3, y - z * .1, x - z * .7, y - z * 1.1, x, y - z * .45);
+      ctx.bezierCurveTo(x + z * .7, y - z * 1.1, x + z * 1.3, y - z * .1, x, y + z * .8); ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, .85)'; ctx.beginPath(); ctx.ellipse(x - z * .42, y - z * .42, z * .2, z * .11, -.6, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, .4)'; ctx.beginPath(); ctx.arc(x + z * .45, y - z * .3, z * .07, 0, 7); ctx.fill();
+    } else if (it.kind === 'charge') {
+      glowAt(x, y, r * 2.4, '#b6ff6b', .45);
+      // orbe de verre : plus transparent au centre, plus lumineux sur les bords
+      const g = ctx.createRadialGradient(x - r * .2, y - r * .25, 0, x, y, r + 3);
+      g.addColorStop(0, 'rgba(220, 255, 190, .3)'); g.addColorStop(.65, 'rgba(50, 100, 20, .35)'); g.addColorStop(1, 'rgba(182, 255, 107, .65)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 7); ctx.fill();
+      glowAt(x, y, r, '#d8ff9a', .6);
+      ctx.fillStyle = '#eaffc8'; drawBolt(x, y, r * .8); ctx.fill();
+      ctx.strokeStyle = 'rgba(200, 255, 140, .85)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 7); ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 255, 255, .75)'; ctx.beginPath(); ctx.ellipse(x - r * .45, y - r * .55, r * .28, r * .14, -.7, 0, 7); ctx.fill();
+    } else {
+      const pulse = reduce ? 0 : Math.sin(t / 120) * 2, w = 30 + pulse * 2, h = 22 + pulse * 2, x0 = x - 15 - pulse, y0 = y - 11 - pulse;
+      glowAt(x, y, 34, '#ff9a3c', .5);
+      const g = ctx.createLinearGradient(0, y0, 0, y0 + h);
+      g.addColorStop(0, '#ffd09a'); g.addColorStop(.45, '#ff9a3c'); g.addColorStop(1, '#b8500c');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x0, y0, w, h, 5); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 240, 210, .7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0 + 5, y0 + 1); ctx.lineTo(x0 + w - 5, y0 + 1); ctx.stroke();
+      ctx.fillStyle = '#0b0820'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '700 22px Outfit, system-ui, sans-serif'; ctx.fillText('∞', x, y + 1);
+      ctx.textBaseline = 'alphabetic';
+    }
+  }
+
+  // particules : le feu change de couleur en refroidissant (blanc, jaune, orange, rouge sombre)
+  const FIRE = ['#fff6dc', '#ffe08a', '#ffb43c', '#ff7a1f', '#d8400f', '#7a200c'], FIRE_IN = ['#fffbe8', '#ffd86b', '#ff9a3c', '#ff5a1f'];
+  function drawPart(p) {
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.color; ctx.strokeStyle = p.color;
+    const z = p.size;
+    if (!p.shape) ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z);
+    else if (p.shape === 'fire') {
+      const q = 1 - p.life / p.max, i0 = FIRE_IN.includes(p.color) ? FIRE_IN.indexOf(p.color) : 2;
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, p.life / p.max) * .8;
+      ctx.drawImage(softSprite(FIRE[Math.min(5, Math.floor(i0 * .4 + q * 5.5))]), p.x - z, p.y - z, z * 2, z * 2); ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'smoke') {
+      ctx.globalAlpha = Math.max(0, Math.min(.55, p.life / p.max * .7));
+      ctx.drawImage(softSprite(p.color), p.x - z, p.y - z, z * 2, z * 2);
+    } else if (p.shape === 'spark') {
+      // étincelle : traînée de couleur et fil blanc brûlant au milieu
+      ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = z; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .035, p.y - p.vy * .035); ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = z * .4; ctx.stroke();
+      ctx.lineCap = 'butt'; ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'ring') {
+      const q = 1 - p.life / p.max;
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = (1 - q) * .7; ctx.lineWidth = 2 + (1 - q) * 8;
+      ctx.beginPath(); ctx.arc(p.x, p.y, z * (.15 + q * .85), 0, 7); ctx.stroke();
+      ctx.globalAlpha = (1 - q) * .25; ctx.lineWidth = 6 + (1 - q) * 16; ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'flash') {
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, p.life / p.max);
+      ctx.drawImage(softSprite(p.color), p.x - z, p.y - z, z * 2, z * 2); ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'ember') {
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, p.life / p.max) * (.6 + .4 * Math.sin(p.life * 30));
+      ctx.drawImage(softSprite(p.color), p.x - z * 3, p.y - z * 3, z * 6, z * 6);
+      ctx.fillStyle = '#fff2c8'; ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z); ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'debris') {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.beginPath(); ctx.moveTo(-z * .6, -z * .4); ctx.lineTo(z * .7, -z * .2); ctx.lineTo(z * .2, z * .5); ctx.lineTo(-z * .5, z * .3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(0, 0, 0, .35)'; ctx.beginPath(); ctx.moveTo(z * .7, -z * .2); ctx.lineTo(z * .2, z * .5); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+    else if (p.shape === 'pixel') ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, z, z);
+    else if (p.shape === 'bubble') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.x, p.y, z * (1.4 - p.life), 0, 7); ctx.stroke(); }
+    else if (p.shape === 'glow') { ctx.globalAlpha *= .5; ctx.beginPath(); ctx.arc(p.x, p.y, z * Math.min(1, p.life), 0, 7); ctx.fill(); }
+    else if (p.shape === 'heart') {
+      ctx.beginPath(); ctx.moveTo(p.x, p.y + z * .6);
+      ctx.bezierCurveTo(p.x - z, p.y - z * .2, p.x - z * .5, p.y - z, p.x, p.y - z * .35);
+      ctx.bezierCurveTo(p.x + z * .5, p.y - z, p.x + z, p.y - z * .2, p.x, p.y + z * .6); ctx.fill();
+    } else {
+      ctx.beginPath();
+      for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? z * .25 : z; ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fill();
+    }
   }
 
   function drawStar(x, y, r, rot) {
@@ -9162,71 +9411,13 @@ body:not(.jeu) .hud { opacity: 0; }
         ctx.restore();
       }
       // tirs de la fusée
-      for (const s of shots) {
-        const a = Math.atan2(s.vx, -s.vy);
-        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
-        if (s.big) {
-          const pr = 9 + Math.sin(t / 60) * 1.5;
-          const pg = ctx.createRadialGradient(0, 0, 1, 0, 0, pr * 1.8);
-          pg.addColorStop(0, '#ffffff'); pg.addColorStop(.35, '#e2a6ff'); pg.addColorStop(.7, '#a24bff'); pg.addColorStop(1, 'rgba(162, 75, 255, 0)');
-          ctx.fillStyle = pg; ctx.beginPath(); ctx.arc(0, 0, pr * 1.8, 0, 7); ctx.fill();
-          ctx.restore(); continue;
-        }
-        if (s.missile) {
-          ctx.fillStyle = '#e8e8f0'; ctx.fillRect(-2.5, -8, 5, 14);
-          ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.moveTo(-2.5, -8); ctx.lineTo(0, -13); ctx.lineTo(2.5, -8); ctx.fill();
-          ctx.fillRect(-5, 3, 3, 4); ctx.fillRect(2, 3, 3, 4);
-          ctx.fillStyle = '#ffb020'; ctx.fillRect(-1.5, 6, 3, 4 + Math.random() * 4);
-          ctx.restore(); continue;
-        }
-        if (s.star) {
-          ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff2b0';
-          ctx.beginPath();
-          for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 + t / 200, rr = i % 2 ? 3 : 7; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
-          ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0; ctx.restore(); continue;
-        }
-        const sh = byId(SHOTS, cfg.shot);
-        const base = sh.rainbow ? ['#ffffff', `hsl(${(t / 3 + s.x + s.y) % 360}, 100%, 62%)`] : sh.c || [fl[0], fl[1]];
-        const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : base[1], c0 = s.gold || s.inf ? '#fffaf0' : base[0], k = s.gold ? 1.4 : 1;
-        ctx.shadowColor = c1; ctx.shadowBlur = s.gold || sh.rainbow ? 18 : 10; ctx.fillStyle = c1;
-        ctx.fillRect(-2.5 * k, -8 * k, 5 * k, 16 * k);
-        ctx.shadowBlur = 0; ctx.fillStyle = c0; ctx.fillRect(-1 * k, -6 * k, 2 * k, 12 * k);
-        if (sh.zap && !s.gold && !s.inf) {
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(0, -10);
-          for (let i = 1; i <= 4; i++) ctx.lineTo((Math.random() - .5) * 8, -10 + i * 5);
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
+      for (const s of shots) drawShot(s, t, fl);
 
       // objets
       for (const it of items) {
         if (it.hitT > 0) ctx.globalAlpha = .5;
-        if (it.kind === 'star') {
-          ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 18; ctx.fillStyle = '#ffd86b';
-          drawStar(it.x, it.y, it.r, it.rot); ctx.fill();
-        } else if (it.kind === 'shield') {
-          ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 20; ctx.fillStyle = '#7ad8ff';
-          ctx.beginPath(); ctx.moveTo(it.x, it.y - it.r); ctx.lineTo(it.x + it.r, it.y); ctx.lineTo(it.x, it.y + it.r); ctx.lineTo(it.x - it.r, it.y); ctx.fill();
-        } else if (it.kind === 'vie') {
-          const z = it.r * (1 + (reduce ? 0 : Math.abs(Math.sin(t / 180)) * .18));
-          ctx.shadowColor = '#ff7aa8'; ctx.shadowBlur = 22; ctx.fillStyle = '#ff4f8a';
-          ctx.beginPath(); ctx.moveTo(it.x, it.y + z * .8);
-          ctx.bezierCurveTo(it.x - z * 1.3, it.y - z * .1, it.x - z * .7, it.y - z * 1.1, it.x, it.y - z * .45);
-          ctx.bezierCurveTo(it.x + z * .7, it.y - z * 1.1, it.x + z * 1.3, it.y - z * .1, it.x, it.y + z * .8); ctx.fill();
-          ctx.shadowBlur = 0; ctx.fillStyle = '#ffd0e0'; ctx.beginPath(); ctx.ellipse(it.x - z * .38, it.y - z * .4, z * .18, z * .12, -.6, 0, 7); ctx.fill();
-        } else if (it.kind === 'charge') {
-          ctx.shadowColor = '#b6ff6b'; ctx.shadowBlur = 20; ctx.strokeStyle = '#b6ff6b'; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(it.x, it.y, it.r + 3, 0, 7); ctx.stroke();
-          ctx.fillStyle = '#b6ff6b'; drawBolt(it.x, it.y, it.r * .8); ctx.fill();
-        } else if (it.kind === 'infini') {
-          const pulse = reduce ? 0 : Math.sin(t / 120) * 2;
-          ctx.shadowColor = '#ff9a3c'; ctx.shadowBlur = 22; ctx.fillStyle = '#ff9a3c';
-          ctx.beginPath(); ctx.roundRect(it.x - 15 - pulse, it.y - 11 - pulse, 30 + pulse * 2, 22 + pulse * 2, 5); ctx.fill();
-          ctx.shadowBlur = 0; ctx.fillStyle = '#0b0820'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.font = '700 22px Outfit, system-ui, sans-serif'; ctx.fillText('∞', it.x, it.y + 1);
-          ctx.textBaseline = 'alphabetic';
+        if (PICKUPS.includes(it.kind)) {
+          drawPickup(it, t);
         } else if (it.kind === 'alien') {
           ctx.shadowBlur = 0;
           if (it.boss) {
@@ -9256,61 +9447,10 @@ body:not(.jeu) .hud { opacity: 0; }
 
       drawSig(t);
       // tirs ennemis
-      for (const b of ebullets) {
-        const c = b.c || '#7dff8a', sz = b.s || 5;
-        ctx.shadowColor = c; ctx.shadowBlur = 12; ctx.fillStyle = c;
-        if (b.flake) {
-          ctx.strokeStyle = c; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
-          for (let i = 0; i < 3; i++) { const a = i * Math.PI / 3 + t / 300; ctx.moveTo(b.x - Math.cos(a) * sz, b.y - Math.sin(a) * sz); ctx.lineTo(b.x + Math.cos(a) * sz, b.y + Math.sin(a) * sz); }
-          ctx.stroke(); ctx.lineCap = 'butt'; ctx.shadowBlur = 0; continue;
-        }
-        if (b.sq) { ctx.fillRect(b.x - sz, b.y - sz, sz * 2, sz * 2); ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff'; ctx.fillRect(b.x - sz * .4, b.y - sz * .4, sz * .8, sz * .8); continue; }
-        ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, 7); ctx.fill();
-        ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); ctx.arc(b.x, b.y, sz * .4, 0, 7); ctx.fill();
-        if (b.fuse !== undefined && b.fuse < .6 && Math.floor(b.fuse * 10) % 2) {
-          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, sz + 4, 0, 7); ctx.stroke();
-        }
-      }
+      for (const b of ebullets) drawEBullet(b, t);
 
       // particules
-      for (const p of parts) {
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 2)); ctx.fillStyle = p.color; ctx.strokeStyle = p.color;
-        const z = p.size;
-        if (!p.shape) ctx.fillRect(p.x - z / 2, p.y - z / 2, z, z);
-        else if (p.shape === 'fire') {
-          // boule de feu aux bords doux : les couleurs s'additionnent comme une vraie lumière
-          ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, p.life / p.max) * .8;
-          ctx.drawImage(softSprite(p.color), p.x - z, p.y - z, z * 2, z * 2); ctx.globalCompositeOperation = 'source-over';
-        } else if (p.shape === 'smoke') {
-          ctx.globalAlpha = Math.max(0, Math.min(.55, p.life / p.max * .7));
-          ctx.drawImage(softSprite(p.color), p.x - z, p.y - z, z * 2, z * 2);
-        } else if (p.shape === 'spark') {
-          ctx.lineWidth = z; ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx * .035, p.y - p.vy * .035); ctx.stroke(); ctx.lineCap = 'butt';
-        } else if (p.shape === 'ring') {
-          const q = 1 - p.life / p.max;
-          ctx.globalAlpha = (1 - q) * .7; ctx.lineWidth = 2 + (1 - q) * 8;
-          ctx.beginPath(); ctx.arc(p.x, p.y, z * (.15 + q * .85), 0, 7); ctx.stroke();
-        } else if (p.shape === 'debris') {
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-          ctx.beginPath(); ctx.moveTo(-z * .6, -z * .4); ctx.lineTo(z * .7, -z * .2); ctx.lineTo(z * .2, z * .5); ctx.lineTo(-z * .5, z * .3); ctx.closePath(); ctx.fill();
-          ctx.fillStyle = 'rgba(0, 0, 0, .35)'; ctx.beginPath(); ctx.moveTo(z * .7, -z * .2); ctx.lineTo(z * .2, z * .5); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
-          ctx.restore();
-        }
-        else if (p.shape === 'pixel') ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, z, z);
-        else if (p.shape === 'bubble') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.x, p.y, z * (1.4 - p.life), 0, 7); ctx.stroke(); }
-        else if (p.shape === 'glow') { ctx.globalAlpha *= .5; ctx.beginPath(); ctx.arc(p.x, p.y, z * Math.min(1, p.life), 0, 7); ctx.fill(); }
-        else if (p.shape === 'heart') {
-          ctx.beginPath(); ctx.moveTo(p.x, p.y + z * .6);
-          ctx.bezierCurveTo(p.x - z, p.y - z * .2, p.x - z * .5, p.y - z, p.x, p.y - z * .35);
-          ctx.bezierCurveTo(p.x + z * .5, p.y - z, p.x + z, p.y - z * .2, p.x, p.y + z * .6); ctx.fill();
-        } else {
-          ctx.beginPath();
-          for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, rr = k % 2 ? z * .25 : z; ctx.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); }
-          ctx.closePath(); ctx.fill();
-        }
-      }
+      for (const p of parts) drawPart(p);
       ctx.globalAlpha = 1;
 
       // fusée gelée par un souffleur de givre
