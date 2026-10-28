@@ -1646,7 +1646,19 @@ body:not(.jeu) .hud { opacity: 0; }
     '....NNSNN....',
     '.....MMM.....',
   ];
+  // la fusée réaliste : la flamme d'abord (elle brille, on ne l'éclaire pas), puis la coque éclairée comme du métal
+  let rocketPart = 'all';
   function drawRocket(c, x, y, s, conf, t, tilt = 0, boost = 0) {
+    // les modèles en pixels restent en pixels
+    if (!litOK || conf.model === 'arcade' || conf.model === 'pixel') { drawRocketRaw(c, x, y, s, conf, t, tilt, boost); return; }
+    const m = 34 * s, col = byId(COLORS, conf.color).hex || '#ffffff';
+    try {
+      rocketPart = 'flame'; drawRocketRaw(c, x, y, s, conf, t, tilt, boost);
+      rocketPart = 'body';
+      drawLit(k => drawRocketRaw(k, x, y, s, conf, t, tilt, boost), x, y, 20 * s, col, 6 + boost * 14, [x - m, y - m, x + m, y + m], { target: c, metal: true });
+    } finally { rocketPart = 'all'; }
+  }
+  function drawRocketRaw(c, x, y, s, conf, t, tilt = 0, boost = 0) {
     const colDef = byId(COLORS, conf.color), body = colDef.hex;
     const fl = flameColsOf(conf.flame, t);
     let bodyFill = body;
@@ -1659,6 +1671,7 @@ body:not(.jeu) .hud { opacity: 0; }
     c.translate(x, y); c.rotate(tilt); c.scale(s, s);
 
     // flamme
+    if (rocketPart !== 'body') {
     const flick = reduce ? .5 : (Math.sin(t / 45) + Math.sin(t / 23)) * .25 + .5;
     const len = 12 + flick * 9 + boost * 22;
     const fg = c.createLinearGradient(0, 13, 0, 13 + len);
@@ -1677,8 +1690,18 @@ body:not(.jeu) .hud { opacity: 0; }
     for (const nx of conf.model === 'predateur' ? [-5, 5] : conf.model === 'arcade' || conf.model === 'pixel' ? [] : [0]) {
       c.save(); c.translate(nx, 0); if (nx) c.scale(.7, .95);
       c.beginPath(); c.moveTo(-5.5, 13); c.quadraticCurveTo(-3, 13 + len * .7, 0, 13 + len); c.quadraticCurveTo(3, 13 + len * .7, 5.5, 13); c.closePath(); c.fill();
+      // cœur de la flamme, blanc et bleuté, et chaleur qui éclaire autour de la tuyère
+      const cg = c.createLinearGradient(0, 13, 0, 13 + len * .55);
+      cg.addColorStop(0, 'rgba(255, 255, 255, .95)'); cg.addColorStop(.4, 'rgba(200, 230, 255, .7)'); cg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      c.fillStyle = cg; c.beginPath(); c.moveTo(-2.6, 13); c.quadraticCurveTo(-1.4, 13 + len * .4, 0, 13 + len * .55); c.quadraticCurveTo(1.4, 13 + len * .4, 2.6, 13); c.closePath(); c.fill();
+      c.globalCompositeOperation = 'lighter'; c.globalAlpha = .55 + boost * .3;
+      const hr = 10 + len * .5, hg2 = c.createRadialGradient(0, 15, 0, 0, 15, hr); hg2.addColorStop(0, fl[0]); hg2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      c.fillStyle = hg2; c.fillRect(-hr, 15 - hr, hr * 2, hr * 2);
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1; c.fillStyle = fg;
       c.restore();
     }
+    }
+    if (rocketPart === 'flame') { c.restore(); return; }
 
     // canons
     c.fillStyle = '#3a3062';
@@ -5858,13 +5881,14 @@ body:not(.jeu) .hud { opacity: 0; }
     if (litOK && (litEma > 8 || (frameEma > 28 && litEma > 2.5))) litOK = false;
   }
   // [x0, y0, x1, y1] : le cadre (dans les coordonnées du jeu) où l'ennemi peut dessiner
-  function drawLit(draw, x, y, R, glow, blur, box) {
-    if (!litOK) { draw(); return; }
+  // opt.target : le dessin où poser le résultat (sinon celui du jeu) ; opt.metal : lumière de coque métallique
+  function drawLit(draw, x, y, R, glow, blur, box, opt = {}) {
+    if (!litOK) { draw(opt.target || ctx); return; }
     const t0 = performance.now();
-    try { drawLitBox(draw, x, y, R, glow, blur, box); } finally { litFrame += performance.now() - t0; }
+    try { drawLitBox(draw, x, y, R, glow, blur, box, opt); } finally { litFrame += performance.now() - t0; }
   }
-  function drawLitBox(draw, x, y, R, glow, blur, [x0, y0, x1, y1]) {
-    const main = ctx, T = main.getTransform(), sc = Math.hypot(T.a, T.b) || 1, cw = main.canvas.width, ch = main.canvas.height;
+  function drawLitBox(draw, x, y, R, glow, blur, [x0, y0, x1, y1], opt) {
+    const main = opt.target || ctx, prev = ctx, T = main.getTransform(), sc = Math.hypot(T.a, T.b) || 1, cw = main.canvas.width, ch = main.canvas.height;
     let bx0 = cw, by0 = ch, bx1 = 0, by1 = 0;
     for (const [px, py] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]) { const q = T.transformPoint(new DOMPoint(px, py)); bx0 = Math.min(bx0, q.x); by0 = Math.min(by0, q.y); bx1 = Math.max(bx1, q.x); by1 = Math.max(by1, q.y); }
     bx0 = Math.max(0, Math.floor(bx0)); by0 = Math.max(0, Math.floor(by0)); bx1 = Math.min(cw, Math.ceil(bx1)); by1 = Math.min(ch, Math.ceil(by1));
@@ -5878,19 +5902,29 @@ body:not(.jeu) .hud { opacity: 0; }
     k.beginPath(); k.rect(0, 0, w, h); k.clip();
     k.setTransform(new DOMMatrix([T.a, T.b, T.c, T.d, T.e - ox, T.f - oy]));
     ctx = k;
-    try { draw(); } finally { ctx = main; k.restore(); }
+    try { draw(k); } finally { ctx = prev; k.restore(); }
     k.setTransform(1, 0, 0, 1, 0, 0); k.globalAlpha = 1; k.globalCompositeOperation = 'source-atop';
     const Q = T.transformPoint(new DOMPoint(x, y)), P = { x: Q.x - ox, y: Q.y - oy }, Rd = R * sc, d = Math.max(.6, Rd * .032);
     bx0 = by0 = 0;
     // grain de peau, attaché à l'ennemi pour qu'il ne glisse pas quand il bouge
     const pat = grainPattern(k);
     if (pat.setTransform) pat.setTransform(new DOMMatrix([sc * .5, 0, 0, sc * .5, P.x, P.y]));
-    k.globalAlpha = .08; k.fillStyle = pat; k.fillRect(bx0, by0, w, h); k.globalAlpha = 1;
+    k.globalAlpha = opt.metal ? .05 : .08; k.fillStyle = pat; k.fillRect(bx0, by0, w, h); k.globalAlpha = 1;
+    if (opt.metal) {
+      // coque en métal : une bande de reflet brillante sur la gauche, l'ombre qui tourne sur la droite, et un reflet bleuté de l'espace en bas
+      const g = k.createLinearGradient(P.x - Rd * 1.1, 0, P.x + Rd * 1.1, 0);
+      g.addColorStop(0, 'rgba(8, 4, 24, .3)'); g.addColorStop(.28, 'rgba(255, 255, 255, .42)'); g.addColorStop(.36, 'rgba(255, 255, 255, .08)');
+      g.addColorStop(.55, 'rgba(255, 255, 255, 0)'); g.addColorStop(.8, 'rgba(8, 4, 24, .28)'); g.addColorStop(1, 'rgba(8, 4, 24, .5)');
+      k.fillStyle = g; k.fillRect(bx0, by0, w, h);
+      const v = k.createLinearGradient(0, P.y - Rd * 1.3, 0, P.y + Rd); v.addColorStop(0, 'rgba(255, 245, 225, .12)'); v.addColorStop(.6, 'rgba(0, 0, 0, 0)'); v.addColorStop(1, 'rgba(110, 170, 255, .18)');
+      k.fillStyle = v; k.fillRect(bx0, by0, w, h);
+    } else {
     // lumière et ombre sur tout le volume
     const g = k.createRadialGradient(P.x - Rd * .4, P.y - Rd * .5, Rd * .05, P.x, P.y, Rd * 1.6);
     g.addColorStop(0, 'rgba(255, 250, 235, .3)'); g.addColorStop(.3, 'rgba(255, 250, 235, 0)');
     g.addColorStop(.6, 'rgba(8, 4, 24, .2)'); g.addColorStop(1, 'rgba(8, 4, 24, .32)');
     k.fillStyle = g; k.fillRect(bx0, by0, w, h);
+    }
     // bords : ombre propre en bas à droite, arête éclairée en haut à gauche
     litEdge(L, bx0, by0, w, h, -d * 2.2, -d * 2.2, 'rgba(8, 4, 24, .3)');
     litEdge(L, bx0, by0, w, h, -d * .7, -d * .7, 'rgba(150, 210, 255, .2)');
