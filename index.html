@@ -2025,47 +2025,207 @@ body:not(.jeu) .hud { opacity: 0; }
       c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.6;
       c.beginPath(); c.arc(0, -3, 4, 0, 7); c.fill(); c.stroke();
     }
-    drawMotif(c, conf, t, acc.hex || '#ffffff');
+    drawMotif(c, conf, t, motifCol(body, acc, conf.model));
     c.restore();
   }
 
-  // motif peint sur la coque (en bas du vaisseau, sous le hublot)
+  // motif peint sur la coque : chaque vaisseau a sa zone, pour que le motif suive sa forme
+  // hull : la surface peinte ; holes : ce qu'on ne recouvre pas (hublots, emblèmes) ; area : [x0, y0, x1, y1] ;
+  // stripes : rayures (en x, ou en y si axis 'h') ; spots : [x, y, taille] des emblèmes ; check : [y, rangées] du damier ;
+  // flames : [base, [x...], hauteur] ; mid : bande du numéro de course
+  const mPoly = (c, pts) => { c.moveTo(pts[0][0], pts[0][1]); for (const [x, y] of pts.slice(1)) c.lineTo(x, y); c.closePath(); };
+  const mEll = (c, x, y, rx, ry, r = 0) => { c.moveTo(x + rx * Math.cos(r), y + rx * Math.sin(r)); c.ellipse(x, y, rx, ry, r, 0, Math.PI * 2); };
+  const MOTIF_ZONES = {
+    classique: {
+      hull: c => { c.moveTo(0, -22); c.bezierCurveTo(9.5, -14, 9, 4, 7, 14); c.lineTo(-7, 14); c.bezierCurveTo(-9, 4, -9.5, -14, 0, -22); c.closePath(); },
+      holes: c => mEll(c, 0, -3, 5.4, 5.4),
+      area: [-9.5, -22, 9.5, 10], stripes: [-5.4, 5.4], sw: 1.6, spots: [[0, 6.2, .72]], check: [6.4, 2], flames: [10.5, [-4.2, 0, 4.2], 11],
+    },
+    navette: {
+      hull: c => mPoly(c, [[0, -20], [5, -8], [17, 11], [5, 9], [4, 14], [-4, 14], [-5, 9], [-17, 11], [-5, -8]]),
+      holes: c => { mPoly(c, [[5, 1], [17, 11], [5, 9]]); mPoly(c, [[-5, 1], [-17, 11], [-5, 9]]); mEll(c, 0, -7, 3.8, 5.3); },
+      area: [-17, -20, 17, 14], stripes: [-3, 3], sw: 1.3, spots: [[-7.2, -1.4, .48], [7.2, -1.4, .48]], check: [5.5, 2], flames: [14, [-2.4, 2.4], 9], fw: 1.8,
+    },
+    eclair: {
+      hull: c => { c.moveTo(0, -25); c.bezierCurveTo(5.5, -16, 5, 6, 4, 14); c.lineTo(-4, 14); c.bezierCurveTo(-5, 6, -5.5, -16, 0, -25); c.closePath(); },
+      holes: c => mEll(c, 0, -12, 3.4, 3.4),
+      area: [-5.5, -25, 5.5, 14], stripes: [-2.7, 2.7], sw: 1.2, spots: [[0, 5, .5]], check: [4, 2], flames: [14, [-2, 2], 10], fw: 1.7,
+    },
+    aile: {
+      hull: c => mPoly(c, [[0, -27], [21, 14], [8, 10], [0, 16], [-8, 10], [-21, 14]]),
+      holes: c => { mPoly(c, [[21, 14], [14, 3], [12, 12]]); mPoly(c, [[-21, 14], [-14, 3], [-12, 12]]); mEll(c, 0, -7, 3.8, 6.8); },
+      area: [-21, -27, 21, 16], stripes: [-4.4, 4.4], spots: [[-8.6, 5.4, .55], [8.6, 5.4, .55]], check: [5.5, 2], flames: [14, [-10, -5, 0, 5, 10], 9],
+    },
+    ovni: {
+      hull: c => mEll(c, 0, 1, 22, 7.2),
+      holes: c => { for (let i = 0; i < 6; i++) mEll(c, -15 + i * 6, 2, 2.3, 2.3); mEll(c, 0, 8, 10.5, 4); },
+      axis: 'h', area: [-23, -7, 23, 9], stripes: [-4.6, -2], sw: 1.2, spots: [[-14.5, -2.6, .42], [14.5, -2.6, .42]], check: [-3.2, 2], flames: [8, [-18, -12, 12, 18], 8], mid: [-3.3],
+    },
+    tie: {
+      hull: c => { for (const sd of [-1, 1]) mPoly(c, [[sd * 13, -20], [sd * 19, -12], [sd * 19, 12], [sd * 13, 20], [sd * 15, 0]]); },
+      area: [-19, -20, 19, 20], stripes: [-17.2, 17.2], sw: 1.5, spots: [[-16.6, -4, .44], [16.6, -4, .44]], check: [8, 2], flames: [18, [-16.6, 16.6], 11], fw: 2, mid: [-16.6, 16.6],
+    },
+    faucon: {
+      hull: c => { mEll(c, 0, 0, 17, 17); c.rect(-10, -27, 6, 16); c.rect(4, -27, 6, 16); },
+      holes: c => { mEll(c, 15, -9, 5.8, 5.8); c.rect(-11, 12.5, 22, 5); },
+      area: [-17, -27, 17, 13], stripes: [-7, 7], sw: 2.2, spots: [[-10.6, 7.8, .58], [10.6, 7.8, .58]], check: [-5, 2], flames: [12.5, [-9, -4.5, 0, 4.5, 9], 10],
+    },
+    requin: {
+      hull: c => { c.moveTo(0, -29); c.bezierCurveTo(10, -20, 9, 4, 4, 15); c.lineTo(-4, 15); c.bezierCurveTo(-9, 4, -10, -20, 0, -29); c.closePath(); },
+      holes: c => { mEll(c, 0, -2, 3.3, 4.8); c.rect(-9, -30, 18, 18); },
+      area: [-8, -12, 8, 15], stripes: [-4.8, 4.8], sw: 1.4, spots: [[0, 8.4, .55]], check: [8.5, 2], flames: [15, [-3, 0, 3], 9], fw: 1.7,
+    },
+    abeille: {
+      hull: c => mEll(c, 0, 1, 10.5, 15),
+      holes: c => { mEll(c, -4, -9, 3.8, 4.6, .3); mEll(c, 4, -9, 3.8, 4.6, -.3); },
+      area: [-10.5, -14, 10.5, 16], stripes: [-5.2, 5.2], sw: 1.6, spots: [[0, 7, .62]], check: [7, 2], flames: [16, [-4.2, 0, 4.2], 11],
+    },
+    chevalier: {
+      hull: c => { c.moveTo(-11, -19); c.lineTo(11, -19); c.lineTo(11, 2); c.quadraticCurveTo(10, 12, 0, 18); c.quadraticCurveTo(-10, 12, -11, 2); c.closePath(); },
+      holes: c => { c.rect(-7.6, -15.8, 15.2, 5.2); c.rect(-2.5, -4.8, 5, 17.6); c.rect(-6.9, .2, 13.8, 4.8); },
+      area: [-11, -19, 11, 18], stripes: [-6.8, 6.8], sw: 1.8, spots: [[-6.4, -5.4, .55], [6.4, -5.4, .55]], check: [-7.6, 2], flames: [12.5, [-5.4, 5.4], 10], mid: [],
+    },
+    galion: {
+      hull: c => {
+        c.moveTo(-12, -22); c.quadraticCurveTo(0, -18, 12, -22); c.lineTo(10, -10); c.quadraticCurveTo(0, -6, -10, -10); c.closePath();
+        c.moveTo(-15, -6); c.quadraticCurveTo(0, -1, 15, -6); c.lineTo(13, 6); c.quadraticCurveTo(0, 10, -13, 6); c.closePath();
+      },
+      holes: c => mEll(c, 0, -14.5, 3.8, 3.8),
+      area: [-15, -22, 15, 8], stripes: [-5.5, 5.5], sw: 2.4, spots: [[0, 2.2, .68]], check: [2.2, 2], flames: [7.5, [-9, -4.5, 0, 4.5, 9], 9],
+    },
+    mecha: {
+      hull: c => { c.roundRect(-10, -12, 20, 22, 3); c.roundRect(-6.5, -25, 13, 12, 3); },
+      holes: c => { c.rect(-5.6, -21.6, 11.2, 4.7); mEll(c, 0, -2, 5.2, 5.2); },
+      area: [-10, -25, 10, 10], stripes: [-6.6, 6.6], sw: 2, spots: [[-6.4, -7.2, .44], [6.4, -7.2, .44]], check: [7.6, 2], flames: [10, [-6, -2, 2, 6], 8], fw: 1.8,
+    },
+    coeur: {
+      hull: c => { c.moveTo(0, 16); c.bezierCurveTo(-20, 2, -22, -18, -11, -24); c.bezierCurveTo(-4, -28, 0, -22, 0, -17); c.bezierCurveTo(0, -22, 4, -28, 11, -24); c.bezierCurveTo(22, -18, 20, 2, 0, 16); c.closePath(); },
+      holes: c => { mEll(c, 0, -7, 6.3, 7.8); mEll(c, -9, -16, 4.6, 3, -.6); },
+      area: [-21, -26, 21, 16], stripes: [-9, 9], sw: 2, spots: [[-12, -6, .58], [12, -6, .58]], check: [5, 2], flames: [13.5, [-5, 0, 5], 11],
+    },
+    cristal: {
+      hull: c => mPoly(c, [[0, -31], [10, -12], [8, 8], [0, 18], [-8, 8], [-10, -12]]),
+      holes: c => mPoly(c, [[0, -19.6], [4.2, -10], [0, -4.6], [-4.2, -10]]),
+      area: [-10, -31, 10, 18], stripes: [-4.6, 4.6], sw: 1.6, spots: [[0, 3.6, .62]], check: [5, 2], flames: [16, [-4, 0, 4], 12],
+    },
+    predateur: {
+      hull: c => mPoly(c, [[0, -29], [4, -18], [6, -4], [19, 6], [22, 17], [8, 13], [6, 18], [-6, 18], [-8, 13], [-22, 17], [-19, 6], [-6, -4], [-4, -18]]),
+      holes: c => { mPoly(c, [[0, -18.5], [4, -9], [0, -6], [-4, -9]]); c.rect(-15.6, -6.6, 4.2, 15.2); c.rect(11.4, -6.6, 4.2, 15.2); },
+      area: [-22, -29, 22, 18], stripes: [-2.6, 2.6], sw: 1.3, spots: [[-17.4, 11.8, .4], [17.4, 11.8, .4]], check: [10, 2], flames: [17, [-15, -8, 8, 15], 8], fw: 2,
+    },
+    legende: {
+      hull: c => mPoly(c, [[0, -31], [5, -17], [7, -2], [21, 6], [27, 18], [10, 13], [6, 20], [-6, 20], [-10, 13], [-27, 18], [-21, 6], [-7, -2], [-5, -17]]),
+      holes: c => mPoly(c, [[0, -19.5], [4.6, -11], [0, -3.8], [-4.6, -11]]),
+      area: [-27, -31, 27, 20], stripes: [-3.6, 3.6], sw: 1.5, spots: [[-16, 9, .52], [16, 9, .52]], check: [8, 2], flames: [15.5, [-13, -6.5, 0, 6.5, 13], 10],
+      ink: '#9a6410',
+    },
+    // les vaisseaux en pixels gardent un motif en pixels : [colonne, rangée] dans leur dessin
+    pixel: { pix: { grid: PIXEL_PIX, px: 2.2, oy: -30, paint: 'BSW', cols: [4, 8], rows: [6, 19], stripes: [4, 8], spots: [[6, 15]], check: [16, 17], flames: [18, [5, 7]], mid: 6 } },
+    arcade: { pix: { grid: ARCADE_PIX, px: 3, oy: -24, paint: 'W', cols: [0, 14], rows: [0, 11], stripes: [5, 9], spots: [[3, 7], [11, 7]], check: [7, 8], flames: [9, [5, 9]], mid: 7 } },
+  };
+  const CAMO = ['#2f4a24', '#6b5a3a', '#1f2a18'];
+  const lumOf = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11) / 255; };
+  // couleur du motif : la garniture choisie, sinon blanc (ou une teinte foncée sur une coque déjà très claire)
+  // (la Légende a sa propre coque blanc et or, son motif est doré)
+  const motifCol = (body, acc, model) => acc.hex || (MOTIF_ZONES[model] || {}).ink || (lumOf(body) > .72 ? shade(body, -.6) : '#ffffff');
+  const starPath = (c, x, y, r) => { for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); };
   function drawMotif(c, conf, t, col) {
     const m = conf.motif;
     if (!m || m === 'aucun') return;
+    const z = MOTIF_ZONES[conf.model] || MOTIF_ZONES.classique;
     c.save();
     c.shadowBlur = 0;
-    c.beginPath(); c.ellipse(0, -1, 7.5, 15, 0, 0, 7); c.clip();
-    c.fillStyle = col; c.strokeStyle = col; c.globalAlpha = .85;
-    if (m === 'rayures') { c.fillRect(-6, -18, 1.8, 34); c.fillRect(4.2, -18, 1.8, 34); }
-    else if (m === 'etoiles') {
-      for (const [x, y, r] of [[-3.5, 5, 2.2], [3.5, 5, 2.2], [0, 10.5, 2.6]]) {
+    if (z.pix) { drawPixelMotif(c, z.pix, m, col); c.restore(); return; }
+    c.beginPath(); z.hull(c); c.clip();
+    if (z.holes) { c.beginPath(); c.rect(-40, -40, 80, 80); z.holes(c); c.clip('evenodd'); }
+    // un liseré fin autour des dessins, comme un vrai autocollant de carrosserie
+    const edge = lumOf(col) > .55 ? 'rgba(10, 6, 30, .45)' : 'rgba(255, 255, 255, .55)';
+    const [x0, y0, x1, y1] = z.area, horiz = z.axis === 'h', sw = z.sw || 1.8;
+    const band = (p, w) => horiz ? c.fillRect(x0, p - w / 2, x1 - x0, w) : c.fillRect(p - w / 2, y0, w, y1 - y0);
+    const decal = (fill = col) => { c.fillStyle = fill; c.fill(); c.strokeStyle = edge; c.lineWidth = .5; c.stroke(); };
+    c.fillStyle = col; c.globalAlpha = .88;
+    if (m === 'rayures') {
+      for (const p of z.stripes) band(p, sw);
+      // fin filet le long de chaque bande
+      c.globalAlpha = .55; for (const p of z.stripes) band(p + Math.sign(p || 1) * (sw * .5 + .9), .5);
+    } else if (m === 'etoiles') {
+      for (const [x, y, s] of z.spots) {
         c.beginPath();
-        for (let i = 0; i < 10; i++) { const a = i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
-        c.closePath(); c.fill();
+        // un petit trio d'étoiles, ou une seule grande étoile si la place manque
+        if (s < .5) starPath(c, x, y, 5.4 * s);
+        else for (const [dx, dy, r] of [[-3.5, -2, 2.2], [3.5, -2, 2.2], [0, 3.2, 2.6]]) { c.moveTo(x + dx * s, y + (dy - r) * s); starPath(c, x + dx * s, y + dy * s, r * s); }
+        decal();
       }
     } else if (m === 'damier') {
-      for (let gx = -6; gx < 6; gx += 2.5) for (let gy = 3; gy < 15; gy += 2.5) if ((Math.round(gx / 2.5) + Math.round(gy / 2.5)) % 2) c.fillRect(gx, gy, 2.5, 2.5);
+      const q = 2.4, [cy, n] = z.check, top = cy - n * q / 2;
+      for (let gy = 0; gy < n; gy++) for (let gx = Math.floor(x0 / q); gx * q < x1; gx++) if ((gx + gy) % 2 === 0) c.fillRect(gx * q, top + gy * q, q, q);
+      c.globalAlpha = .6; c.fillRect(x0, top - .7, x1 - x0, .4); c.fillRect(x0, top + n * q + .3, x1 - x0, .4);
     } else if (m === 'eclair') {
-      c.beginPath(); c.moveTo(1.5, 1); c.lineTo(-3, 8); c.lineTo(0, 8); c.lineTo(-1.5, 15); c.lineTo(3.5, 6.5); c.lineTo(.5, 6.5); c.closePath(); c.fill();
+      for (const [x, y, s] of z.spots) {
+        const k = s * 1.25;
+        c.beginPath(); mPoly(c, [[1.5, -7], [-3, 0], [0, 0], [-1.5, 7], [3.5, -1.5], [.5, -1.5]].map(([px, py]) => [x + px * k, y + py * k]));
+        decal();
+      }
     } else if (m === 'camo') {
-      c.globalAlpha = .6;
-      for (const [x, y, rx, ry, k] of [[-4, 4, 3, 2, 0], [3, 7, 3.5, 2.2, 1], [-2, 11, 3, 2, 2], [4, 12, 2.2, 1.6, 0], [0, 2, 2, 1.4, 1]]) {
-        c.fillStyle = ['#2f4a24', '#6b5a3a', '#1f2a18'][k]; c.beginPath(); c.ellipse(x, y, rx, ry, .5, 0, 7); c.fill();
+      // taches posées sur toute la surface peinte, toujours les mêmes pour chaque vaisseau
+      c.globalAlpha = .62;
+      let i = 0;
+      for (let gy = y0; gy < y1 + 2; gy += 4.2) for (let gx = x0; gx < x1 + 2; gx += 4.6) {
+        const h = Math.sin(i * 12.9898 + 78.233) * 43758.5453, r = h - Math.floor(h); i++;
+        c.fillStyle = CAMO[i % 3]; c.beginPath();
+        c.ellipse(gx + (r - .5) * 3, gy + ((r * 7) % 1 - .5) * 3, 2.2 + r * 1.4, 1.4 + r, r * 3, 0, 7); c.fill();
       }
     } else if (m === 'flammes') {
-      c.globalAlpha = .9;
-      for (const [x, h, k] of [[-4.5, 9, 0], [0, 13, 1], [4.5, 9, 0]]) {
-        c.fillStyle = k ? '#ffd86b' : '#ff7b2a';
-        c.beginPath(); c.moveTo(x - 2.4, 16); c.quadraticCurveTo(x - 2.4, 16 - h * .6, x, 16 - h); c.quadraticCurveTo(x + 2.4, 16 - h * .6, x + 2.4, 16); c.closePath(); c.fill();
-      }
+      c.globalAlpha = .92;
+      const [base, xs, h] = z.flames, fw = z.fw || 2.4, far = Math.max(...xs.map(Math.abs)) || 1;
+      xs.forEach(x => {
+        const k = Math.abs(x) / far, fh = h * (1 - .3 * k);
+        const g = c.createLinearGradient(0, base, 0, base - fh);
+        g.addColorStop(0, '#ff4a1f'); g.addColorStop(.55, '#ff9a3c'); g.addColorStop(1, '#ffe08a');
+        c.beginPath(); c.moveTo(x - fw, base); c.quadraticCurveTo(x - fw, base - fh * .55, x + fw * .3, base - fh); c.quadraticCurveTo(x - fw * .1, base - fh * .5, x + fw, base); c.closePath();
+        decal(g);
+      });
     } else if (m === 'course') {
-      c.fillRect(-1, -18, 2, 34);
-      c.beginPath(); c.arc(0, 8, 4.2, 0, 7); c.fill();
-      c.globalAlpha = 1; c.fillStyle = '#0b0820'; c.font = '700 6px Outfit, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('7', 0, 8.4);
+      for (const p of z.mid || [horiz ? (y0 + y1) / 2 : 0]) band(p, 2);
+      c.globalAlpha = 1;
+      for (const [x, y, s] of z.spots) {
+        const r = 4.4 * Math.max(s, .5);
+        c.beginPath(); c.arc(x, y, r, 0, 7); c.fillStyle = col; c.fill(); c.strokeStyle = edge; c.lineWidth = .6; c.stroke();
+        c.fillStyle = lumOf(col) > .55 ? '#0b0820' : '#ffffff'; c.font = `700 ${(r * 1.4).toFixed(1)}px Outfit, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('7', x, y + r * .1);
+      }
     }
     c.restore();
+  }
+  // motif en pixels : on recolore les cases de la coque
+  function drawPixelMotif(c, z, m, col) {
+    const { grid, px, oy } = z, ox = -grid[0].length * px / 2;
+    const ink = lumOf(col) > .55 ? '#0b0820' : '#ffffff';
+    const seven = ['XXX', '..X', '.X.'];
+    const bolt = ['..X', '.X.', 'XXX', '.X.', 'X..'];
+    const at = (i, j) => {
+      if (m === 'rayures') return z.stripes.includes(i) && col;
+      if (m === 'etoiles') return z.spots.some(([si, sj]) => Math.abs(i - si) + Math.abs(j - sj) <= 1) && col;
+      if (m === 'damier') return j >= z.check[0] && j <= z.check[1] && (i + j) % 2 === 0 && col;
+      if (m === 'eclair') return z.spots.some(([si, sj]) => (bolt[j - sj + 2] || '')[i - si + 1] === 'X') && col;
+      if (m === 'camo') return (i * 7 + j * 13) % 5 < 2 && CAMO[(i + j * 2) % 3];
+      if (m === 'flammes') {
+        const [fr, xs] = z.flames, dy = fr - j;
+        if (dy < 0 || dy > 2 || !xs.some(x => Math.abs(i - x) <= (dy ? 0 : 1))) return false;
+        return dy === 2 ? '#ffd86b' : '#ff7b2a';
+      }
+      if (m === 'course') {
+        const [si, sj] = z.spots[0];
+        if (Math.abs(i - si) <= 1 && Math.abs(j - sj) <= 1) return seven[j - sj + 1][i - si + 1] === 'X' ? ink : col;
+        return i === z.mid && col;
+      }
+      return false;
+    };
+    for (let j = z.rows[0]; j <= z.rows[1]; j++) for (let i = z.cols[0]; i <= z.cols[1]; i++) {
+      if (!z.paint.includes(grid[j][i])) continue;
+      const f = at(i, j);
+      if (f) { c.fillStyle = f; c.fillRect(ox + i * px, oy + j * px, px + .25, px + .25); }
+    }
   }
 
   // --- hangar ---
