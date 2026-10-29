@@ -1204,10 +1204,12 @@ body:not(.jeu) .hud { opacity: 0; }
   const $ = id => document.getElementById(id);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0, H = 0, DPR = 1;
+  // finesse maximale de l'image : baisse toute seule si l'appareil n'arrive pas à suivre (voir dprCheck)
+  let dprCap = 2;
 
   function resize() {
     const ow = W, oh = H;
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, dprCap);
     W = cv.clientWidth; H = cv.clientHeight;
     cv.width = W * DPR; cv.height = H * DPR;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -2588,8 +2590,16 @@ body:not(.jeu) .hud { opacity: 0; }
       k.fillStyle = '#ffd86b'; k.font = '700 11px Outfit, sans-serif'; k.fillText('×3 · ∞', 8, 16);
     }
   }
+  // fluidité : on n'anime que les cartes visibles à l'écran (il y en a plus de vingt, la plupart cachées plus bas)
+  const actSeen = new Set(), actWatched = new WeakSet();
+  const actObs = 'IntersectionObserver' in window ? new IntersectionObserver(es => { for (const e of es) e.isIntersecting ? actSeen.add(e.target) : actSeen.delete(e.target); }, { rootMargin: '80px' }) : null;
   function drawActs(t) {
     for (const cv of document.querySelectorAll('canvas[data-act]')) {
+      if (actObs) {
+        // une carte toute neuve est dessinée une première fois tout de suite, pour ne jamais rester vide
+        if (!actWatched.has(cv)) { actWatched.add(cv); actObs.observe(cv); }
+        else if (!actSeen.has(cv)) continue;
+      }
       const [key, id] = cv.dataset.act.split(':');
       drawAct(cv.getContext('2d'), key, id, reduce ? 1400 : t);
     }
@@ -10088,7 +10098,18 @@ body:not(.jeu) .hud { opacity: 0; }
   CanvasRenderingContext2D.prototype.fillText = function (txt, ...a) { return fillTextRaw.call(this, typeof txt === 'string' ? typo(txt) : txt, ...a); };
 
   last = performance.now();
+  let bgDrawn = 0;
+  // fluidité : si l'appareil reste lent (moins de 40 images par seconde pendant plus d'une seconde et demie),
+  // on dessine le jeu un peu moins finement (écrans très fins seulement) pour qu'il reste fluide
+  let slowMs = 0;
+  // (on ignore les tout premiers instants et les à-coups isolés, quand le jeu prépare ses images)
+  function dprCheck(t, ms) {
+    if (t < 4000 || ms > 100 || document.hidden || DPR <= 1) return;
+    slowMs = ms > 25 ? slowMs + ms : Math.max(0, slowMs - ms * 2);
+    if (slowMs > 1500) { slowMs = 0; dprCap = Math.max(1, DPR - .5); resize(); }
+  }
   function loop(t) {
+    dprCheck(t, t - last);
     litCheck(t, (t - last) / 1000);
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (state === 'play') update(dt);
@@ -10099,7 +10120,9 @@ body:not(.jeu) .hud { opacity: 0; }
     if (state !== 'pause' && state !== 'story' && state !== 'talk') updateScenery(dt);
     document.body.classList.toggle('jeu', !cineReplay && ['play', 'pause', 'launch', 'dying', 'talk'].includes(state));
     document.body.classList.toggle('sanscurseur', !cineReplay && state === 'play');
-    draw(t);
+    // fluidité : derrière un panneau (Hangar, trophées, carte…), le décor n'est qu'un fond voilé qui bouge à peine,
+    // on le redessine donc une image sur trois ; toute la puissance va aux aperçus du Hangar
+    if (state !== 'hangar' || t - bgDrawn > 45) { bgDrawn = t; draw(t); }
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
@@ -10125,7 +10148,21 @@ body:not(.jeu) .hud { opacity: 0; }
   // couleurs des étincelles : surtout or et blanc, un peu de rose et de violet comme la queue
   const COUL = [[255, 246, 214], [255, 216, 107], [255, 216, 107], [255, 180, 90], [255, 143, 184], [170, 140, 255]];
   let w = 0, h = 0, dpr = 1, actif = false, dernier = 0, reste = 0;
-  const taille = () => { dpr = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; };
+  // fluidité : on n'efface que le coin de l'écran où l'on a dessiné à l'image d'avant (pas tout l'écran)
+  let sale = null;
+  const taille = () => { dpr = Math.min(2, devicePixelRatio || 1); w = innerWidth; h = innerHeight; cv.width = w * dpr; cv.height = h * dpr; sale = null; };
+  // fluidité : le halo de chaque couleur d'étincelle est préparé une seule fois, puis simplement recopié
+  const halos = new Map();
+  const halo = c => {
+    let im = halos.get(c);
+    if (!im) {
+      im = document.createElement('canvas'); im.width = im.height = 64;
+      const k = im.getContext('2d'), g = k.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},.3)`); g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
+      k.fillStyle = g; k.fillRect(0, 0, 64, 64); halos.set(c, im);
+    }
+    return im;
+  };
   taille(); addEventListener('resize', taille);
   const cache = () => document.body.classList.contains('sanscurseur');
   // le cœur de l'étoile est 7 px en bas à droite de la pointe qui clique
@@ -10155,8 +10192,13 @@ body:not(.jeu) .hud { opacity: 0; }
     const dt = Math.min(.05, (now - dernier) / 1000); dernier = now;
     while (pts.length && now - pts[0].t > VIE) pts.shift();
     if (cache()) pts.length = sparks.length = 0;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (sale) ctx.clearRect(sale[0], sale[1], sale[2] - sale[0], sale[3] - sale[1]);
+    sale = null;
     if (pts.length < 2 && !sparks.length) { actif = false; return; }
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    const zone = (x, y, m) => { if (x - m < x0) x0 = x - m; if (y - m < y0) y0 = y - m; if (x + m > x1) x1 = x + m; if (y + m > y1) y1 = y + m; };
+    for (const p of pts) zone(p.x, p.y, 8);
     ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
     // la queue : lueur large et très douce, puis un fil de lumière léger au centre
     for (let i = 0; i < pts.length - 1; i++) {
@@ -10175,9 +10217,8 @@ body:not(.jeu) .hud { opacity: 0; }
       s.vx *= 1 - 2.5 * dt; s.vy = s.vy * (1 - 2.5 * dt) + 60 * dt;
       s.x += s.vx * dt; s.y += s.vy * dt;
       const al = .6 * (1 - age) * (.7 + .3 * Math.sin(now / 70 + s.ph)), r = s.r * (1 - age * .5), c = s.c;
-      const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 5);
-      g.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${(.3 * al).toFixed(3)})`); g.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(s.x, s.y, r * 5, 0, 6.29); ctx.fill();
+      zone(s.x, s.y, r * 6 + 2);
+      ctx.globalAlpha = al; ctx.drawImage(halo(c), s.x - r * 5, s.y - r * 5, r * 10, r * 10); ctx.globalAlpha = 1;
       ctx.fillStyle = `rgba(255,252,240,${al.toFixed(3)})`; ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, 6.29); ctx.fill();
       if (s.croix) {
         // petit éclat en croix, comme un reflet d'étoile
@@ -10186,6 +10227,7 @@ body:not(.jeu) .hud { opacity: 0; }
         ctx.beginPath(); ctx.moveTo(s.x - L, s.y); ctx.lineTo(s.x + L, s.y); ctx.moveTo(s.x, s.y - L); ctx.lineTo(s.x, s.y + L); ctx.stroke();
       }
     }
+    sale = [Math.max(0, Math.floor(x0)), Math.max(0, Math.floor(y0)), Math.min(w, Math.ceil(x1)), Math.min(h, Math.ceil(y1))];
     requestAnimationFrame(dessine);
   }
 })();
