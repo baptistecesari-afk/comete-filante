@@ -1000,6 +1000,7 @@ body:not(.jeu) .hud { opacity: 0; }
       <div class="opt"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
       <div class="opt"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
       <div class="opt"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
+      <div class="opt" id="petOpt"><span>Animaux de l'espace</span><p class="wallet" id="petInfo"></p><div class="powers" id="optPet"></div></div>
       <div class="opt" id="skills">
         <span>Compétences</span>
         <p class="wallet">Tu as <i class="coin"></i><b id="credits">0</b> Astros. Chaque compétence améliore ta fusée pour toutes tes parties.</p>
@@ -1397,8 +1398,160 @@ body:not(.jeu) .hud { opacity: 0; }
     { id: 'supernova', name: 'Supernova divine', desc: 'Invincible, anneaux de tirs, cadence ×3 et munitions infinies.', dur: 6, cd: 24 },
   ];
   const byId = (list, id) => list.find(x => x.id === id) || list[0];
+  // animaux de l'espace : prisonniers de l'usine à étoiles du Serpent de Givre (Monde 2, gardien 7), libérés quand il est battu
+  // l'animal choisi vole à côté de la fusée et aide un peu : fire = une étincelle toutes les … s (n à la fois),
+  // magnet = attire les étoiles dans ce rayon, guard = arrête un coup, puis se reforme en … s
+  const PETS = [
+    { id: 'lumi', name: 'Lumi', kind: 'Luciole des glaces', col: '#9dffd0', desc: 'La plus petite. Elle lance une étincelle sur l\'ennemi le plus proche.', info: '1 étincelle toutes les 1,8 s', fire: 1.8, n: 1 },
+    { id: 'pipo', name: 'Pipo', kind: 'Chaton comète', col: '#ffc890', desc: 'Il attrape les étoiles proches avec sa queue de comète et te les ramène.', info: 'attire les étoiles proches', magnet: 150 },
+    { id: 'frimousse', name: 'Frimousse', kind: 'Renard de givre', col: '#bfe9ff', desc: 'Très rapide, il lance des étincelles sans arrêt.', info: '1 étincelle toutes les 1,1 s', fire: 1.1, n: 1 },
+    { id: 'bulle', name: 'Bulle', kind: 'Méduse bulle', col: '#ff9ad8', desc: 'Sa bulle arrête un coup à ta place, puis se reforme.', info: 'bloque 1 coup toutes les 20 s', guard: 20 },
+    { id: 'hop', name: 'Hop', kind: 'Lapin des lunes', col: '#e6dcff', desc: 'Il lance deux étincelles d\'un coup.', info: '2 étincelles toutes les 1,5 s', fire: 1.5, n: 2 },
+    { id: 'caillou', name: 'Caillou', kind: 'Tortue lunaire', col: '#c8d8c8', desc: 'Sa carapace de lune arrête un coup à ta place, et se reforme vite.', info: 'bloque 1 coup toutes les 12 s', guard: 12 },
+    { id: 'nuage', name: 'Nuage', kind: 'Baleine des étoiles', col: '#7ad8ff', desc: 'La plus grande : elle lance des étincelles et attire les étoiles.', info: 'étincelle toutes les 1,4 s + aimant', fire: 1.4, n: 1, magnet: 110 },
+  ];
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', accent: 'auto', motif: 'aucun', glass: 'nuit', flame: 'feu', trail: 'classique', shot: 'flamme', gun: 'blaster', power: 'laser', title: '' };
+  // ===== Les animaux de l'espace, dessinés de face en lumière douce (s = 1 : environ 14 px de rayon) =====
+  function drawPet(k, id, x, y, s, t, o = {}) {
+    const T = t / 1000;
+    const rg = (x0, y0, r0, r1, st) => { const g = k.createRadialGradient(x0, y0, r0, x0, y0, r1); st.forEach(([p, c]) => g.addColorStop(p, c)); return g; };
+    const lg = (x0, y0, x1, y1, st) => { const g = k.createLinearGradient(x0, y0, x1, y1); st.forEach(([p, c]) => g.addColorStop(p, c)); return g; };
+    const el = (ex, ey, rx, ry, f, rot = 0) => { k.fillStyle = f; k.beginPath(); k.ellipse(ex, ey, rx, ry, rot, 0, 7); k.fill(); };
+    const glow = (gx, gy, r, col, a = 1) => { k.save(); k.globalCompositeOperation = 'lighter'; k.globalAlpha *= Math.max(0, a); k.fillStyle = rg(gx, gy, 0, r, [[0, col], [1, 'rgba(0, 0, 0, 0)']]); k.beginPath(); k.arc(gx, gy, r, 0, 7); k.fill(); k.restore(); };
+    const soft = (gx, gy, r, col) => { k.fillStyle = rg(gx, gy, 0, r, [[0, col], [1, 'rgba(0, 0, 0, 0)']]); k.beginPath(); k.arc(gx, gy, r, 0, 7); k.fill(); };
+    // un œil brillant : iris coloré, pupille, deux reflets
+    const eye = (ex, ey, r, iris) => {
+      el(ex, ey, r, r * 1.08, '#0b0a14');
+      el(ex, ey + r * .1, r * .78, r * .82, rg(ex, ey + r * .3, 0, r * .8, [[0, shade(iris, .35)], [.6, iris], [1, shade(iris, -.5)]]));
+      el(ex, ey + r * .12, r * .4, r * .46, '#05040a');
+      el(ex - r * .32, ey - r * .34, r * .26, r * .22, '#ffffff');
+      el(ex + r * .3, ey + r * .3, r * .1, r * .1, 'rgba(255, 255, 255, .7)');
+    };
+    k.save(); k.translate(x, y + (o.still ? 0 : Math.sin(T * 3.2 + id.length) * 1.2 * s)); k.scale(s, s);
+    if (o.dim !== undefined) k.globalAlpha *= o.dim;
+    k.lineCap = 'round';
+    if (id === 'lumi') {
+      const pulse = .7 + .3 * Math.sin(T * 5), fl = .55 + .45 * Math.abs(Math.sin(T * 26));
+      glow(0, 6, 26, 'rgba(150, 255, 200, .55)', pulse);
+      // ailes transparentes qui battent très vite
+      for (const sx of [-1, 1]) {
+        k.save(); k.scale(sx, 1); k.fillStyle = 'rgba(220, 245, 255, .32)'; k.strokeStyle = 'rgba(240, 255, 255, .6)'; k.lineWidth = .6;
+        k.beginPath(); k.ellipse(9, -5, 11, 5 * fl, -.5, 0, 7); k.fill(); k.stroke();
+        k.beginPath(); k.ellipse(8, 1, 8, 3.6 * fl, -.15, 0, 7); k.fill(); k.stroke();
+        k.restore();
+      }
+      el(0, 7, 5.5, 8, rg(0, 8, 0, 8, [[0, '#ffffff'], [.35, '#d8ffe8'], [.8, '#5fffb0'], [1, '#1f8a5a']]));
+      el(0, -2, 5, 4.5, rg(-1.5, -3.5, 0, 6, [[0, '#4a5a7a'], [1, '#141a2a']]));
+      el(0, -8, 5.2, 4.6, rg(-1.5, -9.5, 0, 6, [[0, '#5a6a8e'], [1, '#161c30']]));
+      eye(-2.6, -8.4, 2.1, '#7ad8ff'); eye(2.6, -8.4, 2.1, '#7ad8ff');
+      k.strokeStyle = '#2a3450'; k.lineWidth = .8;
+      for (const sx of [-1, 1]) { const ay = -17 + Math.sin(T * 4 + sx); k.beginPath(); k.moveTo(sx * 1.5, -12); k.quadraticCurveTo(sx * 4, -17, sx * 6, ay); k.stroke(); el(sx * 6, ay, 1.1, 1.1, '#bfffe0'); }
+    } else if (id === 'pipo') {
+      // la queue de comète : une poussière dorée et bleue derrière lui
+      for (let i = 9; i >= 1; i--) { const q = i / 9; glow(-6 - i * 2.6 + Math.sin(T * 3 - i * .6) * 1.5, 8 + i * 1.6, 6 * (1 - q * .6), i % 2 ? 'rgba(255, 216, 140, .55)' : 'rgba(140, 200, 255, .5)', 1 - q * .7); }
+      el(0, 7, 8, 6.5, rg(-2, 4, 1, 10, [[0, '#ffd9a8'], [.6, '#f0a050'], [1, '#9a5020']]));
+      for (const sx of [-1, 1]) {
+        k.fillStyle = lg(0, -16, 0, -4, [[0, '#c87030'], [1, '#f0a050']]); k.beginPath(); k.moveTo(sx * 3, -8); k.lineTo(sx * 8.5, -16.5); k.lineTo(sx * 10, -5); k.closePath(); k.fill();
+        k.fillStyle = '#f7a8b0'; k.beginPath(); k.moveTo(sx * 4.6, -8.5); k.lineTo(sx * 8.2, -14); k.lineTo(sx * 8.8, -7); k.closePath(); k.fill();
+      }
+      el(0, -3, 10, 8.6, rg(-3, -6, 1, 12, [[0, '#ffe6c0'], [.55, '#f4a85a'], [1, '#a85a22']]));
+      k.strokeStyle = 'rgba(150, 70, 20, .55)'; k.lineWidth = 1.1;
+      for (const dx of [-3, 0, 3]) { k.beginPath(); k.moveTo(dx, -11.2); k.lineTo(dx * .8, -7.5); k.stroke(); }
+      el(0, 1, 5.2, 3.6, 'rgba(255, 240, 220, .9)');
+      eye(-4, -3.5, 2.4, '#5fdc70'); eye(4, -3.5, 2.4, '#5fdc70');
+      k.fillStyle = '#ff8a9a'; k.beginPath(); k.moveTo(-1.2, -.4); k.lineTo(1.2, -.4); k.lineTo(0, 1); k.closePath(); k.fill();
+      k.strokeStyle = 'rgba(255, 255, 255, .7)'; k.lineWidth = .5;
+      for (const sx of [-1, 1]) for (const dy of [-.6, .8]) { k.beginPath(); k.moveTo(sx * 3, 1); k.lineTo(sx * 11, 1 + dy * 2); k.stroke(); }
+    } else if (id === 'frimousse') {
+      // la queue touffue qui se balance, au bout blanc
+      k.save(); k.rotate(Math.sin(T * 2) * .15);
+      k.fillStyle = lg(4, 4, 16, 16, [[0, '#9cc4e0'], [.6, '#e6f6ff'], [1, '#ffffff']]); k.beginPath(); k.moveTo(3, 6); k.quadraticCurveTo(18, 2, 17, 14); k.quadraticCurveTo(12, 18, 5, 11); k.closePath(); k.fill();
+      k.restore();
+      el(0, 7, 6.5, 6, rg(-2, 5, 1, 8, [[0, '#ffffff'], [1, '#9cc4e0']]));
+      for (const sx of [-1, 1]) {
+        k.fillStyle = lg(0, -18, 0, -5, [[0, '#3a5a7a'], [.35, '#a8d0ec'], [1, '#d8efff']]);
+        k.beginPath(); k.moveTo(sx * 2.5, -8); k.lineTo(sx * 8, -18); k.lineTo(sx * 10.5, -5); k.closePath(); k.fill();
+        k.fillStyle = 'rgba(255, 200, 215, .7)'; k.beginPath(); k.moveTo(sx * 4.4, -8.5); k.lineTo(sx * 7.8, -15); k.lineTo(sx * 9, -7); k.closePath(); k.fill();
+      }
+      k.fillStyle = rg(-3, -6, 1, 13, [[0, '#ffffff'], [.5, '#cfe8f8'], [1, '#7aa0c0']]);
+      k.beginPath(); k.moveTo(-10.5, -6); k.quadraticCurveTo(0, -12.5, 10.5, -6); k.lineTo(8.5, 0); k.lineTo(3, 4); k.lineTo(0, 6.5); k.lineTo(-3, 4); k.lineTo(-8.5, 0); k.closePath(); k.fill();
+      k.fillStyle = 'rgba(255, 255, 255, .95)'; k.beginPath(); k.moveTo(-6, -1); k.quadraticCurveTo(0, -3, 6, -1); k.lineTo(0, 6.5); k.closePath(); k.fill();
+      eye(-4.2, -4.2, 2, '#ffb020'); eye(4.2, -4.2, 2, '#ffb020');
+      el(0, 5.6, 1.6, 1.2, '#141020');
+      for (let i = 0; i < 3; i++) { const a = T * 1.5 + i * 2.1; glow(Math.cos(a) * 15, Math.sin(a) * 10, 3, 'rgba(200, 240, 255, .8)', .6 + .4 * Math.sin(T * 6 + i)); }
+    } else if (id === 'bulle') {
+      const pulse = Math.sin(T * 3), sq = 1 + pulse * .06;
+      glow(0, -2, 22, 'rgba(255, 140, 220, .35)');
+      // les tentacules qui ondulent
+      for (let i = 0; i < 6; i++) {
+        const bx = -7 + i * 2.8; k.strokeStyle = i % 2 ? 'rgba(255, 170, 230, .65)' : 'rgba(200, 150, 255, .55)'; k.lineWidth = i % 2 ? 1.2 : 2;
+        k.beginPath(); k.moveTo(bx, 3);
+        for (let j = 1; j <= 5; j++) k.lineTo(bx + Math.sin(T * 4 + i + j * .9) * .9 * j, 3 + j * 3.4);
+        k.stroke();
+      }
+      // le dôme transparent, ses nervures et son cœur qui brille
+      k.save(); k.scale(1 / sq, sq);
+      k.fillStyle = rg(-3, -7, 1, 13, [[0, 'rgba(255, 240, 255, .95)'], [.45, 'rgba(255, 150, 220, .75)'], [1, 'rgba(160, 80, 200, .55)']]);
+      k.beginPath(); k.moveTo(-11, 3); k.bezierCurveTo(-12, -14, 12, -14, 11, 3);
+      for (let i = 1; i <= 4; i++) k.quadraticCurveTo(11 - i * 5.5 + 2.75, 1.5, 11 - i * 5.5, 3.5);
+      k.fill();
+      k.strokeStyle = 'rgba(255, 255, 255, .35)'; k.lineWidth = .6;
+      for (const dx of [-6, -2, 2, 6]) { k.beginPath(); k.moveTo(dx * .4, -9); k.quadraticCurveTo(dx, -4, dx * 1.2, 2); k.stroke(); }
+      glow(0, -3, 7, 'rgba(255, 255, 255, .7)', .6 + .3 * pulse);
+      el(-4, -8, 3, 1.6, 'rgba(255, 255, 255, .6)', -.5);
+      k.restore();
+      eye(-3.5, -2.5, 1.6, '#c86bff'); eye(3.5, -2.5, 1.6, '#c86bff');
+    } else if (id === 'hop') {
+      // les grandes oreilles qui bougent un peu
+      for (const sx of [-1, 1]) {
+        k.save(); k.translate(sx * 3.5, -8); k.rotate(sx * (.18 + Math.sin(T * 2.4 + sx) * .06));
+        el(0, -8, 3.4, 9.5, lg(0, -18, 0, 0, [[0, '#ffffff'], [1, '#d8d0f0']]));
+        el(0, -7.5, 1.8, 7, lg(0, -16, 0, 0, [[0, '#ffd0dc'], [1, '#f0a0b8']]));
+        k.restore();
+      }
+      el(0, 8, 8, 6.5, rg(-2, 6, 1, 9, [[0, '#ffffff'], [1, '#b8b0d8']]));
+      el(0, -2, 9, 8.2, rg(-3, -5, 1, 11, [[0, '#ffffff'], [.6, '#ece8fa'], [1, '#a8a0c8']]));
+      // un croissant de lune doré sur le front
+      glow(0, -7.2, 4.5, 'rgba(255, 216, 107, .5)');
+      k.fillStyle = '#ffd86b'; k.beginPath(); k.arc(0, -7.2, 2.2, .7, 5.6); k.arc(1.1, -7.2, 1.6, 5.2, 1.1, true); k.closePath(); k.fill();
+      eye(-3.8, -2.5, 2.2, '#9a5cff'); eye(3.8, -2.5, 2.2, '#9a5cff');
+      for (const sx of [-1, 1]) soft(sx * 6, 1.6, 3, 'rgba(255, 120, 150, .45)');
+      el(0, 1.2, 1.4, 1, '#ff8aa8');
+      k.strokeStyle = '#8a6a8a'; k.lineWidth = .6; k.beginPath(); k.moveTo(0, 2.2); k.lineTo(0, 3.2); k.moveTo(-1.4, 3.6); k.quadraticCurveTo(0, 4.4, 1.4, 3.6); k.stroke();
+    } else if (id === 'caillou') {
+      // vue de dessus : quatre nageoires qui pagaient, une carapace qui est un petit morceau de lune
+      const pad = Math.sin(T * 3);
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { k.save(); k.translate(sx * 9, sy * 5); k.rotate(sx * (sy < 0 ? -.6 : .5) + pad * .25 * sx * sy); el(sx * 3, 0, 5, 2.6, rg(sx * 2, -1, 0, 6, [[0, '#b8e8c0'], [1, '#4a8a5a']])); k.restore(); }
+      el(0, -12, 4.2, 4, rg(-1, -13, 0, 5, [[0, '#c8f0d0'], [1, '#5a9a6a']]));
+      eye(-1.9, -12.8, 1.3, '#6a4a2a'); eye(1.9, -12.8, 1.3, '#6a4a2a');
+      el(0, 0, 10.5, 11.5, rg(-3, -4, 1, 13, [[0, '#f4f4fa'], [.5, '#b8b8c8'], [1, '#5a5a70']]));
+      for (const [cx, cy, cr] of [[-3.5, -3, 2.4], [3, -5, 1.6], [3.5, 3, 2.8], [-2.5, 5, 1.8], [0, 0, 1.2]]) { el(cx, cy, cr, cr * .9, 'rgba(70, 70, 95, .45)'); el(cx - cr * .25, cy - cr * .25, cr * .75, cr * .65, 'rgba(170, 170, 190, .55)'); }
+      k.strokeStyle = 'rgba(255, 255, 255, .4)'; k.lineWidth = .8; k.beginPath(); k.ellipse(0, 0, 10.5, 11.5, 0, 3.6, 5.2); k.stroke();
+    } else if (id === 'nuage') {
+      // un jet d'étoiles au-dessus de la tête
+      for (let i = 0; i < 4; i++) { const q = (T * .8 + i / 4) % 1; glow(5 + Math.sin(i * 2) * q * 5, -8 - q * 11, 2.6 * (1 - q) + .6, 'rgba(255, 240, 180, .95)', 1 - q); }
+      k.save(); k.translate(-12, 0); k.rotate(Math.sin(T * 2.5) * .25);
+      k.fillStyle = lg(-9, 0, 0, 0, [[0, '#1f4a90'], [1, '#3a7ac8']]); k.beginPath(); k.moveTo(0, -1); k.quadraticCurveTo(-5, -2, -9, -7); k.quadraticCurveTo(-6, 0, -9, 6); k.quadraticCurveTo(-5, 1, 0, 2); k.closePath(); k.fill();
+      k.restore();
+      k.fillStyle = rg(0, -4, 1, 16, [[0, '#9fe0ff'], [.5, '#4a90d8'], [1, '#1f3f80']]);
+      k.beginPath(); k.moveTo(-13, 0); k.bezierCurveTo(-10, -9, 8, -11, 13, -3); k.quadraticCurveTo(15, 2, 11, 5); k.bezierCurveTo(4, 9, -8, 7, -13, 0); k.fill();
+      k.fillStyle = 'rgba(230, 245, 255, .85)'; k.beginPath(); k.moveTo(-9, 3); k.bezierCurveTo(-2, 8, 8, 7, 12, 3); k.quadraticCurveTo(4, 4.5, -9, 3); k.fill();
+      k.strokeStyle = 'rgba(120, 170, 220, .6)'; k.lineWidth = .5; for (let i = 0; i < 4; i++) { k.beginPath(); k.moveTo(-4 + i * 3.5, 4.4); k.lineTo(-3 + i * 3.5, 6.2); k.stroke(); }
+      k.fillStyle = '#2a5aa8'; k.beginPath(); k.moveTo(1, 4.5); k.quadraticCurveTo(-2, 10, -5, 10); k.quadraticCurveTo(-3, 6, -2, 4.5); k.closePath(); k.fill();
+      for (const [sx, sy] of [[-6, -4], [-2, -6], [3, -6.5], [-9, -1]]) glow(sx, sy, 1.8, 'rgba(255, 255, 255, .85)', .5 + .5 * Math.sin(T * 3 + sx));
+      eye(8, -1.5, 1.7, '#3a6aa8');
+      k.strokeStyle = 'rgba(20, 40, 80, .7)'; k.lineWidth = .7; k.beginPath(); k.moveTo(9, 2.5); k.quadraticCurveTo(12, 3, 13.5, 1.2); k.stroke();
+    }
+    // bulle de protection prête (Bulle et Caillou)
+    if (o.guard) {
+      k.globalAlpha *= .5 + .25 * Math.sin(T * 4);
+      k.strokeStyle = '#bfefff'; k.lineWidth = 1; k.beginPath(); k.arc(0, 0, 17, 0, 7); k.stroke();
+      glow(-6, -8, 5, 'rgba(255, 255, 255, .6)');
+    }
+    k.restore();
+  }
+
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', accent: 'auto', motif: 'aucun', glass: 'nuit', flame: 'feu', trail: 'classique', shot: 'flamme', gun: 'blaster', power: 'laser', title: '', pet: '' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -1410,6 +1563,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (POWERS.some(m => m.id === saved.power)) cfg.power = saved.power;
     if (SHOTS.some(m => m.id === saved.shot)) cfg.shot = saved.shot;
     if (typeof saved.title === 'string') cfg.title = saved.title;
+    if (PETS.some(m => m.id === saved.pet)) cfg.pet = saved.pet;
     for (const [k, list] of [['accent', ACCENTS], ['motif', MOTIFS], ['glass', GLASSES], ['trail', TRAILS]]) if (list.some(m => m.id === saved[k])) cfg[k] = saved[k];
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
@@ -1437,6 +1591,8 @@ body:not(.jeu) .hud { opacity: 0; }
     gun: { double: 5200, eventail: 7800, mitrailleuse: 11700, vague: 14300, plasma: 15600, ricochet: 19500, quintuple: 23400 },
     power: { aimant: 3100, temps: 3900, hyper: 6500, nova: 10400, miroir: 5200, gel: 5700, dragon: 7300, foudre: 7800, missiles: 9100 },
     shot: {},
+    // Lumi est offerte à la libération ; les 6 autres s'adoptent avec des Astros (gardés d'un monde à l'autre, comme les vaisseaux)
+    pet: { pipo: 6000, frimousse: 9000, bulle: 12000, hop: 16000, caillou: 20000, nuage: 28000 },
   };
   const CATS = [
     { key: 'model', label: 'Modèle', list: MODELS },
@@ -1564,6 +1720,10 @@ body:not(.jeu) .hud { opacity: 0; }
   for (const c of CATS) if (!owns(c.key, cfg[c.key])) cfg[c.key] = DEFAULT[c.key];
   function saveShop() { try { localStorage.setItem('comete-atelier', JSON.stringify(shop)); } catch (e) {} }
   saveShop();
+  // les animaux ne sont là qu'une fois libérés de l'usine du Serpent de Givre
+  const petsFreed = () => beaten.includes('serpent');
+  const petOwned = id => petsFreed() && owns('pet', id);
+  const petNow = () => cfg.pet && petOwned(cfg.pet) ? byId(PETS, cfg.pet) : null;
 
   // statistiques gardées d'une partie à l'autre
   let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, parties: 0, vies: 0, pouvoirs: 0, feats: [], won: [] };
@@ -2540,6 +2700,25 @@ body:not(.jeu) .hud { opacity: 0; }
       el.appendChild(b);
     }
   }
+  // les animaux de l'espace : prisonniers tant que le Serpent de Givre n'est pas battu, puis Lumi offerte et 6 à adopter
+  function buildPets() {
+    const el = $('optPet'), free = petsFreed(); el.innerHTML = '';
+    $('petInfo').textContent = free
+      ? 'Libérés de l\'usine à étoiles du Serpent de Givre. Celui que tu choisis vole à côté de ta fusée et t\'aide un peu. Ils restent avec toi d\'un monde à l\'autre.'
+      : 'Sept animaux de l\'espace sont enfermés dans l\'usine à étoiles d\'un gardien du Royaume de Givre (Monde 2). Bats-le pour les libérer.';
+    for (const p of PETS) {
+      const b = document.createElement('button'), mine = petOwned(p.id), on = free && shown('pet') === p.id;
+      b.type = 'button'; b.className = 'pcard' + (mine ? '' : ' locked'); b.id = 'opt-pet-' + p.id;
+      b.setAttribute('aria-pressed', on);
+      b.disabled = !free;
+      const st = !free ? '🔒 Prisonnier' : mine ? (cfg.pet === p.id ? 'Vole avec toi · touche pour le laisser au Hangar' : 'Adopté · touche pour l\'emmener') : 'À adopter · ' + astros(price('pet', p.id));
+      b.innerHTML = `<b>${free ? p.name : '???'} <small>${free ? p.kind : ''}</small></b><canvas width="480" height="260" data-act="pet:${p.id}" aria-hidden="true"></canvas>`
+        + `<span>${free ? p.desc : 'Il attend derrière les barreaux de glace.'}</span><em>${free ? p.info + ' · ' : ''}${st}</em>`;
+      // toucher l'animal qui vole déjà avec toi le laisse au Hangar
+      b.onclick = () => { if (mine && cfg.pet === p.id) { preview = null; cfg.pet = ''; saveCfg(); beep(400, .06, 'triangle', .06); refreshHangar(); } else pick('pet', p.id); };
+      el.appendChild(b);
+    }
+  }
   // ===== Petites animations des pistolets et super-pouvoirs =====
   // chaque carte montre l'action en boucle, avec la fusée du joueur
   const AW = 240, AH = 130;
@@ -2567,6 +2746,45 @@ body:not(.jeu) .hud { opacity: 0; }
     k.save(); k.translate(x, y); k.rotate(a); k.fillStyle = '#ffd86b'; k.shadowColor = '#ffd86b'; k.shadowBlur = 6;
     k.fillRect(-1.5, -6, 3, 12); k.restore();
   }
+  // la carte d'un animal : il vole à côté de la fusée et montre comment il aide (ou attend derrière des barreaux de glace)
+  function drawPetAct(k, id, T, t) {
+    const p = byId(PETS, id), px = AW / 2 - 22, py = AH - 34;
+    if (!petsFreed()) {
+      drawPet(k, id, AW / 2, AH / 2 + 6, 2.6, t, { dim: .55 });
+      k.fillStyle = 'rgba(8, 18, 40, .45)'; k.fillRect(0, 0, AW, AH);
+      for (let i = 0; i < 8; i++) {
+        const x = 15 + i * 30, g = k.createLinearGradient(x - 4, 0, x + 4, 0);
+        g.addColorStop(0, 'rgba(190, 240, 255, .25)'); g.addColorStop(.5, 'rgba(240, 252, 255, .85)'); g.addColorStop(1, 'rgba(120, 190, 230, .3)');
+        k.fillStyle = g; k.fillRect(x - 4, 0, 8, AH);
+      }
+      return;
+    }
+    const P = (T % 2) / 2, qx = px + 46 + Math.sin(T * 1.5) * 3, qy = py + 2;
+    if (p.fire) {
+      // une cible en haut, et ses étincelles qui foncent dessus
+      const ax = px + 40 + Math.sin(T) * 30, ay = 24;
+      actAlien(k, ax, ay, 10);
+      for (let n = 0; n < (p.n || 1); n++) {
+        const q = (P * 2 + n * .18) % 1;
+        if (q < .85) { const x = qx + (ax - qx) * q + (n ? 6 : 0) * Math.sin(q * 3), y = qy - 8 + (ay - qy + 8) * q; k.fillStyle = p.col; k.shadowColor = p.col; k.shadowBlur = 8; k.beginPath(); k.arc(x, y, 2.6, 0, 7); k.fill(); k.shadowBlur = 0; }
+        else actBoom(k, ax, ay, (q - .85) / .15, p.col);
+      }
+    }
+    if (p.magnet) for (let i = 0; i < 4; i++) {
+      const q = (P + i / 4) % 1, a = i * 1.7 + 2.4, d = (1 - q) * 70;
+      actStar(k, qx + Math.cos(a) * d * 1.4, qy + Math.sin(a) * d * .7 - 10, 4, T * 2 + i);
+    }
+    const guardUp = p.guard && P < .62;
+    if (p.guard) {
+      // un tir ennemi descend sur la fusée : la bulle l'arrête, puis se reforme
+      const y = 8 + Math.min(P, .62) / .62 * (py - 34);
+      if (P < .62) { k.fillStyle = '#ff4f6d'; k.shadowColor = '#ff4f6d'; k.shadowBlur = 6; k.beginPath(); k.arc(px, y, 3.2, 0, 7); k.fill(); k.shadowBlur = 0; }
+      else actBoom(k, px, py - 26, (P - .62) / .38, '#bfefff');
+      if (guardUp) { k.strokeStyle = `rgba(191, 239, 255, ${.4 + .2 * Math.sin(T * 6)})`; k.lineWidth = 1.5; k.beginPath(); k.arc(px, py - 4, 26, 0, 7); k.stroke(); }
+    }
+    drawRocket(k, px, py, 1.05, cfg, t, 0, 0);
+    drawPet(k, id, qx, qy, id === 'nuage' ? 1.35 : 1.5, t, { guard: guardUp });
+  }
   function drawAct(k, key, id, t) {
     const T = t / 1000, px = AW / 2, py = AH - 30, sc = 1.05;
     k.setTransform(2, 0, 0, 2, 0, 0);
@@ -2574,6 +2792,7 @@ body:not(.jeu) .hud { opacity: 0; }
     // étoiles de fond qui défilent
     k.fillStyle = 'rgba(255, 255, 255, .5)';
     for (let i = 0; i < 18; i++) k.fillRect((i * 53) % AW, ((i * 37 + T * 30 * (1 + i % 3)) % AH), 1.2, 1.2);
+    if (key === 'pet') { drawPetAct(k, id, T, t); return; }
     const me = { ...cfg, gun: key === 'gun' ? id : cfg.gun };
     if (key === 'gun') {
       const g = byId(GUNS, id);
@@ -2928,6 +3147,7 @@ body:not(.jeu) .hud { opacity: 0; }
     buildChips($('optShot'), SHOTS, 'shot', true);
     buildCards($('optGun'), GUNS, 'gun', g => `Chargeur ${g.mag} · recharge ${String(g.reload).replace('.', ',')} s · ${g.info}`);
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
+    buildPets();
     $('pvName').textContent = cfg.name;
     $('pvPower').textContent = byId(GUNS, shown('gun')).name + ' · ' + byId(POWERS, shown('power')).name;
     showWallet();
@@ -2935,7 +3155,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const bar = $('buybar');
     bar.hidden = !preview || preview.key === 'model';
     if (preview) {
-      const c = CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
+      const c = preview.key === 'pet' ? { label: 'Animal', list: PETS } : CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
       const tro = trophyOf(preview.key, preview.id);
       if (tro) {
         $('buyText').textContent = `${c.label} ${it.name} · exclusif, gagne le trophée ${trophyName(tro)}` +
@@ -3037,7 +3257,9 @@ body:not(.jeu) .hud { opacity: 0; }
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
-  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0;
+  let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0, zooAt = 0;
+  // l'animal de l'espace qui vole à côté de la fusée (position, prochaine étincelle, bulle qui se reforme)
+  let pet = { x: 0, y: 0, fireT: 1, guardT: 0 };
   // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
   let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
@@ -3049,7 +3271,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -4570,6 +4792,23 @@ body:not(.jeu) .hud { opacity: 0; }
       S('cockpit:amis', [tk.after[1][0], tk.after[1][1]], [tk.after[2][0], tk.after[2][1]]),
     ];
   };
+  // Monde 2, gardien n°7 : l'usine à étoiles du Serpent de Givre, puis la libération des 7 animaux de l'espace
+  // (la réplique du Serpent est celle de Baptiste ; les autres textes sont des propositions, à relire)
+  const ZOO = {
+    avant: () => [
+      S('usine:dehors', 'Au milieu des Anneaux de glace tourne une usine immense. Ses cheminées crachent de la lumière d\'étoile.'),
+      S('usine:cages', 'Derrière des barreaux de glace, sept petits animaux de l\'espace travaillent sans jamais s\'arrêter. Ils polissent les étoiles volées.', ['Nina', 'Ils sont enfermés…']),
+      S('usine:serpent', ['Serpent de Givre', 'Ahaha ! Tu ne toucheras pas les animaux que je garde ! Ce sont mes esclaves d\'usine à étoiles !']),
+      S('cockpit:givre', ['Clac', 'Lui, je l\'aime pas du tout.'], ['Nina', 'On va les sortir de là. Tous les sept.']),
+    ],
+    libre: n => [
+      S('usine:brise', 'Le Serpent de Givre est vaincu. Une à une, les cages de glace craquent.'),
+      S('usine:sortie', 'Les sept animaux sortent de l\'usine. Pour la première fois depuis très longtemps, ils voient les vraies étoiles.'),
+      S('usine:lumi', `La plus petite, une luciole des glaces, vient se coller tout contre ${n}.`, ['Nina', 'Elle veut venir avec nous !'], ['n', 'Passagère enregistrée. Nom : Lumi.'], ['Clac', 'D\'accord. Mais le numéro deux, c\'est moi.']),
+      S('usine:hangar', 'Les six autres ont trouvé refuge au Hangar. Ils t\'attendent.'),
+    ],
+  };
+  const ZOO_NOTE = '<b>Cadeau :</b> Lumi vole maintenant à côté de ta fusée et lance des étincelles. Les 6 autres animaux s\'adoptent au Hangar avec tes Astros.';
   const FINALE = {
     clac: () => [
       noClac(S('action:gueule', ['Le Dévoreur', 'Assez joué ! Je vais t\'avaler !'])),
@@ -4811,6 +5050,18 @@ body:not(.jeu) .hud { opacity: 0; }
   function startClacBord() {
     playFilm(CLAC_BORD(), { w: 0, clac: false, go: 'Reprendre', replayGo: false, end: resumePlay });
   }
+  // Monde 2, gardien 7 : l'usine avant le combat (tant que les animaux sont prisonniers), puis leur libération
+  const zooIntroDue = () => world === 1 && bossInWorld % 10 === 6 && !petsFreed();
+  function startZooIntro() {
+    playFilm(ZOO.avant(), { w: 1, go: 'Au combat !', end: () => { if (cineReplay) return backToCinema(); resumePlay(); spawnBoss(); } });
+  }
+  function startZooFree() {
+    if (!seenTalks.includes('zoo')) { seenTalks.push('zoo'); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} }
+    // Lumi, offerte : elle vole tout de suite à côté de la fusée
+    if (!cfg.pet) { cfg.pet = 'lumi'; saveCfg(); }
+    pet.x = player.x - 46; pet.y = player.y + 10;
+    playFilm(ZOO.libre(`<b>${rocketName()}</b>`), { w: 1, go: 'Reprendre', note: ZOO_NOTE, end: resumePlay });
+  }
   function startClacFilm() {
     playFilm(FINALE.clac(), { w: WORLDS.length - 1, go: 'Reprendre le combat', replayGo: false, end: resumePlay });
   }
@@ -4848,7 +5099,8 @@ body:not(.jeu) .hud { opacity: 0; }
       return `<div class="cinerow${open ? '' : ' locked'}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
         + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}</small><b>${open ? w.name : '???'}</b></div>`
         + `<div class="cinebtns"><button class="ghost" type="button" data-c="pro" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} Prologue</button>`
-        + `<button class="play" type="button" data-c="fin" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button></div>`
+        + `<button class="play" type="button" data-c="fin" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button>`
+        + (i === 1 && petsFreed() ? `<button class="ghost" type="button" data-c="zoo" data-w="1">▶ Les animaux</button>` : '') + '</div>'
         + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'le choix et la fin' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
         + '</div>';
     }).join('');
@@ -4859,6 +5111,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function playCinema(kind, w) {
     cineReplay = true; replayWorld = world; $('cinema').hidden = true;
     if (kind === 'pro') { startPrologue(w); return; }
+    if (kind === 'zoo') { playFilm([...ZOO.avant(), ...ZOO.libre(`<b>${rocketName()}</b>`)], { w: 1, go: 'Terminer', end: backToCinema }); return; }
     world = w;
     if (w === WORLDS.length - 1) startFinale(); else startTransit();
   }
@@ -5626,6 +5879,110 @@ body:not(.jeu) .hud { opacity: 0; }
       ctx.fillStyle = vg; ctx.fillRect(0, top, W, zb - top);
     },
     // Action : une scène de combat figée
+    // Usine à étoiles du Serpent de Givre : les 7 animaux de l'espace prisonniers, puis libres
+    usine(v, Z) {
+      const { T, t, m, top, zb, mid, h, wd } = Z, [c1, c2] = wd.col, n = PETS.length, rs = rocketSize(Z);
+      const inside = ['cages', 'serpent', 'brise'].includes(v);
+      const cw = Math.min(W / (n + 1.4), h * (v === 'serpent' ? .2 : .26)), gap = cw * 1.14;
+      const rowY = v === 'serpent' ? zb - cw * .85 : mid + h * .1, cageX = i => W / 2 + (i - (n - 1) / 2) * gap;
+      const LG = (x0, y0, x1, y1, st) => { const g = ctx.createLinearGradient(x0, y0, x1, y1); st.forEach(([p, c]) => g.addColorStop(p, c)); return g; };
+      if (inside) {
+        // dans l'usine : un grand hall de métal givré, des lampes froides, des tuyaux, et le tapis roulant des étoiles volées
+        ctx.fillStyle = LG(0, 0, 0, H, [[0, '#050c18'], [.45, '#0f2640'], [1, '#040a14']]); ctx.fillRect(0, 0, W, H);
+        for (let x = W * .04, i = 0; x < W; x += Math.max(90, W * .17), i++) {
+          ctx.fillStyle = LG(x - 9, 0, x + 9, 0, [[0, '#0a1626'], [.5, '#2a4a6a'], [1, '#081220']]); ctx.fillRect(x - 9, 0, 18, zb);
+          halo(x, top + h * .07, Math.min(90, h * .25), 'rgba(150, 225, 255, .3)', .8 + .2 * Math.sin(t / 400 + i));
+          ctx.fillStyle = '#dff6ff'; ctx.fillRect(x - 6, top + h * .06, 12, 3);
+        }
+        for (const [y, th] of [[top + h * .14, 10], [top + h * .2, 6]]) {
+          ctx.fillStyle = LG(0, y, 0, y + th, [[0, '#6a8aa8'], [.4, '#2a4462'], [1, '#0c1a2c']]); ctx.fillRect(0, y, W, th);
+          ctx.fillStyle = 'rgba(230, 250, 255, .5)'; for (let x = 8; x < W; x += 23) ctx.fillRect(x, y - 2, 9, 2);
+        }
+        // le tapis roulant : les étoiles volées défilent sous les cages
+        const by = rowY + cw * .66, bh = Math.max(10, cw * .2);
+        ctx.fillStyle = LG(0, by, 0, by + bh, [[0, '#3a4a5e'], [.3, '#1a2434'], [1, '#0a0e18']]); ctx.fillRect(0, by, W, bh);
+        ctx.fillStyle = 'rgba(255, 255, 255, .12)'; for (let x = -((t / 30) % 18); x < W; x += 18) ctx.fillRect(x, by + 2, 2, bh - 4);
+        for (let i = 0; i < 9; i++) { const x = W - ((i / 9 + T * .05) % 1) * (W + 40); star(x, by - 6, Math.max(4, bh * .45), .9, t, 12); }
+      } else if (v !== 'hangar') {
+        // dehors : le ciel du Royaume de Givre et un anneau de glace
+        sky(c1, '#020a14'); starfield(Z, c2, .02);
+        ctx.save(); ctx.globalAlpha = .55; ctx.strokeStyle = LG(0, 0, W, 0, [[0, 'rgba(160, 230, 255, 0)'], [.5, 'rgba(220, 248, 255, .9)'], [1, 'rgba(160, 230, 255, 0)']]);
+        ctx.lineWidth = Math.max(6, h * .03); ctx.beginPath(); ctx.ellipse(W / 2, mid + h * .1, W * .7, h * .12, -.08, 0, 7); ctx.stroke(); ctx.restore();
+      }
+      if (v === 'dehors' || v === 'sortie') {
+        // l'usine : un bloc sombre aux fenêtres bleues, trois cheminées qui crachent de la lumière d'étoile
+        const fw = Math.min(W * .78, h * 1.5), fh = h * .34, fx = W / 2 - fw / 2, fy = zb - fh;
+        for (const [k, cx] of [[0, .2], [1, .5], [2, .78]]) {
+          const x = fx + fw * cx, ch = fh * (.5 + k % 2 * .25), w = fw * .06;
+          ctx.fillStyle = LG(x - w, 0, x + w, 0, [[0, '#0a1424'], [.5, '#22384e'], [1, '#08101c']]); ctx.fillRect(x - w / 2, fy - ch, w, ch);
+          if (v === 'dehors') for (let i = 0; i < 12; i++) { const q = proPts[i + k * 12 + 400], p = (q.d + T * .25) % 1; star(x + Math.sin(p * 6 + i) * w * (.5 + p * 2), fy - ch - p * h * .5, 2 + q.z * 1.4 * (1 - p), (1 - p) * .9, t, 12); }
+        }
+        ctx.fillStyle = LG(0, fy, 0, zb, [[0, '#1c3248'], [.2, '#0f1e30'], [1, '#050a12']]);
+        ctx.beginPath(); ctx.moveTo(fx, zb); ctx.lineTo(fx, fy);
+        for (let i = 0; i < 5; i++) { const x0 = fx + fw * i / 5; ctx.lineTo(x0 + fw * .1, fy - fh * .18); ctx.lineTo(x0 + fw * .2, fy); }
+        ctx.lineTo(fx + fw, zb); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(230, 250, 255, .6)'; for (let i = 0; i < 5; i++) ctx.fillRect(fx + fw * i / 5 + fw * .02, fy - 2, fw * .16, 2);
+        for (let r = 0; r < 2; r++) for (let i = 0; i < 9; i++) { const lit = v === 'dehors' || (i + r) % 3; ctx.fillStyle = lit ? `rgba(122, 216, 255, ${.5 + .3 * Math.sin(t / 300 + i * 2 + r)})` : 'rgba(20, 40, 60, .8)'; ctx.fillRect(fx + fw * (.06 + i * .1), fy + fh * (.2 + r * .26), fw * .05, fh * .12); }
+        // la grande porte : fermée dehors, grande ouverte et lumineuse à la sortie
+        const dw = fw * .18, dh = fh * .46, dx = W / 2 - dw / 2, dy = zb - dh;
+        if (v === 'sortie') { halo(W / 2, dy + dh / 2, dw * 2, 'rgba(255, 236, 170, .55)'); ctx.fillStyle = 'rgba(255, 246, 216, .9)'; }
+        else ctx.fillStyle = LG(0, dy, 0, zb, [[0, '#4a6a88'], [1, '#1a2a3a']]);
+        ctx.fillRect(dx, dy, dw, dh);
+      }
+      if (inside) {
+        if (v === 'serpent') {
+          // le Serpent de Givre au-dessus de ses cages
+          const sz = Math.min(m * .42, (rowY - cw * .6 - top) * .95), sy = top + sz * .52;
+          halo(W / 2, sy, sz * .9, 'rgba(79, 224, 200, .45)');
+          portrait(bossById('serpent'), W / 2 + Math.sin(t / 600) * 5, sy + Math.sin(t / 800) * 4, sz, Math.min(1, T / 1));
+          ctx.globalAlpha = ease((T - .6) / .6); label('SERPENT DE GIVRE', Math.min(rowY - cw * .62, sy + sz * .55), Math.min(26, W / 14), '#4fe0c8'); ctx.globalAlpha = 1;
+        }
+        // les cages de glace, un animal dans chacune ; elles craquent quand le Serpent est vaincu
+        for (let i = 0; i < n; i++) {
+          const x = cageX(i), y = rowY, brk = v === 'brise' ? ease((T - .4 - i * .14) / 1.1) : 0;
+          ctx.fillStyle = 'rgba(120, 190, 230, .1)'; rrect(x - cw / 2, y - cw / 2, cw, cw, 6); ctx.fill();
+          if (brk > .3) halo(x, y, cw * .7, 'rgba(255, 246, 216, .4)', brk);
+          drawPet(ctx, PETS[i].id, x, y + (v === 'brise' ? 0 : Math.sin(t / 250 + i) * 1.5), cw / (PETS[i].id === 'nuage' ? 40 : 36), t, { dim: .55 + brk * .45, still: v !== 'brise' });
+          ctx.save(); ctx.globalAlpha = 1 - brk;
+          for (let b = 0; b < 4; b++) {
+            const bx = x - cw / 2 + cw * (b + .5) / 4, fall = brk * brk * h * .4, rot = (b % 2 ? 1 : -1) * brk * .8;
+            ctx.save(); ctx.translate(bx + (b - 1.5) * brk * cw * .4, y + fall); ctx.rotate(rot);
+            ctx.fillStyle = LG(-3, 0, 3, 0, [[0, 'rgba(160, 220, 250, .5)'], [.5, 'rgba(240, 252, 255, .95)'], [1, 'rgba(110, 180, 220, .5)']]); ctx.fillRect(-2.5, -cw / 2, 5, cw);
+            ctx.restore();
+          }
+          ctx.strokeStyle = 'rgba(220, 248, 255, .85)'; ctx.lineWidth = 2; rrect(x - cw / 2, y - cw / 2 + brk * h * .3, cw, cw, 6); ctx.stroke();
+          ctx.restore();
+          if (v === 'brise' && brk > 0 && brk < 1) for (let j = 0; j < 6; j++) { const q = proPts[i * 6 + j + 300], a = q.a * 3, d = brk * cw * (.6 + q.d); ctx.globalAlpha = 1 - brk; ctx.fillStyle = '#e6f9ff'; ctx.fillRect(x + Math.cos(a) * d, y + Math.sin(a) * d, 3, 3); ctx.globalAlpha = 1; }
+        }
+      } else if (v === 'sortie') {
+        // les sept animaux s'envolent de la porte et se mettent en V devant les étoiles
+        for (let i = 0; i < n; i++) {
+          const k = ease((T - .3 - i * .22) / 1.8); if (k <= 0) continue;
+          const sx = W / 2, sy = zb - h * .12, tx = cageX(i), ty = top + h * .2 + Math.abs(i - 3) * h * .07;
+          const x = sx + (tx - sx) * k, y = sy + (ty - sy) * k - Math.sin(k * Math.PI) * h * .08;
+          halo(x, y, cw * .6, 'rgba(255, 246, 216, .25)', k);
+          drawPet(ctx, PETS[i].id, x, y, cw / (PETS[i].id === 'nuage' ? 38 : 34), t);
+        }
+      } else if (v === 'lumi') {
+        // Lumi vient se coller tout contre la fusée ; les autres jouent au loin
+        for (let i = 1; i < n; i++) { const a = t / 1600 + i * 1.1; drawPet(ctx, PETS[i].id, W * .5 + Math.cos(a) * W * .38, top + h * .22 + Math.sin(a * 1.3) * h * .1, Math.min(1.6, h / 220), t, { dim: .55 }); }
+        const big = Math.min(rs * 1.5, h / 80), rx = W * .62, ry = mid + h * .06;
+        drawRocket(ctx, rx, ry, big, cfg, t, 0, .2);
+        const k = ease((T - .2) / 2.4), lx = W * .12 + (rx - 22 * big - W * .12) * k, ly = mid - h * .1 + (ry - 4 * big - mid + h * .1) * k + Math.sin(t / 300) * 4 * (1 - k);
+        halo(lx, ly, 26 * big * (.6 + .4 * k), 'rgba(150, 255, 200, .5)');
+        drawPet(ctx, 'lumi', lx, ly, Math.min(5, big * 1.3), t);
+      } else if (v === 'hangar') {
+        // au Hangar : les six autres animaux attendent, chacun sous sa lampe
+        drawBay(ctx, W, H, t, Math.min(.9, zb / H));
+        const rest = PETS.slice(1), gw = Math.min(W / (rest.length + .6), h * .3), y = zb - gw * .85;
+        rest.forEach((p, i) => {
+          const x = W / 2 + (i - (rest.length - 1) / 2) * gw, k = ease((T - i * .15) / .7);
+          ctx.fillStyle = `rgba(255, 246, 216, ${.12 * k})`; ctx.beginPath(); ctx.moveTo(x - gw * .12, top); ctx.lineTo(x + gw * .12, top); ctx.lineTo(x + gw * .45, y + gw * .4); ctx.lineTo(x - gw * .45, y + gw * .4); ctx.closePath(); ctx.fill();
+          drawPet(ctx, p.id, x, y, gw / (p.id === 'nuage' ? 42 : 38), t, { dim: k });
+          ctx.globalAlpha = k; ctx.textAlign = 'center'; ctx.fillStyle = p.col; ctx.font = `${Math.max(11, Math.min(16, gw * .17))}px Bungee, Impact, system-ui, sans-serif`; ctx.fillText(p.name, x, y + gw * .62); ctx.globalAlpha = 1;
+        });
+      }
+    },
     action(v, Z) {
       const { T, t, m, top, zb, mid, h, wd } = Z, rs = rocketSize(Z);
       if (v === 'etourdi') {
@@ -6797,6 +7154,8 @@ body:not(.jeu) .hud { opacity: 0; }
       // un tyran se dissout d'abord en fumée noire aspirée vers le haut, puis il parle
       const tyran = it.idx === 9 && world < WORLDS.length - 1, tyranTalk = tyran && !!tk, wait = tyranTalk ? 1.9 : 1.2;
       // Clac monte à bord : la cinématique se joue à chaque victoire contre le Crabe
+      // les animaux de l'usine du Serpent de Givre sont libres : la cinématique se joue la première fois
+      if (it.def.id === 'serpent' && !seenTalks.includes('zoo')) zooAt = time + wait;
       if (it.def.id === 'crabe') { if (!seenTalks.includes('crabe')) { seenTalks.push('crabe'); try { localStorage.setItem('comete-dialogues', JSON.stringify(seenTalks)); } catch (e) {} } bordAt = time + wait; }
       else if (tk && !seenTalks.includes(it.def.id)) { talkQ = [[it.def.name, tk.bye, it.def.col], ...tk.after]; talkId = it.def.id; talkAt = time + wait; }
       else if (tyranTalk) { sayAt = time + wait; sayDef = { ...it.def, bye: tk.bye }; }
@@ -6830,6 +7189,15 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function hitPlayer() {
+    // Bulle ou Caillou arrête le coup à ta place, puis sa protection se reforme
+    const pd = petNow();
+    if (pd && pd.guard && pet.guardT <= 0) {
+      pet.guardT = pd.guard; player.hurt = 1;
+      pop(player.x, player.y - 34, `${pd.name} te protège !`, '#bfefff');
+      burst(player.x, player.y, '#bfefff', 16, 180, 3);
+      beep(900, .2, 'sine', .1, 500);
+      return;
+    }
     run.clean = false;
     if (boss) run.bossHit = true;
     lives--; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
@@ -7040,7 +7408,7 @@ body:not(.jeu) .hud { opacity: 0; }
   let seenTalks = [];
   try { const st = JSON.parse(localStorage.getItem('comete-dialogues') || '[]'); if (Array.isArray(st)) seenTalks = st; } catch (e) {}
   // couleur de l'étiquette de qui parle ('n' = la fusée)
-  const WHO_COL = { n: '#ffd86b', '???': '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', Malo: '#7dff8a', 'Inès': '#ff9ad8', 'Le Dévoreur': '#c86bff', Elio: '#ffe9a8', '': '#a99fd0' };
+  const WHO_COL = { n: '#ffd86b', '???': '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', Malo: '#7dff8a', 'Inès': '#ff9ad8', 'Le Dévoreur': '#c86bff', Elio: '#ffe9a8', 'Serpent de Givre': '#4fe0c8', '': '#a99fd0' };
   // une réplique de boss dans une bulle en haut de l'écran, sans pause
   function bossSay(def, text) {
     const b = $('sayBubble');
@@ -7379,6 +7747,7 @@ body:not(.jeu) .hud { opacity: 0; }
     }
     if (smokes.length) smokes = smokes.filter(m => m.life > 0);
     if (bordAt && time >= bordAt) { bordAt = 0; startClacBord(); return; }
+    if (zooAt && time >= zooAt) { zooAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startZooFree(); return; }
     if (clacAt && time >= clacAt) { clacAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startClacFilm(); return; }
     if (storyAt && time >= storyAt) { storyAt = 0; storyNext === 'world' ? startTransit() : startFinale(); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
@@ -7392,6 +7761,8 @@ body:not(.jeu) .hud { opacity: 0; }
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       // la planète secrète passe au plus une fois par monde dans une partie (plus rarement si on l'a déjà trouvée)
       if (secretAt === null && level >= 2 && !run.secrets.includes(world) && Math.random() < (stats.feats.includes('secret' + world) ? .12 : .3)) secretAt = time + 4 + Math.random() * 10;
+      // Monde 2, gardien 7 : tant que les animaux ne sont pas libérés, une cinématique montre son usine avant le combat
+      if (level % 3 === 0 && !boss && zooIntroDue()) { startZooIntro(); return; }
       if (level % 3 === 0 && !boss) spawnBoss();
       else levelFx.name = newSector ? `Secteur ${bossInWorld + 1} · ${WORLDS[world].bosses[bossInWorld].place}` : `${themeOf(level).name} · ça accélère !`;
       newSector = false;
@@ -7491,6 +7862,20 @@ body:not(.jeu) .hud { opacity: 0; }
     if (!on) bh = null;
     // ennemis visibles à l'écran
     const foes = () => items.filter(it => !it.dead && (it.kind === 'rock' || it.kind === 'alien') && it.y > 0 && it.y < H);
+    // l'animal suit la fusée sur le côté, avec un peu de retard, et lance ses étincelles sur l'ennemi le plus proche
+    const pd = petNow();
+    if (pd) {
+      const side = player.x < 80 ? 1 : -1, kf = 1 - Math.exp(-dt * 5);
+      pet.x += (player.x + side * 46 - pet.x) * kf; pet.y += (player.y + 12 - pet.y) * kf;
+      if (pet.guardT > 0) pet.guardT -= dt;
+      if (pd.fire && (pet.fireT -= dt) <= 0) {
+        const tg = cineT > 0 ? null : foes().reduce((m, it) => !m || Math.hypot(it.x - pet.x, it.y - pet.y) < Math.hypot(m.x - pet.x, m.y - pet.y) ? it : m, null);
+        if (tg) {
+          for (let n = 0; n < pd.n; n++) { const a = Math.atan2(tg.y - pet.y, tg.x - pet.x) + (n - (pd.n - 1) / 2) * .35; shots.push({ x: pet.x, y: pet.y - 8, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, dmg: 1, seek: pd.col }); }
+          pet.fireT = pd.fire; beep(1300, .05, 'triangle', .03, 400);
+        } else pet.fireT = .3;
+      }
+    }
     // foudre : un éclair part de la fusée et rebondit sur 4 ennemis
     if (on && pid === 'foudre') {
       zapT -= dt;
@@ -7540,14 +7925,14 @@ body:not(.jeu) .hud { opacity: 0; }
         beep(1200, .1, 'triangle', .05, -400);
       }
     }
-    const missTargets = shots.some(s => s.missile) ? foes() : [];
+    const missTargets = shots.some(s => s.missile || s.seek) ? foes() : [];
     for (const s of shots) {
-      if (s.missile) {
+      if (s.missile || s.seek) {
         if (!s.tg || s.tg.dead) s.tg = missTargets.reduce((m, it) => !m || Math.hypot(it.x - s.x, it.y - s.y) < Math.hypot(m.x - s.x, m.y - s.y) ? it : m, null);
         const tx = s.tg ? s.tg.x : s.x, ty = s.tg ? s.tg.y : -100, d = Math.hypot(tx - s.x, ty - s.y) || 1;
         const k = Math.min(1, dt * 6);
         s.vx += (( tx - s.x) / d * 640 - s.vx) * k; s.vy += ((ty - s.y) / d * 640 - s.vy) * k;
-        if (!reduce && Math.random() < .6) parts.push({ x: s.x, y: s.y, vx: -s.vx * .1, vy: -s.vy * .1, life: .3, color: '#c9c3ea', size: 3 });
+        if (!reduce && Math.random() < .6) parts.push({ x: s.x, y: s.y, vx: -s.vx * .1, vy: -s.vy * .1, life: .3, color: s.seek || '#c9c3ea', size: s.seek ? 2 : 3 });
       }
       if (s.wave) { s.wave.t += dt; s.wave.bx += s.vx * dt; s.x = s.wave.bx + Math.sin(s.wave.t * 13 + s.wave.ph) * 26; }
       else s.x += s.vx * dt;
@@ -7628,6 +8013,11 @@ body:not(.jeu) .hud { opacity: 0; }
       if (on && pid === 'aimant' && (it.kind === 'star' || it.kind === 'shield' || it.kind === 'charge' || it.kind === 'infini' || it.kind === 'vie')) {
         const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
         if (d < 280 && d > 1) { it.x += dx / d * 520 * dt; it.y += dy / d * 520 * dt; }
+      }
+      // un animal aimant (Pipo, Nuage) attire doucement les étoiles proches
+      if (pd && pd.magnet && it.kind === 'star') {
+        const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
+        if (d < pd.magnet && d > 1) { it.x += dx / d * 300 * dt; it.y += dy / d * 300 * dt; }
       }
       const hostile = it.kind === 'rock' || it.kind === 'alien';
       // laser : détruit ce qui est au-dessus de la fusée
@@ -7820,6 +8210,12 @@ body:not(.jeu) .hud { opacity: 0; }
   function drawShot(s, t, fl) {
     const a = Math.atan2(s.vx, -s.vy);
     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
+    if (s.seek) {
+      // étincelle d'un animal : une petite boule de lumière à sa couleur
+      glowAt(0, 0, 11, s.seek, .7);
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, 7); ctx.fill();
+      ctx.restore(); return;
+    }
     if (s.big) {
       const pr = 9 + Math.sin(t / 60) * 1.5;
       glowAt(0, 0, pr * 3.2, '#a24bff', .6);
@@ -10213,6 +10609,9 @@ body:not(.jeu) .hud { opacity: 0; }
         ctx.beginPath(); ctx.arc(player.x, player.y, 30, 0, 7); ctx.fill(); ctx.stroke();
         ctx.restore();
       }
+      // l'animal de l'espace, à côté de la fusée (sa bulle brille quand elle est prête)
+      const pd = petNow();
+      if (pd && ['play', 'pause', 'talk'].includes(state)) drawPet(ctx, pd.id, pet.x, pet.y, pd.id === 'nuage' ? 1.25 : 1.4, t, { guard: pd.guard && pet.guardT <= 0 });
       // fusée
       const blink = player.hurt > 0 && Math.floor(player.hurt * 12) % 2;
       if (!blink && state !== 'over' && state !== 'dying') {
@@ -10348,6 +10747,8 @@ body:not(.jeu) .hud { opacity: 0; }
     const bob = reduce ? 0 : Math.sin(t / 500) * 8;
     const pcfg = preview ? { ...cfg, [preview.key]: preview.id } : cfg;
     drawRocket(pctx, pv.width / 2, pv.height * .42 + bob, 5, pcfg, t, reduce ? 0 : Math.sin(t / 900) * .12, .3);
+    // l'animal qui vole avec la fusée (ou celui qu'on regarde avant de l'adopter)
+    if (pcfg.pet && petsFreed()) drawPet(pctx, pcfg.pet, pv.width * .8, pv.height * .62 - bob * .6, 3.6, t);
   }
 
   // typographie française : espace fine insécable avant ! ? ; : » et après «, dans tous les textes affichés
