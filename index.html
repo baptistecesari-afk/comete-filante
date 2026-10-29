@@ -1707,7 +1707,8 @@ body:not(.jeu) .hud { opacity: 0; }
   let defiSave = { day: '', p: 0, done: false }, defiRun = 0, defiRunWon = null, defiDirty = false;
   try { const sv = JSON.parse(localStorage.getItem('comete-defi') || '{}'); if (typeof sv.day === 'string') defiSave = { day: sv.day, p: Math.max(0, +sv.p || 0), done: !!sv.done }; } catch (e) {}
   function saveDefi() { defiDirty = false; try { localStorage.setItem('comete-defi', JSON.stringify(defiSave)); } catch (e) {} }
-  setInterval(() => { if (defiDirty) saveDefi(); }, 2000);
+  // à minuit, le défi change tout seul, même si le jeu reste ouvert
+  setInterval(() => { if (defiDirty) saveDefi(); defiToday(); }, 2000);
   function defiToday() {
     const k = dayKey();
     if (defiSave.day !== k) { defiSave = { day: k, p: 0, done: false }; defiRun = 0; saveDefi(); renderDefi(); }
