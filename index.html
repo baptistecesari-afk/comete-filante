@@ -1483,6 +1483,14 @@ body:not(.jeu) .hud { opacity: 0; }
       { tier: 1, name: 'Casse-cailloux', stat: 'rochers', goal: 2000, pts: 1500 },
       { tier: 2, name: 'Chasse aux étoiles', stat: 'stars', goal: 10000, pts: 3000 },
     ] },
+    { id: 'secrets', name: 'Planètes secrètes', desc: 'Chaque monde cache une planète secrète. Ouvre l\'œil pendant tes parties !', items: [
+      { tier: 2, name: 'Secret de la Voie lactée', feat: 'secret0', text: 'Touche 5 fois la planète secrète de la Voie lactée', hint: 'Quelque chose qui brille passe parfois dans la Voie lactée…', pts: 1500 },
+      { tier: 2, name: 'Secret du Givre', feat: 'secret1', text: 'Touche 5 fois la planète secrète du Royaume de Givre', hint: 'Un secret dort quelque part dans le Royaume de Givre…', pts: 1500 },
+      { tier: 2, name: 'Secret de la Forge', feat: 'secret2', text: 'Touche 5 fois la planète secrète de la Forge Volcanique', hint: 'Un secret se cache dans la fumée de la Forge Volcanique…', pts: 1500 },
+      { tier: 2, name: 'Secret de la Jungle', feat: 'secret3', text: 'Touche 5 fois la planète secrète de la Jungle Cosmique', hint: 'Un secret se faufile entre les lianes de la Jungle Cosmique…', pts: 1500 },
+      { tier: 2, name: 'Secret du Néant', feat: 'secret4', text: 'Touche 5 fois la planète secrète du Néant', hint: 'Même au fond du Néant, quelque chose brille…', pts: 1500 },
+      { tier: 3, name: 'Les 5 secrets', feat: 'secrets5', text: 'Trouve les 5 planètes secrètes', hint: 'Trouve les 5 secrets pour savoir ce qui se cache ici…', pts: 3000, title: 'Chasseuse de secrets' },
+    ] },
     { id: 'mondes', name: 'Conquérante des mondes', desc: 'Bats le 10e gardien de chaque monde.', items: [
       { tier: 1, name: 'Royaume de Givre', feat: 'monde2', text: 'Bats l\'Impératrice Glacia', pts: 3000 },
       { tier: 2, name: 'Forge Volcanique', feat: 'monde3', text: 'Bats le Seigneur Magmor', pts: 4000 },
@@ -1598,8 +1606,10 @@ body:not(.jeu) .hud { opacity: 0; }
       <div class="tiers">${col.items.map(t => {
         const tr = TIERS[t.tier], won = stats.won.includes(t.id);
         const goal = t.feat ? 1 : t.goal, val = t.feat ? (stats.feats.includes(t.feat) ? 1 : 0) : Math.min(goal, statOf(t.stat));
-        const cond = t.feat ? t.text : `${t.goal} ${STAT_UNITS[t.stat]}`;
-        return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${t.name ? t.name + ' · ' : ''}${tr.name}</b></div>
+        // un trophée secret reste un mystère tant qu'on ne l'a pas gagné
+        const hide = t.hint && !won;
+        const cond = hide ? t.hint : t.feat ? t.text : `${t.goal} ${STAT_UNITS[t.stat]}`;
+        return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${hide ? '??? · ' : t.name ? t.name + ' · ' : ''}${tr.name}</b></div>
           <span>${cond}</span><div class="bar"><i style="width:${(val / goal * 100).toFixed(0)}%"></i></div>
           <em>${won ? 'Gagné : ' : t.feat ? '' : `${val} / ${goal} · `}${rewardText(t)}</em></div>`;
       }).join('')}</div></section>`).join('');
@@ -2860,12 +2870,12 @@ body:not(.jeu) .hud { opacity: 0; }
 
   // --- état ---
   let state = 'menu';
-  let mouseFire = false, btnFire = false, infAt = null, tapShots = 0, grab = null;
+  let mouseFire = false, btnFire = false, infAt = null, tapShots = 0, grab = null, secretAt = null, bonusT = 0, bonusSpawn = 0;
   // au doigt : le premier doigt sur l'écran déplace la fusée, les autres doigts tirent ; le stylet tire tout seul
   let moveId = null, penId = null; const fireTouches = new Set();
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let zapT = 0, missT = 0, zaps = [];
-  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0 }, bh = null, starT = 0, cloneT = 0, ringT = 0;
+  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0, secrets: [] }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0;
@@ -2880,7 +2890,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0 }; runTrophies = []; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, secrets: [] }; runTrophies = []; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -3125,6 +3135,58 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   // --- apparitions ---
+  // ===== planète secrète : une par monde, elle traverse vite l'écran ; 5 tirs dessus ouvrent un niveau bonus =====
+  function spawnSecret() {
+    const left = Math.random() < .5, y0 = 120 + Math.random() * H * .2;
+    items.push({ kind: 'secret', w: world, x: left ? -40 : W + 40, y: y0, y0, vx: (left ? 1 : -1) * Math.max(170, W / 3.4), vy: 0, r: 26, hp: 5, hitT: 0, rot: 0, t: 0 });
+    beep(1760, .25, 'sine', .05); setTimeout(() => beep(2350, .3, 'sine', .04), 160);
+  }
+  function hitSecret(it) {
+    it.hp--; it.hitT = .08;
+    burst(it.x, it.y, WORLDS[it.w].col[1], 10, 180, 3);
+    beep(700 + (5 - it.hp) * 160, .1, 'triangle', .09);
+    if (it.hp > 0) { pop(it.x, it.y - 34, `${5 - it.hp} / 5`, '#fff4c0'); return; }
+    it.dead = true;
+    burst(it.x, it.y, '#fff4c0', 50, 360, 5); burst(it.x, it.y, WORLDS[it.w].col[1], 40, 300, 4);
+    flash = .35; flashColor = '255, 236, 170'; shake = .25;
+    // place nette pour le niveau bonus
+    for (const o of items) if (!o.dead && !o.boss && (o.kind === 'rock' || o.kind === 'alien')) { o.dead = true; burst(o.x, o.y, '#fff4c0', 8, 160, 3); }
+    ebullets = [];
+    bonusT = 9; bonusSpawn = 0;
+    showBanner('Planète secrète !', 'Niveau bonus : attrape toutes les étoiles');
+    beep(660, .15, 'triangle', .1); setTimeout(() => beep(990, .15, 'triangle', .1), 120); setTimeout(() => beep(1320, .4, 'triangle', .1, 300), 240);
+    feat('secret' + it.w);
+    if ([0, 1, 2, 3, 4].every(w => stats.feats.includes('secret' + w))) feat('secrets5');
+  }
+  function drawSecret(it, t) {
+    const x = it.x, y = it.y, r = it.r, [c1, c2] = WORLDS[it.w].col, pulse = reduce ? 1 : 1 + Math.sin(t / 140) * .15;
+    glowAt(x, y, r * 3.2 * pulse, '#fff1b0', .5);
+    glowAt(x, y, r * 2, c2, .6);
+    // anneau arrière
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-.35);
+    ctx.strokeStyle = 'rgba(255, 240, 190, .55)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 1.75, r * .45, 0, Math.PI, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // la planète
+    const g = ctx.createRadialGradient(x - r * .4, y - r * .45, r * .1, x, y, r * 1.05);
+    g.addColorStop(0, '#fffbe8'); g.addColorStop(.35, c2); g.addColorStop(1, c1);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.clip();
+    ctx.fillStyle = 'rgba(255, 255, 255, .18)';
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(x + Math.sin(it.rot + i * 2) * r * .5, y - r * .5 + i * r * .45, r * .9, r * .12, 0, 0, 7); ctx.fill(); }
+    ctx.restore();
+    // anneau avant
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-.35);
+    ctx.strokeStyle = '#fff1b0'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 1.75, r * .45, 0, 0, Math.PI); ctx.stroke();
+    ctx.restore();
+    // petites étincelles qui tournent autour
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 4; i++) { const a = t / 300 + i * Math.PI / 2, d = r * 1.5; ctx.save(); ctx.globalAlpha *= .5 + .5 * Math.sin(t / 120 + i); drawStar(x + Math.cos(a) * d, y + Math.sin(a) * d * .6, 4, a); ctx.fill(); ctx.restore(); }
+    // les tirs déjà réussis
+    for (let i = 0; i < 5; i++) { ctx.fillStyle = i < 5 - it.hp ? '#fff1b0' : 'rgba(255, 255, 255, .25)'; ctx.beginPath(); ctx.arc(x + (i - 2) * 9, y + r + 14, 3, 0, 7); ctx.fill(); }
+  }
+
   function spawn() {
     // les objets tombent de plus en plus souvent : on limite aussi le nombre d'aliens par seconde,
     // qui ne grimpe plus que doucement après le niveau 6
@@ -7155,13 +7217,15 @@ body:not(.jeu) .hud { opacity: 0; }
     if (clacAt && time >= clacAt) { clacAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startClacFilm(); return; }
     if (storyAt && time >= storyAt) { storyAt = 0; storyNext === 'world' ? startTransit() : startFinale(); return; }
     // le chrono du niveau s'arrête tant que le boss est en vie
-    if (!boss) lvT += dt;
+    if (!boss && !(bonusT > 0)) lvT += dt;
     if (lvT >= levelSecs()) {
       lvT = 0; level++; updateHud(); setTheme(level);
       levelFx = { t: performance.now(), name: themeOf(level).name, col: themeOf(level).neb[0], col2: themeOf(level).neb[1], lv: level };
       if (level >= 10) feat('niveau10'); if (level >= 20) feat('niveau20');
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
+      // la planète secrète passe au plus une fois par monde dans une partie (plus rarement si on l'a déjà trouvée)
+      if (secretAt === null && level >= 2 && !run.secrets.includes(world) && Math.random() < (stats.feats.includes('secret' + world) ? .12 : .3)) secretAt = time + 4 + Math.random() * 10;
       if (level % 3 === 0 && !boss) spawnBoss();
       else levelFx.name = newSector ? `Secteur ${bossInWorld + 1} · ${WORLDS[world].bosses[bossInWorld].place}` : `${themeOf(level).name} · ça accélère !`;
       newSector = false;
@@ -7325,10 +7389,11 @@ body:not(.jeu) .hud { opacity: 0; }
       if (s.bounce > 0 && (s.x < 4 || s.x > W - 4)) { s.vx = -s.vx; s.x = Math.max(4, Math.min(W - 4, s.x)); s.bounce--; }
       if (s.y < -20 || s.y > H + 40 || s.x < -20 || s.x > W + 20) { s.dead = true; continue; }
       for (const it of items) {
-        if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien')) continue;
+        if (it.dead || (it.kind !== 'rock' && it.kind !== 'alien' && it.kind !== 'secret')) continue;
         if (s.pierce && s.pierce.includes(it)) continue;
         const hr = it.boss ? it.r + 10 : it.r + 4;
         if (Math.abs(s.x - it.x) < hr && Math.abs(s.y - it.y) < hr && Math.hypot(s.x - it.x, (s.y - it.y) * (it.flat ? 1.6 : 1)) < hr) {
+          if (it.kind === 'secret') { s.dead = true; hitSecret(it); break; }
           if (s.pierce) { s.pierce.push(it); burst(s.x, s.y, '#d78bff', 8, 160, 3); } else s.dead = true;
           damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1) * (it.boss && (s.star || s.missile) ? .3 : 1));
           if (s.last && it.dead && !s.bonus) {
@@ -7359,8 +7424,17 @@ body:not(.jeu) .hud { opacity: 0; }
       cineT -= dt;
       if (cineT <= 0) { $('cine').hidden = true; $('weapons').hidden = false; $('powerBtn').hidden = false; showBanner('Combat !', `Bats-le pour passer au niveau ${level + 1}`); }
     }
-    if (cineT <= 0) spawnT -= dt * slow;
-    if (spawnT <= 0) { spawn(); spawnT = Math.max(.18, .7 / speed) * (.6 + Math.random() * .8) * (boss ? 1.8 : 1); }
+    if (secretAt !== null && time >= secretAt && cineT <= 0 && !boss && !(bonusT > 0)) {
+      secretAt = null;
+      if (!run.secrets.includes(world)) { run.secrets.push(world); spawnSecret(); }
+    }
+    // niveau bonus de la planète secrète : seulement des étoiles qui tombent
+    if (bonusT > 0) {
+      bonusT -= dt; bonusSpawn -= dt;
+      while (bonusSpawn <= 0) { bonusSpawn += .08; items.push({ kind: 'star', bonus: true, x: 30 + Math.random() * (W - 60), y: -20, r: 11, vy: 150 + Math.random() * 80, rot: Math.random() * 6 }); }
+      if (bonusT <= 0) { bonusT = 0; showBanner('Fin du bonus', 'Retour au combat'); beep(500, .3, 'triangle', .1, -200); }
+    } else if (cineT <= 0) spawnT -= dt * slow;
+    if (spawnT <= 0 && !(bonusT > 0)) { spawn(); spawnT = Math.max(.18, .7 / speed) * (.6 + Math.random() * .8) * (boss ? 1.8 : 1); }
 
     for (const it of items) {
       if (it.dead) continue;
@@ -7370,6 +7444,11 @@ body:not(.jeu) .hud { opacity: 0; }
         if (it.boss && cineT > 0) continue;
         updateAlien(it, dt, slow);
         if (it.dead) continue;
+      } else if (it.kind === 'secret') {
+        // elle traverse l'écran en flottant, puis disparaît de l'autre côté
+        it.t += dt; it.x += it.vx * slow * dt; it.y = it.y0 + Math.sin(it.t * 3) * 14; it.rot += dt;
+        if (!reduce && Math.random() < .5) parts.push({ x: it.x - Math.sign(it.vx) * it.r, y: it.y + (Math.random() - .5) * it.r, vx: -it.vx * .3, vy: (Math.random() - .5) * 30, life: .5, color: Math.random() < .5 ? '#fff4c0' : WORLDS[it.w].col[1], size: 3 });
+        if (it.x < -70 || it.x > W + 70) { it.dead = true; continue; }
       } else {
         it.y += it.vy * speed * slow * dt;
         if (it.vx) it.x += it.vx * slow * dt;
@@ -7390,7 +7469,12 @@ body:not(.jeu) .hud { opacity: 0; }
 
       const d = Math.hypot(it.x - player.x, it.y - player.y);
       if (d < it.r + player.r - 3) {
-        if (it.kind === 'star') {
+        if (it.kind === 'star' && it.bonus) {
+          // étoile du niveau bonus : points fixes, sans toucher au combo
+          it.dead = true; bump('stars'); score += 25; burst(it.x, it.y, '#ffd86b', 8, 140);
+          beep(900 + Math.random() * 500, .06, 'triangle', .07);
+          updateHud();
+        } else if (it.kind === 'star') {
           it.dead = true; combo++; comboT = 2.2;
           bump('stars'); if (combo >= 10) feat('combo10'); if (combo >= 15) feat('combo15'); if (combo >= 20) feat('combo20');
           score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
@@ -7411,6 +7495,8 @@ body:not(.jeu) .hud { opacity: 0; }
           burst(it.x, it.y, '#ff9a3c', 28, 240);
           showBanner('Tirs illimités !', infMax() + ' secondes, vide-toi les canons');
           beep(330, .12, 'square', .1); setTimeout(() => beep(495, .12, 'square', .1), 90); setTimeout(() => beep(660, .25, 'square', .1, 300), 180);
+        } else if (it.kind === 'secret') {
+          // la planète secrète passe sans faire mal
         } else if (invincible) {
           if (!it.boss) damage(it, 99);
           else if (it.contactT <= 0) { damage(it, 3); it.contactT = .5; }
@@ -9895,6 +9981,16 @@ body:not(.jeu) .hud { opacity: 0; }
         }
         ctx.restore();
       }
+      // niveau bonus de la planète secrète : le ciel se dore
+      if (bonusT > 0) {
+        ctx.save(); ctx.globalAlpha = Math.min(1, bonusT, (9 - bonusT) * 2);
+        const bg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75);
+        bg.addColorStop(0, 'rgba(255, 220, 120, .05)'); bg.addColorStop(1, 'rgba(255, 210, 110, .35)');
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#fff1b0'; ctx.font = '700 18px Outfit, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(`✦ BONUS · ${Math.ceil(bonusT)} s ✦`, W / 2, 165);
+        ctx.restore();
+      }
       // tirs de la fusée
       for (const s of shots) drawShot(s, t, fl);
 
@@ -9903,6 +9999,8 @@ body:not(.jeu) .hud { opacity: 0; }
         if (it.hitT > 0) ctx.globalAlpha = .5;
         if (PICKUPS.includes(it.kind)) {
           drawPickup(it, t);
+        } else if (it.kind === 'secret') {
+          drawSecret(it, t);
         } else if (it.kind === 'alien') {
           ctx.shadowBlur = 0;
           if (it.boss) {
