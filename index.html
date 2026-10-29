@@ -268,25 +268,18 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
   position: relative; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
   font-size: calc(var(--nd) * .42); line-height: 1; border: 2px solid #0b0820;
 }
-.wnode .wplanet::before { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
 .wnode .wplanet > span { position: relative; z-index: 1; filter: drop-shadow(0 0 6px var(--w2)); }
-/* chaque monde a son décor */
+/* chaque monde montre son vrai décor (le même que dans le jeu) ; ces couleurs servent seulement le temps que l'image se prépare */
 .wstop.w0 .wplanet { background: radial-gradient(circle at 35% 30%, #ff7aa8, #5b3a9e 60%, #23124a); }
-.wstop.w0 .wplanet::before { background: radial-gradient(1.5px 1.5px at 25% 65%, #fff, transparent), radial-gradient(1px 1px at 70% 25%, #fff, transparent), radial-gradient(1.5px 1.5px at 75% 75%, #fff, transparent), radial-gradient(1px 1px at 45% 15%, #fff, transparent); }
 .wstop.w1 .wplanet { background: radial-gradient(circle at 35% 30%, #e9fbff, #9fe8ff 30%, #1d4f7a 80%); }
-.wstop.w1 .wplanet::before { background: conic-gradient(from 20deg, #ffffff00, #ffffff66 8%, #ffffff00 16%, #ffffff00 30%, #ffffff55 36%, #ffffff00 44%, #ffffff00 64%, #ffffff44 70%, #ffffff00 78%); }
 .wstop.w2 .wplanet { background: radial-gradient(circle at 40% 35%, #ffd06b, #ff7b2a 35%, #6a1a08 75%, #2a0802); }
-.wstop.w2 .wplanet::before { background: linear-gradient(120deg, transparent 40%, #2a0802cc 41%, transparent 44%), linear-gradient(40deg, transparent 58%, #2a0802aa 59%, transparent 62%); }
 .wstop.w2 .wnode:not(:disabled) { animation: wlava 1.8s ease-in-out infinite; }
 @keyframes wlava { 50% { box-shadow: 0 0 28px #ff7b2acc, 0 0 6px #ffd06b; } }
 .wstop.w3 .wplanet { background: radial-gradient(circle at 35% 30%, #c6ffb0, #7dff8a 22%, #1f7a3a 55%, #0f4a24); }
-.wstop.w3 .wplanet::before { background: radial-gradient(ellipse 30% 14% at 20% 80%, #0f4a24, transparent), radial-gradient(ellipse 26% 12% at 80% 22%, #0f4a24cc, transparent); }
 .wstop.w4 .wplanet { background: radial-gradient(circle, #000 28%, #2a0f4a 48%, #c86bff 62%, #140a24 75%); }
-.wstop.w4 .wplanet::before { background: conic-gradient(#c86bff00, #c86bff99, #c86bff00 30%, #c86bff88 55%, #c86bff00 80%); mix-blend-mode: screen; animation: wswirl 6s linear infinite; }
-@keyframes wswirl { to { transform: rotate(360deg); } }
-/* petit décor qui flotte à côté : étoile, flocon, braise, feuille, poussière du Néant */
-.wstop .wdeco { position: absolute; left: calc(var(--nd) * .42); top: calc(var(--nd) * -.62); font-size: 14px; pointer-events: none; animation: wfloat 3s ease-in-out infinite; }
-@keyframes wfloat { 50% { transform: translateY(-4px) rotate(10deg); } }
+.wnode .wplanet.real { background: var(--img) center / cover; }
+/* un léger reflet bombé, comme une fenêtre ronde sur le monde */
+.wnode .wplanet.real::before { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: radial-gradient(circle at 32% 26%, #ffffff30, transparent 45%); box-shadow: inset 0 0 12px #000a, inset 0 0 3px color-mix(in srgb, var(--w2) 70%, transparent); }
 .wlabel {
   position: absolute; left: 50%; width: 110px; margin-left: -55px; display: flex; flex-direction: column; align-items: center; gap: 1px; pointer-events: none; text-align: center;
 }
@@ -310,9 +303,8 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .wnode:disabled .wplanet::after { content: ''; position: absolute; inset: 0; background: #0b0820b8; }
 .wnode:disabled .wplanet > span { filter: none; font-size: .7em; opacity: .9; }
 .wstop.lock .wlabel { opacity: .6; }
-.wstop.lock .wdeco { display: none; }
 @media (prefers-reduced-motion: reduce) {
-  .wnode, .wmap .seg.done, .wstop .wdeco, .wstop .wship, .wstop.w2 .wnode:not(:disabled), .wstop.w4 .wplanet::before { animation: none; transition: none; }
+  .wnode, .wmap .seg.done, .wstop .wship, .wstop.w2 .wnode:not(:disabled) { animation: none; transition: none; }
 }
 .bgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 76px)); gap: 6px; justify-content: center; width: 100%; }
 .btile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 12px; background: var(--night); border: 2px solid color-mix(in srgb, var(--w2) 45%, transparent); }
@@ -680,7 +672,6 @@ body:not(.jeu) .hud { opacity: 0; }
 .mappage .wlabel { width: 140px; margin-left: -70px; }
 .mappage .wlabel .wname { font-size: 14px; }
 .mappage .wlabel .wprog { font-size: 12px; }
-.mappage .wstop .wdeco { font-size: 18px; }
 .mappage .wstop .wship { font-size: 26px; }
 /* fiche du monde choisi */
 .wdetail {
@@ -690,12 +681,12 @@ body:not(.jeu) .hud { opacity: 0; }
 }
 .wdetail.pop { animation: wdPop .35s ease-out; }
 @keyframes wdPop { from { opacity: .3; transform: translateY(8px) scale(.98); } }
-.wdbig { position: absolute; right: -18px; top: -26px; font-size: 150px; line-height: 1; opacity: .13; transform: rotate(12deg); pointer-events: none; filter: blur(1px); }
+.wdbig { position: absolute; right: -40px; top: -40px; width: 190px; height: 190px; border-radius: 50%; background: var(--img) center / cover; opacity: .18; pointer-events: none; filter: blur(1px); }
 .wdhead { position: relative; display: flex; align-items: center; gap: 16px; }
 .wdhead .wdicon {
   flex: none; display: grid; place-items: center; width: 68px; height: 68px; border-radius: 50%; font-size: 34px;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--w2) 70%, #fff), var(--w1) 70%);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--w2) 60%, transparent), 0 0 26px color-mix(in srgb, var(--w2) 55%, transparent);
+  background: var(--img, radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--w2) 70%, #fff), var(--w1) 70%)) center / cover;
+  box-shadow: inset 0 0 10px #000a, 0 0 0 3px color-mix(in srgb, var(--w2) 60%, transparent), 0 0 26px color-mix(in srgb, var(--w2) 55%, transparent);
 }
 .wdhead small { display: block; font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: color-mix(in srgb, var(--w2) 80%, #fff); }
 .wdhead b { display: block; font-family: "Bungee Inline", var(--display); font-weight: 400; font-size: 30px; line-height: 1.05; color: #fff; text-shadow: 0 0 16px color-mix(in srgb, var(--w2) 55%, transparent); }
@@ -731,12 +722,11 @@ body:not(.jeu) .hud { opacity: 0; }
   .mappage .wlabel { width: 84px; margin-left: -42px; }
   .mappage .wlabel .wname { font-size: 10px; }
   .mappage .wlabel .wprog { font-size: 9.5px; }
-  .mappage .wstop .wdeco { font-size: 14px; }
   .mappage .wstop .wship { font-size: 16px; }
   .wdetail { padding: 14px; gap: 14px; }
   .wdhead .wdicon { width: 54px; height: 54px; font-size: 27px; }
   .wdhead b { font-size: 22px; }
-  .wdbig { font-size: 110px; }
+  .wdbig { width: 140px; height: 140px; right: -30px; top: -30px; }
   .wdinfo { grid-template-columns: 1fr; gap: 8px; }
   .wdinfo > div { display: grid; grid-template-columns: 30px 1fr; column-gap: 10px; align-items: center; padding: 10px 12px; }
   .wdinfo > div::before { grid-row: span 2; }
@@ -4070,7 +4060,6 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveWorlds() { try { localStorage.setItem('comete-mondes', JSON.stringify({ open: worldsOpen, pick: startWorld })); } catch (e) {} }
   // carte des 5 mondes : un chemin qui serpente de monde en monde ; les mondes fermés restent visibles, avec ce qu'il faut faire pour les ouvrir
   const MAP_AT = [[12, 66], [31, 34], [50, 66], [69, 34], [88, 66]];
-  const MAP_DECO = ['✨', '❄️', '🔥', '🍃', '🌀'];
   function renderWorldPick() {
     const el = $('worldChips'); el.innerHTML = '';
     // le chemin : doré et animé jusqu'aux mondes ouverts, en pointillés gris après
@@ -4086,14 +4075,15 @@ body:not(.jeu) .hud { opacity: 0; }
       stop.style.setProperty('--w2', w.col[1]); stop.style.setProperty('--p', open ? won * 10 : 0);
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'wnode'; b.disabled = !open;
-      b.innerHTML = `<span class="wplanet"><span>${open ? w.icon : '🔒'}</span></span>`;
+      const img = worldPortrait(i);
+      b.innerHTML = `<span class="wplanet${img ? ' real' : ''}"${img ? ` style="--img:url(${img})"` : ''}>${open ? '' : '<span>🔒</span>'}</span>`;
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
       // clic sur un monde : on le choisit (ses 10 boss s'ouvrent avec le bouton « Boss du monde » en dessous)
       b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) { popDetail(); menuWorld(); } beep(500 + i * 120, .08, 'triangle', .08); };
       stop.innerHTML = `<span class="wlabel"><span class="wnum">Monde ${i + 1}</span><span class="wname">${open ? w.name : '???'}</span>`
         + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? '★ 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
-        + `<span class="wdeco" aria-hidden="true">${MAP_DECO[i]}</span>` + (i === startWorld ? '<span class="wship" aria-hidden="true">🚀</span>' : '');
+        + (i === startWorld ? '<span class="wship" aria-hidden="true">🚀</span>' : '');
       stop.prepend(b);
       el.appendChild(stop);
     });
@@ -4117,8 +4107,10 @@ body:not(.jeu) .hud { opacity: 0; }
     const next = w.bosses.findIndex(d => !beaten.includes(d.id));
     const tro = TROPHIES.find(t => t.feat === 'monde' + (startWorld + 1));
     const nextWorld = WORLDS[startWorld + 1];
-    el.innerHTML = `<span class="wdbig" aria-hidden="true">${w.icon}</span>`
-      + `<div class="wdhead"><span class="wdicon">${w.icon}</span><div><small>Monde ${startWorld + 1}</small><b>${w.name}</b></div></div>`
+    const img = worldPortrait(startWorld);
+    el.style.setProperty('--img', img ? `url(${img})` : '');
+    el.innerHTML = '<span class="wdbig" aria-hidden="true"></span>'
+      + `<div class="wdhead"><span class="wdicon" aria-hidden="true"></span><div><small>Monde ${startWorld + 1}</small><b>${w.name}</b></div></div>`
       + (intro ? `<p class="wdline">« ${intro} »</p>` : '')
       + `<div class="wdbar"><span>Gardiens vaincus <b>${won}/10</b></span><div class="wdpips">${w.bosses.map(d => `<i${beaten.includes(d.id) ? ' class="on"' : ''}></i>`).join('')}</div></div>`
       + '<div class="wdinfo">'
@@ -4142,6 +4134,37 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   $('worldBtn').onclick = openMap;
   $('mapBack').onclick = () => closePanels();
+  // vue d'un monde pour la carte : son ciel, sa nébuleuse, son décor et sa planète de départ, dessinés comme dans le jeu
+  const worldPics = [];
+  function worldPortrait(i) {
+    if (worldPics[i]) return worldPics[i];
+    try {
+      const S = 220, c = document.createElement('canvas'); c.width = c.height = S;
+      const k = c.getContext('2d'), th = THEMES[WORLDS[i].themes ? WORLDS[i].themes[0] : 0];
+      let g = k.createLinearGradient(0, 0, 0, S); g.addColorStop(0, th.top); g.addColorStop(1, th.bottom);
+      k.fillStyle = g; k.fillRect(0, 0, S, S);
+      k.globalAlpha = .9; k.drawImage(starField(), 0, 0, 512, 512, 0, 0, S * 1.6, S * 1.6);
+      k.globalAlpha = .85; k.drawImage(nebulaOf(th.neb, i * 31 + 7), -S * .2, -S * .2, S * 1.4, S * 1.4); k.globalAlpha = 1;
+      // le décor du monde, calculé pour un carré puis remis comme avant pour le jeu
+      const sw = W, sh = H, sd = DPR, keep = decorCache[i];
+      W = H = S; DPR = 1; delete decorCache[i];
+      let deco; try { deco = decorLayer(i); } finally { W = sw; H = sh; DPR = sd; if (keep) decorCache[i] = keep; else delete decorCache[i]; }
+      // la Voie lactée et le Néant restent derrière la planète (sinon le Néant cacherait tout)
+      const back = i === 0 || i === 4;
+      if (back) k.drawImage(deco, 0, 0);
+      // le Néant : un trou noir lointain, avec son anneau de lumière violette
+      if (i === 4) {
+        g = k.createRadialGradient(S * .3, S * .3, S * .05, S * .3, S * .3, S * .3);
+        g.addColorStop(0, '#000'); g.addColorStop(.3, '#000'); g.addColorStop(.38, '#e0b0ff'); g.addColorStop(.5, '#c86bff88'); g.addColorStop(1, '#c86bff00');
+        k.fillStyle = g; k.fillRect(0, 0, S, S);
+      }
+      // la planète de départ, grande, en bas, comme au début d'une partie
+      const pl = makePlanet(HOME_PLANETS[i] || EARTH, S * .62), pr = pl.width / 2;
+      k.drawImage(pl, S * .58 - pr, S * 1.02 - pr);
+      if (!back) k.drawImage(deco, 0, 0);
+      return (worldPics[i] = c.toDataURL('image/jpeg', .86));
+    } catch (e) { return ''; }
+  }
   // portrait d'un boss : on le dessine une seule fois dans une petite image
   const portraits = {};
   function bossPortrait(d) {
