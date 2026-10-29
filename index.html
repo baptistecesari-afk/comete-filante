@@ -159,6 +159,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--star); outl
 @media (max-width: 560px) {
   .power { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); min-width: 0; padding: 8px 14px; font-size: 13px; }
   .ammo { min-width: 0; width: 150px; max-width: calc(100vw - 124px); box-sizing: border-box; }
+  /* sur téléphone, les balles tiennent sur une seule ligne (sinon la dernière tombait seule en dessous) */
+  .ticks { flex-wrap: nowrap; gap: 2px; }
+  .ticks.many { gap: 1px; }
+  .ticks i { flex: 1 1 0; max-width: 6px; min-width: 1px; }
 }
 /* Gaucher : le bouton Tir et le chargeur passent à droite, le super-pouvoir à gauche */
 body.gaucher .weapons { left: auto; right: calc(16px + env(safe-area-inset-right, 0px)); flex-direction: row-reverse; }
@@ -1701,6 +1705,16 @@ body:not(.jeu) .hud { opacity: 0; }
       c.restore();
     }
     }
+    // Cœur Étoilé : ses ailes d'ange restent blanches, sans la lumière de coque en métal (qui les rendait grises)
+    if (rocketPart !== 'body' && conf.model === 'coeur') {
+      const flap = Math.sin(t / 220) * .18;
+      c.fillStyle = 'rgba(255, 255, 255, .85)';
+      for (const sd of [-1, 1]) {
+        c.save(); c.translate(sd * 12, -6); c.rotate(sd * (.25 + flap));
+        for (let f = 0; f < 3; f++) { c.beginPath(); c.ellipse(sd * (8 + f * 5), -2 + f * 3, 9 - f * 2, 4, sd * .5, 0, 7); c.fill(); }
+        c.restore();
+      }
+    }
     if (rocketPart === 'flame') { c.restore(); return; }
 
     // canons
@@ -1885,14 +1899,7 @@ body:not(.jeu) .hud { opacity: 0; }
       c.fillStyle = core; c.beginPath(); c.arc(0, -2, 4, 0, 7); c.fill();
       c.strokeStyle = light; c.lineWidth = .8; c.beginPath(); c.moveTo(-8, 5); c.lineTo(8, 5); c.stroke();
     } else if (conf.model === 'coeur') {
-      // ailes d'ange qui battent doucement
-      const flap = Math.sin(t / 220) * .18;
-      c.fillStyle = 'rgba(255, 255, 255, .85)';
-      for (const sd of [-1, 1]) {
-        c.save(); c.translate(sd * 12, -6); c.rotate(sd * (.25 + flap));
-        for (let f = 0; f < 3; f++) { c.beginPath(); c.ellipse(sd * (8 + f * 5), -2 + f * 3, 9 - f * 2, 4, sd * .5, 0, 7); c.fill(); }
-        c.restore();
-      }
+      // (ses ailes d'ange sont dessinées avec la flamme, plus haut)
       // le cœur
       const heart = () => { c.beginPath(); c.moveTo(0, 16); c.bezierCurveTo(-20, 2, -22, -18, -11, -24); c.bezierCurveTo(-4, -28, 0, -22, 0, -17); c.bezierCurveTo(0, -22, 4, -28, 11, -24); c.bezierCurveTo(22, -18, 20, 2, 0, 16); c.closePath(); };
       c.shadowColor = '#ff7aa8'; c.shadowBlur = 20;
@@ -1955,8 +1962,14 @@ body:not(.jeu) .hud { opacity: 0; }
         c.fillRect(ox + i * px, oy + j * px, px + .3, px + .3);
       }));
       // reflet qui balaie la coque
+      // (seulement sur les pixels du vaisseau : sinon une barre grise flottait à côté de lui)
       const sx = ((t / 12) % 80) - 30;
-      c.globalAlpha = .35; c.fillStyle = '#ffffff'; c.fillRect(sx, oy, 3, ARCADE_PIX.length * px); c.globalAlpha = 1;
+      c.globalAlpha = .35; c.fillStyle = '#ffffff';
+      ARCADE_PIX.forEach((row, j) => [...row].forEach((ch, i) => {
+        const x0 = Math.max(sx, ox + i * px), x1 = Math.min(sx + 3, ox + (i + 1) * px);
+        if (ch !== '.' && x1 > x0) c.fillRect(x0, oy + j * px, x1 - x0, px);
+      }));
+      c.globalAlpha = 1;
     } else if (conf.model === 'predateur') {
       // armure sombre avec liserés lumineux de la couleur choisie
       const ar = c.createLinearGradient(0, -28, 0, 20);
@@ -4495,6 +4508,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const Z = { T, t, m, top, zb, mid: (top + zb) / 2, h: zb - top, w: film.w, wd: WORLDS[film.w], clac: sc.clac ?? film.clac, last: proScene === proCount - 1 };
     ctx.save();
     const draw = PLANS[sc.p] || PLANS.decor;
+    filmBloom = 1;
     draw(sc.v, Z);
     ctx.restore();
     filmLook(zb, t);
@@ -4507,7 +4521,8 @@ body:not(.jeu) .hud { opacity: 0; }
     const tcol = sc.p === 'flashback' ? '#e8c890' : typeof sc.at === 'string' ? '#ffd86b' : WORLDS[Z.last && film.next != null ? film.next : sc.at ?? film.w].col[1];
     // fondu au noir entre deux scènes + bandes cinéma
     ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; if (W >= 700) { ctx.fillRect(0, 0, W, top); ctx.fillRect(0, H - top, W, top); }
+    // (aussi sur téléphone : certaines scènes ne dessinent pas tout en haut, on y voyait une bande d'une autre couleur)
+    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, top); if (W >= 700) ctx.fillRect(0, H - top, W, top);
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
     ctx.font = `600 ${Math.max(11, Math.min(14, W / 30))}px Outfit, system-ui, sans-serif`; ctx.fillStyle = tcol;
     ctx.fillText(title, W / 2, top + 26);
@@ -4720,9 +4735,11 @@ body:not(.jeu) .hud { opacity: 0; }
     k.fillStyle = lin(0, zb - 2, 0, zb + 40, [[0, 'rgba(60, 60, 120, .35)'], [1, 'rgba(0, 0, 0, 0)']]); k.fillRect(bx - 20, zb - 2, bw + 40, 42);
   }
   // le rendu « film » : les lumières débordent un peu (bloom), couleurs de cinéma, coins assombris et grain de pellicule
-  let bloomA = null, bloomB = null;
+  // filmBloom : la force du halo lumineux, baissée par une scène dont le héros est déjà très clair
+  let bloomA = null, bloomB = null, filmBloom = 1;
   function filmLook(zb, t) {
-    const dw = cv.width, dh = Math.min(cv.height, Math.ceil(zb * DPR)); if (dw < 8 || dh < 8) return;
+    // tout l'écran reçoit le même rendu : s'il s'arrêtait sous l'image, on verrait une ligne nette en travers du décor
+    const dw = cv.width, dh = cv.height; if (dw < 8 || dh < 8) return;
     if (!bloomA) { bloomA = document.createElement('canvas'); bloomB = document.createElement('canvas'); }
     const aw = Math.ceil(dw / 8), ah = Math.ceil(dh / 8), bw = Math.ceil(dw / 24), bh = Math.ceil(dh / 24);
     if (bloomA.width !== aw || bloomA.height !== ah) { bloomA.width = aw; bloomA.height = ah; }
@@ -4735,21 +4752,21 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.save();
     ctx.imageSmoothingQuality = 'high';
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = .45; ctx.drawImage(bloomA, 0, 0, W, dh / DPR);
-    ctx.globalAlpha = .6; ctx.drawImage(bloomB, 0, 0, W, dh / DPR);
+    ctx.globalAlpha = .45 * filmBloom; ctx.drawImage(bloomA, 0, 0, W, H);
+    ctx.globalAlpha = .6 * filmBloom; ctx.drawImage(bloomB, 0, 0, W, H);
     // couleurs de cinéma : ombres un peu bleutées, lumières un peu chaudes
     ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 1;
     const gr = ctx.createLinearGradient(0, 0, 0, zb); gr.addColorStop(0, 'rgba(255, 196, 140, .28)'); gr.addColorStop(1, 'rgba(70, 110, 200, .3)');
-    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, zb);
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
     // coins assombris (vignettage)
     ctx.globalCompositeOperation = 'source-over';
     const R = Math.hypot(W, zb) * .62, vg = ctx.createRadialGradient(W / 2, zb * .48, R * .45, W / 2, zb * .48, R);
     vg.addColorStop(0, 'rgba(0, 0, 0, 0)'); vg.addColorStop(1, 'rgba(0, 0, 0, .55)');
-    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, zb);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     // grain de pellicule qui bouge à chaque image
     const pat = grainPattern(ctx);
     if (pat.setTransform) pat.setTransform(new DOMMatrix([1.5, 0, 0, 1.5, reduce ? 0 : seeded(Math.floor(t / 42)) * 64, reduce ? 0 : seeded(Math.floor(t / 42) + 9) * 64]));
-    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = .1; ctx.fillStyle = pat; ctx.fillRect(0, 0, W, zb);
+    ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = .1; ctx.fillStyle = pat; ctx.fillRect(0, 0, W, H);
     ctx.restore();
   }
   const rocketSize = Z => Math.min(3, Z.m / 260, Z.h / 110);
@@ -4942,7 +4959,8 @@ body:not(.jeu) .hud { opacity: 0; }
         const g = ctx.createLinearGradient(0, top, 0, zb); g.addColorStop(0, '#2a2a6a'); g.addColorStop(.6, '#ff9a6a'); g.addColorStop(1, '#ffd08a');
         ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
         const R = Math.min(W * .2, h * .25); ctx.fillStyle = '#fff2c8'; halo(W * .8, zb - 10, R * 2, 'rgba(255, 240, 200, .8)'); ctx.beginPath(); ctx.arc(W * .8, zb - 10, R * .5, Math.PI, 0); ctx.fill();
-        ctx.fillStyle = '#2a1a3a'; const bw = Math.min(W * .9, 520); ctx.fillRect(W / 2 - bw / 2, zb - h * .18, bw, h * .18); ctx.beginPath(); ctx.arc(W / 2, zb - h * .18, bw * .15, Math.PI, 0); ctx.fill();
+        // la façade un peu éclairée par l'aube : les enfants, en ombre noire devant, restent visibles
+        ctx.fillStyle = '#4e3550'; const bw = Math.min(W * .9, 520); ctx.fillRect(W / 2 - bw / 2, zb - h * .18, bw, h * .18); ctx.beginPath(); ctx.arc(W / 2, zb - h * .18, bw * .15, Math.PI, 0); ctx.fill();
         const land = v === 'aube' ? ease(T / 2.4) : 1, ry = top + 20 + land * (zb - h * .18 - 30 - top - 20);
         drawRocket(ctx, v === 'aube' ? W / 2 : W * .3, ry, rs * .7, cfg, t, 0, v === 'aube' ? .6 * (1 - land) + .1 : 0);
         if (v === 'aube') { const run = ease((T - 1) / 2); kid(W * .1 + run * W * .25, zb - 1, s, 'Malo', 0, t * 3); kid(W * .9 - run * W * .25, zb - 1, s, 'Inès', 0, t * 3); }
@@ -5063,7 +5081,10 @@ body:not(.jeu) .hud { opacity: 0; }
     tyran(v, Z) {
       const { T, t, m, top, zb, mid, h, wd } = Z, dev = v === 'devoreur' || v === 'gardiens', chief = dev ? bossById('devoreur') : wd.bosses[9];
       ctx.fillStyle = '#04020c'; ctx.fillRect(0, 0, W, H);
-      sky(dev ? '#14041a' : chief.col + '44', '#04020c', .35);
+      // un gardien très pâle (Glacia) : un ciel bleu glacier au lieu d'un voile blanc, et moins de halo, sinon on ne voit plus son visage
+      const rgb = [1, 3, 5].map(i => parseInt(chief.col.slice(i, i + 2), 16)), pale = !dev && rgb[0] * .3 + rgb[1] * .59 + rgb[2] * .11 > 200;
+      if (pale) filmBloom = .35;
+      sky(dev ? '#14041a' : pale ? '#2a5a8a66' : chief.col + '44', '#04020c', .35);
       const cy = top + h * (v === 'gardiens' ? .36 : .45), size = Math.min(m * ((dev ? .5 : .32) + ease(T / 3) * .08), h * (dev ? .78 : .66));
       if (dev) {
         // le Dévoreur en entier : immense et sombre, des étoiles prisonnières brillent à travers lui
@@ -5075,7 +5096,8 @@ body:not(.jeu) .hud { opacity: 0; }
       }
       // les étoiles volées sont aspirées vers lui
       for (let i = 0; i < 50; i++) { const q = proPts[i + 200], ph = (q.d + T * .35) % 1, ang = q.a * 3, rr = (1 - ph) * Math.max(W, H) * .6 + size * .3; star(W / 2 + Math.cos(ang) * rr, cy + Math.sin(ang) * rr * .7, 2 + q.z, ph, t); }
-      halo(W / 2, cy, size * .9, chief.col + '88');
+      halo(W / 2, cy, size * .9, chief.col + (pale ? '30' : '88'));
+      if (v === 'trone') { ctx.fillStyle = 'rgba(220, 245, 255, .5)'; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * size * .14 - 8, cy + size * .45); ctx.lineTo(W / 2 + i * size * .14, cy + size * (.05 - Math.abs(i) * .04)); ctx.lineTo(W / 2 + i * size * .14 + 8, cy + size * .45); ctx.fill(); } }
       if (v === 'soldats') fleet(Z, cy, size);
       if (v === 'nid') {
         // le nid : les larves autour d'elle, et dans une alvéole lumineuse, les yeux de son prince
@@ -5101,7 +5123,6 @@ body:not(.jeu) .hud { opacity: 0; }
         for (let i = 0; i < 16; i++) { const q = proPts[i + 70], d = hit * size * (.3 + q.d * .5), a = -Math.PI / 2 + (q.u - .5) * 2.4; ctx.globalAlpha = 1 - hit; ctx.fillStyle = q.d < .5 ? '#ffd86b' : '#ff7b2a'; ctx.fillRect(ax + Math.cos(a) * d, ay + Math.sin(a) * d, 3, 3); }
         ctx.globalAlpha = 1;
       }
-      if (v === 'trone') { ctx.fillStyle = 'rgba(220, 245, 255, .5)'; for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * size * .14 - 8, cy + size * .45); ctx.lineTo(W / 2 + i * size * .14, cy + size * (.05 - Math.abs(i) * .04)); ctx.lineTo(W / 2 + i * size * .14 + 8, cy + size * .45); ctx.fill(); } }
       ctx.globalAlpha = ease((T - .8) / .6);
       label(chief.name.toUpperCase(), Math.min(zb - 8, cy + size * .58 + 14), Math.min(30, W / (chief.name.length * .72)), chief.col);
       ctx.globalAlpha = 1;
@@ -6568,7 +6589,7 @@ body:not(.jeu) .hud { opacity: 0; }
     lastAmmoUi = key;
     btn.className = 'ammo';
     $('ticks').hidden = false; $('rbar').hidden = true;
-    $('ticks').className = 'ticks' + (golden ? ' gold' : '');
+    $('ticks').className = 'ticks' + (golden ? ' gold' : '') + (gun.mag > 24 ? ' many' : '');
     $('ticks').innerHTML = Array.from({ length: gun.mag }, (_, i) => `<i class="${i < ammo ? 'full' : ''}"></i>`).join('');
     $('ammoHint').textContent = golden ? 'Balles dorées' : ammo < gun.mag ? 'R · recharger' : 'Plein';
   }
