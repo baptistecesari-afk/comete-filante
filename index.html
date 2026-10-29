@@ -617,6 +617,28 @@ body:not(.jeu) .hud { opacity: 0; }
 .worldbtn small { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .worldbtn .wbgo { font-family: var(--display); font-size: 30px; color: var(--star); line-height: 1; }
 @media (prefers-reduced-motion: reduce) { .worldbtn { transition: none; } }
+/* carte « Défi du jour » de l'accueil : verre fumé comme les boutons, liseré doré, barre de progression */
+.defi {
+  display: flex; align-items: center; gap: 12px; width: 100%; max-width: 26rem; padding: 10px 14px; box-sizing: border-box; text-align: left; border-radius: 18px;
+  color: var(--ink); border: 1.5px solid rgba(255, 216, 107, .55);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 -10px 18px rgba(0, 0, 0, .25), 0 8px 18px rgba(0, 0, 0, .4), 0 0 18px rgba(255, 216, 107, .15);
+}
+.defi .dfico { font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .5)); }
+.defi .dftxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.defi .dfhead { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.defi .dfhead small { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.defi .dfhead b { flex: 1; min-width: 0; font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--star); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.defi .dfhead em { font-style: normal; font-size: 13px; font-weight: 700; color: #1a1030; background: linear-gradient(180deg, #fff0b8, #ffd86b 50%, #f0ae3c); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.defi .dfgoal { font-size: 14px; line-height: 1.3; color: #efeaff; }
+.defi .dfbar { height: 6px; border-radius: 3px; background: rgba(169, 159, 208, .25); overflow: hidden; }
+.defi .dfbar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #ffb08f, var(--star)); box-shadow: 0 0 8px rgba(255, 216, 107, .6); transition: width .4s; }
+.defi .dfprog { font-size: 12px; color: var(--muted); }
+.defi.done { border-color: rgba(125, 255, 138, .6); }
+.defi.done .dfbar i { background: linear-gradient(90deg, #4fe0a0, #7dff8a); box-shadow: 0 0 8px rgba(125, 255, 138, .6); }
+.defi.done .dfprog { color: #7dff8a; }
+.defi.done .dfhead em { background: linear-gradient(180deg, #c8ffd0, #7dff8a); }
 /* page de la carte : ses couleurs suivent le monde choisi (fondu doux grâce à @property) */
 @property --w1 { syntax: '<color>'; inherits: true; initial-value: #5b3a9e; }
 @property --w2 { syntax: '<color>'; inherits: true; initial-value: #ff7aa8; }
@@ -743,6 +765,11 @@ body:not(.jeu) .hud { opacity: 0; }
   .wlabel .wprog { font-size: 9.5px; }
   .wstop .wship { font-size: 16px; }
   .menugrid .ghost { font-size: 14px; padding: 11px 6px; }
+  .defi { padding: 9px 12px; gap: 10px; }
+  .defi .dfhead { flex-wrap: wrap; row-gap: 2px; }
+  .defi .dfhead small { flex-basis: 100%; }
+  .defi .dfico { font-size: 24px; }
+  .defi .dfgoal { font-size: 13px; }
 }
 
 /* Hangar : un vrai hangar, en métal, avec bande de sécurité et voyants */
@@ -902,6 +929,15 @@ body:not(.jeu) .hud { opacity: 0; }
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
     <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
+    <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
+      <span class="dfico" id="defiIco" aria-hidden="true">🎯</span>
+      <span class="dftxt">
+        <span class="dfhead"><small>Défi du jour</small><b id="defiTitle"></b><em id="defiGain"></em></span>
+        <span class="dfgoal" id="defiText"></span>
+        <span class="dfbar"><i id="defiBar"></i></span>
+        <small class="dfprog" id="defiProg"></small>
+      </span>
+    </div>
     <div class="menugrid">
       <button class="ghost" id="hangarBtn">Hangar</button>
       <button class="ghost" id="trophyBtn">Trophées</button>
@@ -1038,7 +1074,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="toast" id="toast" hidden>
   <i class="medal"></i>
-  <div><small>Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
+  <div><small id="toastKind">Trophée débloqué</small><b id="toastTitle"></b><span id="toastReward"></span></div>
 </div>
 
 <div class="panel" id="mapPanel" data-w="0" hidden>
@@ -1552,7 +1588,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function saveStats() { statsDirty = false; try { localStorage.setItem('comete-stats', JSON.stringify(stats)); } catch (e) {} }
   setInterval(() => { if (statsDirty) saveStats(); }, 2000);
   const statOf = k => k === 'gardiens' ? beaten.length : stats[k] || 0;
-  function bump(key) { stats[key]++; statsDirty = true; checkTrophies(); }
+  function bump(key) { stats[key]++; statsDirty = true; checkTrophies(); defi(key); if (run.clean && state === 'play') defi(key + 'Propre'); }
   function feat(id) { if (!stats.feats.includes(id)) { stats.feats.push(id); statsDirty = true; checkTrophies(); } }
   let runTrophies = [];
   // silent : débloque sans points ni annonce (progression déjà faite avant)
@@ -1582,13 +1618,136 @@ body:not(.jeu) .hud { opacity: 0; }
     const t = toastQ.shift(), el = $('toast');
     if (!t) { toastBusy = false; el.hidden = true; return; }
     toastBusy = true;
-    el.style.setProperty('--tier', TIERS[t.tier].col);
-    $('toastTitle').textContent = trophyName(t);
-    $('toastReward').textContent = rewardText(t);
+    el.style.setProperty('--tier', t.daily ? 'var(--star)' : TIERS[t.tier].col);
+    $('toastKind').textContent = t.daily ? 'Défi du jour réussi' : 'Trophée débloqué';
+    $('toastTitle').textContent = t.daily ? t.daily.title : trophyName(t);
+    $('toastReward').textContent = t.daily ? `+${astros(t.daily.r)} Astros bonus` : rewardText(t);
     el.hidden = true; void el.offsetWidth; el.hidden = false;
     beep(660, .12, 'triangle', .1); setTimeout(() => beep(880, .12, 'triangle', .1), 110); setTimeout(() => beep(1320, .3, 'triangle', .1), 220);
     setTimeout(nextToast, toastQ.length > 2 ? 2200 : 3500);
   }
+  // ===== Défi du jour : 360 missions, une nouvelle chaque jour (selon la date), qui rapportent des Astros bonus =====
+  // chaque famille : ce qu'on compte (m), sur la journée ou dans une seule partie (s), les objectifs, les Astros (du plus facile au plus dur)
+  const plur = (n, w) => `${Number(n).toLocaleString('fr-FR')} ${w}${n > 1 ? 's' : ''}`;
+  const minTxt = n => n % 1 ? `${Math.floor(n)} min 30` : plur(n, 'minute');
+  const DEFI_FAM = [
+    { m: 'stars', s: 'jour', g: [30, 40, 50, 60, 75, 90, 100, 120, 150, 180, 200, 250, 300, 400], r: [100, 300], t: 'Pluie d\'étoiles', x: g => `Attrape ${plur(g, 'étoile')} aujourd'hui` },
+    { m: 'aliens', s: 'jour', g: [20, 30, 40, 50, 60, 75, 90, 100, 125, 150, 200, 250, 300], r: [100, 300], t: 'Chasse aux aliens', x: g => `Détruis ${plur(g, 'alien')} aujourd'hui` },
+    { m: 'rochers', s: 'jour', g: [10, 15, 20, 25, 30, 40, 50, 60, 80, 100, 150, 200], r: [100, 300], t: 'Casse-cailloux', x: g => `Casse ${plur(g, 'astéroïde')} aujourd'hui` },
+    { m: 'parfaites', s: 'jour', g: [3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30], r: [100, 300], t: 'Gâchette d\'or', x: g => `Réussis ${g} recharges parfaites aujourd'hui` },
+    { m: 'pouvoirs', s: 'jour', g: [2, 3, 4, 5, 6, 8, 10, 12, 15], r: [100, 250], t: 'Plein pouvoir', x: g => `Utilise ton super-pouvoir ${g} fois aujourd'hui` },
+    { m: 'parties', s: 'jour', g: [2, 3, 4, 5, 6], r: [100, 200], t: 'Décollages', x: g => `Joue ${g} parties aujourd'hui` },
+    { m: 'boss', s: 'jour', g: [1, 2, 3, 4, 5, 6, 8, 10], r: [150, 450], t: 'Chasseuse de boss', x: g => g > 1 ? `Bats ${g} boss aujourd'hui` : 'Bats un boss aujourd\'hui' },
+    { m: 'vies', s: 'jour', g: [1, 2, 3, 4, 5, 6, 8], r: [100, 300], t: 'Cœurs en plus', x: g => `Gagne ${plur(g, 'vie')} aujourd'hui` },
+    { m: 'intact', s: 'jour', g: [1, 2, 3, 4], r: [250, 500], t: 'Sans une égratignure', x: g => `Bats ${g > 1 ? g + ' boss' : 'un boss'} sans te faire toucher pendant le combat, aujourd'hui` },
+    { m: 'points', s: 'jour', g: [1000, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000], r: [100, 350], t: 'Tirelire', x: g => `Marque ${plur(g, 'point')} en tout aujourd'hui` },
+    { m: 'temps', s: 'jour', g: [5, 8, 10, 12, 15, 20, 25, 30], r: [100, 300], t: 'Longue route', x: g => `Vole ${minTxt(g)} en tout aujourd'hui` },
+    { m: 'combo5', s: 'jour', g: [3, 5, 8, 10], r: [100, 250], t: 'Combos en série', x: g => `Fais ${g} combos ×5 aujourd'hui` },
+    { m: 'combo8', s: 'jour', g: [2, 3, 5], r: [150, 300], t: 'Combos en série', x: g => `Fais ${g} combos ×8 aujourd'hui` },
+    { m: 'combo10', s: 'jour', g: [1, 2, 3], r: [200, 350], t: 'Combos en série', x: g => g > 1 ? `Fais ${g} combos ×10 aujourd'hui` : 'Fais un combo ×10 aujourd\'hui' },
+    { m: 'score', s: 'partie', g: [300, 400, 500, 600, 750, 900, 1000, 1200, 1500, 1800, 2000, 2500, 3000, 3500, 4000, 5000, 6000, 7500, 10000, 12000, 15000], r: [100, 450], t: 'Gros score', x: g => `Marque ${plur(g, 'point')} dans une partie` },
+    { m: 'niveau', s: 'partie', g: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20], r: [100, 450], t: 'Toujours plus loin', x: g => `Atteins le niveau ${g}` },
+    { m: 'combo', s: 'partie', g: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20], r: [100, 450], t: 'Combo d\'étoiles', x: g => `Fais un combo ×${g}` },
+    { m: 'stars', s: 'partie', g: [10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 100, 120, 150, 200], r: [100, 400], t: 'Filet à étoiles', x: g => `Attrape ${plur(g, 'étoile')} dans une partie` },
+    { m: 'aliens', s: 'partie', g: [10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 100, 125, 150, 200], r: [100, 400], t: 'Nettoyage de l\'espace', x: g => `Détruis ${plur(g, 'alien')} dans une partie` },
+    { m: 'rochers', s: 'partie', g: [5, 8, 10, 12, 15, 20, 25, 30, 40, 50], r: [100, 350], t: 'Pluie de cailloux', x: g => `Casse ${plur(g, 'astéroïde')} dans une partie` },
+    { m: 'parfaites', s: 'partie', g: [1, 2, 3, 4, 5, 6, 7, 8, 10, 12], r: [100, 400], t: 'Main sûre', x: g => g > 1 ? `Réussis ${g} recharges parfaites dans une partie` : 'Réussis une recharge parfaite' },
+    { m: 'pouvoirs', s: 'partie', g: [1, 2, 3, 4, 5, 6, 8], r: [100, 350], t: 'Super-pilote', x: g => g > 1 ? `Utilise ton super-pouvoir ${g} fois dans une partie` : 'Utilise ton super-pouvoir' },
+    { m: 'boss', s: 'partie', g: [1, 2, 3, 4, 5], r: [150, 500], t: 'Série de boss', x: g => g > 1 ? `Bats ${g} boss dans une partie` : 'Bats un boss' },
+    { m: 'vies', s: 'partie', g: [1, 2, 3], r: [150, 400], t: 'Cœur solide', x: g => g > 1 ? `Gagne ${g} vies dans une partie` : 'Gagne une vie bonus' },
+    { m: 'niveauPropre', s: 'partie', g: [2, 3, 4, 5, 6, 7, 8, 10], r: [100, 500], t: 'Vol parfait', x: g => `Atteins le niveau ${g} sans perdre de vie` },
+    { m: 'scorePropre', s: 'partie', g: [200, 300, 500, 750, 1000, 1500, 2000, 3000], r: [100, 500], t: 'Pas une rayure', x: g => `Marque ${plur(g, 'point')} sans perdre de vie` },
+    { m: 'temps', s: 'partie', g: [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10], r: [100, 450], t: 'Endurance', x: g => `Tiens ${minTxt(g)} dans une partie` },
+    { m: 'rapide', s: 'partie', sec: [90, 75, 60, 50, 45, 40, 35, 30], r: [150, 500], t: 'Éclair', x: (g, sec) => `Bats un boss en moins de ${sec} secondes de combat` },
+    { m: 'intact', s: 'partie', g: [1, 2, 3], r: [250, 500], t: 'Intouchable', x: g => g > 1 ? `Bats ${g} boss sans te faire toucher dans une partie` : 'Bats un boss sans te faire toucher' },
+    { m: 'starsPropre', s: 'partie', g: [10, 15, 20, 30, 40, 50], r: [100, 400], t: 'Cueillette tranquille', x: g => `Attrape ${plur(g, 'étoile')} sans perdre de vie` },
+    { m: 'aliensPropre', s: 'partie', g: [10, 15, 20, 30, 40, 50], r: [100, 400], t: 'Chasse sans bobo', x: g => `Détruis ${plur(g, 'alien')} sans perdre de vie` },
+    { m: 'sansPouvoir', s: 'partie', g: [500, 1000, 1500, 2000, 3000, 5000], r: [150, 400], t: 'À l\'ancienne', x: g => `Marque ${plur(g, 'point')} sans utiliser ton super-pouvoir` },
+    { m: 'bossSansPouvoir', s: 'partie', g: [1, 2, 3], r: [200, 450], t: 'À mains nues', x: g => g > 1 ? `Bats ${g} boss sans super-pouvoir dans une partie` : 'Bats un boss sans utiliser ton super-pouvoir pendant le combat' },
+    { m: 'serie', s: 'partie', g: [2, 3, 4, 5, 6, 8], r: [150, 450], t: 'Rafale dorée', x: g => `Réussis ${g} recharges parfaites à la suite` },
+    { m: 'combo5', s: 'partie', g: [2, 3, 4, 5, 6], r: [150, 400], t: 'Combos en rafale', x: g => `Fais ${g} combos ×5 dans une partie` },
+    { m: 'combo8', s: 'partie', g: [2, 3], r: [250, 400], t: 'Combos en rafale', x: g => `Fais ${g} combos ×8 dans une partie` },
+    // p : [objectif, réglage] ; le réglage est un temps (chrono) ou ce qu'une partie doit atteindre pour compter
+    { m: 'chrono', s: 'partie', p: [[300, 60], [500, 60], [600, 90], [800, 90], [1000, 120], [1200, 120], [1500, 150], [2000, 180], [2500, 180], [3000, 240]], r: [100, 450], t: 'Course contre la montre', x: (g, k) => `Marque ${plur(g, 'point')} dans ${k === 60 ? 'la première minute' : k % 60 ? `les ${k} premières secondes` : `les ${k / 60} premières minutes`} d'une partie` },
+    { m: 'partiesNiveau', s: 'jour', p: [[2, 3], [2, 4], [2, 5], [3, 3], [3, 4], [3, 5], [2, 6], [3, 6], [2, 8], [4, 4], [4, 5], [5, 3]], r: [100, 400], t: 'Régularité', x: (g, k) => `Atteins le niveau ${k} dans ${g} parties aujourd'hui` },
+    { m: 'scoreParties', s: 'jour', p: [[2, 500], [3, 500], [2, 1000], [3, 1000], [2, 1500], [2, 2000], [3, 1500], [3, 2000], [2, 3000], [5, 500], [4, 1000], [3, 3000]], r: [100, 400], t: 'Toujours au top', x: (g, k) => `Marque au moins ${plur(k, 'point')} dans ${g} parties aujourd'hui` },
+    { m: 'pouvoirBoss', s: 'jour', g: [1, 2, 3, 5, 8], r: [100, 300], t: 'Pouvoir contre boss', x: g => g > 1 ? `Utilise ton super-pouvoir ${g} fois contre des boss aujourd'hui` : 'Utilise ton super-pouvoir contre un boss' },
+    { m: 'pouvoirBoss', s: 'partie', g: [2, 3, 4], r: [200, 400], t: 'Pouvoir contre boss', x: g => `Utilise ton super-pouvoir ${g} fois contre des boss dans une partie` },
+    { m: 'rochersPropre', s: 'partie', g: [5, 10, 15, 20, 30], r: [100, 400], t: 'Slalom', x: g => `Casse ${plur(g, 'astéroïde')} sans perdre de vie` },
+    { m: 'parfaitesPropre', s: 'partie', g: [2, 3, 4, 5, 6], r: [150, 450], t: 'Sang-froid', x: g => `Réussis ${g} recharges parfaites sans perdre de vie` },
+    { m: 'tempsPropre', s: 'partie', g: [1, 1.5, 2, 2.5, 3, 4], r: [100, 450], t: 'Bouclier invisible', x: g => `Tiens ${minTxt(g)} sans perdre de vie` },
+    { m: 'niveauSansPouvoir', s: 'partie', g: [4, 5, 6, 8, 10], r: [150, 450], t: 'Sans filet', x: g => `Atteins le niveau ${g} sans utiliser ton super-pouvoir` },
+  ];
+  const DEFIS = [];
+  for (const f of DEFI_FAM) {
+    const list = f.p || (f.sec ? f.sec.map(k => [1, k]) : f.g.map(g => [g, 0])), n = list.length;
+    list.forEach(([g, sec], i) => {
+      const r = Math.round((f.r[0] + (f.r[1] - f.r[0]) * (n > 1 ? i / (n - 1) : 0)) / 25) * 25;
+      DEFIS.push({ m: f.m, s: f.s, g, sec, r, title: f.t, text: f.x(g, sec) });
+    });
+  }
+  // mélange fixe (le même pour tout le monde) et jamais deux fois la même famille deux jours de suite
+  {
+    let a = 2026;
+    const rnd = () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    for (let i = DEFIS.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [DEFIS[i], DEFIS[j]] = [DEFIS[j], DEFIS[i]]; }
+    const fam = d => d.m + d.s;
+    for (let i = 1; i < DEFIS.length; i++) if (fam(DEFIS[i]) === fam(DEFIS[i - 1])) {
+      const j = DEFIS.findIndex((d, k) => k > i && fam(d) !== fam(DEFIS[i - 1]));
+      if (j > 0) [DEFIS[i], DEFIS[j]] = [DEFIS[j], DEFIS[i]];
+    }
+  }
+  const dayKey = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  function defiOf(key) {
+    const [y, m, d] = key.split('-').map(Number);
+    const days = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 0, 1)) / 864e5);
+    return DEFIS[((days % DEFIS.length) + DEFIS.length) % DEFIS.length];
+  }
+  // progression du jour : p = où on en est, done = déjà réussi (les Astros ne se gagnent qu'une fois par jour)
+  let defiSave = { day: '', p: 0, done: false }, defiRun = 0, defiRunWon = null, defiDirty = false;
+  try { const sv = JSON.parse(localStorage.getItem('comete-defi') || '{}'); if (typeof sv.day === 'string') defiSave = { day: sv.day, p: Math.max(0, +sv.p || 0), done: !!sv.done }; } catch (e) {}
+  function saveDefi() { defiDirty = false; try { localStorage.setItem('comete-defi', JSON.stringify(defiSave)); } catch (e) {} }
+  // à minuit, le défi change tout seul, même si le jeu reste ouvert
+  setInterval(() => { if (defiDirty) saveDefi(); defiToday(); }, 2000);
+  function defiToday() {
+    const k = dayKey();
+    if (defiSave.day !== k) { defiSave = { day: k, p: 0, done: false }; defiRun = 0; saveDefi(); renderDefi(); }
+    return defiOf(k);
+  }
+  // m : ce qui vient d'arriver ; n : combien (ou la nouvelle valeur si max est vrai)
+  function defi(m, n = 1, max) {
+    const c = defiToday();
+    if (defiSave.done || c.m !== m) return;
+    // ces défis ont un réglage : un boss assez vite battu, ou une partie qui atteint le niveau / le score demandé
+    if (m === 'rapide') { if (n > c.sec) return; n = 1; }
+    if (m === 'partiesNiveau' || m === 'scoreParties') { if (n < c.sec) return; n = 1; }
+    if (m === 'chrono' && time > c.sec) return;
+    if (c.s === 'partie') { defiRun = max ? Math.max(defiRun, n) : defiRun + n; defiSave.p = Math.max(defiSave.p, defiRun); }
+    else defiSave.p = max ? Math.max(defiSave.p, n) : defiSave.p + n;
+    defiDirty = true;
+    if (defiSave.p >= c.g) {
+      defiSave.done = true; defiSave.p = c.g;
+      shop.credits += c.r; saveShop(); saveDefi();
+      if (state === 'play') defiRunWon = c;
+      queueToast({ daily: c });
+      renderAtelier();
+    }
+    if (state !== 'play') renderDefi();
+  }
+  const defiShow = (c, p) => c.m === 'temps' ? `${(Math.floor(p * 10) / 10).toLocaleString('fr-FR')} / ${c.g.toLocaleString('fr-FR')} min` : `${Math.floor(p).toLocaleString('fr-FR')} / ${c.g.toLocaleString('fr-FR')}`;
+  function renderDefi() {
+    const c = defiToday(), el = $('defiCard');
+    if (!el) return;
+    const done = defiSave.done, p = done ? c.g : Math.min(defiSave.p, c.g);
+    el.classList.toggle('done', done);
+    $('defiIco').textContent = done ? '✅' : '🎯';
+    $('defiTitle').textContent = c.title;
+    $('defiGain').textContent = `+${astros(c.r)}`;
+    $('defiText').textContent = c.text;
+    $('defiBar').style.width = `${Math.round(p / c.g * 100)}%`;
+    $('defiProg').textContent = done ? 'Réussi ! Un nouveau défi t\'attend demain.' : c.g === 1 ? 'À réussir aujourd\'hui' : c.s === 'partie' && c.g > 1 ? `Ton meilleur essai : ${defiShow(c, p)}` : defiShow(c, p);
+  }
+
   function renderTrophies() {
     $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Leurs objets ne s'achètent pas : il faut les gagner. Les Astros bonus vont dans le Hangar.`;
     const own = titles();
@@ -2875,7 +3034,7 @@ body:not(.jeu) .hud { opacity: 0; }
   let moveId = null, penId = null; const fireTouches = new Set();
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let zapT = 0, missT = 0, zaps = [];
-  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0, secrets: [] }, bh = null, starT = 0, cloneT = 0, ringT = 0;
+  let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }, bh = null, starT = 0, cloneT = 0, ringT = 0;
   let bossCount = 0, sector = 0, cineT = 0, lvT = 0, newSector = false;
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0;
@@ -2890,7 +3049,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, secrets: [] }; runTrophies = []; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -5666,7 +5825,7 @@ body:not(.jeu) .hud { opacity: 0; }
     boss = { kind: 'alien', type: 'boss', boss: true, def, idx, x: W / 2, y: -80, r: def.r, flat: !!def.flat, hp, maxHp: hp, pts: 500 + idx * 100 + world * 400,
       t: 0, fireT: 1.5, aimT: 1.5, altT: 2.5, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: false, trail: [] };
     items.push(boss);
-    run.bossHit = false;
+    run.bossHit = false; run.bossPow = false; run.bossT0 = time + CINE_DUR;
     // cinématique : on nettoie l'écran, alerte, carte du boss
     for (const it of items) if (it !== boss && (it.kind === 'rock' || it.kind === 'alien')) { it.dead = true; burst(it.x, it.y, '#8f86b8', 6, 120, 3); }
     ebullets = [];
@@ -6618,6 +6777,7 @@ body:not(.jeu) .hud { opacity: 0; }
     pop(it.x, it.y - 20, '+' + it.pts, '#7dff8a');
     bump('aliens');
     if (it.boss) { if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); }
+    if (it.boss) { defi('boss'); if (!run.bossHit) defi('intact'); if (!run.bossPow) defi('bossSansPouvoir'); defi('rapide', time - run.bossT0); }
     if (it.boss) {
       if (it.r0) it.r = it.r0;
       for (const b of ebullets) if (b.frozen) { b.vx = b.frozen[0]; b.vy = b.frozen[1]; delete b.frozen; }
@@ -6748,7 +6908,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const p = reload.t / reload.dur;
     if (p >= reload.zone[0] && p <= reload.zone[1]) finishReload(true);
     else {
-      reload.jam = true; reload.dur += .7;
+      reload.jam = true; reload.dur += .7; run.streak = 0;
       pop(player.x, player.y - 40, 'Raté !', '#ff7aa8');
       beep(110, .25, 'square', .1, -30);
     }
@@ -6758,11 +6918,12 @@ body:not(.jeu) .hud { opacity: 0; }
     if (perfect) {
       score += 20;
       run.perfect++; bump('parfaites'); if (run.perfect >= 5) feat('parfait5');
+      defi('serie', ++run.streak, true);
       pop(player.x, player.y - 40, 'Recharge parfaite !', '#ffd86b');
       burst(player.x, player.y, '#ffd86b', 18, 180, 3);
       beep(660, .1, 'triangle', .12); setTimeout(() => beep(990, .18, 'triangle', .12), 80);
       updateHud();
-    } else beep(520, .08, 'square', .06);
+    } else { beep(520, .08, 'square', .06); run.streak = 0; }
   }
 
   let lastAmmoUi = '';
@@ -6810,6 +6971,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (state !== 'play' || power.cd > 0 || power.active > 0) return;
     const d = power.def;
     power.active = d.dur; power.cd = power.maxCd; bump('pouvoirs');
+    run.noPow = false; if (boss) { run.bossPow = true; defi('pouvoirBoss'); }
     showBanner(d.name, '');
     if (d.id === 'hyper') { beep(200, .5, 'sawtooth', .12, 900); }
     else if (d.id === 'temps') { beep(600, .6, 'sine', .14, -450); flash = .25; flashColor = '122, 216, 255'; }
@@ -6863,6 +7025,9 @@ body:not(.jeu) .hud { opacity: 0; }
       const n = runTrophies.length, pts = runTrophies.reduce((a, t) => a + t.pts, 0);
       $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${astros(pts)} Astros bonus` : '');
     }
+    defi('scoreParties', score); saveDefi(); renderDefi();
+    if (defiRunWon) $('finalInfo').innerHTML += `<br>🎯 Défi du jour réussi · +${astros(defiRunWon.r)} Astros bonus`;
+    else if (!defiSave.done) $('finalInfo').innerHTML += `<br>🎯 Défi du jour : ${defiToday().text} (${defiShow(defiToday(), defiSave.p)})`;
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
     if (joueur) sendRecord().then(j => {
@@ -7222,6 +7387,7 @@ body:not(.jeu) .hud { opacity: 0; }
       lvT = 0; level++; updateHud(); setTheme(level);
       levelFx = { t: performance.now(), name: themeOf(level).name, col: themeOf(level).neb[0], col2: themeOf(level).neb[1], lv: level };
       if (level >= 10) feat('niveau10'); if (level >= 20) feat('niveau20');
+      defi('niveau', level, true); defi('partiesNiveau', level); if (run.clean) defi('niveauPropre', level, true); if (run.noPow) defi('niveauSansPouvoir', level, true);
       // la caisse ∞ tombe une fois tous les 2 niveaux, à un moment au hasard
       infAt = level % 2 ? time + 3 + Math.random() * 12 : null;
       // la planète secrète passe au plus une fois par monde dans une partie (plus rarement si on l'a déjà trouvée)
@@ -7419,6 +7585,9 @@ body:not(.jeu) .hud { opacity: 0; }
     }
     // 1UP : une vie bonus tous les 2 500 points
     for (const g of [1000, 5000, 15000, 40000]) if (score >= g) feat('score' + g);
+    // défi du jour : points, temps de vol, chrono
+    if (score > run.scored) { defi('points', score - run.scored); run.scored = score; defi('score', score, true); defi('chrono', score, true); if (run.clean) defi('scorePropre', score, true); if (run.noPow) defi('sansPouvoir', score, true); }
+    defi('temps', dt / 60); if (run.clean) defi('tempsPropre', dt / 60);
     if (score >= run.nextLife) { run.nextLife += 2500; gainLife(player.x, player.y - 46, '1UP !'); }
     if (cineT > 0) {
       cineT -= dt;
@@ -7477,6 +7646,7 @@ body:not(.jeu) .hud { opacity: 0; }
         } else if (it.kind === 'star') {
           it.dead = true; combo++; comboT = 2.2;
           bump('stars'); if (combo >= 10) feat('combo10'); if (combo >= 15) feat('combo15'); if (combo >= 20) feat('combo20');
+          defi('combo', combo, true); if (combo === 5 || combo === 8 || combo === 10) defi('combo' + combo);
           score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
           beep(520 + Math.min(combo, 16) * 40, .1, 'triangle', .12);
           updateHud();
@@ -10231,6 +10401,7 @@ body:not(.jeu) .hud { opacity: 0; }
   if (firstCheck) checkTrophies(true);
   renderAtelier();
   updateTrophyBtn();
+  renderDefi();
   requestAnimationFrame(loop);
 })();
 </script>
