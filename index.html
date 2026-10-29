@@ -588,15 +588,8 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .hud { transition: opacity .35s; }
 body:not(.jeu) .hud { opacity: 0; }
 
-/* Accueil : logo avec comète et reflet qui passe */
+/* Accueil : logo avec reflet qui passe (la comète, elle, est dessinée dans le ciel derrière le titre) */
 .logo { position: relative; padding: 6px 10px 0; }
-.logo .streak {
-  position: absolute; left: -18%; right: 8%; top: 46%; height: 14px; border-radius: 999px; transform: rotate(-12deg);
-  background: linear-gradient(90deg, rgba(255, 122, 168, 0), rgba(255, 122, 168, .35) 55%, rgba(255, 216, 107, .9) 92%, #fff 100%);
-  filter: blur(1px); box-shadow: 0 0 30px rgba(255, 216, 107, .35); pointer-events: none;
-}
-.logo .streak::after { content: ''; position: absolute; right: -10px; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%;
-  background: radial-gradient(circle, #fff 0 30%, #ffd86b 55%, rgba(255, 216, 107, 0) 72%); }
 .card h1 {
   position: relative;
   background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .85) 50%, transparent 60%), linear-gradient(180deg, var(--star) 20%, var(--tail) 100%);
@@ -784,6 +777,74 @@ body:not(.jeu) .hud { opacity: 0; }
 .carousel canvas { border: 1px solid #3d3570; box-shadow: inset 0 0 40px rgba(0, 0, 0, .5); }
 @media (max-width: 620px) { .hangar { --pad: 16px; } }
 @media (prefers-reduced-motion: reduce) { .card h1, .hangar h2 .led { animation: none; } }
+
+/* ===== Accueil réaliste ===== */
+/* lumière de cinéma : le centre reste clair, les bords s'assombrissent */
+#menu { background: radial-gradient(ellipse 85% 75% at 50% 42%, rgba(11, 8, 32, .2), rgba(11, 8, 32, .5) 60%, rgba(5, 3, 16, .88) 100%); }
+/* titre en métal doré, avec une arête de lumière comme une plaque polie */
+#menu .card h1 {
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .9) 50%, transparent 60%),
+    linear-gradient(180deg, #fff6d8 0%, #ffe08a 30%, #e9a940 49%, #ffd27a 51%, #ffb08f 75%, #ff86ad 100%);
+  background-size: 300% 100%, 100% 100%; background-position: 150% 0, 0 0; background-repeat: no-repeat;
+  -webkit-background-clip: text; background-clip: text;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .35)) drop-shadow(0 5px 0 rgba(60, 30, 20, .7)) drop-shadow(0 12px 18px rgba(0, 0, 0, .55)) drop-shadow(0 0 28px rgba(255, 190, 120, .3));
+}
+#menu .card > p { color: #c9c2ea; text-shadow: 0 2px 8px rgba(0, 0, 0, .8); }
+/* reflet qui traverse un bouton */
+#menu .play::before, #menu .ghost::before, #menu .worldbtn::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%) no-repeat;
+  background-size: 250% 100%; background-position: 160% 0; transition: background-position 0s;
+}
+/* Jouer : gros bouton doré bombé, qui respire doucement */
+#menu .play {
+  position: relative; isolation: isolate;
+  background: linear-gradient(180deg, #fff0b8 0%, #ffd86b 42%, #f0ae3c 100%);
+  box-shadow: 0 6px 0 #b0781e, 0 12px 26px rgba(0, 0, 0, .5), 0 0 42px rgba(255, 216, 107, .45), inset 0 2px 0 rgba(255, 255, 255, .8), inset 0 -4px 8px rgba(150, 85, 10, .35);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+  transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), box-shadow .16s, filter .16s;
+}
+#menu .play::after {
+  content: ''; position: absolute; inset: -3px; border-radius: inherit; z-index: -2; pointer-events: none;
+  border: 2px solid rgba(255, 216, 107, .8); animation: playPing 2.6s ease-out infinite;
+}
+@keyframes playPing { 0% { transform: scale(1); opacity: .8; } 70%, 100% { transform: scale(1.18, 1.45); opacity: 0; } }
+#menu .play:active { transform: translateY(5px) scale(.97); filter: brightness(.95);
+  box-shadow: 0 1px 0 #b0781e, 0 4px 10px rgba(0, 0, 0, .5), 0 0 30px rgba(255, 216, 107, .4), inset 0 2px 0 rgba(255, 255, 255, .6), inset 0 -2px 6px rgba(150, 85, 10, .4); }
+/* les 4 boutons : verre fumé, bord qui s'allume au survol */
+#menu .menugrid .ghost {
+  position: relative; isolation: isolate; color: #efeaff;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1.5px solid rgba(180, 170, 225, .55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 -10px 18px rgba(0, 0, 0, .25), 0 8px 18px rgba(0, 0, 0, .4);
+  transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
+}
+#menu .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
+#menu .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
+#menu .worldbtn .wbgo { transition: transform .2s; }
+#menu .worldbtn:active { transform: translateY(1px) scale(.98); }
+#menu .menulinks .toggle { color: #b9b0e0; text-decoration-color: rgba(185, 176, 224, .45); text-underline-offset: 3px; transition: color .15s, text-decoration-color .15s; }
+#menu .menulinks .toggle:active { color: var(--star); }
+/* survol (seulement avec une souris, pour ne pas rester « allumé » sur téléphone) */
+@media (hover: hover) {
+  #menu .play:hover::before, #menu .ghost:hover::before, #menu .worldbtn:hover::before { background-position: -60% 0; transition: background-position .7s ease; }
+  #menu .play:hover:not(:active) { transform: translateY(-3px) scale(1.04); filter: brightness(1.06);
+    box-shadow: 0 9px 0 #b0781e, 0 18px 32px rgba(0, 0, 0, .5), 0 0 60px rgba(255, 216, 107, .65), inset 0 2px 0 rgba(255, 255, 255, .8), inset 0 -4px 8px rgba(150, 85, 10, .35); }
+  #menu .menugrid .ghost:hover:not(:active) { transform: translateY(-3px); color: #fff; border-color: var(--star);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 0 0 1px rgba(255, 216, 107, .3), 0 0 24px rgba(255, 216, 107, .35), 0 12px 24px rgba(0, 0, 0, .45); }
+  #menu .worldbtn:hover .wbgo { transform: translateX(5px); }
+  #menu .menulinks .toggle:hover { color: var(--star); text-decoration-color: var(--star); }
+}
+/* étincelles au clic */
+.clicfx { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+.clicfx i { position: absolute; left: 0; top: 0; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; }
+.clicfx b { position: absolute; left: 0; top: 0; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%; border: 3px solid rgba(255, 240, 200, .95);
+  box-shadow: 0 0 18px rgba(255, 216, 107, .8), inset 0 0 16px rgba(255, 216, 107, .7), inset 0 0 40px rgba(255, 255, 255, .35); }
+@media (prefers-reduced-motion: reduce) {
+  #menu .play::after { animation: none; opacity: 0; }
+  #menu .play, #menu .menugrid .ghost, #menu .worldbtn .wbgo { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -823,7 +884,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="menu">
   <div class="card">
-    <div class="logo"><i class="streak" aria-hidden="true"></i><h1>Comète<br>Filante</h1></div>
+    <div class="logo"><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
     <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
@@ -2723,6 +2784,29 @@ body:not(.jeu) .hud { opacity: 0; }
     refreshHangar();
   }
   function closeHangar() { preview = null; closePanels(); }
+  // accueil : chaque clic fait jaillir des étincelles et un petit son
+  const clicFx = document.createElement('div'); clicFx.className = 'clicfx'; clicFx.setAttribute('aria-hidden', 'true'); document.body.appendChild(clicFx);
+  $('menu').addEventListener('pointerdown', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    initAudio(); beep(b.id === 'startBtn' ? 520 : 760, .09, 'triangle', .07, b.id === 'startBtn' ? 400 : 260);
+    if (reduce) return;
+    const x = e.clientX, y = e.clientY, big = b.id === 'startBtn' ? 1.6 : 1;
+    const ring = document.createElement('b'); ring.style.transform = `translate(${x}px, ${y}px)`; clicFx.appendChild(ring);
+    ring.animate([{ transform: `translate(${x}px, ${y}px) scale(.1)`, opacity: 1 }, { transform: `translate(${x}px, ${y}px) scale(${big})`, opacity: 0 }], { duration: 450, easing: 'cubic-bezier(.2, .8, .3, 1)' }).onfinish = () => ring.remove();
+    const cols = ['#ffffff', '#ffd86b', '#ffe9a8', '#ff9ec0', '#9fd8ff'];
+    for (let i = 0, n = Math.round(12 * big); i < n; i++) {
+      const a = Math.PI * 2 * i / n + Math.random() * .5, d = (40 + Math.random() * 50) * big, sz = .8 + Math.random() * 1.1;
+      const p = document.createElement('i'), c = cols[i % cols.length];
+      p.style.background = c; p.style.boxShadow = `0 0 10px 2px ${c}, 0 0 3px #fff`;
+      clicFx.appendChild(p);
+      p.animate([
+        { transform: `translate(${x}px, ${y}px) scale(${sz * .5})`, opacity: 1 },
+        { transform: `translate(${x + Math.cos(a) * d * .7}px, ${y + Math.sin(a) * d * .7}px) scale(${sz})`, opacity: 1, offset: .4 },
+        { transform: `translate(${x + Math.cos(a) * d}px, ${y + Math.sin(a) * d + 22}px) scale(0)`, opacity: 0 }
+      ], { duration: 560 + Math.random() * 260, easing: 'ease-out' }).onfinish = () => p.remove();
+    }
+  });
   function closePanels() { $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
@@ -8847,6 +8931,92 @@ body:not(.jeu) .hud { opacity: 0; }
     ctx.restore();
   }
 
+  // ===== Accueil : une vraie comète passe derrière le titre, au-dessus d'une planète =====
+  let menuLogo = null, menuLogoT = -1e9;
+  function drawMenuSky(t) {
+    if (t - menuLogoT > 400) { menuLogoT = t; const r = document.querySelector('#menu .logo h1')?.getBoundingClientRect(); if (r && r.width) menuLogo = r; }
+    if (!menuLogo) return;
+    const r = menuLogo, k = Math.max(.6, Math.min(1.25, r.width / 520)), live = reduce ? 0 : 1;
+    ctx.save();
+    // la planète à l'horizon, éclairée par la lumière de la comète, avec son atmosphère
+    {
+      const R = Math.max(W * 1.4, 900), cx = W * .5, cy = H + R - Math.min(H * .13, 120);
+      const sg = ctx.createRadialGradient(cx - R * .25, cy - R * 1.05, R * .2, cx, cy, R);
+      sg.addColorStop(0, '#2c3f6e'); sg.addColorStop(.55, '#141d3c'); sg.addColorStop(1, '#070a1a');
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+      // bandes de nuages très douces
+      ctx.save(); ctx.clip();
+      for (let i = 0; i < 6; i++) {
+        ctx.globalAlpha = .05; ctx.strokeStyle = i % 2 ? '#9fc4ff' : '#c8b6ff'; ctx.lineWidth = 6 + i * 4;
+        ctx.beginPath(); ctx.arc(cx + Math.sin(t / 9000 + i) * 20 * live, cy + 10 + i * 18, R - 12 - i * 16, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+      }
+      ctx.restore();
+      // atmosphère : liseré lumineux bleu, plus fort du côté éclairé
+      ctx.globalCompositeOperation = 'lighter';
+      for (const [w, a] of [[26, .08], [12, .16], [4, .35], [1.5, .7]]) {
+        const ag = ctx.createLinearGradient(0, 0, W, 0);
+        ag.addColorStop(0, `rgba(120, 190, 255, ${a * .35})`); ag.addColorStop(.6, `rgba(140, 205, 255, ${a})`); ag.addColorStop(1, `rgba(200, 225, 255, ${a * .8})`);
+        ctx.strokeStyle = ag; ctx.lineWidth = w; ctx.beginPath(); ctx.arc(cx, cy, R + w * .3, Math.PI * 1.02, Math.PI * 1.98); ctx.stroke();
+      }
+      ctx.globalCompositeOperation = 'source-over';
+    }
+    // la comète : tête juste après le « E » de Comète, queue qui file derrière le titre
+    const hx = Math.min(W - 24 * k, r.right - r.width * .05), hy = r.top + r.height * .16;
+    const L = Math.max(W * .62, r.width * 1.5), ang = Math.PI - .2, wob = Math.sin(t / 1400) * live;
+    ctx.translate(hx, hy); ctx.rotate(ang);
+    ctx.globalCompositeOperation = 'lighter';
+    // queue de poussière : large, dorée, légèrement courbée
+    for (let i = 0; i < 12; i++) {
+      const sp = (8 + i * 7) * k, bend = L * .1 + wob * 4, a = .07 + (i < 3 ? .04 : 0);
+      const g = ctx.createLinearGradient(0, 0, L, 0);
+      g.addColorStop(0, `rgba(255, 240, 210, ${a * 2.2})`); g.addColorStop(.25, `rgba(255, 205, 150, ${a * 1.3})`); g.addColorStop(.6, `rgba(255, 140, 170, ${a * .6})`); g.addColorStop(1, 'rgba(255, 120, 160, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -sp * .12);
+      ctx.quadraticCurveTo(L * .45, -sp * .55 + bend * .2, L, -sp - bend);
+      ctx.lineTo(L, sp * .5 - bend);
+      ctx.quadraticCurveTo(L * .45, sp * .3 + bend * .15, 0, sp * .12);
+      ctx.closePath(); ctx.fill();
+    }
+    // queue d'ions : fins filaments bleus, bien droits, qui ondulent avec le vent solaire
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const off = (i - 4) * 1.6 * k, len = L * (1.05 + seeded(i + 50) * .25), g = ctx.createLinearGradient(0, 0, len, 0);
+      g.addColorStop(0, 'rgba(170, 220, 255, .55)'); g.addColorStop(.4, 'rgba(110, 170, 255, .22)'); g.addColorStop(1, 'rgba(90, 140, 255, 0)');
+      ctx.strokeStyle = g; ctx.lineWidth = (i === 4 ? 2.4 : .9) * k; ctx.globalAlpha = .7 + .3 * Math.sin(t / 500 + i) * live;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(len * .35, off * 2 + Math.sin(t / 900 + i) * 3 * live, len * .7, off * 5 - Math.sin(t / 1100 + i * 2) * 6 * live, len, off * 9 - 6 * k);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    // grains de poussière qui s'échappent le long de la queue
+    for (let i = 0; i < 40; i++) {
+      const q = ((seeded(i) + (t / 9000) * live * (.5 + seeded(i + 9))) % 1), d = q * L * .8;
+      const y = (seeded(i + 20) - .5) * (10 + q * 70) * k - q * q * L * .1;
+      ctx.globalAlpha = (1 - q) * .8; ctx.fillStyle = i % 3 ? '#ffe6b8' : '#ffffff';
+      ctx.fillRect(d, y, 1.3 * k, 1.3 * k);
+    }
+    ctx.globalAlpha = 1;
+    // chevelure (coma) verdâtre comme une vraie comète, puis le noyau
+    const pulse = 1 + Math.sin(t / 700) * .06 * live, cr = 58 * k * pulse;
+    let g = ctx.createRadialGradient(0, 0, 0, 0, 0, cr);
+    g.addColorStop(0, 'rgba(255, 255, 255, .95)'); g.addColorStop(.12, 'rgba(235, 255, 245, .8)'); g.addColorStop(.35, 'rgba(150, 255, 210, .28)'); g.addColorStop(.7, 'rgba(120, 200, 255, .08)'); g.addColorStop(1, 'rgba(120, 200, 255, 0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, cr, 0, Math.PI * 2); ctx.fill();
+    g = ctx.createRadialGradient(0, 0, 0, 0, 0, 8 * k);
+    g.addColorStop(0, '#ffffff'); g.addColorStop(.5, 'rgba(255, 250, 230, .9)'); g.addColorStop(1, 'rgba(255, 240, 200, 0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 8 * k, 0, Math.PI * 2); ctx.fill();
+    // aigrettes de lumière (comme sur une photo)
+    ctx.rotate(-ang + .3);
+    for (const [len, w, a] of [[70, 1.4, .55], [38, 1, .35]]) {
+      for (let j = 0; j < 2; j++) {
+        ctx.rotate(Math.PI / 2 * j);
+        const L2 = len * k * pulse, sg = ctx.createLinearGradient(-L2, 0, L2, 0);
+        sg.addColorStop(0, 'rgba(255, 255, 255, 0)'); sg.addColorStop(.5, `rgba(255, 255, 255, ${a})`); sg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = sg; ctx.fillRect(-L2, -w / 2, L2 * 2, w);
+        ctx.rotate(-Math.PI / 2 * j);
+      }
+      ctx.rotate(Math.PI / 4);
+    }
+    ctx.restore();
+  }
   function drawLaunch(t) {
     const { rx, ry, stationY, lift } = launchRocket();
     ctx.save();
@@ -9545,6 +9715,7 @@ body:not(.jeu) .hud { opacity: 0; }
     drawScenery(t, th.neb);
     drawWorldDecor(t, inGame);
     if (state === 'launch') drawLaunch(t);
+    if (state === 'menu' && !$('menu').hidden) drawMenuSky(t);
     if (state === 'menu' && W > 900 && !reduce) {
       const mx = W * .86, my = H * .62 + Math.sin(t / 700) * 14;
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5;
