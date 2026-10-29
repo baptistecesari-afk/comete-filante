@@ -1402,13 +1402,13 @@ body:not(.jeu) .hud { opacity: 0; }
   // l'animal choisi vole à côté de la fusée et aide un peu : fire = une étincelle toutes les … s (n à la fois),
   // magnet = attire les étoiles dans ce rayon, guard = arrête un coup, puis se reforme en … s
   const PETS = [
-    { id: 'lumi', name: 'Lumi', kind: 'Luciole des glaces', col: '#9dffd0', desc: 'La plus petite. Elle lance une étincelle sur l\'ennemi le plus proche.', info: '1 étincelle toutes les 1,8 s', fire: 1.8, n: 1 },
-    { id: 'pipo', name: 'Pipo', kind: 'Chaton comète', col: '#ffc890', desc: 'Il attrape les étoiles proches avec sa queue de comète et te les ramène.', info: 'attire les étoiles proches', magnet: 150 },
-    { id: 'frimousse', name: 'Frimousse', kind: 'Renard de givre', col: '#bfe9ff', desc: 'Très rapide, il lance des étincelles sans arrêt.', info: '1 étincelle toutes les 1,1 s', fire: 1.1, n: 1 },
-    { id: 'bulle', name: 'Bulle', kind: 'Méduse bulle', col: '#ff9ad8', desc: 'Sa bulle arrête un coup à ta place, puis se reforme.', info: 'bloque 1 coup toutes les 20 s', guard: 20 },
-    { id: 'hop', name: 'Hop', kind: 'Lapin des lunes', col: '#e6dcff', desc: 'Il lance deux étincelles d\'un coup.', info: '2 étincelles toutes les 1,5 s', fire: 1.5, n: 2 },
-    { id: 'caillou', name: 'Caillou', kind: 'Tortue lunaire', col: '#c8d8c8', desc: 'Sa carapace de lune arrête un coup à ta place, et se reforme vite.', info: 'bloque 1 coup toutes les 12 s', guard: 12 },
-    { id: 'nuage', name: 'Nuage', kind: 'Baleine des étoiles', col: '#7ad8ff', desc: 'La plus grande : elle lance des étincelles et attire les étoiles.', info: 'étincelle toutes les 1,4 s + aimant', fire: 1.4, n: 1, magnet: 110 },
+    { id: 'lumi', name: 'Lumi', kind: 'Luciole des glaces', col: '#9dffd0', desc: 'Elle attire vers toi toutes les étoiles de l\'écran.', info: 'récupère toutes les étoiles', magnet: 9999 },
+    { id: 'pipo', name: 'Pipo', kind: 'Chaton comète', col: '#ffc890', desc: 'Il fait tourner son énergie de comète : ton super-pouvoir revient plus vite.', info: 'super-pouvoir rechargé 2 fois plus vite', charge: 1 },
+    { id: 'frimousse', name: 'Frimousse', kind: 'Renard de givre', col: '#bfe9ff', desc: 'Le chasseur : il détruit les ennemis à ta place avec ses étincelles de givre.', info: '1 grosse étincelle toutes les 0,6 s', fire: .6, n: 1, dmg: 2 },
+    { id: 'bulle', name: 'Bulle', kind: 'Méduse bulle', col: '#ff9ad8', desc: 'Protection : sa bulle arrête un coup à ta place, puis se reforme.', info: 'bloque 1 coup toutes les 15 s', guard: 15 },
+    { id: 'hop', name: 'Hop', kind: 'Lapin des lunes', col: '#e6dcff', desc: 'Il t\'apporte des munitions de lune : tes canons ne se vident plus pendant un moment.', info: '8 s de tirs illimités toutes les 40 s', every: 40, act: 'inf' },
+    { id: 'caillou', name: 'Caillou', kind: 'Tortue lunaire', col: '#c8d8c8', desc: 'Grande protection : sa carapace de lune t\'entoure, et plus rien ne te touche.', info: 'bouclier total de 4 s toutes les 30 s', every: 30, act: 'shield' },
+    { id: 'nuage', name: 'Nuage', kind: 'Baleine des étoiles', col: '#7ad8ff', desc: 'La plus rare : elle souffle de la lumière de vie sur ta fusée.', info: '+1 vie toutes les 1 min 30', every: 90, act: 'life' },
   ];
 
   // ===== Les animaux de l'espace, dessinés de face en lumière douce (s = 1 : environ 14 px de rayon) =====
@@ -1592,7 +1592,7 @@ body:not(.jeu) .hud { opacity: 0; }
     power: { aimant: 3100, temps: 3900, hyper: 6500, nova: 10400, miroir: 5200, gel: 5700, dragon: 7300, foudre: 7800, missiles: 9100 },
     shot: {},
     // Lumi est offerte à la libération ; les 6 autres s'adoptent avec des Astros (gardés d'un monde à l'autre, comme les vaisseaux)
-    pet: { pipo: 6000, frimousse: 9000, bulle: 12000, hop: 16000, caillou: 20000, nuage: 28000 },
+    pet: { pipo: 50000, frimousse: 60000, bulle: 70000, hop: 80000, caillou: 100000, nuage: 1000000 },
   };
   const CATS = [
     { key: 'model', label: 'Modèle', list: MODELS },
@@ -2774,6 +2774,29 @@ body:not(.jeu) .hud { opacity: 0; }
       const q = (P + i / 4) % 1, a = i * 1.7 + 2.4, d = (1 - q) * 70;
       actStar(k, qx + Math.cos(a) * d * 1.4, qy + Math.sin(a) * d * .7 - 10, 4, T * 2 + i);
     }
+    if (p.charge) {
+      // la jauge du super-pouvoir se remplit à toute vitesse
+      const f = (P * 2) % 1;
+      k.strokeStyle = 'rgba(255, 255, 255, .15)'; k.lineWidth = 4; k.beginPath(); k.arc(px, py - 4, 24, 0, 7); k.stroke();
+      k.strokeStyle = '#ffd86b'; k.beginPath(); k.arc(px, py - 4, 24, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); k.stroke();
+      if (f > .9) { k.fillStyle = 'rgba(255, 216, 107, .3)'; k.beginPath(); k.arc(px, py - 4, 30, 0, 7); k.fill(); }
+    }
+    if (p.act === 'inf') {
+      // un déluge de tirs, et le signe ∞
+      for (let n = 0; n < 10; n++) actBullet(k, px, py - 22 - ((T * 300 + n * 13) % 110));
+      k.fillStyle = '#ff9a3c'; k.font = '700 18px Outfit, sans-serif'; k.fillText('∞', px - 44, py - 20);
+    }
+    if (p.act === 'shield') {
+      k.fillStyle = `rgba(122, 216, 255, ${.15 + .1 * Math.sin(T * 5)})`; k.strokeStyle = '#7ad8ff'; k.lineWidth = 2;
+      k.beginPath(); k.arc(px + 22, py - 2, 44, 0, 7); k.fill(); k.stroke();
+      for (let i = 0; i < 3; i++) { const q = (P + i / 3) % 1, x = px - 30 + i * 30; if (q < .6) { k.fillStyle = '#ff4f6d'; k.beginPath(); k.arc(x, 4 + q / .6 * 30, 3, 0, 7); k.fill(); } else actBoom(k, x, 40, (q - .6) / .4, '#7ad8ff'); }
+    }
+    if (p.act === 'life') {
+      // un cœur s'envole de la baleine vers la fusée
+      const x = qx + (px - qx) * P, y = qy - 16 - Math.sin(P * Math.PI) * 30, r = 5;
+      k.globalAlpha = 1 - P * .5; k.fillStyle = '#ff7aa8'; k.beginPath(); k.moveTo(x, y + r); k.bezierCurveTo(x - r * 2, y - r * .2, x - r * .8, y - r * 1.6, x, y - r * .5); k.bezierCurveTo(x + r * .8, y - r * 1.6, x + r * 2, y - r * .2, x, y + r); k.fill(); k.globalAlpha = 1;
+      k.fillStyle = '#ff7aa8'; k.font = '700 11px Outfit, sans-serif'; k.fillText('+1 vie', px - 60, py - 30);
+    }
     const guardUp = p.guard && P < .62;
     if (p.guard) {
       // un tir ennemi descend sur la fusée : la bulle l'arrête, puis se reforme
@@ -3259,7 +3282,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // monde en cours (0 à 4), boss atteint dans ce monde, tours complets après le dernier monde, histoire à montrer
   let world = 0, bossInWorld = 0, cycle = 0, storyAt = 0, storyNext = '', clacAt = 0, bordAt = 0, zooAt = 0;
   // l'animal de l'espace qui vole à côté de la fusée (position, prochaine étincelle, bulle qui se reforme)
-  let pet = { x: 0, y: 0, fireT: 1, guardT: 0 };
+  let pet = { x: 0, y: 0, fireT: 1, guardT: 0, abilT: 0 };
   // répliques des boss : bulle en plein combat, dialogue à leur défaite, fumée noire des tyrans
   let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
@@ -3271,7 +3294,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
-    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
+    items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0, abilT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -4808,7 +4831,7 @@ body:not(.jeu) .hud { opacity: 0; }
       S('usine:hangar', 'Les six autres ont trouvé refuge au Hangar. Ils t\'attendent.'),
     ],
   };
-  const ZOO_NOTE = '<b>Cadeau :</b> Lumi vole maintenant à côté de ta fusée et lance des étincelles. Les 6 autres animaux s\'adoptent au Hangar avec tes Astros.';
+  const ZOO_NOTE = '<b>Cadeau :</b> Lumi vole maintenant à côté de ta fusée et attire toutes les étoiles. Les 6 autres animaux s\'adoptent au Hangar avec tes Astros.';
   const FINALE = {
     clac: () => [
       noClac(S('action:gueule', ['Le Dévoreur', 'Assez joué ! Je vais t\'avaler !'])),
@@ -7871,9 +7894,18 @@ body:not(.jeu) .hud { opacity: 0; }
       if (pd.fire && (pet.fireT -= dt) <= 0) {
         const tg = cineT > 0 ? null : foes().reduce((m, it) => !m || Math.hypot(it.x - pet.x, it.y - pet.y) < Math.hypot(m.x - pet.x, m.y - pet.y) ? it : m, null);
         if (tg) {
-          for (let n = 0; n < pd.n; n++) { const a = Math.atan2(tg.y - pet.y, tg.x - pet.x) + (n - (pd.n - 1) / 2) * .35; shots.push({ x: pet.x, y: pet.y - 8, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, dmg: 1, seek: pd.col }); }
+          for (let n = 0; n < pd.n; n++) { const a = Math.atan2(tg.y - pet.y, tg.x - pet.x) + (n - (pd.n - 1) / 2) * .35; shots.push({ x: pet.x, y: pet.y - 8, vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, dmg: pd.dmg || 1, seek: pd.col }); }
           pet.fireT = pd.fire; beep(1300, .05, 'triangle', .03, 400);
         } else pet.fireT = .3;
+      }
+      // Pipo : le super-pouvoir se recharge plus vite
+      if (pd.charge && power.cd > 0) power.cd = Math.max(0, power.cd - dt * pd.charge);
+      // Hop, Caillou, Nuage : un cadeau qui revient à intervalle régulier
+      if (pd.every && cineT <= 0 && (pet.abilT += dt) >= pd.every) {
+        pet.abilT = 0;
+        if (pd.act === 'inf') { infinite = Math.max(infinite, 8); reload = null; ammo = gun.mag; pop(pet.x, pet.y - 24, 'Hop : tirs illimités !', pd.col); beep(660, .15, 'square', .08, 300); }
+        else if (pd.act === 'shield') { shield = Math.max(shield, 4); pop(pet.x, pet.y - 24, 'Carapace de Caillou !', '#7ad8ff'); burst(player.x, player.y, '#7ad8ff', 20, 200); beep(300, .3, 'sine', .15, 600); }
+        else if (pd.act === 'life') gainLife(pet.x, pet.y - 24, 'Nuage : +1 vie');
       }
     }
     // foudre : un éclair part de la fusée et rebondit sur 4 ennemis
@@ -8017,7 +8049,7 @@ body:not(.jeu) .hud { opacity: 0; }
       // un animal aimant (Pipo, Nuage) attire doucement les étoiles proches
       if (pd && pd.magnet && it.kind === 'star') {
         const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
-        if (d < pd.magnet && d > 1) { it.x += dx / d * 300 * dt; it.y += dy / d * 300 * dt; }
+        if (d < pd.magnet && d > 1) { const sp = pd.magnet > 1000 ? 560 : 300; it.x += dx / d * sp * dt; it.y += dy / d * sp * dt; }
       }
       const hostile = it.kind === 'rock' || it.kind === 'alien';
       // laser : détruit ce qui est au-dessus de la fusée
