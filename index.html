@@ -843,6 +843,22 @@ body:not(.jeu) .hud { opacity: 0; }
   #menu .play::after { animation: none; opacity: 0; }
   #menu .play, #menu .menugrid .ghost, #menu .worldbtn .wbgo { transition: none; }
 }
+/* croix pour fermer un panneau (Hangar, carte, trophées...) : même verre fumé que les boutons de l'accueil */
+.xclose {
+  position: absolute; top: 18px; right: 18px; z-index: 3; width: 40px; height: 40px; padding: 0; border-radius: 50%;
+  display: grid; place-items: center; font: 700 18px/1 var(--body); color: #efeaff; cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62);
+  border: 1.5px solid rgba(180, 170, 225, .55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 -8px 14px rgba(0, 0, 0, .25), 0 6px 14px rgba(0, 0, 0, .4);
+  transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
+}
+.xclose:active { transform: scale(.92); border-color: var(--star); color: var(--star); }
+.xclose:focus-visible { outline: 2px solid var(--star); outline-offset: 3px; }
+.xclose + h2 { padding-right: 48px; }
+.xclose + .mphead { padding-inline: 48px; }
+@media (hover: hover) { .xclose:hover:not(:active) { transform: rotate(90deg); color: #fff; border-color: var(--star); box-shadow: 0 0 0 1px rgba(255, 216, 107, .3), 0 0 20px rgba(255, 216, 107, .35), 0 8px 18px rgba(0, 0, 0, .45); } }
+@media (max-width: 620px) { .xclose { top: 14px; right: 12px; width: 36px; height: 36px; font-size: 16px; } }
+@media (prefers-reduced-motion: reduce) { .xclose { transition: none; } }
 </style>
 </head>
 <body>
@@ -904,6 +920,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="hangar" hidden>
   <div class="hangar">
+    <button class="xclose" data-back="backBtn" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Hangar <small class="bay">BAIE 07 · <i class="led"></i> PRÊT AU DÉCOLLAGE</small></h2>
     <div class="preview" id="persoPreview">
       <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
@@ -1026,6 +1043,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="mapPanel" data-w="0" hidden>
   <div class="mappage">
+    <button class="xclose" data-back="mapBack" aria-label="Fermer" title="Fermer">✕</button>
     <header class="mphead"><small>Carte des mondes</small><h2>Choisis ton monde</h2><p class="mpcount" id="mapCount"></p></header>
     <div class="wmap" id="worldChips"></div>
     <div class="wdetail" id="worldDetail"></div>
@@ -1038,6 +1056,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="cinema" hidden>
   <div class="hangar atelier">
+    <button class="xclose" data-back="cinemaBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Cinématiques</h2>
     <p class="wallet" id="cinemaCount"></p>
     <div class="cinelist" id="cinemaList"></div>
@@ -1049,6 +1068,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="trophies" hidden>
   <div class="hangar atelier">
+    <button class="xclose" data-back="trophyBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Trophées</h2>
     <p class="wallet" id="trophyCount"></p>
     <div class="opt" id="titleOpt">
@@ -1064,6 +1084,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="rankPanel" hidden>
   <div class="hangar atelier">
+    <button class="xclose" data-back="rankBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Classement mondial</h2>
     <p class="wallet">Tous les joueurs du monde, classés par leur meilleur score. Pas besoin d'e-mail : choisis juste ton nom de joueur.</p>
     <div class="opt" id="rankJoinBox">
@@ -1083,6 +1104,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="savePanel" hidden>
   <div class="hangar atelier">
+    <button class="xclose" data-back="saveBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Sauvegarde</h2>
     <p class="wallet">Ta partie est enregistrée <strong>automatiquement</strong> sur cet appareil, même si tu fermes le jeu en pleine partie : tes points, vaisseaux, couleurs, compétences, trophées et mondes sont gardés.</p>
     <div class="savesum" id="saveSum"></div>
@@ -1106,6 +1128,7 @@ body:not(.jeu) .hud { opacity: 0; }
 
 <div class="panel" id="help" hidden>
   <div class="hangar atelier">
+    <button class="xclose" data-back="helpBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Comment jouer</h2>
     <div class="rules">
       <span>Bouger</span><span>Souris, doigt, ou flèches / ZQSD</span>
@@ -2818,6 +2841,8 @@ body:not(.jeu) .hud { opacity: 0; }
   $('hangarBtn').onclick = openHangar;
   $('overHangarBtn').onclick = openHangar;
   $('backBtn').onclick = closeHangar;
+  // la croix en haut à droite fait comme le bouton Retour du panneau
+  document.querySelectorAll('.xclose').forEach(b => { b.onclick = () => $(b.dataset.back).click(); });
   $('goBtn').onclick = () => { preview = null; start(); };
 
   // --- fond étoilé ---
