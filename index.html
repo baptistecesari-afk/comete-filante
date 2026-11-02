@@ -3765,6 +3765,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   let sayLeft = 0, talkQ = [], talkId = '', talkAt = 0, talkShownAt = 0, smokes = [], sayAt = 0, sayDef = null;
   let player, items, parts, pops, shots, ebullets, boss, fireT, level, flash, flashColor, bannerT, score, lives, combo, comboT, speed, spawnT, time, shield, shake, last;
   let power = { def: POWERS[0], cd: 0, active: 0 };
+  // partie à deux : la 2e fusée a son propre super-pouvoir (celui de son Hangar), avec sa propre jauge
+  let power2 = null, mateIn = false;
+  const mateFx = { bh: null, starT: 0, cloneT: 0, zapT: 0, missT: 0, ringT: 0 };
+  const powOf = pl => pl === p2 && power2 ? power2 : power;
+  // on fait le travail d'un pouvoir « comme si » la 2e fusée était la 1re : on échange les deux le temps de l'appel
+  function asMate(fn) {
+    if (!(duo && p2 && power2)) return;
+    const c2 = p2Conf();
+    const sw = () => {
+      [power, power2] = [power2, power]; [player, p2] = [p2, player];
+      [bh, mateFx.bh] = [mateFx.bh, bh]; [starT, mateFx.starT] = [mateFx.starT, starT]; [cloneT, mateFx.cloneT] = [mateFx.cloneT, cloneT];
+      [zapT, mateFx.zapT] = [mateFx.zapT, zapT]; [missT, mateFx.missT] = [mateFx.missT, missT]; [ringT, mateFx.ringT] = [mateFx.ringT, ringT];
+      mateIn = !mateIn;
+    };
+    const keep = cfg;
+    sw(); cfg = c2;
+    try { return fn(); } finally { cfg = keep; sw(); }
+  }
   const keys = {};
   let target = null;
   // ===== Partie à deux : deux fusées dans la même partie, vies et super-pouvoir partagés =====
@@ -3798,6 +3816,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     power = { def: byId(POWERS, cfg.power), cd: 0, active: 0 };
     power.maxCd = power.def.cd * (1 - .1 * up('pouvoir'));
     $('powerName').textContent = power.def.name;
+    power2 = null; mateFx.bh = null;
+    if (p2) {
+      // en ligne : le pouvoir du Hangar du pote ; sur le même appareil : le même pouvoir que J1, avec sa propre jauge
+      const pp = netRole === 'host' && netPeer ? netPeer : null, d2 = byId(POWERS, pp ? pp.powId : cfg.power);
+      power2 = { def: d2, cd: 0, active: 0, maxCd: d2.cd * (1 - .1 * (pp ? pp.powUp || 0 : up('pouvoir'))) };
+    }
     target = null;
     updateHud();
   }
@@ -4023,9 +4047,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const coarse = matchMedia('(pointer: coarse)');
   function updatePowerUi() {
     const b = $('powerBtn');
+    // chez le pote, le bouton montre son propre pouvoir
+    const pw = netRole === 'guest' && power2 ? power2 : power;
     let cls, label, p;
-    if (power.active > 0) { cls = 'active'; label = 'En cours'; p = power.active / power.def.dur; }
-    else if (power.cd > 0) { cls = ''; label = Math.ceil(power.cd) + ' s'; p = 1 - power.cd / power.maxCd; }
+    if (pw.active > 0) { cls = 'active'; label = 'En cours'; p = pw.active / pw.def.dur; }
+    else if (pw.cd > 0) { cls = ''; label = Math.ceil(pw.cd) + ' s'; p = 1 - pw.cd / pw.maxCd; }
     else { cls = 'ready'; label = coarse.matches ? 'Prêt' : 'Prêt · Espace'; p = 1; }
     b.style.setProperty('--p', p.toFixed(3));
     const key = cls + label;
@@ -8160,13 +8186,15 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('ammoHint').textContent = golden ? 'Balles dorées' : ammo < gun.mag ? 'R · recharger' : 'Plein';
   }
 
-  function activatePower() {
+  // mate : c'est la 2e fusée qui lance le sien
+  function activatePower(mate) {
     if (netRole === 'guest') { if (state === 'play') netSend({ t: 'power' }); return; }
-    if (state !== 'play' || power.cd > 0 || power.active > 0) return;
+    if (mate) { if (p2 && !p2.ko) asMate(() => activatePower()); return; }
+    if (state !== 'play' || power.cd > 0 || power.active > 0 || player.ko) return;
     const d = power.def;
     power.active = d.dur; power.cd = power.maxCd; bump('pouvoirs');
     run.noPow = false; if (boss) { run.bossPow = true; defi('pouvoirBoss'); }
-    showBanner(d.name, '');
+    showBanner(d.name, duo && p2 ? (duoNames()[mateIn ? 1 : 0]) : '');
     if (d.id === 'hyper') { beep(200, .5, 'sawtooth', .12, 900); }
     else if (d.id === 'temps') { beep(600, .6, 'sine', .14, -450); flash = .25; flashColor = '122, 216, 255'; }
     else if (d.id === 'aimant') { beep(330, .3, 'triangle', .12, 330); }
@@ -8175,7 +8203,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     else if (d.id === 'clone') { cloneT = 0; beep(440, .3, 'square', .06, 440); }
     else if (d.id === 'trounoir') { bh = { x: player.x, y: Math.max(150, player.y - 230) }; beep(60, 1.2, 'sawtooth', .18, 20); shake = .3; }
     else if (d.id === 'supernova') {
-      reload = null; ammo = gun.mag; ringT = 0; flash = .6; flashColor = '255, 230, 150'; shake = .4;
+      if (mateIn) { player.reload = 0; player.ammo = (player.gun || gun).mag; } else { reload = null; ammo = gun.mag; }
+      ringT = 0; flash = .6; flashColor = '255, 230, 150'; shake = .4;
       beep(220, .9, 'sawtooth', .14, 660); setTimeout(() => beep(990, .5, 'triangle', .12), 200);
     }
     else if (d.id === 'foudre') { zapT = 0; beep(1400, .4, 'sawtooth', .08, -1200); flash = .2; flashColor = '200, 230, 255'; }
@@ -8343,7 +8372,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function peerGun(g) {
     const lv = (k, m) => Math.max(0, Math.min(m, Math.floor(Number(g && g.up && g.up[k]) || 0)));
     const base = byId(GUNS, g && g.id);
-    return { gun: { ...base, mag: Math.round(base.mag * (1 + .2 * lv('chargeur', 5))), reload: base.reload * (1 - .12 * lv('recharge', 4)), rate: base.rate * (1 - .08 * lv('cadence', 5)) }, pow: lv('puissance', 4) };
+    return { gun: { ...base, mag: Math.round(base.mag * (1 + .2 * lv('chargeur', 5))), reload: base.reload * (1 - .12 * lv('recharge', 4)), rate: base.rate * (1 - .08 * lv('cadence', 5)) }, pow: lv('puissance', 4),
+      powId: byId(POWERS, g && g.pw).id, powUp: Math.max(0, Math.min(5, Math.floor(Number(g && g.pu) || 0))) };
   }
   const p2Conf = () => netPeer && netRole === 'host' ? netPeer.cfg : netRole === 'guest' ? netMine : DUO_CONF;
   const netOpen = () => netR && netR.readyState === 'open';
@@ -8434,7 +8464,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // on se présente : la fusée du Hangar, son nom, son pistolet et ses compétences
   function netHello() {
     netMine = cfg;
-    netSend({ t: 'hello', cfg, name: rocketName(), vw: innerWidth, vh: innerHeight, w: netRole === 'host' ? startWorld : undefined, gun: { id: cfg.gun, up: { chargeur: up('chargeur'), recharge: up('recharge'), cadence: up('cadence'), puissance: up('puissance') } } });
+    netSend({ t: 'hello', cfg, name: rocketName(), vw: innerWidth, vh: innerHeight, w: netRole === 'host' ? startWorld : undefined, gun: { id: cfg.gun, up: { chargeur: up('chargeur'), recharge: up('recharge'), cadence: up('cadence'), puissance: up('puissance') }, pw: cfg.power, pu: up('pouvoir') } });
   }
   // le pote est parti, ou la connexion est coupée
   function netDrop() {
@@ -8487,7 +8517,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const fillCv = $('gameFill'), fillCtx = fillCv.getContext('2d');
   let fillT = 0;
   function drawFill(t) {
-    if (!netHW || !document.body.classList.contains('fit') || t - fillT < 120) return;
+    if (!netHW || !document.body.classList.contains('fit') || t - fillT < 500) return; // (le fond flou des côtés n'a pas besoin d'être refait souvent)
     fillT = t;
     // on étire le terrain sur tout le petit fond (il est flouté et assombri par le CSS)
     const w = 160, h = Math.round(w * innerHeight / innerWidth);
@@ -8519,7 +8549,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const netRevive = (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? (v.$b ? bossById(v.$b) : v.$s !== undefined ? SPECIES[v.$s] : v) : v;
   const GAME_ST = ['play', 'pause', 'launch', 'dying', 'talk', 'choice', 'over', 'film'];
   function netHostTick() { if (performance.now() - netIn.at > 1500) { netIn.f = false; netIn.k = [0, 0]; } }
-  let netScN = 0;
+  let netScN = 0, netN = 0;
   function netHostSend(t) {
     if (!netOpen() || !netPeer) return;
     const inGame = GAME_ST.includes(state) && !cineReplay;
@@ -8528,8 +8558,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (!inGame || state === 'film') { netFx.length = 0; netSend({ t: 's', st: cineReplay ? 'menu' : state }, true); return; }
     const ch = netU && netU.readyState === 'open' ? netU : netR;
     if (ch.bufferedAmount > 200000) return; // le réseau du pote est lent : on saute une image plutôt que d'accumuler du retard
+    // chaque objet porte un numéro : chez le pote, il glisse d'une image à l'autre au lieu de sauter
+    for (const a of [items, shots, ebullets]) for (const o of a) if (!o.n) o.n = ++netN;
     const m = { t: 's', st: state, W, H, score, lives, level, world, bossInWorld, combo, shield, infinite, flash, flashColor, shake, cineT, speed, sayLeft,
-      pw: [power.def.id, power.cd, power.active, power.maxCd], bh, lfx: levelFx ? levelFx.lv : 0,
+      pw: [power.def.id, power.cd, power.active, power.maxCd], bh,
+      pw2: power2 ? [power2.def.id, power2.cd, power2.active, power2.maxCd] : undefined, bh2: mateFx.bh, lfx: levelFx ? levelFx.lv : 0,
       pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx], l2: p2 ? p2.lives : 0, ko: [player.ko ? 1 : 0, p2 && p2.ko ? 1 : 0],
       p2: p2 && [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill || 0, p2.vx, p2.ammo, p2.reload, (p2.gun || gun).mag, (p2.gun || gun).reload],
       pet: [pet.x, pet.y, pet.guardT], tm: time,
@@ -8557,7 +8590,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         const c = v => Math.max(-1, Math.min(1, Math.round(Number(v) || 0)));
         const pp = Array.isArray(m.p) && state === 'play' ? [Math.max(12, Math.min(W - 12, +m.p[0] || 0)), Math.max(82, Math.min(H - 22, +m.p[1] || 0)), Math.max(-.45, Math.min(.45, +m.p[2] || 0))] : null;
         netIn = { k: [c(m.k[0]), c(m.k[1])], tg: Array.isArray(m.tg) ? [Math.max(0, Math.min(W, +m.tg[0] || 0)), Math.max(0, Math.min(H, +m.tg[1] || 0))] : null, f: !!m.f, p: pp, at: performance.now() };
-      } else if (m.t === 'power' && state === 'play') activatePower();
+      } else if (m.t === 'power' && state === 'play') activatePower(true);
       else if (m.t === 'pause' && (state === 'play' || state === 'pause')) togglePause();
       return;
     }
@@ -8611,6 +8644,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (m.lfx && (!levelFx || levelFx.lv !== m.lfx)) { const th = themeOf(m.lfx); levelFx = { t: performance.now(), name: th.name, col: th.neb[0], col2: th.neb[1], lv: m.lfx }; }
     power = { def: byId(POWERS, m.pw[0]), cd: m.pw[1], active: m.pw[2], maxCd: m.pw[3] };
     bh = m.bh;
+    // son propre super-pouvoir (celui de son Hangar), avec sa jauge
+    power2 = Array.isArray(m.pw2) ? { def: byId(POWERS, m.pw2[0]), cd: m.pw2[1], active: m.pw2[2], maxCd: m.pw2[3] } : null;
+    mateFx.bh = m.bh2 || null;
+    if (power2 && $('powerName').textContent !== power2.def.name) $('powerName').textContent = power2.def.name;
     // la fusée de l'hôte : on garde sa position visée, elle y glisse à chaque image (plus de saccades)
     const snapPl = state !== 'play' || st !== 'play' || player.tx === undefined || Math.hypot(m.pl[0] - player.x, m.pl[1] - player.y) > 220;
     [player.tx, player.ty, player.tilt, player.hurt, player.chill, player.vx] = m.pl;
@@ -8626,9 +8663,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (Array.isArray(m.ko)) { player.ko = !!m.ko[0]; if (p2) p2.ko = !!m.ko[1]; }
     [pet.x, pet.y, pet.guardT] = m.pet;
     // le fond : même temps de partie (la nébuleuse et les étoiles défilent pareil) et même décor que chez l'hôte
-    if (Number.isFinite(m.tm) && Math.abs(m.tm - time) > .08) time = m.tm;
+    // (petit écart : on rattrape en douceur, sinon le fond ferait un saut à chaque message)
+    if (Number.isFinite(m.tm)) { const e = m.tm - time; if (Math.abs(e) > .6) time = m.tm; else time += e * .2; }
     if (Array.isArray(m.sc)) netScenery(m.sc);
-    items = m.it; shots = m.sh; ebullets = m.eb; zaps = m.zp || []; smokes = m.sm || [];
+    items = netMerge(items, m.it, 140); shots = netMerge(shots, m.sh, 90); ebullets = netMerge(ebullets, m.eb, 90); zaps = m.zp || []; smokes = m.sm || [];
     boss = items.find(i => i.boss) || null;
     for (const f of m.fx || []) {
       if (f[0] === 'b') burst(f[1], f[2], f[3], f[4], f[5], f[6]);
@@ -8650,7 +8688,25 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('paused').hidden = st !== 'pause';
     for (const id of ['pauseBtn', 'powerBtn']) $(id).hidden = st !== 'play' || cineT > 0;
     if (st === 'talk' && prev !== 'talk') showBanner('Dialogue', 'Ton équipe lit la scène…');
-    if (st !== prev || Math.random() < .1) { updateHud(); updatePowerUi(); }
+    if (st !== prev || Math.random() < .1) updateHud();
+    updatePowerUi();
+  }
+  // on retrouve chaque objet déjà à l'écran par son numéro : il garde sa place affichée et glissera vers celle de l'hôte (hx, hy),
+  // et garde aussi ce qui a été dessiné chez le pote (la texture d'un astéroïde n'est peinte qu'une fois, sans changer de couleur)
+  function netMerge(old, list, d) {
+    if (!Array.isArray(list)) return [];
+    const by = new Map();
+    for (const o of old) if (o && o.n) by.set(o.n, o);
+    for (const o of list) {
+      if (!o || typeof o !== 'object') continue;
+      o.hx = o.x; o.hy = o.y;
+      const p = o.n && by.get(o.n);
+      if (!p) continue;
+      for (const k in p) if (!(k in o)) o[k] = p[k];
+      o.hx = o.x; o.hy = o.y;
+      if (Math.abs(p.x - o.x) < d && Math.abs(p.y - o.y) < d) { o.x = p.x; o.y = p.y; if (typeof p.rot === 'number') o.rot = p.rot; }
+    }
+    return list;
   }
   function netBackToTeam() {
     netCloseFilm();
@@ -8682,7 +8738,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // la fusée du pote bouge chez lui tout de suite (même conduite que dans updateP2)
   function netPilot(dt, kx, ky) {
     if (!p2 || p2.ko) return;
-    const cold = bossPw('freeze') || p2.chill > 0, hyper = power.active > 0 && power.def.id === 'hyper';
+    const cold = bossPw('freeze') || p2.chill > 0, hyper = !!power2 && power2.active > 0 && power2.def.id === 'hyper';
     p2.vy = p2.vy || 0;
     if (kx || ky) {
       const th = (hyper ? 3600 : 2600) * (cold ? .45 : 1);
@@ -8705,9 +8761,20 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         player.x += (player.tx - player.x) * k; player.y += (player.ty - player.y) * k;
         player.tx += (player.vx || 0) * dt; player.tx = Math.max(12, Math.min(W - 12, player.tx));
       }
-      for (const s of shots) { s.x += (s.vx || 0) * dt; s.y += (s.vy || 0) * dt; }
-      for (const b of ebullets) if (!(b.wait > 0) && !b.orbit) { b.x += (b.vx || 0) * dt; b.y += (b.vy || 0) * dt; }
-      for (const it of items) if (it.kind !== 'alien' && it.vy) it.y += it.vy * speed * dt;
+      // tout avance tout seul entre deux messages, et glisse vers la place donnée par l'hôte
+      const gk = Math.min(1, dt * 12);
+      const glide = (o, vx, vy) => {
+        o.x += vx * dt; o.y += vy * dt;
+        if (o.hx === undefined) return;
+        o.hx += vx * dt; o.hy += vy * dt;
+        o.x += (o.hx - o.x) * gk; o.y += (o.hy - o.y) * gk;
+      };
+      for (const s of shots) glide(s, s.vx || 0, s.vy || 0);
+      for (const b of ebullets) if (!(b.wait > 0) && !b.orbit) glide(b, b.vx || 0, b.vy || 0); else glide(b, 0, 0);
+      for (const it of items) {
+        if (it.kind !== 'alien') { glide(it, it.vx || 0, (it.vy || 0) * speed); if (it.kind === 'rock') it.rot = (it.rot || 0) + (it.vr || 1.5) * dt; }
+        else glide(it, 0, 0);
+      }
       for (const [pl, c] of [[player, netPeer ? netPeer.cfg : cfg], [p2, netMine]]) {
         if (!pl || pl.ko || reduce) continue;
         const fl = flameColsOf(c.flame, performance.now());
@@ -9073,7 +9140,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if ((e.key === 'p' || e.key === 'Escape') && (state === 'play' || state === 'pause')) togglePause();
     else if (e.key === 'Escape' && state === 'hangar') closeHangar();
     if (state === 'play' && e.key.toLowerCase() === 'r' && !e.repeat) tryReload();
-    if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift' || (duo && e.key.toLowerCase() === 'm'))) activatePower();
+    if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift' || (duo && e.key.toLowerCase() === 'm'))) activatePower(duo && p2 && !netRole && e.key.toLowerCase() === 'm');
     else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && $('naming').hidden && !e.repeat) { if (state === 'menu') play(); else start(); }
   });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -9272,12 +9339,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
     const pid = power.def.id;
     const on = power.active > 0;
-    if (power.active > 0) power.active = Math.max(0, power.active - dt);
-    if (power.cd > 0) power.cd = Math.max(0, power.cd - dt);
-    const slow = on && pid === 'gel' ? .03 : on && pid === 'temps' ? .35 : 1;
+    for (const pw of [power, duo && p2 ? power2 : null]) {
+      if (!pw) continue;
+      if (pw.active > 0) pw.active = Math.max(0, pw.active - dt);
+      if (pw.cd > 0) pw.cd = Math.max(0, pw.cd - dt);
+    }
+    // les pouvoirs en cours, fusée par fusée (le gel et le ralenti du temps profitent à toute l'équipe)
+    const pwPairs = [[player, power]];
+    if (duo && p2 && power2) pwPairs.push([p2, power2]);
+    const pwLive = pwPairs.filter(([pl, pw]) => pw.active > 0 && !pl.ko);
+    const pwHas = id => pwLive.some(([, pw]) => pw.def.id === id);
+    const slow = pwHas('gel') ? .03 : pwHas('temps') ? .35 : 1;
     const hyper = on && pid === 'hyper';
     const nova = on && pid === 'supernova';
     const invincible = hyper || nova || (on && pid === 'miroir') || shield > 0;
+    const on2 = !!(power2 && power2.active > 0), pid2 = power2 ? power2.def.id : '';
+    const hyper2 = on2 && pid2 === 'hyper', nova2 = on2 && pid2 === 'supernova';
+    const invincible2 = hyper2 || nova2 || (on2 && pid2 === 'miroir') || shield > 0;
+    const invOf = pl => pl === p2 ? invincible2 : invincible;
 
     // déplacement de la fusée
     const arrows = !(duo && p2) || !!netRole;
@@ -9305,7 +9384,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     player.y = Math.max(player.r + 70, Math.min(H - player.r - 10, player.y + player.vy * dt));
     player.tilt += (Math.max(-.45, Math.min(.45, player.vx / 900)) - player.tilt) * Math.min(1, dt * 10);
     }
-    if (duo && p2 && !p2.ko) updateP2(dt, hyper, nova);
+    if (duo && p2 && !p2.ko) updateP2(dt, hyper2, nova2);
     if (netRole === 'host') netHostTick(dt);
 
     // particules de réacteur
@@ -9342,7 +9421,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       player.vy += 40;
       if (!infinite && !nova && ammo === 0) startReload();
     }
-    // pouvoirs ultimes
+    // pouvoirs ultimes : d'abord ceux de J1, puis les mêmes pour J2 (asMate échange les deux fusées le temps de l'appel)
+    const powerFx1 = () => {
+    const on = power.active > 0 && !player.ko, pid = power.def.id;
     if (on && pid === 'tempete') {
       starT -= dt;
       while (starT <= 0) { starT += .05; shots.push({ x: 10 + Math.random() * (W - 20), y: H + 10, vx: 0, vy: -900, dmg: 2, star: true }); }
@@ -9365,6 +9446,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       }
     }
     if (!on) bh = null;
+    };
+    powerFx1(); asMate(powerFx1);
     // ennemis visibles à l'écran
     const foes = () => items.filter(it => !it.dead && (it.kind === 'rock' || it.kind === 'alien') && it.y > 0 && it.y < H);
     // l'animal suit la fusée sur le côté, avec un peu de retard, et lance ses étincelles sur l'ennemi le plus proche
@@ -9391,6 +9474,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       }
     }
     // foudre : un éclair part de la fusée et rebondit sur 4 ennemis
+    const powerFx2 = () => {
+    const on = power.active > 0 && !player.ko, pid = power.def.id, nova = on && pid === 'supernova';
     if (on && pid === 'foudre') {
       zapT -= dt;
       if (zapT <= 0) {
@@ -9406,8 +9491,6 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         if (pts.length > 1) { zaps.push({ pts, life: .2 }); beep(1800 + Math.random() * 600, .06, 'sawtooth', .04, -1400); }
       }
     }
-    for (const z of zaps) z.life -= dt;
-    zaps = zaps.filter(z => z.life > 0);
     // missiles chercheurs
     if (on && pid === 'missiles') {
       missT -= dt;
@@ -9439,6 +9522,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         beep(1200, .1, 'triangle', .05, -400);
       }
     }
+    };
+    powerFx2(); asMate(powerFx2);
+    for (const z of zaps) z.life -= dt;
+    zaps = zaps.filter(z => z.life > 0);
     if (duo) for (const it of items) if (it.kind === 'alien' && !it.duoHp) { it.duoHp = true; it.hp *= DUO_HP; if (it.maxHp) it.maxHp *= DUO_HP; }
     const missTargets = shots.some(s => s.missile || s.seek) ? foes() : [];
     for (const s of shots) {
@@ -9461,7 +9548,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         if (Math.abs(s.x - it.x) < hr && Math.abs(s.y - it.y) < hr && Math.hypot(s.x - it.x, (s.y - it.y) * (it.flat ? 1.6 : 1)) < hr) {
           if (it.kind === 'secret') { s.dead = true; hitSecret(it); break; }
           if (s.pierce) { s.pierce.push(it); burst(s.x, s.y, '#d78bff', 8, 160, 3); } else s.dead = true;
-          damage(it, s.dmg * (on && pid === 'gel' ? 2 : 1) * (it.boss && (s.star || s.missile) ? .3 : 1));
+          damage(it, s.dmg * (pwHas('gel') ? 2 : 1) * (it.boss && (s.star || s.missile) ? .3 : 1));
           if (s.last && it.dead && !s.bonus) {
             s.bonus = true; score += 25;
             pop(it.x, it.y - 44, 'Dernière balle ! +25', '#ffd86b');
@@ -9525,21 +9612,25 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         it.rot += (it.vr || 1.5) * slow * dt;
       }
 
-      // aimant : les étoiles et bonus sont attirés
-      if (on && pid === 'aimant' && (it.kind === 'star' || it.kind === 'shield' || it.kind === 'charge' || it.kind === 'infini' || it.kind === 'vie')) {
-        const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
-        if (d < 280 && d > 1) { it.x += dx / d * 520 * dt; it.y += dy / d * 520 * dt; }
+      const hostile = it.kind === 'rock' || it.kind === 'alien';
+      // aimant : les étoiles et bonus sont attirés ; laser : détruit ce qui est au-dessus de la fusée
+      let lasered = false;
+      for (const [pl, pw] of pwLive) {
+        const id = pw.def.id;
+        if (id === 'aimant' && (it.kind === 'star' || it.kind === 'shield' || it.kind === 'charge' || it.kind === 'infini' || it.kind === 'vie')) {
+          const dx = pl.x - it.x, dy = pl.y - it.y, d = Math.hypot(dx, dy);
+          if (d < 280 && d > 1) { it.x += dx / d * 520 * dt; it.y += dy / d * 520 * dt; }
+        }
+        if (id === 'laser' && hostile && it.y < pl.y && Math.abs(it.x - pl.x) < it.r + 10) {
+          damage(it, it.boss ? 6 * dt : 99);
+          if (it.dead) { lasered = true; break; }
+        }
       }
+      if (lasered) continue;
       // un animal aimant (Pipo, Nuage) attire doucement les étoiles proches
       if (pd && pd.magnet && it.kind === 'star') {
         const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy);
         if (d < pd.magnet && d > 1) { const sp = pd.magnet > 1000 ? 560 : 300; it.x += dx / d * sp * dt; it.y += dy / d * sp * dt; }
-      }
-      const hostile = it.kind === 'rock' || it.kind === 'alien';
-      // laser : détruit ce qui est au-dessus de la fusée
-      if (on && pid === 'laser' && hostile && it.y < player.y && Math.abs(it.x - player.x) < it.r + 10) {
-        damage(it, it.boss ? 6 * dt : 99);
-        if (it.dead) continue;
       }
 
       for (const pl of rockets()) {
@@ -9565,7 +9656,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         } else if (it.kind === 'vie') {
           it.dead = true; gainLife(it.x, it.y - 20, '+1 vie');
         } else if (it.kind === 'charge') {
-          it.dead = true; power.cd = 0; burst(it.x, it.y, '#b6ff6b', 20, 200);
+          it.dead = true; powOf(pl).cd = 0; burst(it.x, it.y, '#b6ff6b', 20, 200);
           pop(it.x, it.y - 20, 'Pouvoir rechargé', '#b6ff6b');
           beep(500, .25, 'square', .08, 700);
         } else if (it.kind === 'infini') {
@@ -9575,7 +9666,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           beep(330, .12, 'square', .1); setTimeout(() => beep(495, .12, 'square', .1), 90); setTimeout(() => beep(660, .25, 'square', .1, 300), 180);
         } else if (it.kind === 'secret') {
           // la planète secrète passe sans faire mal
-        } else if (invincible) {
+        } else if (invOf(pl)) {
           if (!it.boss) damage(it, 99);
           else if (it.contactT <= 0) { damage(it, 3); it.contactT = .5; }
           updateHud();
@@ -9614,22 +9705,27 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         if (b.fuse <= 0) { const fc = b.fc || '#ff9a3c'; b.dead = true; ring(b.x, b.y, b.fn || 8, b.fs || 170, Math.random(), fc, 5); burst(b.x, b.y, fc, 10, 160, 3); beep(180, .15, 'square', .05, -80); continue; }
       }
       if (b.y > H + 20 || b.y < -40 || b.x < -20 || b.x > W + 20) { b.dead = true; continue; }
-      if (on && pid === 'laser' && Math.abs(b.x - player.x) < 16 && b.y < player.y) { b.dead = true; continue; }
-      if (on && pid === 'miroir' && Math.hypot(b.x - player.x, b.y - player.y) < 64) {
-        b.dead = true; burst(b.x, b.y, '#bff4ff', 5, 120, 3);
-        const sp = Math.max(500, Math.hypot(b.vx, b.vy) * 2);
-        shots.push({ x: b.x, y: b.y, vx: (b.x - player.x) * 3, vy: -sp, dmg: 3, gold: true });
-        beep(1500, .05, 'triangle', .05, 300);
-        continue;
+      let blocked = false;
+      for (const [rp, pw] of pwLive) {
+        const id = pw.def.id;
+        if (id === 'laser' && Math.abs(b.x - rp.x) < 16 && b.y < rp.y) { b.dead = true; blocked = true; break; }
+        if (id === 'miroir' && Math.hypot(b.x - rp.x, b.y - rp.y) < 64) {
+          b.dead = true; burst(b.x, b.y, '#bff4ff', 5, 120, 3);
+          const sp = Math.max(500, Math.hypot(b.vx, b.vy) * 2);
+          shots.push({ x: b.x, y: b.y, vx: (b.x - rp.x) * 3, vy: -sp, dmg: 3, gold: true });
+          beep(1500, .05, 'triangle', .05, 300);
+          blocked = true; break;
+        }
       }
+      if (blocked) continue;
       // flocon de givre : ne fait pas perdre de vie, mais gèle la fusée
       if (b.chill && Math.hypot(b.x - pl.x, b.y - pl.y) < pl.r + b.s - 1) {
         b.dead = true; burst(b.x, b.y, '#e6f9ff', 8, 120, 3);
-        if (!invincible) { if (!(pl.chill > 0)) pop(pl.x, pl.y - 34, 'Gelée !', '#bfefff'); pl.chill = b.chill; beep(1600, .15, 'triangle', .05, -800); }
+        if (!invOf(pl)) { if (!(pl.chill > 0)) pop(pl.x, pl.y - 34, 'Gelée !', '#bfefff'); pl.chill = b.chill; beep(1600, .15, 'triangle', .05, -800); }
         continue;
       }
       if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.r + (b.s || 5) - 1) {
-        if (invincible) { b.dead = true; burst(b.x, b.y, '#7ad8ff', 6, 120, 3); }
+        if (invOf(pl)) { b.dead = true; burst(b.x, b.y, '#7ad8ff', 6, 120, 3); }
         else if (pl.hurt <= 0) { b.dead = true; hitPlayer(pl); if (state !== 'play') return; }
       }
     }
@@ -9728,6 +9824,31 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   // tirs de la fusée : des traits d'énergie avec une tête brûlante et une queue qui s'efface
   // la 2e fusée (Étincelle), son nom au-dessus et sa jauge de munitions en dessous
+  // ce qui entoure une fusée pendant son super-pouvoir (traînée d'hyperpropulsion, clones, couronne de supernova)
+  function drawPowAura(t) {
+    const on = power.active > 0, pid = power.def.id;
+    if (on && pid === 'hyper' && !reduce) {
+      ctx.globalAlpha = .3;
+      drawRocket(ctx, player.x - player.vx * .03, player.y + 14, 1, cfg, t, player.tilt, 0);
+      ctx.globalAlpha = 1;
+    }
+    if (on && pid === 'clone') {
+      ctx.globalAlpha = .45;
+      for (const sd of [-1, 1]) drawRocket(ctx, player.x + sd * 46, player.y + 6, .85, cfg, t, player.tilt, 0);
+      ctx.globalAlpha = 1;
+    }
+    if (on && pid === 'supernova') {
+      const pr = 40 + Math.sin(t / 90) * 6;
+      const g = ctx.createRadialGradient(player.x, player.y, 6, player.x, player.y, pr);
+      g.addColorStop(0, 'rgba(255, 242, 176, .7)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(player.x, player.y, pr, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 216, 107, .7)'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t / 400; ctx.moveTo(player.x + Math.cos(a) * 30, player.y + Math.sin(a) * 30); ctx.lineTo(player.x + Math.cos(a) * 52, player.y + Math.sin(a) * 52); }
+      ctx.stroke();
+    }
+  }
+  const duoNames = () => netPeer ? (netRole === 'host' ? [rocketName(), netPeer.name] : [netPeer.name, netMine.name]) : ['J1', 'J2'];
   function drawP2(t, hyper) {
     const alive = state !== 'over' && state !== 'dying';
     if (alive && !p2.ko && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
@@ -9747,13 +9868,21 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (!alive || state === 'talk') return;
     // J1 / J2 au-dessus des fusées, pour que chacun retrouve la sienne
     ctx.save(); ctx.font = '12px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4, 2, 12, .8)';
-    const lab = netPeer ? (netRole === 'host' ? [rocketName(), netPeer.name] : [netPeer.name, netMine.name]) : ['J1', 'J2'];
+    const lab = duoNames();
     for (const [pl, txt, col] of [[player, lab[0], '#ffd86b'], [p2, lab[1], '#4fe0c8']]) { if (pl.ko) continue; ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
     // munitions d'Étincelle : une petite jauge sous la fusée (elle recharge toute seule)
     if (p2.ko) { ctx.restore(); return; }
     const g2 = p2.gun || gun, w = 34, k = infinite > 0 ? 1 : p2.reload > 0 ? 1 - p2.reload / g2.reload : p2.ammo / g2.mag;
     ctx.fillStyle = 'rgba(4, 2, 12, .6)'; ctx.fillRect(p2.x - w / 2 - 1, p2.y + 27, w + 2, 6);
     ctx.fillStyle = p2.reload > 0 ? '#ff9a3c' : infinite > 0 ? '#ffd86b' : '#4fe0c8'; ctx.fillRect(p2.x - w / 2, p2.y + 28, w * Math.max(0, Math.min(1, k)), 4);
+    // sa jauge de super-pouvoir, juste en dessous (elle brille quand il est prêt : M sur le même clavier, son bouton en ligne)
+    if (power2) {
+      const pk = power2.active > 0 ? power2.active / power2.def.dur : power2.cd > 0 ? 1 - power2.cd / power2.maxCd : 1, ready = power2.cd <= 0 && power2.active <= 0;
+      ctx.fillStyle = 'rgba(4, 2, 12, .6)'; ctx.fillRect(p2.x - w / 2 - 1, p2.y + 34, w + 2, 6);
+      ctx.fillStyle = power2.active > 0 ? '#ffffff' : ready ? '#ffd86b' : '#b78bff';
+      if (ready && !reduce) ctx.globalAlpha = .7 + .3 * Math.sin(t / 120);
+      ctx.fillRect(p2.x - w / 2, p2.y + 35, w * Math.max(0, Math.min(1, pk)), 4); ctx.globalAlpha = 1;
+    }
     ctx.restore();
   }
 
@@ -12246,7 +12375,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const playing = inGame;
     const on = playing && power.active > 0;
     const pid = power.def.id;
-    const slow = on && pid === 'gel' ? .03 : on && pid === 'temps' ? .35 : 1;
+    // le pouvoir de la 2e fusée compte aussi pour le fond (traits d'hyperpropulsion)
+    const on2 = playing && duo && p2 && power2 && power2.active > 0, pid2 = power2 ? power2.def.id : '';
+    const slow = (on && pid === 'gel') || (on2 && pid2 === 'gel') ? .03 : (on && pid === 'temps') || (on2 && pid2 === 'temps') ? .35 : 1;
 
     // nuages de nébuleuse qui dérivent lentement (couleurs du niveau)
     const drift = playing ? time * 40 * speed : t * .01;
@@ -12272,7 +12403,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       ctx.globalAlpha = (.25 + s.z * .6) * tw;
       const col = s.col || (s.col = STAR_TINTS[Math.floor(Math.random() * STAR_TINTS.length)]);
       ctx.fillStyle = col;
-      if (on && pid === 'hyper' && !reduce) ctx.fillRect(x, y, s.z * 1.5, s.z * 18);
+      if (((on && pid === 'hyper') || (on2 && pid2 === 'hyper')) && !reduce) ctx.fillRect(x, y, s.z * 1.5, s.z * 18);
       else if (s.z > .85) {
         // étoile brillante : halo doux et fines aigrettes qui s'estompent
         ctx.drawImage(softSprite(col), x - 7, y - 7, 15, 15);
@@ -12338,6 +12469,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
     if (playing) {
       const fl = flameColsOf(cfg.flame, t);
+      // effets des super-pouvoirs : ceux de J1, puis ceux de J2 (asMate échange les deux fusées le temps du dessin)
+      const drawPow1 = () => {
+      const on = power.active > 0, pid = power.def.id, fl = flameColsOf(cfg.flame, t);
       // laser
       if (on && pid === 'laser') {
         const w = 14 + Math.sin(t / 30) * 3;
@@ -12374,6 +12508,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         ctx.strokeStyle = '#c86bff'; ctx.lineWidth = 2; ctx.stroke();
         ctx.restore();
       }
+      };
+      drawPow1(); asMate(drawPow1);
       // foudre
       for (const z of zaps) {
         ctx.save(); ctx.globalAlpha = Math.min(1, z.life * 7); ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 16;
@@ -12387,6 +12523,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         }
         ctx.restore();
       }
+      const drawPow2 = () => {
+      const on = power.active > 0, pid = power.def.id;
       // bouclier miroir
       if (on && pid === 'miroir') {
         const pulse = 60 + Math.sin(t / 90) * 3;
@@ -12411,6 +12549,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         }
         ctx.restore();
       }
+      };
+      drawPow2(); asMate(drawPow2);
       // niveau bonus de la planète secrète : le ciel se dore
       if (bonusT > 0) {
         ctx.save(); ctx.globalAlpha = Math.min(1, bonusT, (9 - bonusT) * 2);
@@ -12480,26 +12620,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       const blink = player.hurt > 0 && Math.floor(player.hurt * 12) % 2;
       if (!blink && state !== 'over' && state !== 'dying') {
         const hyper = on && pid === 'hyper';
-        if (hyper && !reduce) {
-          ctx.globalAlpha = .3;
-          drawRocket(ctx, player.x - player.vx * .03, player.y + 14, 1, cfg, t, player.tilt, 0);
-          ctx.globalAlpha = 1;
-        }
-        if (on && pid === 'clone') {
-          ctx.globalAlpha = .45;
-          for (const sd of [-1, 1]) drawRocket(ctx, player.x + sd * 46, player.y + 6, .85, cfg, t, player.tilt, 0);
-          ctx.globalAlpha = 1;
-        }
-        if (on && pid === 'supernova') {
-          const pr = 40 + Math.sin(t / 90) * 6;
-          const g = ctx.createRadialGradient(player.x, player.y, 6, player.x, player.y, pr);
-          g.addColorStop(0, 'rgba(255, 242, 176, .7)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(player.x, player.y, pr, 0, 7); ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 216, 107, .7)'; ctx.lineWidth = 2;
-          ctx.beginPath();
-          for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + t / 400; ctx.moveTo(player.x + Math.cos(a) * 30, player.y + Math.sin(a) * 30); ctx.lineTo(player.x + Math.cos(a) * 52, player.y + Math.sin(a) * 52); }
-          ctx.stroke();
-        }
+        drawPowAura(t);
         // halo de lumière du réacteur
         if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(fl[1]), player.x - 22, player.y + 6, 44, 60); ctx.restore(); }
         drawRocket(ctx, player.x, player.y, 1, cfg, t, player.tilt, hyper || (on && pid === 'supernova') ? 1 : 0);
@@ -12510,7 +12631,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           ctx.globalAlpha = 1;
         }
       }
-      if (duo && p2) drawP2(t, on && pid === 'hyper');
+      if (duo && p2) { if (!p2.ko && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2) && state !== 'over' && state !== 'dying') asMate(() => drawPowAura(t)); drawP2(t, on2 && pid2 === 'hyper'); }
 
       // textes flottants
       ctx.font = '18px Bungee, Impact, sans-serif'; ctx.textAlign = 'center';
