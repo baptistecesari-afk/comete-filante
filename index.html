@@ -603,8 +603,8 @@ body:not(.jeu) .hud { opacity: 0; }
 }
 @keyframes logoShine { 0%, 60% { background-position: 150% 0, 0 0; } 90%, 100% { background-position: -50% 0, 0 0; } }
 /* Accueil rangé : Jouer, le monde, puis 4 boutons de même taille et les petits liens */
-#menu { grid-template-columns: minmax(0, 1fr); }
-#menu .card { width: 100%; }
+:is(#menu, #team) { grid-template-columns: minmax(0, 1fr); }
+:is(#menu, #team) .card { width: 100%; }
 .menugrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 26rem; }
 .menugrid .ghost { font-size: 16px; padding: 12px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .menulinks { gap: 6px 16px; }
@@ -810,39 +810,39 @@ body:not(.jeu) .hud { opacity: 0; }
 
 /* ===== Accueil réaliste ===== */
 /* lumière de cinéma : le centre reste clair, les bords s'assombrissent */
-#menu { background: radial-gradient(ellipse 85% 75% at 50% 42%, rgba(11, 8, 32, .2), rgba(11, 8, 32, .5) 60%, rgba(5, 3, 16, .88) 100%); }
+:is(#menu, #team) { background: radial-gradient(ellipse 85% 75% at 50% 42%, rgba(11, 8, 32, .2), rgba(11, 8, 32, .5) 60%, rgba(5, 3, 16, .88) 100%); }
 /* titre en métal doré, avec une arête de lumière comme une plaque polie */
-#menu .card h1 {
+:is(#menu, #team) .card h1 {
   background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, .9) 50%, transparent 60%),
     linear-gradient(180deg, #fff6d8 0%, #ffe08a 30%, #e9a940 49%, #ffd27a 51%, #ffb08f 75%, #ff86ad 100%);
   background-size: 300% 100%, 100% 100%; background-position: 150% 0, 0 0; background-repeat: no-repeat;
   -webkit-background-clip: text; background-clip: text;
   filter: drop-shadow(0 1px 0 rgba(255, 255, 255, .35)) drop-shadow(0 5px 0 rgba(60, 30, 20, .7)) drop-shadow(0 12px 18px rgba(0, 0, 0, .55)) drop-shadow(0 0 28px rgba(255, 190, 120, .3));
 }
-#menu .card > p { color: #c9c2ea; text-shadow: 0 2px 8px rgba(0, 0, 0, .8); }
+:is(#menu, #team) .card > p { color: #c9c2ea; text-shadow: 0 2px 8px rgba(0, 0, 0, .8); }
 /* reflet qui traverse un bouton */
-#menu .play::before, #menu .ghost::before, #menu .worldbtn::before {
+:is(#menu, #team) .play::before, :is(#menu, #team) .ghost::before, :is(#menu, #team) .worldbtn::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; z-index: -1; pointer-events: none;
   background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .55) 50%, transparent 65%) no-repeat;
   background-size: 250% 100%; background-position: 160% 0; transition: background-position 0s;
 }
 /* Jouer : gros bouton doré bombé, qui respire doucement */
-#menu .play {
+:is(#menu, #team) .play {
   position: relative; isolation: isolate;
   background: linear-gradient(180deg, #fff0b8 0%, #ffd86b 42%, #f0ae3c 100%);
   box-shadow: 0 6px 0 #b0781e, 0 12px 26px rgba(0, 0, 0, .5), 0 0 42px rgba(255, 216, 107, .45), inset 0 2px 0 rgba(255, 255, 255, .8), inset 0 -4px 8px rgba(150, 85, 10, .35);
   text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
   transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), box-shadow .16s, filter .16s;
 }
-#menu .play::after {
+:is(#menu, #team) .play::after {
   content: ''; position: absolute; inset: -3px; border-radius: inherit; z-index: -2; pointer-events: none;
   border: 2px solid rgba(255, 216, 107, .8); animation: playPing 2.6s ease-out infinite;
 }
 @keyframes playPing { 0% { transform: scale(1); opacity: .8; } 70%, 100% { transform: scale(1.18, 1.45); opacity: 0; } }
-#menu .play:active { transform: translateY(5px) scale(.97); filter: brightness(.95);
+:is(#menu, #team) .play:active { transform: translateY(5px) scale(.97); filter: brightness(.95);
   box-shadow: 0 1px 0 #b0781e, 0 4px 10px rgba(0, 0, 0, .5), 0 0 30px rgba(255, 216, 107, .4), inset 0 2px 0 rgba(255, 255, 255, .6), inset 0 -2px 6px rgba(150, 85, 10, .4); }
 /* les 4 boutons : verre fumé, bord qui s'allume au survol */
-#menu .menugrid .ghost {
+:is(#menu, #team) .menugrid .ghost {
   position: relative; isolation: isolate; color: #efeaff;
   background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
@@ -850,127 +850,88 @@ body:not(.jeu) .hud { opacity: 0; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), inset 0 -10px 18px rgba(0, 0, 0, .25), 0 8px 18px rgba(0, 0, 0, .4);
   transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
 }
-#menu .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
-/* ===== Écran Équipe : un hangar multijoueur en plein écran ===== */
-.teamscreen { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; touch-action: pan-y;
-  padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
-  background: radial-gradient(120% 70% at 50% 0%, #2a2a7a 0%, #16124a 45%, #0a0820 100%); color: var(--ink); }
-.teamscreen[hidden] { display: none; }
-.tsbg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
-  background:
-    repeating-linear-gradient(90deg, rgba(122, 216, 255, .07) 0 2px, transparent 2px 64px) bottom / 100% 42% no-repeat,
-    repeating-linear-gradient(0deg, rgba(122, 216, 255, .07) 0 2px, transparent 2px 48px) bottom / 100% 42% no-repeat,
-    linear-gradient(transparent 55%, rgba(79, 224, 200, .1) 58%, rgba(10, 8, 32, .9) 100%); }
-.tsbg::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 14px;
-  background: repeating-linear-gradient(-45deg, #ffd86b 0 18px, #0a0820 18px 36px); opacity: .85; }
-.beam { position: absolute; top: -10%; width: 34vw; height: 120%; background: linear-gradient(rgba(122, 216, 255, .16), transparent 70%);
-  transform-origin: top center; filter: blur(6px); }
-.beam.b1 { left: -6vw; transform: rotate(16deg); }
-.beam.b2 { left: 33vw; background: linear-gradient(rgba(255, 216, 107, .12), transparent 70%); animation: beamSway 7s ease-in-out infinite alternate; }
-.beam.b3 { right: -6vw; transform: rotate(-16deg); }
-@keyframes beamSway { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
-@media (prefers-reduced-motion: reduce) { .beam.b2 { animation: none; } }
-.teamscreen > :not(.tsbg) { position: relative; z-index: 1; }
-.tshead { display: flex; align-items: center; gap: 12px; padding-top: 10px; max-width: 760px; width: 100%; margin: 0 auto; }
-.tsback { flex: none; width: 46px; height: 46px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, .25); background: rgba(10, 8, 32, .6); color: var(--ink);
-  font: 30px/1 var(--display); cursor: var(--cur-clic); display: grid; place-items: center; padding-bottom: 4px; }
-.tstitle { flex: 1; min-width: 0; }
-.tstitle small { display: block; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #7ad8ff; }
-.tstitle h2 { margin: 0; font: clamp(26px, 7vw, 40px)/1.05 var(--display); color: var(--star); text-shadow: 0 3px 0 #8a5a12, 0 0 24px rgba(255, 216, 107, .35); }
-.tschip { flex: none; font: 15px var(--display); letter-spacing: .14em; padding: 8px 12px; border-radius: 12px; background: rgba(79, 224, 200, .16); border: 2px solid #4fe0c8; color: #c8fff4; }
-.tspads { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 3vw, 28px); max-width: 760px; width: 100%; margin: clamp(10px, 3vh, 28px) auto 0; }
-.tpad { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 30px 8px 14px; border-radius: 24px; min-width: 0;
-  background: linear-gradient(rgba(10, 8, 32, .25), rgba(10, 8, 32, .7)); border: 2px solid rgba(255, 255, 255, .12); }
-.tpad.me { border-color: color-mix(in srgb, var(--star) 60%, transparent); box-shadow: 0 0 30px rgba(255, 216, 107, .12) inset; }
+:is(#menu, #team) .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
+/* ===== Partie à deux : le même accueil, en version équipe ===== */
+.teamcard { position: relative; gap: 14px; }
+.tsback { position: absolute; top: 0; left: 0; width: 46px; height: 46px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, .25); background: rgba(10, 8, 32, .6); color: var(--ink);
+  font: 30px/1 var(--display); cursor: var(--cur-clic); display: grid; place-items: center; padding-bottom: 4px; z-index: 2; }
+#team .logo h1 { font-size: clamp(34px, 9vw, 52px); }
+.teamkick { margin: -6px 0 0; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; font: 15px var(--display); letter-spacing: .08em; color: #c8fff4; text-transform: uppercase; }
+.tschip { font: 14px var(--display); letter-spacing: .14em; padding: 4px 10px; border-radius: 10px; background: rgba(79, 224, 200, .16); border: 2px solid #4fe0c8; color: #c8fff4; }
+.tspads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 26rem; }
+.tpad { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 24px 6px 10px; border-radius: 20px; min-width: 0;
+  background: rgba(10, 8, 32, .55); border: 2px solid rgba(255, 255, 255, .14); }
+.tpad.me { border-color: color-mix(in srgb, var(--star) 55%, transparent); }
 .tpad.friend { border-style: dashed; }
-.tpad.friend.on { border-style: solid; border-color: #4fe0c8; box-shadow: 0 0 30px rgba(79, 224, 200, .15) inset; }
-.tpad.isready { box-shadow: 0 0 0 3px #7dff8a, 0 0 34px rgba(125, 255, 138, .35); }
-.ttag { position: absolute; top: 8px; left: 10px; font: 13px var(--display); padding: 3px 9px; border-radius: 999px; background: #ffd86b; color: #1a1240; }
+.tpad.friend.on { border-style: solid; border-color: #4fe0c8; }
+.tpad.isready { box-shadow: 0 0 0 3px #7dff8a, 0 0 26px rgba(125, 255, 138, .35); }
+.ttag { position: absolute; top: 6px; left: 8px; font: 12px var(--display); padding: 2px 8px; border-radius: 999px; background: #ffd86b; color: #1a1240; }
 .tpad.friend .ttag { background: #4fe0c8; }
 .ttag.j2 { background: #4fe0c8; }
 .tpad.friend .ttag.j1 { background: #ffd86b; }
-.tpad canvas { width: 100%; max-width: 190px; aspect-ratio: 4 / 5; height: auto; }
-.tbase { display: block; width: 74%; height: 16px; margin-top: -18px; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(122, 216, 255, .55), rgba(122, 216, 255, .08) 70%, transparent); box-shadow: 0 0 22px rgba(122, 216, 255, .35); }
-.tpad.friend:not(.on) .tbase { opacity: .35; }
-.tname { font: clamp(15px, 4vw, 19px) var(--display); color: var(--ink); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 6px; }
-input.tname { width: 100%; max-width: 12em; background: rgba(4, 2, 12, .55); border: 2px dashed rgba(255, 216, 107, .6); border-radius: 12px; padding: 6px 8px; }
+.tpad canvas { width: 100%; max-width: 96px; aspect-ratio: 4 / 5; height: auto; }
+.tname { font: 15px var(--display); color: var(--ink); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+input.tname { width: 100%; max-width: 11em; background: rgba(4, 2, 12, .55); border: 2px dashed rgba(255, 216, 107, .6); border-radius: 10px; padding: 4px 6px; }
 input.tname:focus { outline: none; border-style: solid; border-color: var(--star); }
 input.tname.todo { animation: namePulse 1.4s ease-in-out infinite; }
 @keyframes namePulse { 50% { border-color: #ff7aa8; box-shadow: 0 0 14px rgba(255, 122, 168, .5); } }
 @media (prefers-reduced-motion: reduce) { input.tname.todo { animation: none; border-color: #ff7aa8; } }
-.tkit { color: var(--muted); font-size: 13px; text-align: center; line-height: 1.35; }
-.tready { font: 13px var(--display); min-height: 1.3em; color: var(--muted); letter-spacing: .04em; }
+.tkit { color: var(--muted); font-size: 12px; text-align: center; line-height: 1.3; }
+.tready { font: 12px var(--display); min-height: 1.3em; color: var(--muted); }
 .tpad.isready .tready { color: #7dff8a; }
-.tplus { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); font: 64px var(--display); color: rgba(255, 255, 255, .3); pointer-events: none; }
+.tplus { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); font: 50px var(--display); color: rgba(255, 255, 255, .3); pointer-events: none; }
 .tpad.friend.on .tplus { display: none; }
-.tsbody { display: flex; flex-direction: column; gap: 14px; max-width: 560px; width: 100%; margin: 16px auto 0; flex: 1; }
-.teamstatus { margin: 0; text-align: center; color: #d9d0ff; font-size: 16px; line-height: 1.45; min-height: 1.4em; }
+.teamstatus { margin: 0; color: #d9d0ff; font-size: 15px; line-height: 1.4; min-height: 1.4em; text-shadow: 0 2px 8px rgba(0, 0, 0, .8); }
 .teamstatus.err { color: #ff9aa8; }
-.teamcode { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 18px; background: rgba(79, 224, 200, .1); border: 2px solid rgba(79, 224, 200, .5); }
+.teamcode { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 18px; border-radius: 18px; background: rgba(79, 224, 200, .1); border: 2px solid rgba(79, 224, 200, .5); }
 .teamcode small { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 12px; }
 .teamcode b { font: clamp(34px, 11vw, 46px) var(--display); letter-spacing: .18em; color: #c8fff4; }
-.teamlink { font-size: 13px; color: var(--muted); word-break: break-all; text-align: center; }
+.teamlink { font-size: 13px; color: var(--muted); word-break: break-all; }
 .teamjoin { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .teamjoin input { font: 26px var(--display); letter-spacing: .2em; text-transform: uppercase; text-align: center; width: 8.5em; max-width: 100%; padding: 10px 12px;
   border-radius: 16px; border: 2px solid #4fe0c8; background: rgba(4, 2, 12, .7); color: #c8fff4; }
 .teamjoin .play { padding: 12px 24px; font-size: 18px; }
-.teambtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.tbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px; border-radius: 18px; cursor: var(--cur-clic);
-  font: 15px var(--display); color: var(--ink); background: linear-gradient(#3a5ee8, #2a3fb0); border: 0; box-shadow: 0 5px 0 #18266e; transition: transform .1s; }
-.tbtn span { font-size: 28px; }
-.tbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #18266e; }
-.tbtn:disabled { opacity: .45; cursor: default; filter: grayscale(.6); }
-.tbtn.on { background: linear-gradient(#2fbf9f, #1f8a74); box-shadow: 0 5px 0 #0e4a3e; }
-.tbtn.small { flex-direction: row; padding: 12px 16px; gap: 8px; }
-.tbtn.small span { font-size: 20px; }
-.tsgear { display: flex; flex-direction: column; gap: 8px; }
-.tsgearh { text-align: center; font: 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: #7ad8ff; }
-.tsgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.gbtn { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; text-align: left; min-width: 0;
-  padding: 10px 12px; border-radius: 16px; cursor: var(--cur-clic); color: var(--ink); background: linear-gradient(rgba(58, 94, 232, .35), rgba(42, 63, 176, .25));
-  border: 2px solid rgba(122, 216, 255, .35); box-shadow: 0 4px 0 rgba(10, 8, 32, .8); transition: transform .1s, border-color .15s; }
-.gbtn span { grid-row: span 2; font-size: 26px; }
-.gbtn b { font: 14px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gbtn small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(10, 8, 32, .8); }
-.gbtn:disabled { cursor: default; opacity: .75; border-style: dashed; }
-@media (hover: hover) { .gbtn:not(:disabled):hover { border-color: var(--star); } }
-@media (max-width: 620px) { .tsgrid { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 620px) and (max-height: 900px) { .tpad canvas { max-width: 120px; } .tpad { padding-top: 24px; } .tsbody { margin-top: 10px; gap: 10px; } }
-.tsgo:disabled { opacity: .6; filter: grayscale(.5); cursor: default; }
-.tsready { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
-.tsgo { min-width: 12em; }
-.tsgo.on { background: #7dff8a; box-shadow: 0 6px 0 #2f9a45, 0 0 40px rgba(125, 255, 138, .5); }
-.tsfoot { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.teambtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 26rem; }
+.teambtns .ghost { padding: 12px 6px; font-size: 15px; }
+.teambtns .ghost.on { border-color: #4fe0c8; color: #c8fff4; }
+.teamlinked { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; }
+.teamlinked[hidden] { display: none; }
+#teamWorld:disabled { cursor: default; }
+#teamWorld:disabled .wbgo { visibility: hidden; }
+#teamReady:disabled { filter: grayscale(.55) brightness(.85); cursor: default; }
+#teamReady.on { background: linear-gradient(#a6ffb0, #6fe07d); }
 .tscount { position: fixed; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   background: rgba(6, 4, 20, .7); backdrop-filter: blur(4px); }
-.tscount[hidden] { display: none; }
+.tscount[hidden], .tsconfirm[hidden] { display: none; }
 .tscount b { font: clamp(110px, 32vw, 200px)/1 var(--display); color: var(--star); text-shadow: 0 8px 0 #8a5a12, 0 0 60px rgba(255, 216, 107, .6); animation: countPop .6s ease-out; }
 .tscount small { font: 20px var(--display); color: #c8fff4; }
 @keyframes countPop { from { transform: scale(1.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@media (max-width: 420px) { .tpad { padding-top: 28px; } .tkit { font-size: 12px; } .tbtn { font-size: 13px; } }
-@media (max-height: 640px) { .tpad canvas { max-width: 120px; } }
+.tsconfirm { position: fixed; inset: 0; z-index: 4; display: grid; place-items: center; padding: 16px; background: rgba(6, 4, 20, .72); backdrop-filter: blur(4px); }
+.tsbox { display: flex; flex-direction: column; gap: 12px; align-items: center; text-align: center; max-width: 24rem; padding: 22px 20px; border-radius: 22px;
+  background: var(--panel); border: 2px solid color-mix(in srgb, var(--star) 50%, transparent); box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+.tsbox b { font: 20px var(--display); color: var(--star); }
+.tsbox small { color: var(--muted); font-size: 14px; }
+.tsbox .row { gap: 10px; flex-wrap: wrap; justify-content: center; }
 /* partie en équipe sur deux écrans de forme différente : le décor flou remplit les bords */
 #gameFill { position: fixed; inset: -4%; width: 108%; height: 108%; display: none; filter: blur(18px) brightness(.5) saturate(1.3); pointer-events: none; }
 body.fit #gameFill { display: block; }
 body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0, 0, 0, .7); }
 /* Partie à deux : turquoise, la couleur d'Étincelle */
-#menu .duobtn { border-color: #4fe0c8; color: #c8fff4; }
-#menu .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
-#menu .worldbtn .wbgo { transition: transform .2s; }
-#menu .worldbtn:active { transform: translateY(1px) scale(.98); }
-#menu .menulinks .toggle { color: #b9b0e0; text-decoration-color: rgba(185, 176, 224, .45); text-underline-offset: 3px; transition: color .15s, text-decoration-color .15s; }
-#menu .menulinks .toggle:active { color: var(--star); }
+:is(#menu, #team) .duobtn { border-color: #4fe0c8; color: #c8fff4; }
+:is(#menu, #team) .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
+:is(#menu, #team) .worldbtn .wbgo { transition: transform .2s; }
+:is(#menu, #team) .worldbtn:active { transform: translateY(1px) scale(.98); }
+:is(#menu, #team) .menulinks .toggle { color: #b9b0e0; text-decoration-color: rgba(185, 176, 224, .45); text-underline-offset: 3px; transition: color .15s, text-decoration-color .15s; }
+:is(#menu, #team) .menulinks .toggle:active { color: var(--star); }
 /* survol (seulement avec une souris, pour ne pas rester « allumé » sur téléphone) */
 @media (hover: hover) {
-  #menu .play:hover::before, #menu .ghost:hover::before, #menu .worldbtn:hover::before { background-position: -60% 0; transition: background-position .7s ease; }
-  #menu .play:hover:not(:active) { transform: translateY(-3px) scale(1.04); filter: brightness(1.06);
+  :is(#menu, #team) .play:hover::before, #menu .ghost:hover::before, #menu .worldbtn:hover::before { background-position: -60% 0; transition: background-position .7s ease; }
+  :is(#menu, #team) .play:hover:not(:active) { transform: translateY(-3px) scale(1.04); filter: brightness(1.06);
     box-shadow: 0 9px 0 #b0781e, 0 18px 32px rgba(0, 0, 0, .5), 0 0 60px rgba(255, 216, 107, .65), inset 0 2px 0 rgba(255, 255, 255, .8), inset 0 -4px 8px rgba(150, 85, 10, .35); }
-  #menu .menugrid .ghost:hover:not(:active) { transform: translateY(-3px); color: #fff; border-color: var(--star);
+  :is(#menu, #team) .menugrid .ghost:hover:not(:active) { transform: translateY(-3px); color: #fff; border-color: var(--star);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 0 0 1px rgba(255, 216, 107, .3), 0 0 24px rgba(255, 216, 107, .35), 0 12px 24px rgba(0, 0, 0, .45); }
-  #menu .worldbtn:hover .wbgo { transform: translateX(5px); }
-  #menu .menulinks .toggle:hover { color: var(--star); text-decoration-color: var(--star); }
+  :is(#menu, #team) .worldbtn:hover .wbgo { transform: translateX(5px); }
+  :is(#menu, #team) .menulinks .toggle:hover { color: var(--star); text-decoration-color: var(--star); }
 }
 /* traînée lumineuse et étincelles de l'étoile-souris : suivent le chemin de la souris, au-dessus des menus mais jamais cliquable */
 #traineeSouris { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 60; }
@@ -980,8 +941,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 .clicfx b { position: absolute; left: 0; top: 0; width: 80px; height: 80px; margin: -40px 0 0 -40px; border-radius: 50%; border: 3px solid rgba(255, 240, 200, .95);
   box-shadow: 0 0 18px rgba(255, 216, 107, .8), inset 0 0 16px rgba(255, 216, 107, .7), inset 0 0 40px rgba(255, 255, 255, .35); }
 @media (prefers-reduced-motion: reduce) {
-  #menu .play::after { animation: none; opacity: 0; }
-  #menu .play, #menu .menugrid .ghost, #menu .worldbtn .wbgo { transition: none; }
+  :is(#menu, #team) .play::after { animation: none; opacity: 0; }
+  :is(#menu, #team) .play, #menu .menugrid .ghost, #menu .worldbtn .wbgo { transition: none; }
 }
 /* croix pour fermer un panneau (Hangar, carte, trophées...) : même verre fumé que les boutons de l'accueil */
 .xclose {
@@ -1069,33 +1030,28 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   </div>
 </div>
 
-<div class="teamscreen" id="team" hidden>
-  <div class="tsbg" aria-hidden="true"><i class="beam b1"></i><i class="beam b2"></i><i class="beam b3"></i></div>
-  <header class="tshead">
-    <button type="button" class="tsback" id="teamBack" aria-label="Retour au menu">‹</button>
-    <div class="tstitle"><small id="teamKicker">Mode multijoueur</small><h2 id="teamTitle">Équipe</h2></div>
-    <span class="tschip notypo" id="teamChip" hidden></span>
-  </header>
-  <div class="tspads">
-    <div class="tpad me" id="padMe">
-      <span class="ttag" id="tagMe">J1</span>
-      <canvas id="teamMe" width="240" height="300" aria-label="Ta fusée"></canvas>
-      <i class="tbase" aria-hidden="true"></i>
-      <input class="tname" id="teamMeName" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nom de ta fusée">
-      <small class="tkit" id="teamMeKit"></small>
-      <b class="tready" id="readyMe"></b>
+<div class="panel" id="team" hidden>
+  <div class="card teamcard">
+    <button type="button" class="tsback" id="teamBack" aria-label="Quitter la partie à deux" title="Quitter">‹</button>
+    <div class="logo"><h1>Comète<br>Filante</h1></div>
+    <p class="teamkick"><span id="teamKicker">Partie à deux</span><span class="tschip notypo" id="teamChip" hidden></span></p>
+    <div class="tspads" id="teamPads">
+      <div class="tpad me" id="padMe">
+        <span class="ttag" id="tagMe">Toi</span>
+        <canvas id="teamMe" width="240" height="300" aria-label="Ta fusée"></canvas>
+        <input class="tname" id="teamMeName" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nom de ta fusée">
+        <small class="tkit" id="teamMeKit"></small>
+        <b class="tready" id="readyMe"></b>
+      </div>
+      <div class="tpad friend" id="teamFriendSlot">
+        <span class="ttag" id="tagFriend">Ton pote</span>
+        <canvas id="teamFriend" width="240" height="300" aria-label="La fusée de ton pote"></canvas>
+        <span class="tplus" aria-hidden="true">+</span>
+        <b class="tname" id="teamFriendName">Ton pote</b>
+        <small class="tkit" id="teamFriendState">Pas encore là</small>
+        <b class="tready" id="readyFriend"></b>
+      </div>
     </div>
-    <div class="tpad friend" id="teamFriendSlot">
-      <span class="ttag" id="tagFriend">J2</span>
-      <canvas id="teamFriend" width="240" height="300" aria-label="La fusée de ton pote"></canvas>
-      <span class="tplus" aria-hidden="true">+</span>
-      <i class="tbase" aria-hidden="true"></i>
-      <b class="tname" id="teamFriendName">Ton pote</b>
-      <small class="tkit" id="teamFriendState">Pas encore là</small>
-      <b class="tready" id="readyFriend"></b>
-    </div>
-  </div>
-  <div class="tsbody">
     <p class="teamstatus" id="teamStatus"></p>
     <div class="teamcode" id="teamCodeBox" hidden>
       <small>Code de l'équipe</small>
@@ -1107,31 +1063,37 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       <button class="play" type="submit">Rejoindre</button>
     </form>
     <div class="teambtns" id="teamBtns">
-      <button type="button" class="tbtn" id="teamCreate"><span aria-hidden="true">👑</span>Créer</button>
-      <button type="button" class="tbtn" id="teamJoin"><span aria-hidden="true">🤝</span>Rejoindre</button>
-      <button type="button" class="tbtn" id="teamShare" disabled><span aria-hidden="true">📤</span>Partager</button>
+      <button type="button" class="ghost" id="teamCreate"><span aria-hidden="true">👑</span> Créer</button>
+      <button type="button" class="ghost" id="teamJoin"><span aria-hidden="true">🤝</span> Rejoindre</button>
+      <button type="button" class="ghost" id="teamShare" disabled><span aria-hidden="true">📤</span> Partager</button>
     </div>
-    <div class="tsgear" id="teamGear" hidden>
-      <small class="tsgearh">Mon équipement</small>
-      <div class="tsgrid">
-        <button type="button" class="gbtn" data-go="persoOpts"><span aria-hidden="true">🎨</span><b>Ma fusée</b><small id="gStyle"></small></button>
-        <button type="button" class="gbtn" data-go="optGun"><span aria-hidden="true">🔫</span><b>Pistolet</b><small id="gGun"></small></button>
-        <button type="button" class="gbtn" data-go="optPower"><span aria-hidden="true">⚡</span><b>Pouvoir</b><small id="gPower"></small></button>
-        <button type="button" class="gbtn" data-go="skills"><span aria-hidden="true">⭐</span><b>Compétences</b><small id="gSkills"></small></button>
-        <button type="button" class="gbtn" data-go="petOpt" id="gPetBtn"><span aria-hidden="true">🐾</span><b>Compagnon</b><small id="gPet"></small></button>
-        <button type="button" class="gbtn" id="teamWorld"><span aria-hidden="true">🗺️</span><b>Monde</b><small id="gWorld"></small></button>
+    <div class="teamlinked" id="teamLinked" hidden>
+      <button type="button" class="play" id="teamReady">Jouer</button>
+      <button type="button" class="worldbtn" id="teamWorld"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="teamWorldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
+      <div class="menugrid">
+        <button type="button" class="ghost" id="teamHangar">Hangar</button>
+        <button type="button" class="ghost" id="teamTrophies">Trophées</button>
+        <button type="button" class="ghost" id="teamRank">🏆 Classement</button>
+        <button type="button" class="ghost" id="teamCinema">🎬 Cinématiques</button>
       </div>
     </div>
-    <div class="tsready" id="teamReadyRow" hidden>
-      <button type="button" class="play tsgo" id="teamReady">Prêt !</button>
-      <button type="button" class="tbtn small" id="teamStory"><span aria-hidden="true">📖</span>Histoire</button>
-    </div>
-    <div class="tsfoot">
+    <div class="row menulinks">
+      <button type="button" class="toggle" id="teamStory" hidden>Histoire à deux</button>
       <button type="button" class="toggle" id="teamLocal">Jouer à deux sur le même appareil</button>
       <button type="button" class="toggle" id="teamQuit" hidden>Quitter l'équipe</button>
     </div>
   </div>
   <div class="tscount" id="teamCount" hidden><b id="teamCountN">3</b><small>Préparez-vous !</small></div>
+  <div class="tsconfirm" id="teamConfirm" hidden role="dialog" aria-modal="true" aria-labelledby="teamConfirmQ">
+    <div class="tsbox">
+      <b id="teamConfirmQ">Voulez-vous vraiment quitter cette session ?</b>
+      <small id="teamConfirmSub">Ton pote restera seul dans l'équipe.</small>
+      <div class="row">
+        <button type="button" class="ghost" id="teamConfirmNo">Non, je reste</button>
+        <button type="button" class="play" id="teamConfirmYes">Oui, quitter</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="panel" id="hangar" hidden>
@@ -3691,7 +3653,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
   });
   function closePanels() {
-    if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel']) $(id).hidden = true; openTeam(); return; } }
+    if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; renderWorldPick(); preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel', 'trophies', 'cinema', 'rankPanel']) $(id).hidden = true; openTeam(); return; } }
     if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
@@ -5054,7 +5016,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       el.appendChild(stop);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
-    $('mapGo').textContent = `Jouer · Monde ${startWorld + 1}`;
+    $('mapGo').textContent = teamDetour ? 'Retour à l\'équipe' : `Jouer · Monde ${startWorld + 1}`;
     const w = WORLDS[startWorld], won = w.bosses.filter(d => beaten.includes(d.id)).length;
     $('worldNow').textContent = `${w.icon} Monde ${startWorld + 1} · ${w.name} · ${won}/10 boss`;
     $('worldBtn').style.setProperty('--w1', w.col[0]); $('worldBtn').style.setProperty('--w2', w.col[1]);
@@ -8019,7 +7981,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const playDuo = () => { duo = true; initAudio(); if (duoSeen) start(); else startDuoFilm(); };
   $('startBtn').onclick = play;
   $('duoBtn').onclick = () => openTeam();
-  $('mapGo').onclick = () => { $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
+  $('mapGo').onclick = () => { if (teamDetour) { closePanels(); return; } $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
   $('proSkip').onclick = () => { if (proLastStep()) proGoto(0); else endFilm(); };
   $('proNext').onclick = () => proNext();
@@ -8244,7 +8206,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (k === 'def' && v.id) return { $b: v.id };
       if (k === 'sp') return { $s: SPECIES.indexOf(v) };
     }
-    if (typeof v === 'number') return Math.round(v * 100) / 100;
+    if (typeof v === 'number') { const a = Math.abs(v); return a >= 200 ? Math.round(v) : a >= 20 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100; }
     return v;
   };
   const netRevive = (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? (v.$b ? bossById(v.$b) : v.$s !== undefined ? SPECIES[v.$s] : v) : v;
@@ -8284,7 +8246,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (netRole === 'host') {
       if (m.t === 'in' && Array.isArray(m.k)) {
         const c = v => Math.max(-1, Math.min(1, Math.round(Number(v) || 0)));
-        netIn = { k: [c(m.k[0]), c(m.k[1])], tg: Array.isArray(m.tg) ? [Math.max(0, Math.min(W, +m.tg[0] || 0)), Math.max(0, Math.min(H, +m.tg[1] || 0))] : null, f: !!m.f, at: performance.now() };
+        const pp = Array.isArray(m.p) && state === 'play' ? [Math.max(12, Math.min(W - 12, +m.p[0] || 0)), Math.max(82, Math.min(H - 22, +m.p[1] || 0)), Math.max(-.45, Math.min(.45, +m.p[2] || 0))] : null;
+        netIn = { k: [c(m.k[0]), c(m.k[1])], tg: Array.isArray(m.tg) ? [Math.max(0, Math.min(W, +m.tg[0] || 0)), Math.max(0, Math.min(H, +m.tg[1] || 0))] : null, f: !!m.f, p: pp, at: performance.now() };
       } else if (m.t === 'power' && state === 'play') activatePower();
       else if (m.t === 'pause' && (state === 'play' || state === 'pause')) togglePause();
       return;
@@ -8339,8 +8302,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (m.lfx && (!levelFx || levelFx.lv !== m.lfx)) { const th = themeOf(m.lfx); levelFx = { t: performance.now(), name: th.name, col: th.neb[0], col2: th.neb[1], lv: m.lfx }; }
     power = { def: byId(POWERS, m.pw[0]), cd: m.pw[1], active: m.pw[2], maxCd: m.pw[3] };
     bh = m.bh;
-    [player.x, player.y, player.tilt, player.hurt, player.chill, player.vx] = m.pl;
-    if (m.p2) { if (!p2) p2 = { r: 12, vy: 0 }; [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill, p2.vx, p2.ammo, p2.reload] = m.p2; p2.gun = { mag: m.p2[8], reload: m.p2[9] }; p2.lives = m.l2 | 0; }
+    // la fusée de l'hôte : on garde sa position visée, elle y glisse à chaque image (plus de saccades)
+    const snapPl = state !== 'play' || st !== 'play' || player.tx === undefined || Math.hypot(m.pl[0] - player.x, m.pl[1] - player.y) > 220;
+    [player.tx, player.ty, player.tilt, player.hurt, player.chill, player.vx] = m.pl;
+    if (snapPl) { player.x = player.tx; player.y = player.ty; }
+    if (m.p2) {
+      // sa propre fusée : le pote la pilote chez lui ; on ne reprend la position de l'hôte qu'en dehors du jeu ou si elle a sauté
+      const mine = !!p2 && state === 'play' && st === 'play' && !p2.ko && Math.hypot(m.p2[0] - p2.x, m.p2[1] - p2.y) < 260;
+      if (!p2) p2 = { r: 12, vy: 0 };
+      const keep = mine ? [p2.x, p2.y, p2.tilt, p2.vx] : null;
+      [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill, p2.vx, p2.ammo, p2.reload] = m.p2; p2.gun = { mag: m.p2[8], reload: m.p2[9] }; p2.lives = m.l2 | 0;
+      if (keep) [p2.x, p2.y, p2.tilt, p2.vx] = keep;
+    }
     if (Array.isArray(m.ko)) { player.ko = !!m.ko[0]; if (p2) p2.ko = !!m.ko[1]; }
     [pet.x, pet.y, pet.guardT] = m.pet;
     items = m.it; shots = m.sh; ebullets = m.eb; zaps = m.zp || []; smokes = m.sm || [];
@@ -8376,8 +8349,31 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     openTeam();
   }
   // chez le pote, à chaque image : on fait avancer ce qui bouge entre deux nouvelles de l'hôte, et on envoie ses commandes
+  // la fusée du pote bouge chez lui tout de suite (même conduite que dans updateP2)
+  function netPilot(dt, kx, ky) {
+    if (!p2 || p2.ko) return;
+    const cold = bossPw('freeze') || p2.chill > 0, hyper = power.active > 0 && power.def.id === 'hyper';
+    p2.vy = p2.vy || 0;
+    if (kx || ky) {
+      const th = (hyper ? 3600 : 2600) * (cold ? .45 : 1);
+      p2.vx += kx * th * dt; p2.vy += ky * th * dt; p2.vx *= .86; p2.vy *= .86;
+    } else if (target) { const fz = cold ? .4 : 1; p2.vx = (target.x - p2.x) * 10 * fz; p2.vy = (target.y - p2.y) * 10 * fz; }
+    else { p2.vx *= .86; p2.vy *= .86; }
+    p2.x = Math.max(12, Math.min(W - 12, p2.x + p2.vx * dt));
+    p2.y = Math.max(82, Math.min(H - 22, p2.y + p2.vy * dt));
+    p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
+  }
   function netGuestTick(dt) {
+    const gkx = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
+    const gky = (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['z'] || keys['w'] ? 1 : 0);
+    if (gkx || gky) target = null;
     if (state === 'play') {
+      netPilot(dt, gkx, gky);
+      if (player.tx !== undefined && !player.ko) {
+        const k = Math.min(1, dt * 14);
+        player.x += (player.tx - player.x) * k; player.y += (player.ty - player.y) * k;
+        player.tx += (player.vx || 0) * dt; player.tx = Math.max(12, Math.min(W - 12, player.tx));
+      }
       for (const s of shots) { s.x += (s.vx || 0) * dt; s.y += (s.vy || 0) * dt; }
       for (const b of ebullets) if (!(b.wait > 0) && !b.orbit) { b.x += (b.vx || 0) * dt; b.y += (b.vy || 0) * dt; }
       for (const it of items) if (it.kind !== 'alien' && it.vy) it.y += it.vy * speed * dt;
@@ -8397,7 +8393,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (kx || ky) target = null;
       const f = state === 'play' && !!(keys['f'] || keys['j'] || keys['x'] || keys['enter'] || keys['l'] || mouseFire || btnFire || moveId !== null || penId !== null || tapShots > 0);
       tapShots = 0;
-      netSend({ t: 'in', k: [kx, ky], tg: target ? [target.x | 0, target.y | 0] : null, f }, true);
+      netSend({ t: 'in', k: [kx, ky], tg: target ? [target.x | 0, target.y | 0] : null, f, p: state === 'play' && p2 && !p2.ko ? [Math.round(p2.x), Math.round(p2.y), Math.round(p2.tilt * 100) / 100] : null }, true);
     }
   }
 
@@ -8416,8 +8412,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function renderTeam() {
     const on = netOpen() && !!netPeer, host = netRole === 'host';
     $('team').classList.toggle('linked', on);
-    $('teamTitle').textContent = on ? 'Hangar d\'équipe' : 'Équipe';
-    $('teamKicker').textContent = on ? (host ? 'Tu es chef d\'équipe' : 'Tu as rejoint l\'équipe') : 'Mode multijoueur';
+    $('teamKicker').textContent = '👥 Partie à deux';
     $('teamChip').hidden = !netCode || !netRole; $('teamChip').textContent = netCode;
     const inp = $('teamMeName');
     if (document.activeElement !== inp) inp.value = rocketName();
@@ -8436,22 +8431,19 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('teamFriendSlot').classList.toggle('isready', on && host && peerReady);
     $('readyMe').textContent = on ? (host ? '👑 Chef d\'équipe' : myReady ? '✓ Prêt' : 'Pas prêt') : '';
     $('readyFriend').textContent = on ? (host ? (peerReady ? '✓ Prêt' : 'Pas prêt') : '👑 Chef d\'équipe') : '';
-    $('teamGear').hidden = !on;
+    $('teamLinked').hidden = !on;
+    const wi = on ? (host ? startWorld : netPeer.w || 0) : startWorld, wd = WORLDS[wi], won = wd.bosses.filter(d => beaten.includes(d.id)).length;
     if (on) {
-      $('gStyle').textContent = byId(MODELS, cfg.model).name;
-      $('gGun').textContent = byId(GUNS, cfg.gun).name;
-      $('gPower').textContent = byId(POWERS, cfg.power).name;
-      $('gSkills').textContent = `${shop.credits} Astros`;
-      const pet = petNow();
-      $('gPetBtn').hidden = !petsFreed();
-      $('gPet').textContent = pet ? pet.name : 'Aucun';
-      const w = host ? startWorld : netPeer.w || 0;
-      $('gWorld').textContent = host ? WORLDS[w].name : `${WORLDS[w].name} (J1)`;
+      // comme sur l'accueil : le monde choisi, et les 4 boutons (Hangar, Trophées, Classement, Cinématiques)
+      $('teamWorldNow').textContent = `${wd.icon} Monde ${wi + 1} · ${wd.name} · ${won}/10 boss`;
       $('teamWorld').disabled = !host;
+      $('teamWorld').style.setProperty('--w1', wd.col[0]); $('teamWorld').style.setProperty('--w2', wd.col[1]);
+      $('teamHangar').textContent = `Hangar · ${shop.credits} ✦`;
+      $('teamTrophies').textContent = $('trophyBtn').textContent;
     }
-    const txt = on ? (countT > 0 ? 'Décollage imminent !' : rocketName() === DEFAULT.name ? (host ? 'Donne un nom à ta fusée (touche son nom), règle ton équipement, puis décolle avec ton pote.' : 'Donne un nom à ta fusée (touche son nom), règle ton équipement, puis appuie sur « Prêt ! ».')
-        : host ? (peerReady ? `${netPeer.name} est prêt. À toi d'annoncer le décollage !` : `Règle ta fusée en attendant que ${netPeer.name} soit prêt.`)
-        : myReady ? `Tu es prêt. ${netPeer.name} va annoncer le décollage…` : 'Règle ta fusée, puis appuie sur « Prêt ! ».')
+    const txt = on ? (countT > 0 ? 'Décollage imminent !' : rocketName() === DEFAULT.name ? 'Donne un nom à ta fusée : touche son nom pour l\'écrire.'
+        : host ? (peerReady ? `${netPeer.name} est prêt. À toi de lancer la partie !` : `On attend que ${netPeer.name} appuie sur « Prêt ! ».`)
+        : myReady ? `Tu es prêt. ${netPeer.name} va lancer la partie…` : 'Appuie sur « Prêt ! » quand tu veux partir.')
       : netStatus === 'creating' ? 'Création de l\'équipe…'
       : netStatus === 'waiting' ? 'Envoie ce code (ou le lien) à ton pote. Il tape le code dans « Rejoindre » sur son appareil.'
       : netStatus === 'joining' || netStatus === 'linking' ? 'Connexion à l\'équipe…'
@@ -8466,11 +8458,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('teamShare').disabled = !showCode;
     $('teamBtns').hidden = on;
     if (on) $('teamJoinForm').hidden = true;
-    $('teamReadyRow').hidden = !on;
-    $('teamReady').textContent = host ? '🚀 Décoller à deux' : myReady ? '✓ Prêt !' : 'Prêt !';
+    $('teamReady').textContent = host ? `Jouer · Monde ${wi + 1}` : myReady ? '✓ Prêt !' : 'Prêt !';
     $('teamReady').classList.toggle('on', host ? peerReady : myReady);
     $('teamReady').disabled = countT > 0 || (host && !peerReady);
-    $('teamStory').hidden = !host;
+    $('teamStory').hidden = !(on && host);
     $('teamQuit').hidden = !netRole;
     $('teamLocal').hidden = !!netRole;
   }
@@ -8537,15 +8528,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   };
   $('teamReady').onclick = () => { if (netRole === 'host') tryCount(); else setReady(!myReady); };
   // régler sa fusée sans quitter l'équipe : le Hangar s'ouvre à la bonne rubrique, et « Retour à l'équipe » ramène ici
-  document.querySelectorAll('#teamGear .gbtn[data-go]').forEach(b => { b.onclick = () => {
+  // Hangar, Trophées, Classement, Cinématiques : les mêmes écrans que sur l'accueil ; en revenant, on retrouve l'équipe
+  const teamGo = open => () => {
     if (countT > 0) return;
     if (netRole === 'guest' && myReady) setReady(false);
-    teamDetour = true; $('team').hidden = true; openHangar();
-    $('goBtn').textContent = 'Retour à l\'équipe';
-    const el = $(b.dataset.go), box = $('hangar');
-    requestAnimationFrame(() => { if (!el || !box) return; if (b.dataset.go === 'persoOpts') box.scrollTop = 0; else (el.closest('.opt') || el).scrollIntoView({ block: 'start' }); });
-  }; });
-  $('teamWorld').onclick = () => { if (netRole !== 'host' || countT > 0) return; teamDetour = true; $('team').hidden = true; openMap(); };
+    teamDetour = true; $('team').hidden = true; open();
+  };
+  $('teamHangar').onclick = teamGo(() => { openHangar(); $('goBtn').textContent = 'Retour à l\'équipe'; });
+  $('teamTrophies').onclick = teamGo(openTrophies);
+  $('teamRank').onclick = teamGo(openRanking);
+  $('teamCinema').onclick = teamGo(openCinema);
+  $('teamWorld').onclick = () => { if (netRole !== 'host') return; teamGo(() => { openMap(); $('mapGo').textContent = 'Retour à l\'équipe'; })(); };
   // revoir l'histoire à deux (le chef d'équipe la lance, elle passe chez les deux), puis retour au Hangar d'équipe
   $('teamStory').onclick = () => {
     if (netRole !== 'host' || countT > 0) return;
@@ -8562,8 +8555,19 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   });
   $('teamMeName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('teamLocal').onclick = () => { $('team').hidden = true; state = 'menu'; playDuo(); };
-  $('teamQuit').onclick = () => { netClose(); netRole = null; netPeer = null; netCode = ''; netStatus = 'idle'; netMsg = ''; myReady = peerReady = false; $('teamJoinForm').hidden = true; renderTeam(); };
-  $('teamBack').onclick = () => { $('teamJoinForm').hidden = true; if (netOpen()) { myReady = false; netSend({ t: 'ready', r: false }); } closePanels(); };
+  function teamLeave() { netClose(); netRole = null; netPeer = null; netCode = ''; netStatus = 'idle'; netMsg = ''; myReady = peerReady = false; $('teamJoinForm').hidden = true; }
+  // « Voulez-vous vraiment quitter cette session ? » : on ne quitte jamais l'équipe sans le vouloir
+  let confirmThen = null;
+  function askLeave(then) {
+    if (!netRole) { then(); return; }
+    confirmThen = then;
+    $('teamConfirmSub').textContent = netPeer ? `${netPeer.name} restera seul dans l'équipe.` : 'Le code de l\'équipe ne marchera plus.';
+    $('teamConfirm').hidden = false; $('teamConfirmNo').focus();
+  }
+  $('teamConfirmNo').onclick = () => { $('teamConfirm').hidden = true; confirmThen = null; };
+  $('teamConfirmYes').onclick = () => { $('teamConfirm').hidden = true; const f = confirmThen; confirmThen = null; teamLeave(); if (f) f(); };
+  $('teamQuit').onclick = () => askLeave(() => renderTeam());
+  $('teamBack').onclick = () => { $('teamJoinForm').hidden = true; askLeave(() => closePanels()); };
   $('teamJoinInput').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
   // le lien d'invitation : ?equipe=CODE ouvre le panneau Équipe et rejoint tout seul (après avoir nommé sa fusée la 1re fois)
   {
@@ -8862,16 +8866,23 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (p2.chill > 0) p2.chill -= dt;
     if (p2.hurt > 0) p2.hurt -= dt;
     const cold = bossPw('freeze') || p2.chill > 0;
-    if (bx || by) {
+    if (ni && ni.p && performance.now() - ni.at < 400) {
+      // en ligne : le pote pilote sa fusée chez lui, on reprend sa position (sans attendre l'aller-retour)
+      const k = Math.min(1, dt * 25), ox = p2.x;
+      p2.x += (ni.p[0] - p2.x) * k; p2.y += (ni.p[1] - p2.y) * k; p2.tilt = ni.p[2];
+      p2.vx = (p2.x - ox) / Math.max(dt, .001); p2.vy = 0;
+    } else if (bx || by) {
       target2 = null;
       const th = (hyper ? 3600 : 2600) * (cold ? .45 : 1);
       p2.vx += bx * th * dt; p2.vy += by * th * dt; p2.vx *= .86; p2.vy *= .86;
     } else if (target2) { const fz = cold ? .4 : 1; p2.vx = (target2.x - p2.x) * 10 * fz; p2.vy = (target2.y - p2.y) * 10 * fz; }
     else { p2.vx *= .86; p2.vy *= .86; }
     if (bossPw('gravity')) { const dx = boss.x - p2.x, dy = boss.y - p2.y, dd = Math.hypot(dx, dy) || 1; p2.x += dx / dd * (90 + boss.pw.tier * 40) * dt; p2.y += dy / dd * (90 + boss.pw.tier * 40) * dt; }
-    p2.x = Math.max(p2.r, Math.min(W - p2.r, p2.x + p2.vx * dt));
-    p2.y = Math.max(p2.r + 70, Math.min(H - p2.r - 10, p2.y + p2.vy * dt));
-    p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
+    if (!(ni && ni.p && performance.now() - ni.at < 400)) {
+      p2.x = Math.max(p2.r, Math.min(W - p2.r, p2.x + p2.vx * dt));
+      p2.y = Math.max(p2.r + 70, Math.min(H - p2.r - 10, p2.y + p2.vy * dt));
+      p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
+    }
     const fl = flameColsOf(p2Conf().flame, performance.now());
     for (let i = 0; i < (reduce ? 1 : 2); i++) {
       parts.push({ x: p2.x - Math.sin(p2.tilt) * 18 + (Math.random() - .5) * 6, y: p2.y + Math.cos(p2.tilt) * 18, vx: (Math.random() - .5) * 40 - p2.vx * .1, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
@@ -10141,6 +10152,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function placeStart() {
     player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
     if (duo && p2) { player.x = W * .38; target.x = W * .38; p2.x = W * .62; p2.y = H + 40; target2 = { x: W * .62, y: H * .72 }; }
+    if (netRole === 'guest') target = target2 ? { ...target2 } : null;
   }
   function finishLaunch() {
     state = 'play';
