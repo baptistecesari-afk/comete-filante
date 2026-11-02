@@ -1432,14 +1432,16 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   // partie en équipe sur deux écrans de forme différente : le terrain (W × H) est plus large que l'écran le plus étroit.
   // Chaque écran le montre sur toute sa hauteur et en plein écran ; une caméra suit sa propre fusée de gauche à droite.
-  let camS = 1, camX = 0, netHW = 0, netHH = 0;
-  function baseT() { ctx.setTransform(DPR * camS, 0, 0, DPR * camS, -camX * DPR * camS, 0); }
-  const viewW = () => cv.clientWidth / camS;
+  // partie en équipe : un seul terrain (W × H) pour les deux écrans, affiché en entier et sans bouger, comme en solo.
+  // Il est réduit pour tenir dans l'écran et centré (offX, offY) ; s'il reste de la place sur les côtés, le fond flou la remplit.
+  let camS = 1, offX = 0, offY = 0, netHW = 0, netHH = 0;
+  function baseT() { ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
   function resize() {
     const ow = W, oh = H;
     DPR = Math.min(window.devicePixelRatio || 1, dprCap);
     const vw = cv.clientWidth, vh = cv.clientHeight;
-    if (netHW) { W = netHW; H = netHH; camS = vh / netHH; } else { W = vw; H = vh; camS = 1; camX = 0; }
+    if (netHW) { W = netHW; H = netHH; camS = Math.min(vw / W, vh / H); offX = (vw - W * camS) / 2; offY = (vh - H * camS) / 2; }
+    else { W = vw; H = vh; camS = 1; offX = offY = 0; }
     cv.width = vw * DPR; cv.height = vh * DPR;
     baseT();
     if (ow && oh && (ow !== W || oh !== H)) {
@@ -8457,50 +8459,28 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     netStatus = msg ? 'error' : 'idle'; netMsg = msg || '';
     reset(); openTeam();
   }
-  // le terrain commun de l'équipe : on le montre en plein écran, sur toute la hauteur, avec une caméra qui suit sa fusée
+  // le terrain commun de l'équipe : affiché en entier, fixe, centré dans l'écran
   function netFit(w, h) {
     if (!(w > 100 && h > 100)) return;
     const was = netHW;
     netHW = w; netHH = h;
-    if (!was || W !== w || H !== h || Math.abs(camS - cv.clientHeight / h) > .001) resize();
+    const k = Math.min(cv.clientWidth / w, cv.clientHeight / h);
+    document.body.classList.toggle('fit', w * k < cv.clientWidth - 4 || h * k < cv.clientHeight - 4);
+    if (!was || W !== w || H !== h || Math.abs(camS - k) > .001) resize();
   }
-  // la caméra : centrée sur sa propre fusée (ou sur celle du coéquipier si la sienne est K.O.), sans sortir du terrain
-  function camUpdate(dt) {
-    if (!netHW) { camX = 0; return; }
-    const vw = viewW();
-    if (vw >= W - 1) camX = 0;
-    else {
-      let f = netRole === 'guest' && p2 ? p2 : player;
-      if (f && f.ko) f = f === p2 ? player : p2;
-      const tx = Math.max(0, Math.min(W - vw, (f && f.x > -100 ? f.x : W / 2) - vw / 2));
-      camX = state === 'play' || state === 'pause' || state === 'dying' ? camX + (tx - camX) * Math.min(1, dt * 7) : tx;
-      camX = Math.max(0, Math.min(W - vw, camX));
-    }
-    baseT();
+  // le jeu dessiné dans son cadre : tout ce qui dépasserait du terrain est coupé, les côtés restent au fond flou
+  function drawField(fn) {
+    if (!netHW || state === 'launch') return fn();
+    ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.restore();
+    ctx.save(); baseT(); ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+    try { fn(); } finally { ctx.restore(); baseT(); }
   }
-  // pendant le décollage (une petite scène), on travaille à la taille de l'écran, sans la caméra
+  // pendant le décollage (une petite scène), on travaille à la taille de l'écran
   function onScreen(fn) {
     if (!(netHW && state === 'launch')) return fn();
-    const sw = W, sh = H, sc = camS, sx = camX;
-    W = cv.clientWidth; H = cv.clientHeight; camS = 1; camX = 0; baseT();
-    try { return fn(); } finally { W = sw; H = sh; camS = sc; camX = sx; baseT(); }
-  }
-  // la fusée du coéquipier hors de l'écran : une flèche au bord, à sa hauteur, avec son nom
-  function drawMateArrow() {
-    if (!netHW || !duo || !p2 || !['play', 'pause'].includes(state)) return;
-    const mate = netRole === 'guest' ? player : p2;
-    if (mate.ko) return;
-    const vw = cv.clientWidth, sx = (mate.x - camX) * camS, sy = mate.y * camS;
-    if (sx > -10 && sx < vw + 10) return;
-    const right = sx > vw, x = right ? vw - 22 : 22, y = Math.max(110, Math.min(cv.clientHeight - 120, sy));
-    const col = netRole === 'guest' ? '#ffd86b' : '#4fe0c8', name = netPeer ? netPeer.name : DUO_NAME;
-    ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.fillStyle = col; ctx.strokeStyle = 'rgba(4, 2, 12, .85)'; ctx.lineWidth = 3;
-    ctx.beginPath(); const d = right ? 1 : -1;
-    ctx.moveTo(x + d * 14, y); ctx.lineTo(x - d * 6, y - 12); ctx.lineTo(x - d * 6, y + 12); ctx.closePath(); ctx.stroke(); ctx.fill();
-    ctx.font = '11px Bungee, Impact, sans-serif'; ctx.textAlign = right ? 'right' : 'left';
-    ctx.strokeText(name, x - d * 10, y + 28); ctx.fillText(name, x - d * 10, y + 28);
-    ctx.restore();
+    const sw = W, sh = H, sc = camS, sx = offX, sy = offY;
+    W = cv.clientWidth; H = cv.clientHeight; camS = 1; offX = offY = 0; baseT();
+    try { return fn(); } finally { W = sw; H = sh; camS = sc; offX = sx; offY = sy; baseT(); }
   }
   function netUnfit() { netHW = netHH = 0; cv.removeAttribute('style'); document.body.classList.remove('fit'); resize(); }
   // le décor flou derrière le terrain : une petite copie de l'image du jeu, étirée sur tout l'écran (4 fois par seconde suffit)
@@ -8509,18 +8489,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function drawFill(t) {
     if (!netHW || !document.body.classList.contains('fit') || t - fillT < 120) return;
     fillT = t;
-    const k = Math.max(innerWidth / netHW, innerHeight / netHH), w = 160, h = Math.round(w * innerHeight / innerWidth);
+    // on étire le terrain sur tout le petit fond (il est flouté et assombri par le CSS)
+    const w = 160, h = Math.round(w * innerHeight / innerWidth);
     if (fillCv.width !== w || fillCv.height !== h) { fillCv.width = w; fillCv.height = h; }
-    const dw = netHW * k * w / innerWidth, dh = netHH * k * h / innerHeight;
-    try { fillCtx.drawImage(cv, (w - dw) / 2, (h - dh) / 2, dw, dh); } catch (e) {}
+    try { fillCtx.drawImage(cv, offX * DPR, offY * DPR, W * camS * DPR, H * camS * DPR, 0, 0, w, h); } catch (e) {}
   }
   addEventListener('resize', () => { if (netRole === 'guest' && netHW) netFit(netHW, netHH); else if (netRole === 'host' && netHW) netField(); });
-  // le terrain prend la forme de l'écran le plus large des deux, à la hauteur de l'écran de l'hôte :
-  // l'écran large le voit en entier, l'écran étroit (un téléphone) en plein écran avec la caméra qui suit sa fusée
+  // le terrain prend la forme de l'écran le plus étroit des deux (un téléphone en hauteur) : ce téléphone joue en plein écran
+  // comme en solo, et l'ordinateur montre le même terrain en entier au milieu, sans rien qui bouge
   function netField() {
     if (!netPeer || !(netPeer.vw > 100 && netPeer.vh > 100)) return;
-    const a = Math.max(innerWidth / innerHeight, netPeer.vw / netPeer.vh), fh = innerHeight, fw = Math.round(fh * a);
-    if (fw > innerWidth + 4) netFit(fw, fh); else if (netHW) netUnfit();
+    const a = Math.min(innerWidth / innerHeight, netPeer.vw / netPeer.vh), fh = innerHeight, fw = Math.round(fh * a);
+    if (fw < innerWidth - 4) netFit(fw, fh); else if (netHW) netUnfit();
   }
 
   // --- ce que l'hôte envoie ---
@@ -9099,7 +9079,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
   const pt = (x, y, kind) => {
-    if (netHW) { x = x / camS + camX; y = y / camS; }
+    if (netHW) { x = (x - offX) / camS; y = (y - offY) / camS; }
     // si on a attrapé la fusée, elle garde sa place sous le doigt (ou le stylet)
     if (grab && kind !== 'mouse') target = { x: x + grab.dx, y: y + grab.dy };
     else target = { x, y: y - (kind === 'touch' ? 70 : 0) };
@@ -9107,7 +9087,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // toucher la fusée : on l'attrape et elle tire une fois (on peut taper plusieurs fois de suite)
   const grabAt = (x, y) => {
     grab = null;
-    if (netHW) { x = x / camS + camX; y = y / camS; }
+    if (netHW) { x = (x - offX) / camS; y = (y - offY) / camS; }
     const me = netRole === 'guest' && p2 ? p2 : player;
     if (state === 'play' && Math.hypot(x - me.x, y - me.y) < 70) {
       grab = { dx: me.x - x, dy: me.y - y };
@@ -12681,10 +12661,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (state !== 'hangar' || t - bgDrawn > 45) {
       bgDrawn = t;
       // chez le pote, la fusée 1 est celle de l'hôte : on prête son style pendant le dessin
-      camUpdate(dt);
-      // le décollage est une petite scène : on la dessine à la taille de l'écran, sans la caméra
-      onScreen(() => { if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t); });
-      drawMateArrow();
+      // le décollage est une petite scène : on la dessine à la taille de l'écran ; le reste dans le cadre du terrain
+      onScreen(() => drawField(() => { if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t); }));
     }
     if (netRole === 'host') netHostSend(t);
     if (!$('team').hidden) drawTeam(t);
