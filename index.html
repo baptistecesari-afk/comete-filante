@@ -844,6 +844,8 @@ body:not(.jeu) .hud { opacity: 0; }
   transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
 }
 #menu .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
+/* Partie à deux : turquoise, la couleur d'Étincelle */
+#menu .duobtn { border-color: #4fe0c8; color: #c8fff4; }
 #menu .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
 #menu .worldbtn .wbgo { transition: transform .2s; }
 #menu .worldbtn:active { transform: translateY(1px) scale(.98); }
@@ -928,6 +930,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <div class="logo"><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
+    <button type="button" class="ghost duobtn" id="duoBtn"><span aria-hidden="true">👥</span> Partie à deux</button>
     <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
     <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
       <span class="dfico" id="defiIco" aria-hidden="true">🎯</span>
@@ -1169,6 +1172,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <h2>Comment jouer</h2>
     <div class="rules">
       <span>Bouger</span><span>Souris, doigt, ou flèches / ZQSD</span>
+      <span>À deux</span><span>Menu « Partie à deux » : deux fusées dans la même partie. Joueur 1 : ZQSD (ou WASD) et F pour tirer, ou la souris. Joueur 2 : flèches et Entrée (ou L) pour tirer. Sur écran tactile, chaque joueur pose un doigt de son côté de l'écran et sa fusée tire toute seule. Les vies et le super-pouvoir sont partagés, les ennemis ont deux fois plus de vie (mais pas plus d'ennemis), et les parties à deux ne comptent pas pour le classement mondial.</span>
       <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : un doigt déplace la fusée et un autre doigt tape n'importe où pour tirer. Avec un stylet posé, la fusée tire toute seule. Gaucher ? Change de côté dans le menu. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
       <span>Style</span><span>Abats un ennemi avec la dernière balle du chargeur : +25 points.</span>
@@ -3514,7 +3518,7 @@ body:not(.jeu) .hud { opacity: 0; }
   $('backBtn').onclick = closeHangar;
   // la croix en haut à droite fait comme le bouton Retour du panneau
   document.querySelectorAll('.xclose').forEach(b => { b.onclick = () => $(b.dataset.back).click(); });
-  $('goBtn').onclick = () => { preview = null; start(); };
+  $('goBtn').onclick = () => { preview = null; duo = false; start(); };
 
   // --- fond étoilé ---
   const bg = Array.from({ length: 170 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random() * .8 + .2 }));
@@ -3538,13 +3542,27 @@ body:not(.jeu) .hud { opacity: 0; }
   let power = { def: POWERS[0], cd: 0, active: 0 };
   const keys = {};
   let target = null;
+  // ===== Partie à deux : deux fusées dans la même partie, vies et super-pouvoir partagés =====
+  // Joueur 1 : ZQSD (ou WASD) + F, ou la souris. Joueur 2 : flèches + Entrée (ou L)
+  // au doigt : chaque joueur pose un doigt de son côté de l'écran, sa fusée tire toute seule tant que le doigt est posé
+  const DUO_HP = 2; // les ennemis ont deux fois plus de vie (il n'y a pas plus d'ennemis)
+  const DUO_NAME = 'Étincelle';
+  const DUO_CONF = { ...DEFAULT, name: DUO_NAME, color: 'turquoise', flame: 'plasma', shot: 'emeraude' };
+  let duo = false, p2 = null, p2Id = null, target2 = null, duoSeen = false;
+  try { duoSeen = localStorage.getItem('comete-duo') === '1'; } catch (e) {}
+  const rockets = () => duo && p2 ? [player, p2] : [player];
+  // la fusée la plus proche d'un point : c'est elle que visent les ennemis
+  const nearest = (x, y) => !duo || !p2 ? player : Math.hypot(p2.x - x, p2.y - y) < Math.hypot(player.x - x, player.y - y) ? p2 : player;
 
   function reset() {
-    player = { x: W * .5, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
+    player = { x: W * (duo ? .38 : .5), y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
     sayLeft = 0; talkQ = []; talkAt = 0; smokes = []; sayAt = 0;
     for (const id of ['sayBubble', 'talk']) { const el = document.getElementById(id); if (el) el.hidden = true; }
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0, abilT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
+    // la 2e fusée a le même pistolet que la 1re, avec son propre chargeur
+    p2 = duo ? { x: W * .62, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0, chill: 0, fireT: 0, ammo: gun.mag, reload: 0 } : null;
+    p2Id = null; target2 = null;
     infinite = 0;
     infAt = 4 + Math.random() * 10;
     level = 1; setTheme(1, true); flash = 0; flashColor = '255, 60, 110';
@@ -5010,6 +5028,18 @@ body:not(.jeu) .hud { opacity: 0; }
       mission('traverser les 10 gardiens du Néant, vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.'),
     ].map(noClac),
   ];
+  // Partie à deux : Malo monte dans Étincelle, la petite fusée d'escorte de la baie 08 (proposition, à relire par Baptiste)
+  const DUO_FILM = n => [
+    S('decor:terre', 'Terre, an 2187. Une à une, les étoiles s\'éteignent. Personne ne sait pourquoi.'),
+    S('musee:facade', 'Une nuit, Nina, Malo et Inès se glissent dans le vieux musée de l\'espace. Juste pour s\'amuser.', ['Malo', 'Chiche qu\'on monte chacun dans une fusée !']),
+    S('musee:baie', 'Dans la baie 07 dort une fusée couverte de poussière. Juste à côté, dans la baie 08, attend sa petite fusée d\'escorte. Sur la plaque : « Étincelle. Ne vole jamais sans la baie 07. »', ['Inès', 'Vous n\'avez pas le droit… ni l\'un ni l\'autre !'], ['Nina', 'Je prends la grande.'], ['Malo', 'Et moi, la petite !']),
+    S('cockpit:voyants', ['???', 'Système réveillé. Durée de veille : 1 000 ans, 3 mois, 12 jours.'], ['???', 'Fusée d\'escorte reliée. Deux pilotes à bord. Mode équipage activé.'], ['Malo (Étincelle)', 'Ça clignote de partout, ici ! C\'est normal ?']),
+    S('poursuite:decollage', 'Les réacteurs s\'allument. Le toit du musée s\'ouvre en grand. Deux traînées de lumière filent vers le ciel.', ['Inès (radio)', 'Ils sont partis TOUS LES DEUX ?!']),
+    S('cockpit:terre', ['Nina', 'Euh… Tu as un nom ?'], ['???', 'Négatif.'], ['Nina', `Alors tu t'appelles ${n}.`], ['n', 'Nom enregistré. Bonjour, passagère. Bonjour, pilote d\'escorte.'], ['Malo (Étincelle)', 'Moi, c\'est Malo. Et ma fusée, c\'est Étincelle !']),
+    S('tyran:soldats', ['Empereur Zorg', 'Deux fusées ? Deux fois plus de ferraille à écraser !'], ['Empereur Zorg', 'Soldats ! Blindez-vous ! Doublez vos carapaces ! Qu\'aucun tir ne vous abatte du premier coup !']),
+    S('radio:gardiens', ['Inès (radio)', 'Écoutez-moi : ses soldats sont deux fois plus solides que d\'habitude. Chacun de son côté, vous n\'y arriverez pas.'], ['n', 'Recommandation : viser la même cible. À deux, on tape deux fois plus fort.'], ['Malo (Étincelle)', 'Je te couvre, Nina !'], ['Nina', 'Et moi, je te couvre, Malo.']),
+    mission('voler à deux, tirer ensemble sur les mêmes ennemis (ils ont deux fois plus de vie) et ne jamais laisser l\'autre seul. Les vies et le super-pouvoir sont partagés.'),
+  ];
   // la transition à la fin du monde w, vers le monde w + 1 (la dernière scène se passe déjà dans le nouveau monde)
   const TRANSITIONS = [
     n => [
@@ -5116,7 +5146,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // ===== Qui parle =====
   // le nom choisi au Hangar, sans caractères qui casseraient la page
   const rocketName = () => cfg.name.replace(/[<>&"]/g, '');
-  const whoBase = w => w.replace(/ \(radio\)$/, '');
+  const whoBase = w => w.replace(/ \((radio|Étincelle)\)$/, '');
   // portraits ronds dessinés une fois : Nina, Malo, Inès, la fusée, Elio, le Dévoreur caché dans l'ombre
   const avaCache = {};
   function avatar(who) {
@@ -5308,6 +5338,13 @@ body:not(.jeu) .hud { opacity: 0; }
       if (end) end(); else if (cineReplay) backToCinema(); else start();
     } });
   }
+  // la partie à deux : l'histoire d'Étincelle, puis on décolle à deux
+  function startDuoFilm() {
+    playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Décoller à deux', end: () => {
+      duoSeen = true; try { localStorage.setItem('comete-duo', '1'); } catch (e) {}
+      if (cineReplay) backToCinema(); else { duo = true; start(); }
+    } });
+  }
   // la fin d'un monde : la transition, puis le prologue du monde suivant s'il n'a jamais été vu, puis on joue
   function startTransit() {
     const w = world;
@@ -5376,6 +5413,8 @@ body:not(.jeu) .hud { opacity: 0; }
         + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'le choix et la fin' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
         + '</div>';
     }).join('');
+    if (duoSeen) $('cinemaList').innerHTML += `<div class="cinerow" style="--w1:#4fe0c8;--w2:#1f6f8a"><span class="wicon">👥</span><div><small>Partie à deux</small><b>Étincelle</b></div>`
+      + `<div class="cinebtns"><button class="ghost" type="button" data-c="duo" data-w="0">▶ L'histoire à deux</button></div></div>`;
     $('cinemaCount').textContent = `${ends} cinématique${ends > 1 ? 's' : ''} de fin débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}. Termine un monde pour débloquer la sienne.`;
   }
   function openCinema() { initAudio(); renderCinema(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('cinema').hidden = false; }
@@ -5383,6 +5422,7 @@ body:not(.jeu) .hud { opacity: 0; }
   function playCinema(kind, w) {
     cineReplay = true; replayWorld = world; $('cinema').hidden = true;
     if (kind === 'pro') { startPrologue(w); return; }
+    if (kind === 'duo') { startDuoFilm(); return; }
     if (kind === 'zoo') { playFilm([...ZOO.avant(), ...ZOO.libre(`<b>${rocketName()}</b>`)], { w: 1, go: 'Terminer', end: backToCinema }); return; }
     world = w;
     if (w === WORLDS.length - 1) startFinale(); else startTransit();
@@ -7460,21 +7500,21 @@ body:not(.jeu) .hud { opacity: 0; }
     }
   }
 
-  function hitPlayer() {
+  function hitPlayer(pl = player) {
     // Bulle ou Caillou arrête le coup à ta place, puis sa protection se reforme
     const pd = petNow();
     if (pd && pd.guard && pet.guardT <= 0) {
-      pet.guardT = pd.guard; player.hurt = 1;
-      pop(player.x, player.y - 34, `${pd.name} te protège !`, '#bfefff');
-      burst(player.x, player.y, '#bfefff', 16, 180, 3);
+      pet.guardT = pd.guard; pl.hurt = 1;
+      pop(pl.x, pl.y - 34, `${pd.name} te protège !`, '#bfefff');
+      burst(pl.x, pl.y, '#bfefff', 16, 180, 3);
       beep(900, .2, 'sine', .1, 500);
       return;
     }
     run.clean = false;
     if (boss) run.bossHit = true;
-    lives--; combo = 0; comboT = 0; player.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
-    pop(player.x, player.y - 34, lives > 0 ? '−1 vie' : 'Plus de vie !');
-    burst(player.x, player.y, '#ff7aa8', 10); explode(player.x, player.y, '#ff7aa8', .7);
+    lives--; combo = 0; comboT = 0; pl.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
+    pop(pl.x, pl.y - 34, lives > 0 ? (duo && p2 ? `${pl === p2 ? DUO_NAME : rocketName()} : −1 vie` : '−1 vie') : 'Plus de vie !');
+    burst(pl.x, pl.y, '#ff7aa8', 10); explode(pl.x, pl.y, '#ff7aa8', .7);
     beep(120, .35, 'sawtooth', .18, -60);
     updateHud();
     if (lives <= 0) startDeath();
@@ -7490,6 +7530,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const x = player.x, y = player.y, body = byId(COLORS, cfg.color).hex || '#ff5a6e';
     flash = .5; flashColor = '255, 236, 200'; shake = 1.3;
     explode(x, y, '#ffb020', 3.2);
+    if (duo && p2) explode(p2.x, p2.y, '#ffb020', 2.4);
     // morceaux de la fusée qui partent en tournoyant et en brûlant
     for (let i = 0; i < (reduce ? 5 : 12); i++) {
       const a = Math.random() * 7, v = 120 + Math.random() * 260;
@@ -7655,12 +7696,14 @@ body:not(.jeu) .hud { opacity: 0; }
   function gameOver() {
     saveStats();
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
-    const record = score > run.bestBefore;
+    const record = !duo && score > run.bestBefore;
     saveRecord();
-    $('overTitle').innerHTML = `Système éteint…${whoHtml('Nina', WHO_COL.Nina)}${typo(`«Allez, ${rocketName()}, relève-toi ! Je suis encore à bord, moi !»`)}`;
+    $('overTitle').innerHTML = duo
+      ? `Systèmes éteints…${whoHtml('Malo (Étincelle)', WHO_COL.Malo)}${typo(`«Nina, ${rocketName()}, on se relève ! On recommence ensemble !»`)}`
+      : `Système éteint…${whoHtml('Nina', WHO_COL.Nina)}${typo(`«Allez, ${rocketName()}, relève-toi ! Je suis encore à bord, moi !»`)}`;
     $('finalScore').textContent = score;
     creditRun(); renderAtelier();
-    $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
+    $('finalInfo').innerHTML = `Niveau ${level} atteint · +${astros(score)} Astros pour le Hangar<br>` + (duo ? 'Partie à deux : elle ne compte pas pour le record' : record ? '<span class="best">Nouveau record !</span>' : `Record à battre : <span class="best">${best}</span>`);
     if (runTrophies.length) {
       const n = runTrophies.length, pts = runTrophies.reduce((a, t) => a + t.pts, 0);
       $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${astros(pts)} Astros bonus` : '');
@@ -7670,7 +7713,8 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (!defiSave.done) $('finalInfo').innerHTML += `<br>🎯 Défi du jour : ${defiToday().text} (${defiShow(defiToday(), defiSave.p)})`;
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
-    if (joueur) sendRecord().then(j => {
+    if (duo) {}
+    else if (joueur) sendRecord().then(j => {
       if (j && j.me && state === 'over') $('finalInfo').innerHTML += `<br>🏆 Classement mondial : <span class="best">${j.me.rank}e</span> sur ${j.total}`;
     });
     else $('finalInfo').innerHTML += '<br>Entre dans le <b>classement mondial</b> pour comparer ton score !';
@@ -7740,8 +7784,11 @@ body:not(.jeu) .hud { opacity: 0; }
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; $('cine').style.visibility = ''; $('toast').style.visibility = ''; last = performance.now(); }
   }
 
-  const play = () => { if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
+  const play = () => { duo = false; if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
+  // partie à deux : l'histoire d'Étincelle la première fois, puis on décolle
+  const playDuo = () => { duo = true; initAudio(); if (duoSeen) start(); else startDuoFilm(); };
   $('startBtn').onclick = play;
+  $('duoBtn').onclick = playDuo;
   $('mapGo').onclick = () => { $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
   $('proSkip').onclick = () => { if (proLastStep()) proGoto(0); else endFilm(); };
@@ -7824,6 +7871,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (add > 0) { shop.credits += add; run.credited = score; saveShop(); }
   }
   function saveRecord() {
+    if (duo) return; // une partie à deux ne compte pas pour le record (ni pour le classement mondial)
     if (score > best) { best = score; try { localStorage.setItem('comete-best', best); } catch (e) {} $('best').textContent = best; }
   }
   let loadingSave = false;
@@ -7914,7 +7962,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if ((e.key === 'p' || e.key === 'Escape') && (state === 'play' || state === 'pause')) togglePause();
     else if (e.key === 'Escape' && state === 'hangar') closeHangar();
     if (state === 'play' && e.key.toLowerCase() === 'r' && !e.repeat) tryReload();
-    if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift')) activatePower();
+    if (state === 'play' && (e.key === ' ' || e.key.toLowerCase() === 'e' || e.key === 'Shift' || (duo && e.key.toLowerCase() === 'm'))) activatePower();
     else if ((e.key === 'Enter' || e.key === ' ') && (state === 'menu' || state === 'over') && $('naming').hidden && !e.repeat) { if (state === 'menu') play(); else start(); }
   });
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
@@ -7941,6 +7989,16 @@ body:not(.jeu) .hud { opacity: 0; }
     if (e.cancelable) e.preventDefault(); // pas de zoom, de loupe ni de geste du navigateur sur le jeu
     if (penId !== null) return; // le stylet est posé : c'est lui qui pilote
     if (moveId !== null && !stillDown(moveId, e.touches)) { moveId = null; grab = null; }
+    // partie à deux : moitié gauche pour le joueur 1, moitié droite pour le joueur 2
+    if (duo && p2) {
+      if (p2Id !== null && !stillDown(p2Id, e.touches)) p2Id = null;
+      for (const t of e.changedTouches) {
+        if (!isFinger(t)) continue;
+        if (t.clientX < W / 2 && moveId === null) { moveId = t.identifier; grab = null; pt(t.clientX, t.clientY, 'touch'); }
+        else if (t.clientX >= W / 2 && p2Id === null) { p2Id = t.identifier; target2 = { x: t.clientX, y: t.clientY - 70 }; }
+      }
+      return;
+    }
     for (const t of e.changedTouches) {
       if (!isFinger(t)) continue;
       if (moveId === null) {
@@ -7956,6 +8014,13 @@ body:not(.jeu) .hud { opacity: 0; }
   cv.addEventListener('touchmove', e => {
     if (e.cancelable) e.preventDefault();
     if (penId !== null) return;
+    if (duo && p2) {
+      for (const c of e.changedTouches) {
+        if (c.identifier === moveId) pt(c.clientX, c.clientY, 'touch');
+        else if (c.identifier === p2Id) target2 = { x: c.clientX, y: c.clientY - 70 };
+      }
+      return;
+    }
     let t = moveId !== null && stillDown(moveId, e.touches);
     // plus de doigt qui pilote : le doigt qui bouge prend la main
     if (!t) for (const c of e.changedTouches) if (isFinger(c)) { t = c; moveId = c.identifier; fireTouches.delete(c.identifier); grab = null; break; }
@@ -7965,6 +8030,7 @@ body:not(.jeu) .hud { opacity: 0; }
     for (const t of e.changedTouches) {
       fireTouches.delete(t.identifier);
       if (t.identifier === moveId) { moveId = null; grab = null; }
+      if (t.identifier === p2Id) p2Id = null;
     }
     // un doigt perdu en route ne doit pas tirer pour toujours
     for (const id of fireTouches) if (!stillDown(id, e.touches)) fireTouches.delete(id);
@@ -7999,12 +8065,50 @@ body:not(.jeu) .hud { opacity: 0; }
   for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) fb.addEventListener(ev, () => { btnFire = false; fb.classList.remove('on'); });
   fb.addEventListener('touchstart', e => { if (e.cancelable) e.preventDefault(); }, { passive: false });
   $('ammoBtn').addEventListener('pointerdown', e => { e.preventDefault(); tryReload(); });
-  addEventListener('blur', () => { mouseFire = btnFire = false; moveId = penId = null; grab = null; fireTouches.clear(); for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
+  addEventListener('blur', () => { mouseFire = btnFire = false; moveId = penId = p2Id = null; grab = null; fireTouches.clear(); for (const k in keys) keys[k] = false; if (state === 'play') togglePause(); });
 
   // un niveau dure plus longtemps dans les mondes lointains (20 s, puis 26, 32, 38, 44)
   const levelSecs = () => 20 + world * 6;
 
   // --- boucle ---
+  // la 2e fusée : déplacement aux flèches (ou au doigt) et tir avec Entrée / L (ou tant que le doigt est posé)
+  function updateP2(dt, hyper, nova) {
+    const bx = (keys['arrowright'] ? 1 : 0) - (keys['arrowleft'] ? 1 : 0), by = (keys['arrowdown'] ? 1 : 0) - (keys['arrowup'] ? 1 : 0);
+    if (p2.chill > 0) p2.chill -= dt;
+    if (p2.hurt > 0) p2.hurt -= dt;
+    const cold = bossPw('freeze') || p2.chill > 0;
+    if (bx || by) {
+      target2 = null;
+      const th = (hyper ? 3600 : 2600) * (cold ? .45 : 1);
+      p2.vx += bx * th * dt; p2.vy += by * th * dt; p2.vx *= .86; p2.vy *= .86;
+    } else if (target2) { const fz = cold ? .4 : 1; p2.vx = (target2.x - p2.x) * 10 * fz; p2.vy = (target2.y - p2.y) * 10 * fz; }
+    else { p2.vx *= .86; p2.vy *= .86; }
+    if (bossPw('gravity')) { const dx = boss.x - p2.x, dy = boss.y - p2.y, dd = Math.hypot(dx, dy) || 1; p2.x += dx / dd * (90 + boss.pw.tier * 40) * dt; p2.y += dy / dd * (90 + boss.pw.tier * 40) * dt; }
+    p2.x = Math.max(p2.r, Math.min(W - p2.r, p2.x + p2.vx * dt));
+    p2.y = Math.max(p2.r + 70, Math.min(H - p2.r - 10, p2.y + p2.vy * dt));
+    p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
+    const fl = flameColsOf(DUO_CONF.flame, performance.now());
+    for (let i = 0; i < (reduce ? 1 : 2); i++) {
+      parts.push({ x: p2.x - Math.sin(p2.tilt) * 18 + (Math.random() - .5) * 6, y: p2.y + Math.cos(p2.tilt) * 18, vx: (Math.random() - .5) * 40 - p2.vx * .1, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
+    }
+    p2.fireT -= dt;
+    if (infinite > 0 || nova) p2.reload = 0;
+    if (p2.reload > 0) { if ((p2.reload -= dt) <= 0) { p2.reload = 0; p2.ammo = gun.mag; } }
+    else if ((keys['enter'] || keys['l'] || p2Id !== null || nova) && p2.fireT <= 0) {
+      p2.fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
+      if (!infinite && !nova && --p2.ammo <= 0) p2.reload = gun.reload;
+      const cs = Math.cos(p2.tilt), sn = Math.sin(p2.tilt);
+      gun.barrels.forEach(([lx, ly, a0], bi) => {
+        const a = a0 + (gun.jitter ? (Math.random() - .5) * 2 * gun.jitter : 0);
+        const sp = gun.big ? 520 : 720, x = p2.x + lx * cs - ly * sn;
+        shots.push({ x, y: p2.y + lx * sn + ly * cs, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, dmg: (1 + .25 * up('puissance')) * (gun.dmg || 1), p2: true, inf: infinite > 0,
+          big: gun.big, pierce: gun.pierce ? [] : null, bounce: gun.bounce || 0, wave: gun.wave ? { bx: x, t: 0, ph: bi * Math.PI } : null });
+      });
+      beep(1300, .05, 'square', .025, -600);
+      p2.vy += 40;
+    }
+  }
+
   function update(dt) {
     time += dt;
     if (talkAt && time >= talkAt) { talkAt = 0; openTalk(); return; }
@@ -8052,8 +8156,9 @@ body:not(.jeu) .hud { opacity: 0; }
     const invincible = hyper || nova || (on && pid === 'miroir') || shield > 0;
 
     // déplacement de la fusée
-    const ax = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
-    const ay = (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['z'] || keys['w'] ? 1 : 0);
+    const arrows = !(duo && p2);
+    const ax = ((arrows && keys['arrowright']) || keys['d'] ? 1 : 0) - ((arrows && keys['arrowleft']) || keys['q'] || keys['a'] ? 1 : 0);
+    const ay = ((arrows && keys['arrowdown']) || keys['s'] ? 1 : 0) - ((arrows && keys['arrowup']) || keys['z'] || keys['w'] ? 1 : 0);
     if (player.chill > 0) player.chill -= dt;
     const chilled = player.chill > 0;
     const thrust = (hyper ? 3600 : 2600) * (bossPw('freeze') || chilled ? .45 : 1);
@@ -8074,6 +8179,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player.x = Math.max(player.r, Math.min(W - player.r, player.x + player.vx * dt));
     player.y = Math.max(player.r + 70, Math.min(H - player.r - 10, player.y + player.vy * dt));
     player.tilt += (Math.max(-.45, Math.min(.45, player.vx / 900)) - player.tilt) * Math.min(1, dt * 10);
+    if (duo && p2) updateP2(dt, hyper, nova);
 
     // particules de réacteur
     const fl = flameColsOf(cfg.flame, performance.now());
@@ -8094,7 +8200,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (reload) {
       reload.t += dt;
       if (reload.t >= reload.dur) finishReload(false);
-    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
+    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (duo && moveId !== null) || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
       if (tapShots > 0) tapShots--;
       fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova) ammo--;
@@ -8206,6 +8312,7 @@ body:not(.jeu) .hud { opacity: 0; }
         beep(1200, .1, 'triangle', .05, -400);
       }
     }
+    if (duo) for (const it of items) if (it.kind === 'alien' && !it.duoHp) { it.duoHp = true; it.hp *= DUO_HP; if (it.maxHp) it.maxHp *= DUO_HP; }
     const missTargets = shots.some(s => s.missile || s.seek) ? foes() : [];
     for (const s of shots) {
       if (s.missile || s.seek) {
@@ -8277,7 +8384,8 @@ body:not(.jeu) .hud { opacity: 0; }
 
       if (it.kind === 'alien') {
         if (it.boss && cineT > 0) continue;
-        updateAlien(it, dt, slow);
+        if (duo && p2) { const me = player; player = nearest(it.x, it.y); try { updateAlien(it, dt, slow); } finally { player = me; } }
+        else updateAlien(it, dt, slow);
         if (it.dead) continue;
       } else if (it.kind === 'secret') {
         // elle traverse l'écran en flottant, puis disparaît de l'autre côté
@@ -8307,8 +8415,10 @@ body:not(.jeu) .hud { opacity: 0; }
         if (it.dead) continue;
       }
 
-      const d = Math.hypot(it.x - player.x, it.y - player.y);
-      if (d < it.r + player.r - 3) {
+      for (const pl of rockets()) {
+      if (it.dead) break;
+      const d = Math.hypot(it.x - pl.x, it.y - pl.y);
+      if (d < it.r + pl.r - 3) {
         if (it.kind === 'star' && it.bonus) {
           // étoile du niveau bonus : points fixes, sans toucher au combo
           it.dead = true; bump('stars'); score += 25; burst(it.x, it.y, '#ffd86b', 8, 140);
@@ -8342,19 +8452,21 @@ body:not(.jeu) .hud { opacity: 0; }
           if (!it.boss) damage(it, 99);
           else if (it.contactT <= 0) { damage(it, 3); it.contactT = .5; }
           updateHud();
-        } else if (player.hurt <= 0) {
+        } else if (pl.hurt <= 0) {
           if (!it.boss) { it.dead = true; explode(it.x, it.y, it.kind === 'rock' ? '#8f86b8' : '#7dff8a', 1, it.kind === 'rock' ? 'roche' : 'feu'); }
-          hitPlayer();
+          hitPlayer(pl);
           if (state !== 'play') return;
         }
+      }
       }
     }
     items = items.filter(it => !it.dead && it.y < H + 60);
 
     // tirs ennemis
     for (const b of ebullets) {
+      const pl = nearest(b.x, b.y);
       if (b.home > 0) {
-        b.home -= dt; const a = Math.atan2(player.y - b.y, player.x - b.x), sp2 = b.hsp || 150;
+        b.home -= dt; const a = Math.atan2(pl.y - b.y, pl.x - b.x), sp2 = b.hsp || 150;
         b.vx += (Math.cos(a) * sp2 - b.vx) * Math.min(1, dt * 1.8); b.vy += (Math.sin(a) * sp2 - b.vy) * Math.min(1, dt * 1.8);
       }
       if (b.orbit) {
@@ -8384,14 +8496,14 @@ body:not(.jeu) .hud { opacity: 0; }
         continue;
       }
       // flocon de givre : ne fait pas perdre de vie, mais gèle la fusée
-      if (b.chill && Math.hypot(b.x - player.x, b.y - player.y) < player.r + b.s - 1) {
+      if (b.chill && Math.hypot(b.x - pl.x, b.y - pl.y) < pl.r + b.s - 1) {
         b.dead = true; burst(b.x, b.y, '#e6f9ff', 8, 120, 3);
-        if (!invincible) { if (!(player.chill > 0)) pop(player.x, player.y - 34, 'Gelée !', '#bfefff'); player.chill = b.chill; beep(1600, .15, 'triangle', .05, -800); }
+        if (!invincible) { if (!(pl.chill > 0)) pop(pl.x, pl.y - 34, 'Gelée !', '#bfefff'); pl.chill = b.chill; beep(1600, .15, 'triangle', .05, -800); }
         continue;
       }
-      if (Math.hypot(b.x - player.x, b.y - player.y) < player.r + (b.s || 5) - 1) {
+      if (Math.hypot(b.x - pl.x, b.y - pl.y) < pl.r + (b.s || 5) - 1) {
         if (invincible) { b.dead = true; burst(b.x, b.y, '#7ad8ff', 6, 120, 3); }
-        else if (player.hurt <= 0) { b.dead = true; hitPlayer(); if (state !== 'play') return; }
+        else if (pl.hurt <= 0) { b.dead = true; hitPlayer(pl); if (state !== 'play') return; }
       }
     }
     ebullets = ebullets.filter(b => !b.dead);
@@ -8488,6 +8600,34 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   // tirs de la fusée : des traits d'énergie avec une tête brûlante et une queue qui s'efface
+  // la 2e fusée (Étincelle), son nom au-dessus et sa jauge de munitions en dessous
+  function drawP2(t, hyper) {
+    const alive = state !== 'over' && state !== 'dying';
+    if (alive && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
+      if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(flameColsOf(DUO_CONF.flame, t)[1]), p2.x - 22, p2.y + 6, 44, 60); ctx.restore(); }
+      drawRocket(ctx, p2.x, p2.y, 1, DUO_CONF, t, p2.tilt, hyper ? 1 : 0);
+      if (shield > 0 || hyper) {
+        ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
+        ctx.globalAlpha = !hyper && shield < 1.5 ? (Math.sin(t / 60) + 1) / 2 : .9;
+        ctx.beginPath(); ctx.arc(p2.x, p2.y, 28, 0, 7); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      if (p2.chill > 0 && state === 'play') {
+        ctx.save(); ctx.globalAlpha = Math.min(1, p2.chill) * (.5 + .2 * Math.sin(t / 90));
+        ctx.strokeStyle = '#bfefff'; ctx.fillStyle = 'rgba(191, 239, 255, .15)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p2.x, p2.y, 30, 0, 7); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+    }
+    if (!alive || state === 'talk') return;
+    // J1 / J2 au-dessus des fusées, pour que chacun retrouve la sienne
+    ctx.save(); ctx.font = '12px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4, 2, 12, .8)';
+    for (const [pl, txt, col] of [[player, 'J1', '#ffd86b'], [p2, 'J2', '#4fe0c8']]) { ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
+    // munitions d'Étincelle : une petite jauge sous la fusée (elle recharge toute seule)
+    const w = 34, k = infinite > 0 ? 1 : p2.reload > 0 ? 1 - p2.reload / gun.reload : p2.ammo / gun.mag;
+    ctx.fillStyle = 'rgba(4, 2, 12, .6)'; ctx.fillRect(p2.x - w / 2 - 1, p2.y + 27, w + 2, 6);
+    ctx.fillStyle = p2.reload > 0 ? '#ff9a3c' : infinite > 0 ? '#ffd86b' : '#4fe0c8'; ctx.fillRect(p2.x - w / 2, p2.y + 28, w * Math.max(0, Math.min(1, k)), 4);
+    ctx.restore();
+  }
+
   function drawShot(s, t, fl) {
     const a = Math.atan2(s.vx, -s.vy);
     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(a);
@@ -8535,7 +8675,7 @@ body:not(.jeu) .hud { opacity: 0; }
       for (let i = 0; i < 10; i++) { const b = i * Math.PI / 5 + t / 200, rr = i % 2 ? 3 : 7; ctx.lineTo(Math.cos(b) * rr, Math.sin(b) * rr); }
       ctx.closePath(); ctx.fill(); ctx.restore(); return;
     }
-    const sh = byId(SHOTS, cfg.shot);
+    const sh = byId(SHOTS, s.p2 ? DUO_CONF.shot : cfg.shot);
     const base = sh.rainbow ? ['#ffffff', `hsl(${(t / 3 + s.x + s.y) % 360}, 100%, 62%)`] : sh.c || [fl[0], fl[1]];
     const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : base[1], c0 = s.gold || s.inf ? '#fffaf0' : base[0], k = s.gold ? 1.4 : 1;
     glowAt(0, -2 * k, (s.gold || sh.rainbow ? 20 : 14) * k, c1, .55);
@@ -9214,6 +9354,12 @@ body:not(.jeu) .hud { opacity: 0; }
     // la fusée arrive par le bas de l'écran
     player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
     last = performance.now();
+    // partie à deux : les fusées arrivent côte à côte, et on rappelle les commandes
+    if (duo && p2) {
+      player.x = W * .38; target.x = W * .38; p2.x = W * .62; p2.y = H + 40; target2 = { x: W * .62, y: H * .72 };
+      showBanner('Partie à deux', matchMedia('(pointer: coarse)').matches ? 'Un doigt chacun, de son côté de l\'écran' : 'J1 : ZQSD + F · J2 : flèches + Entrée');
+      return;
+    }
     showBanner(world ? `Monde ${world + 1} · ${WORLDS[world].name}` : 'Secteur 1', WORLDS[world].bosses[0].place);
   }
   function updateLaunch(dt) {
@@ -10927,6 +11073,7 @@ body:not(.jeu) .hud { opacity: 0; }
           ctx.globalAlpha = 1;
         }
       }
+      if (duo && p2) drawP2(t, on && pid === 'hyper');
 
       // textes flottants
       ctx.font = '18px Bungee, Impact, sans-serif'; ctx.textAlign = 'center';
