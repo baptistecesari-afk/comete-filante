@@ -384,6 +384,8 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .who[hidden] { display: none; }
 /* petit portrait rond de qui parle */
 .ava { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 2px solid currentColor; background: #0b0820; object-fit: cover; }
+.jtag { font-style: normal; font-family: Outfit, system-ui, sans-serif; font-weight: 700; font-size: 10px; letter-spacing: .06em; padding: 2px 6px; border-radius: 6px; color: #120a2a; }
+.jtag.j1 { background: #ffd86b; } .jtag.j2 { background: #4fe0c8; }
 .procine .prosub { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .procine p.say, .storytext p.say { font-style: italic; }
 #choice .card { text-align: center; max-width: 30rem; }
@@ -493,6 +495,10 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .cinerow .cinebtns button { padding: 8px 14px; font-size: 13px; }
 .cinerow .cinebtns button:disabled { filter: grayscale(1); opacity: .5; cursor: not-allowed; box-shadow: none; }
 .cinerow .cinehint { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--muted); }
+.cinetabs { display: flex; gap: 6px; justify-content: center; margin: 2px auto 10px; padding: 4px; border-radius: 999px; width: max-content; max-width: 100%; background: var(--night); border: 2px solid color-mix(in srgb, var(--muted) 30%, transparent); }
+.cinetabs button { padding: 8px 16px; font-size: 14px; border-radius: 999px; background: transparent; color: var(--muted); box-shadow: none; border: 0; }
+.cinetabs button.on { background: linear-gradient(135deg, #ffd86b, #4fe0c8); color: #120a2a; }
+.cinerow.duo { box-shadow: inset 4px 0 0 #ffd86b, inset -4px 0 0 #4fe0c8; }
 @media (max-width: 520px) { .cinerow { grid-template-columns: auto 1fr; } .cinerow .cinebtns { grid-column: 1 / -1; justify-content: stretch; } .cinerow .cinebtns button { flex: 1; } }
 .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .tier { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--night); border: 2px dashed color-mix(in srgb, var(--muted) 35%, transparent); }
@@ -1237,6 +1243,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   <div class="hangar atelier">
     <button class="xclose" data-back="cinemaBack" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Cinématiques</h2>
+    <div class="cinetabs" id="cinemaTabs" role="tablist">
+      <button type="button" role="tab" data-tab="solo">🚀 En solo</button>
+      <button type="button" role="tab" data-tab="duo">👥 À deux</button>
+    </div>
     <p class="wallet" id="cinemaCount"></p>
     <div class="cinelist" id="cinemaList"></div>
     <div class="row">
@@ -3661,6 +3671,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   $('trophyBtn').onclick = openTrophies;
   $('cinemaBtn').onclick = openCinema;
   $('cinemaBack').onclick = closeHangar;
+  $('cinemaTabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) { cineTab = b.dataset.tab; renderCinema(); beep(520, .08, 'triangle', .06); } };
   $('cinemaList').onclick = e => { const b = e.target.closest('button[data-c]'); if (b && !b.disabled) playCinema(b.dataset.c, +b.dataset.w); };
   $('overTrophyBtn').onclick = openTrophies;
   $('trophyBack').onclick = closeHangar;
@@ -5186,18 +5197,144 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       mission('traverser les 10 gardiens du Néant, vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.'),
     ].map(noClac),
   ];
-  // Partie à deux : Malo monte dans Étincelle, la petite fusée d'escorte de la baie 08 (proposition, à relire par Baptiste)
-  const DUO_FILM = n => [
-    S('decor:terre', 'Terre, an 2187. Une à une, les étoiles s\'éteignent. Personne ne sait pourquoi.'),
-    S('musee:facade', 'Une nuit, Nina, Malo et Inès se glissent dans le vieux musée de l\'espace. Juste pour s\'amuser.', ['Malo', 'Chiche qu\'on monte chacun dans une fusée !']),
-    S('musee:baie', 'Dans la baie 07 dort une fusée couverte de poussière. Juste à côté, dans la baie 08, attend sa petite fusée d\'escorte. Sur la plaque : « Étincelle. Ne vole jamais sans la baie 07. »', ['Inès', 'Vous n\'avez pas le droit… ni l\'un ni l\'autre !'], ['Nina', 'Je prends la grande.'], ['Malo', 'Et moi, la petite !']),
-    S('cockpit:voyants', ['???', 'Système réveillé. Durée de veille : 1 000 ans, 3 mois, 12 jours.'], ['???', 'Fusée d\'escorte reliée. Deux pilotes à bord. Mode équipage activé.'], ['Malo (Étincelle)', 'Ça clignote de partout, ici ! C\'est normal ?']),
-    S('poursuite:decollage', 'Les réacteurs s\'allument. Le toit du musée s\'ouvre en grand. Deux traînées de lumière filent vers le ciel.', ['Inès (radio)', 'Ils sont partis TOUS LES DEUX ?!']),
-    S('cockpit:terre', ['Nina', 'Euh… Tu as un nom ?'], ['???', 'Négatif.'], ['Nina', `Alors tu t'appelles ${n}.`], ['n', 'Nom enregistré. Bonjour, passagère. Bonjour, pilote d\'escorte.'], ['Malo (Étincelle)', 'Moi, c\'est Malo. Et ma fusée, c\'est Étincelle !']),
-    S('tyran:soldats', ['Empereur Zorg', 'Deux fusées ? Deux fois plus de ferraille à écraser !'], ['Empereur Zorg', 'Soldats ! Blindez-vous ! Doublez vos carapaces ! Qu\'aucun tir ne vous abatte du premier coup !']),
-    S('radio:gardiens', ['Inès (radio)', 'Écoutez-moi : ses soldats sont deux fois plus solides que d\'habitude. Chacun de son côté, vous n\'y arriverez pas.'], ['n', 'Recommandation : viser la même cible. À deux, on tape deux fois plus fort.'], ['Malo (Étincelle)', 'Je te couvre, Nina !'], ['Nina', 'Et moi, je te couvre, Malo.']),
-    mission('voler à deux, tirer ensemble sur les mêmes ennemis (ils ont deux fois plus de vie) et ne jamais laisser l\'autre seul. Les vies et le super-pouvoir sont partagés.'),
-  ];
+  // ===== Partie à deux : J1 devient Nina, J2 devient Malo =====
+  // Malo pilote la petite fusée d'escorte de la baie 08 (m = son nom : Étincelle, ou le nom de la fusée du pote en ligne).
+  // Mêmes règles que l'histoire solo : Elio n'est révélé qu'à la fin du Monde 3, Clac disparaît à la fin du Monde 4.
+  // (textes proposés, à relire par Baptiste ; aucune réplique de gardien n'est inventée)
+  const DUO = {
+    // l'entrée dans le jeu à deux : deux étincelles de lumière, deux esprits, deux enfants
+    entree: () => [
+      at(S('esprit:appel', 'Quelque part au-dessus de l\'univers, deux petites lumières s\'allument en même temps. Une dorée. Une turquoise.', 'Ce sont vous : le Joueur 1 et le Joueur 2.'), 'Partie à deux'),
+      at(S('esprit:nina', 'La lumière dorée plonge vers la Terre et se glisse dans le cœur d\'une fille qui rêve d\'étoiles.', '<b>Joueur 1, tu es Nina.</b>'), 'Joueur 1 · Nina'),
+      at(S('esprit:malo', 'La lumière turquoise la suit et trouve son meilleur copain, celui qui dit toujours « chiche ! ».', '<b>Joueur 2, tu es Malo.</b>'), 'Joueur 2 · Malo'),
+      at(S('esprit:lien', ['Nina', 'Malo… Tu as senti ça, toi aussi ?'], ['Malo', 'Comme si quelqu\'un venait de m\'allumer à l\'intérieur !'], 'Deux esprits, deux enfants, une seule mission.'), 'Nina et Malo'),
+    ],
+    pro: [
+      (n, m) => [
+        S('decor:terre', 'Terre, an 2187. Une à une, les étoiles s\'éteignent. Personne ne sait pourquoi.'),
+        S('musee:facade', 'Une nuit, Nina, Malo et Inès se glissent dans le vieux musée de l\'espace. Juste pour s\'amuser.', ['Malo', 'Chiche qu\'on monte chacun dans une fusée !']),
+        S('musee:baie', 'Dans la baie 07 dort une grande fusée couverte de poussière. Juste à côté, dans la baie 08, attend sa petite fusée d\'escorte. Sur la plaque : « Ne vole jamais sans la baie 07. »', ['Inès', 'Vous n\'avez pas le droit… ni l\'un ni l\'autre !'], ['Nina', 'Je prends la grande.'], ['Malo', 'Et moi, la petite !']),
+        S('cockpit:nuit', 'Nina grimpe dans la baie 07, Malo dans la baie 08. Sur chaque tableau de bord, un gros bouton. Ils appuient en même temps. Clic. Clic.'),
+        S('cockpit:voyants', ['???', 'Système réveillé. Durée de veille : 1 000 ans, 3 mois, 12 jours.'], ['???', 'Fusée d\'escorte reliée. Deux pilotes à bord. Mode équipage activé.'], ['Malo', 'Ça clignote de partout, ici ! C\'est normal ?']),
+        S('poursuite:decollage', 'Les réacteurs s\'allument. Le toit du musée s\'ouvre en grand. Deux traînées de lumière filent vers le ciel.', ['Inès (radio)', 'Ils sont partis TOUS LES DEUX ?!']),
+        S('cockpit:terre', ['Nina', 'Euh… Tu as un nom ?'], ['???', 'Négatif.'], ['Nina', `Alors tu t'appelles ${n}.`], ['n', 'Nom enregistré. Bonjour, passagère. Bonjour, pilote d\'escorte.'], ['Malo', `Moi, c'est Malo. Et ma fusée, c'est ${m} !`]),
+        S('tyran:soldats', ['Empereur Zorg', 'Une Porteuse de lumière réveillée… et une petite fusée en plus ? Deux fois plus de ferraille à écraser !'], ['Empereur Zorg', 'Soldats ! Doublez vos carapaces ! Aucune de ces fusées ne sortira de ma galaxie !']),
+        S('radio:gardiens', ['Inès (radio)', 'Écoutez-moi : ses soldats sont deux fois plus solides que d\'habitude. Chacun de son côté, vous n\'y arriverez pas.'], ['n', '10 gardiens bloquent la sortie de la galaxie. Probabilité de succès, à deux : 0,6 %.'], ['Malo', 'C\'est deux fois plus que toute seule !'], ['Nina', 'Je te couvre, Malo.'], ['Malo', 'Et moi, je te couvre, Nina.']),
+        mission('voler à deux, tirer ensemble sur les mêmes ennemis (ils ont deux fois plus de vie), traverser les 10 gardiens de Zorg et ne jamais laisser l\'autre seul.'),
+      ],
+      (n, m) => [
+        S('decor:glace', 'Au-delà de la Voie lactée s\'étend le Royaume de Givre. Ici, les étoiles volées dorment dans des blocs de glace.'),
+        S('tyran:trone', ['Impératrice Glacia', 'Une étoile qui brille finit toujours par s\'éteindre. Une étoile gelée, elle, est à moi pour toujours.'], ['Impératrice Glacia', 'Deux petites flammes ? Elles gèleront deux fois plus vite.']),
+        S('tyran:cristal', ['Impératrice Glacia', 'Et la prochaine que je vais geler… c\'est cette jolie petite planète bleue.']),
+        S('cockpit:givre', ['Nina', 'C\'est la Terre !'], ['Malo', 'Ma maison est là-bas. Personne ne gèle ma maison.'], ['n', 'Température extérieure : −270 °C. Probabilité de…'], ['Nina', `Pas de probabilités aujourd'hui, ${n}.`]),
+        S('cockpit:givre', ['Clac', 'Moi, le froid, ça me ralentit les pinces. Je dis ça, je dis rien.'], ['Malo', `Viens dans ${m}, Clac. Il y a le chauffage !`]),
+        mission('briser à deux les 10 gardiens de glace, libérer les étoiles et empêcher Glacia de geler la Terre.'),
+      ],
+      (n, m) => [
+        S('decor:lave', 'Au cœur d\'une planète en fusion gronde la Forge Volcanique. Le ciel est rouge, l\'air brûle.'),
+        S('tyran:enclume', ['Seigneur Magmor', 'Chaque étoile que je fais fondre devient une arme pour mon maître.']),
+        S('message:volcan', 'Tout en haut du volcan, une ombre immense regarde. Le Dévoreur est venu voir le spectacle.', ['Le Dévoreur', 'Magmor, montre-leur ce qu\'est le vrai feu.']),
+        S('cockpit:alarme', ['n', 'Coque en surchauffe.'], ['Malo', `Ici aussi ! ${m} sent le grillé !`], ['Clac', 'Moi, je cuis. Je vais finir en crabe grillé.']),
+        S('cockpit:alarme', ['Nina', 'Il est là, juste au-dessus. Cette fois, on ne le laisse pas filer.'], ['Malo', 'Tu passes à gauche, je passe à droite. Il ne pourra pas fuir des deux côtés.']),
+        mission('vaincre à deux les 10 gardiens de la Forge, éteindre le feu de Magmor et atteindre le Dévoreur.'),
+      ],
+      (n, m) => [
+        S('decor:jungle', 'Entre deux galaxies pousse une jungle géante. Ses lianes avalent des planètes entières.'),
+        S('tyran:nid', 'Au cœur de la jungle, la Reine-Ruche nourrit ses larves avec la lumière des étoiles volées. Tout ce qu\'elle fait, elle le fait pour un seul être.'),
+        S('tyran:nid', ['Reine-Ruche', 'Mon prince… Mon Dévoreur… Ils osent te poursuivre ?'], ['Reine-Ruche', 'Personne ne touchera à mon prince. Mes enfants, fermez la jungle ! Que rien ne passe !']),
+        S('cockpit', ['Clac', 'Attends… Elle est AMOUREUSE de ce gros trou noir ?'], ['Malo', 'Beurk.'], ['Nina', 'L\'amour, ça rend bizarre, Clac.']),
+        S('cockpit', ['n', 'Donnée enregistrée. Je ne comprends pas l\'amour. Pas encore.'], ['Malo', 'Moi non plus. Et je ne suis pas pressé.']),
+        mission('traverser la jungle à deux, vaincre les 10 gardiens de la ruche et passer la Reine-Ruche pour atteindre le Néant.'),
+      ],
+      // Monde 5 : Clac n'est pas là (il a disparu à la fin du Monde 4)
+      (n, m) => [
+        S('decor:noir', 'Au bout de l\'univers, il n\'y a plus rien. C\'est le Néant.'),
+        S('tyran:devoreur', ['Le Dévoreur', 'Te voilà enfin, petite sœur. Et tu as amené un petit frère.']),
+        S('cockpit', ['n', 'Je sais qui tu es. Elio. Le premier Porteur de lumière.']),
+        S('tyran:devoreur', ['Le Dévoreur', 'Elio ? Ce petit vaisseau faible est mort il y a mille ans. Il passait sa vie à rendre la lumière. Quelle bêtise.']),
+        S('tyran:devoreur', ['Le Dévoreur', 'Moi, j\'ai compris. La lumière, il faut la prendre. Toute la lumière. Plus j\'en mange, plus je suis grand.']),
+        S('cockpit', ['Nina', 'Et quand il n\'y aura plus rien à manger ?'], ['Le Dévoreur', 'Alors je serai le plus grand de tout l\'univers. Le seul.'], ['Malo', 'Le seul ? Ça doit être super nul, d\'être tout seul.']),
+        S('carte:toute', ['Le Dévoreur', 'Rien ne m\'arrêtera. Je dévorerai toutes les galaxies. La vôtre aussi, petits humains.']),
+        S('tyran:gardiens', ['Le Dévoreur', 'Mes gardiens ultimes vous attendent. Personne n\'a jamais traversé le Néant. Personne.']),
+        S('cockpit', ['n', 'Probabilité de succès : 0,6 %.'], ['Nina', 'Comme au début.'], ['Malo', 'Deux fois plus que toute seule !'], ['n', 'Comme au début. On y va.']),
+        mission('traverser à deux les 10 gardiens du Néant, vaincre le Dévoreur et rendre toutes les étoiles à l\'univers.'),
+      ].map(noClac),
+    ],
+    // la fin du monde w, vers le monde w + 1
+    fin: [
+      (n, m) => [
+        S('action:effondre', 'Zorg s\'effondre. La marque noire du Dévoreur s\'échappe de lui en fumée et file vers le fond de l\'univers.'),
+        S('decor:etoiles', `${n} et ${m} ouvrent leurs soutes et rendent tout aux étoiles : leurs armes, leurs super-pouvoirs, leurs améliorations. Elles ne gardent que leur coque et leurs couleurs. La Voie lactée se rallume.`),
+        S('radio:toit', ['Inès (radio)', 'Nina ! Malo ! Les étoiles sont revenues au-dessus du musée !'], ['Malo', 'On est des héros !'], ['Clac', 'Des héros ? Ça me va bien, ça.']),
+        S('carte', ['n', 'Je ressens une autre galaxie. Elle retient des étoiles prisonnières.']),
+        S('carte:ombre', ['n', 'Les galaxies s\'éteignent les unes après les autres. Prochaine sur la liste… la Terre.'], ['Nina', 'La Terre ? Mais… Inès, mes parents…'], ['Malo', 'Mon petit frère dort en bas !']),
+        S('cockpit', ['Nina', 'Alors on fonce.'], ['Malo', 'À fond !'], ['Clac', 'On fonce ! … On fonce où, exactement ?']),
+        S('decor:porte', 'Une porte de glace s\'ouvre. Deux fusées s\'y glissent côte à côte. <b>Monde 2 : Royaume de Givre.</b>'),
+      ],
+      (n, m) => [
+        S('action:brise', 'Glacia se brise en mille éclats de cristal. La marque noire s\'envole vers le fond de l\'univers.'),
+        S('decor:fonte', `Comme toujours, ${n} et ${m} rendent tout pour libérer les étoiles. La glace fond. Le Royaume de Givre se remet à briller.`, ['Inès (radio)', 'Nina ! Malo ! Le froid s\'en va, ici !']),
+        S('message:eteint', `Soudain, tous les écrans de ${n} et de ${m} s'éteignent en même temps. Un rire immense remplit les deux cockpits.`),
+        S('message:yeux', ['Le Dévoreur', 'Ahahah ! C\'est tout ce que vous avez ? Deux gamins, un crabe et deux vieilles fusées de musée ?']),
+        S('carte:marque', ['Le Dévoreur', 'Vous n\'avez encore rien vu. Toutes ces galaxies sont à moi. Zorg, Glacia, Magmor, la Reine-Ruche : ils me servent tous.'], ['Le Dévoreur', 'Je suis l\'Ordre suprême.']),
+        S('message:yeux', ['Le Dévoreur', 'Vous voulez me trouver ? Venez dans la Forge Volcanique. Je vous attendrai. Enfin… si vous survivez.']),
+        S('cockpit:rallume', ['Clac', 'Il est très poli, ce monsieur.'], ['Malo', 'Il a dit « gamins ». Il va voir, les gamins.'], ['Nina', 'S\'il n\'avait pas peur de nous, il ne nous aurait jamais appelés.'], ['n', 'Cap sur la Forge.']),
+        S('poursuite:plonge', '<b>Monde 3 : Forge Volcanique.</b>'),
+      ],
+      (n, m) => [
+        S('action:effondre', `Magmor s'effondre et sa forge s'éteint. Sa marque noire s'envole. Comme toujours, ${n} et ${m} rendent tout pour libérer les étoiles.`),
+        S('poursuite:fuite', 'Là-haut, le Dévoreur recule. Pour la première fois, il s\'enfuit.', ['Nina', 'Il s\'enfuit !'], ['Malo', 'Il a peur de nous deux !']),
+        S('poursuite:scan', ['n', 'Scan en cours…']),
+        S('cockpit:plan', ['n', 'Signature reconnue. Ce n\'est pas un monstre. C\'est un vaisseau. Un Porteur de lumière. Le tout premier : Elio.']),
+        S('cockpit:plan', ['Nina', 'Un vaisseau… comme toi ?'], ['Malo', 'Comme vous deux ?']),
+        at(S('flashback:porteur', 'Il y a mille ans, Elio était le premier Porteur de lumière. Il protégeait les étoiles, une à une, dans tout l\'univers.'), PAST),
+        at(S('flashback:etoile', 'Un jour, pour sauver une étoile mourante, il garda un peu de sa lumière en lui. Elle était chaude. Il se sentit plus fort que jamais.'), PAST),
+        at(S('flashback:aimant', 'Alors il en prit une autre. Puis une autre. Les étoiles venaient à lui comme vers un aimant. Il en voulait toujours plus. Il ne pouvait plus s\'arrêter.'), PAST),
+        at(S('flashback:grossit', 'Plus il en avalait, plus il grandissait, et plus il avait faim. Personne n\'était là pour lui dire stop. Le protecteur des étoiles était devenu le Dévoreur.'), PAST),
+        S('cockpit:silence', ['n', 'Il était comme moi.'], ['Clac', 'Non. Toi, tu rends tout. Même tes armes.'], ['Malo', 'Et lui, il était tout seul. Toi, tu as Nina, Clac… et moi.']),
+        S('cockpit:silence', ['Nina', 'Tu ne deviendras jamais comme lui. On te le promet.'], ['Malo', 'Promis, juré, craché !']),
+        S('carte:verte', ['n', 'Je ressens une présence. Une autre galaxie, très vivante… et très affamée.'], '<b>Monde 4 : Jungle Cosmique.</b>'),
+      ],
+      (n, m) => [
+        S('decor:fane', `La Reine-Ruche tombe. Sa marque noire s'envole. Comme toujours, ${n} et ${m} rendent tout pour libérer les étoiles, et la jungle commence à se faner.`),
+        S('action:lianes', `Mais dans un dernier sursaut, les lianes se referment sur ${n}.`, ['Malo', 'Nina ! Je n\'arrive pas à les couper !']),
+        S('action:pinces', ['Clac', 'Partez ! Je les retiens !'], ['Nina', 'Clac, NON !'], ['Malo', 'On ne part pas sans toi !']),
+        noClac(S('poursuite:clac', ['Clac', 'Clac clac… Prenez soin de mes fusées préférées. Toutes les deux.'])),
+        noClac(S('cockpit:vide', 'La jungle se referme. Clac a disparu.', ['n', 'Passager… manquant.'])),
+        noClac(S('cockpit:larmes', ['n', 'Nina, je crois que j\'ai mal. Pourtant, je n\'ai rien de cassé.'], ['Nina', 'Ça s\'appelle être triste.'], ['Malo', 'Moi aussi, j\'ai mal là. On le retrouvera, hein ?'])),
+        noClac(S('decor:noir', 'Derrière la jungle, il n\'y a plus rien. Ni étoile, ni lumière, ni bruit. Juste deux petites fusées, l\'une contre l\'autre. <b>Monde 5 : Le Néant.</b>')),
+      ],
+    ],
+    // le combat final à deux : Clac revient, puis le choix, les deux fins et l'épilogue
+    clac: () => [
+      noClac(S('action:gueule', ['Le Dévoreur', 'Assez joué ! Je vais vous avaler tous les deux !'])),
+      noClac(S('radio:clac', ['Clac (radio)', 'Pas si vite, gros trou noir !'])),
+      S('action:renforts', ['Clac', 'Tu croyais que la jungle allait me garder ? J\'ai ramené des copains !']),
+      S('cockpit', ['Nina', 'CLAC !'], ['Malo', 'IL EST VIVANT ! Je le savais !'], ['n', 'Passager… retrouvé.']),
+    ],
+    choix: (n, m) => [
+      S('action:hurle', 'Le Dévoreur hurle. Les étoiles volées s\'échappent de lui, et il rétrécit… rétrécit…'),
+      S('decor:epave', 'Il ne reste qu\'un vieux vaisseau abîmé. Elio.'),
+      S('decor:epave', ['Elio', 'Vous avez gagné aujourd\'hui… Mais tant qu\'il restera une étoile, j\'aurai faim. Je serai toujours le plus grand.']),
+      S('cockpit', ['Malo', 'On a fait tout le chemin ensemble, Nina. Mais là… c\'est elle qui sait.'], ['Nina', `${n}… C'est à toi de choisir.`]),
+    ],
+    A: (n, m) => [
+      S('decor:rayon', `${n} lui offre sa dernière lumière. Pas une lumière qu'on prend : une lumière qu'on donne. Juste à côté, ${m} donne la sienne aussi.`),
+      S('decor:etoile', ['Elio', '… Personne ne m\'avait jamais rien donné. Et vous, vous êtes deux.'], 'Elio se met à briller, doucement. Il redevient une étoile, la première à briller dans le Néant.'),
+    ],
+    B: (n, m) => [
+      S('action:tir', `${n} et ${m} tirent une dernière fois, ensemble. Elio explose en une pluie de lumière, et toutes les étoiles qu'il avait avalées reviennent.`),
+      S('decor:vide', `Le Néant redevient silencieux. Côte à côte, ${n} et ${m} regardent longtemps l'endroit où Elio aurait pu briller.`),
+    ],
+    epilogue: (n, m, fin) => [
+      at(S('carte:allume', 'Galaxie après galaxie, l\'univers se rallume.'), 'L\'univers'),
+      at(S('musee:aube', `Au-dessus du vieux musée, ${n} et ${m} se posent doucement dans les baies 07 et 08.`), 'Terre · le musée'),
+      at(S('musee:tous', ['Inès', 'Vous avez pris DEUX fusées et sauvé l\'univers ? En une nuit ?!'], ['Malo', 'Et on n\'a même pas rayé la peinture. Presque.'], ['Inès', 'Le gardien du musée va nous tuer.'], ['Clac', 'Bonjour, je suis un crabe.']), 'Terre · le musée'),
+      at(S('decor:ciel' + fin, fin === 'B' ? 'Nina et Malo lèvent les yeux. Le ciel est plein d\'étoiles. Mais tout au bout, il reste un petit coin de noir.' : 'Nina et Malo lèvent les yeux. Parmi toutes les étoiles, une brille un peu plus chaud que les autres.'), 'Terre'),
+      at(S('musee:tous', ['n', 'Nina… Malo… Merci de m\'avoir réveillée.'], ['Nina', 'Merci d\'avoir décollé.'], ['Malo', 'On recommence quand ?']), 'Terre · le musée'),
+      at(S('decor:victoire', '<b>Victoire totale !</b> Mais au fond du Néant, quelque chose bouge encore. Les gardiens reviennent, plus forts.', ['Clac', 'On repart ?'], ['Nina', 'On repart !'], ['Malo', 'Tous ensemble !']), 'Le Néant'),
+    ],
+  };
   // la transition à la fin du monde w, vers le monde w + 1 (la dernière scène se passe déjà dans le nouveau monde)
   const TRANSITIONS = [
     n => [
@@ -5315,13 +5452,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const def = ALL_BOSSES.find(d => d.name === b);
     if (def) return bossPortrait(def);
     if (!['n', '???', 'Nina', 'Malo', 'Inès', 'Elio', 'Le Dévoreur'].includes(b)) return '';
-    const key = b === 'n' || b === '???' ? 'n' + JSON.stringify(cfg) : b;
+    const rc = netRole === 'guest' && netPeer ? netPeer.cfg : cfg, key = b === 'n' || b === '???' ? 'n' + JSON.stringify(rc) : b;
     if (avaCache[key]) return avaCache[key];
     const c = document.createElement('canvas'); c.width = c.height = 96; const k = c.getContext('2d');
     if (b === 'Nina' || b === 'Malo' || b === 'Inès') kidFace(k, b);
     else if (b === 'Elio') { k.fillStyle = '#2a2216'; k.fillRect(0, 0, 96, 96); drawElio(k, 48, 50, 1.6, 0, 1); }
     else if (b === 'Le Dévoreur') { k.fillStyle = '#000'; k.fillRect(0, 0, 96, 96); shadowEyes(k, 48, 50, 30, '#ff4f6d', 1); }
-    else { k.fillStyle = '#141036'; k.fillRect(0, 0, 96, 96); drawRocket(k, 48, 44, 1.25, cfg, 0, 0, 0); }
+    else { k.fillStyle = '#141036'; k.fillRect(0, 0, 96, 96); drawRocket(k, 48, 44, 1.25, rc, 0, 0, 0); }
     return (avaCache[key] = c.toDataURL());
   }
   // le visage d'un des trois enfants
@@ -5401,8 +5538,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
   // l'étiquette de qui parle, avec son portrait
   function whoHtml(w, col) {
-    const ava = avatar(w), name = w === 'n' ? rocketName() : w;
-    return `<span class="who"${col ? ` style="color:${col}"` : ''}>${ava ? `<img class="ava" src="${ava}" alt="">` : ''}${name}</span>`;
+    // chez le pote en ligne, la fusée qui parle (n) est celle du chef d'équipe
+    const ava = avatar(w), name = w === 'n' ? (netRole === 'guest' && netPeer ? netPeer.name : rocketName()) : w;
+    // à deux : une petite étiquette rappelle qui joue qui (J1 = Nina, J2 = Malo)
+    const j = film && film.duo ? { Nina: 'j1', Malo: 'j2' }[whoBase(w)] : '';
+    return `<span class="who"${col ? ` style="color:${col}"` : ''}>${ava ? `<img class="ava" src="${ava}" alt="">` : ''}${name}${j ? `<i class="jtag ${j}">${j.toUpperCase()}</i>` : ''}</span>`;
   }
   // une ligne : narration (texte), ou réplique [qui parle, texte]
   function lineHtml(l) {
@@ -5430,7 +5570,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const bossById = id => ALL_BOSSES.find(d => d.id === id);
   function playFilm(scenes, opt) {
     // en ligne, le pote regarde la même cinématique en même temps
-    if (netRole === 'host') netSend({ t: 'film', scenes, opt: { w: opt.w, next: opt.next, clac: opt.clac, note: opt.note } });
+    if (netRole === 'host') netSend({ t: 'film', scenes, opt: { w: opt.w, next: opt.next, clac: opt.clac, note: opt.note, duo: !!opt.duo } });
     film = { w: 0, clac: true, go: 'Suivant', ...opt, scenes };
     proCount = scenes.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'cinema', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine', 'talk', 'choice']) $(id).hidden = true;
@@ -5491,27 +5631,47 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = false;
   }
 
+  // à deux (partie à deux, ou relecture des cinématiques à deux) : Nina et Malo, chacun dans sa fusée
+  let cineDuo = false;
+  const duoStory = () => cineReplay ? cineDuo : duo;
+  // le nom de la fusée de Malo : Étincelle, ou celle du pote quand on joue en ligne
+  const duoMate = () => (netPeer && netRole === 'host' ? netPeer.name : DUO_NAME).replace(/[<>&"]/g, '');
+  const duoArgs = () => [`<b>${rocketName()}</b>`, `<b>${duoMate()}</b>`];
+  let seenDuoPro = [];
+  try { const sp = JSON.parse(localStorage.getItem('comete-duo-pro') || '[]'); if (Array.isArray(sp)) seenDuoPro = sp.filter(Number.isInteger); } catch (e) {}
+  const duoProSeen = w => seenDuoPro.includes(w);
+  function markDuoPro(w) { if (!seenDuoPro.includes(w)) { seenDuoPro.push(w); try { localStorage.setItem('comete-duo-pro', JSON.stringify(seenDuoPro)); } catch (e) {} } }
   // le prologue d'un monde : depuis le menu (puis on décolle) ou en arrivant dans un nouveau monde
   function startPrologue(w, end) {
-    playFilm(PROLOGUES[w](`<b>${rocketName()}</b>`), { w, clac: w > 0 && w < WORLDS.length - 1, go: 'Décoller', end: () => {
-      markPrologue(w);
+    const d = duoStory();
+    playFilm(d ? DUO.pro[w](...duoArgs()) : PROLOGUES[w](`<b>${rocketName()}</b>`), { w, duo: d, clac: w > 0 && w < WORLDS.length - 1, go: d ? 'Décoller à deux' : 'Décoller', end: () => {
+      if (d) markDuoPro(w); else markPrologue(w);
       if (end) end(); else if (cineReplay) backToCinema(); else start();
     } });
   }
-  // la partie à deux : l'histoire d'Étincelle, puis on décolle à deux
-  function startDuoFilm() {
-    playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Décoller à deux', end: () => {
+  // l'entrée dans la partie à deux : J1 devient Nina, J2 devient Malo, puis le prologue à deux du monde choisi
+  // (alone : l'entrée seule, pour la revoir dans les Cinématiques)
+  function startDuoFilm(end, alone) {
+    const w = alone ? 0 : startWorld;
+    playFilm(alone ? DUO.entree() : [...DUO.entree(), ...DUO.pro[w](...duoArgs())], { w, duo: true, clac: !alone && w > 0 && w < WORLDS.length - 1, go: 'Décoller à deux', end: () => {
       duoSeen = true; try { localStorage.setItem('comete-duo', '1'); } catch (e) {}
-      if (cineReplay) backToCinema(); else { duo = true; start(); }
+      if (!alone) markDuoPro(w);
+      if (end) end(); else if (cineReplay) backToCinema(); else { duo = true; start(); }
     } });
+  }
+  // partir à deux : l'entrée la première fois, puis le prologue à deux du monde s'il n'a jamais été vu
+  function duoTakeoff(go, firstSeen) {
+    if (!firstSeen) startDuoFilm(go);
+    else if (!duoProSeen(startWorld)) startPrologue(startWorld, go);
+    else go();
   }
   // la fin d'un monde : la transition, puis le prologue du monde suivant s'il n'a jamais été vu, puis on joue
   function startTransit() {
-    const w = world;
-    playFilm(TRANSITIONS[w](`<b>${rocketName()}</b>`), { w, next: w + 1, go: 'En route !', note: NOTE, end: () => {
+    const w = world, d = duoStory();
+    playFilm(d ? DUO.fin[w](...duoArgs()) : TRANSITIONS[w](`<b>${rocketName()}</b>`), { w, next: w + 1, duo: d, go: 'En route !', note: NOTE, end: () => {
       if (cineReplay) return backToCinema();
-      const go = () => { enterWorld(w + 1); markPrologue(w + 1); resetForNewWorld(); resumePlay(); };
-      if (prologueSeen(w + 1)) go(); else startPrologue(w + 1, go);
+      const go = () => { enterWorld(w + 1); if (!d) markPrologue(w + 1); resetForNewWorld(); resumePlay(); };
+      if (d ? duoProSeen(w + 1) : prologueSeen(w + 1)) go(); else startPrologue(w + 1, go);
     } });
   }
   // à mi-vie du Dévoreur : Clac revient, puis le combat reprend
@@ -5532,11 +5692,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     playFilm(ZOO.libre(`<b>${rocketName()}</b>`), { w: 1, go: 'Reprendre', note: ZOO_NOTE, end: resumePlay });
   }
   function startClacFilm() {
-    playFilm(FINALE.clac(), { w: WORLDS.length - 1, go: 'Reprendre le combat', replayGo: false, end: resumePlay });
+    const d = duoStory();
+    playFilm(d ? DUO.clac() : FINALE.clac(), { w: WORLDS.length - 1, duo: d, go: 'Reprendre le combat', replayGo: false, end: resumePlay });
   }
   // le Dévoreur est vaincu : la scène du choix, puis l'écran de choix
   function startFinale() {
-    playFilm(FINALE.choix(`<b>${rocketName()}</b>`), { w: WORLDS.length - 1, go: 'Choisir', replayGo: false, end: showChoice });
+    const d = duoStory();
+    playFilm(d ? DUO.choix(...duoArgs()) : FINALE.choix(`<b>${rocketName()}</b>`), { w: WORLDS.length - 1, duo: d, go: 'Choisir', replayGo: false, end: showChoice });
   }
   function showChoice() {
     state = 'choice';
@@ -5549,46 +5711,51 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('choice').hidden = true;
     // en relecture, on peut regarder les deux fins sans changer la sauvegarde
     if (!cineReplay) { finChoice = fin; try { localStorage.setItem('comete-fin', fin); } catch (e) {} }
-    const n = `<b>${rocketName()}</b>`;
-    playFilm(FINALE[fin](n), { w: WORLDS.length - 1, go: 'Suivant ›', replayGo: false, end: () => {
-      playFilm(FINALE.epilogue(n, fin), { w: WORLDS.length - 1, go: 'Continuer à jouer', end: resumePlay });
+    const n = `<b>${rocketName()}</b>`, d = duoStory();
+    playFilm(d ? DUO[fin](...duoArgs()) : FINALE[fin](n), { w: WORLDS.length - 1, duo: d, go: 'Suivant ›', replayGo: false, end: () => {
+      playFilm(d ? DUO.epilogue(...duoArgs(), fin) : FINALE.epilogue(n, fin), { w: WORLDS.length - 1, duo: d, go: 'Continuer à jouer', end: resumePlay });
     } });
   }
 
   // ===== Page Cinématiques : on revoit celles des mondes terminés =====
   // le prologue d'un monde se débloque quand le monde est ouvert, sa fin quand son dernier boss est battu
-  let cineReplay = false, replayWorld = 0;
+  let cineReplay = false, replayWorld = 0, cineTab = 'solo';
   function renderCinema() {
-    const last = WORLDS.length - 1;
+    const last = WORLDS.length - 1, two = cineTab === 'duo';
     let ends = 0;
-    $('cinemaList').innerHTML = WORLDS.map((w, i) => {
-      const open = i < worldsOpen || prologueSeen(i), done = beaten.includes(w.bosses[9].id);
+    for (const b of $('cinemaTabs').children) { const on = b.dataset.tab === cineTab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
+    // à deux : d'abord l'entrée (J1 devient Nina, J2 devient Malo), toujours ouverte
+    const entree = two ? `<div class="cinerow duo" style="--w1:#2a2140;--w2:#4fe0c8"><span class="wicon">👥</span><div><small>Partie à deux</small><b>J1 Nina · J2 Malo</b></div>`
+      + `<div class="cinebtns"><button class="play" type="button" data-c="dentree" data-w="0">▶ L'entrée à deux</button></div>`
+      + `<p class="cinehint">Le Joueur 1 devient Nina, le Joueur 2 devient Malo. Ensuite, chaque monde a son début et sa fin à deux.</p></div>` : '';
+    $('cinemaList').innerHTML = entree + WORLDS.map((w, i) => {
+      const open = i < worldsOpen || prologueSeen(i) || two && duoProSeen(i), done = beaten.includes(w.bosses[9].id);
       if (done) ends++;
-      const fin = i === last ? 'Le choix et la fin' : 'Fin du monde';
-      return `<div class="cinerow${open ? '' : ' locked'}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
-        + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}</small><b>${open ? w.name : '???'}</b></div>`
-        + `<div class="cinebtns"><button class="ghost" type="button" data-c="pro" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} Prologue</button>`
-        + `<button class="play" type="button" data-c="fin" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button>`
-        + (i === 1 && petsFreed() ? `<button class="ghost" type="button" data-c="zoo" data-w="1">▶ Les animaux</button>` : '') + '</div>'
+      const fin = (i === last ? 'Le choix et la fin' : two ? 'Fin' : 'Fin du monde') + (two ? ' à deux' : '');
+      return `<div class="cinerow${open ? '' : ' locked'}${two ? ' duo' : ''}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
+        + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}${two ? ' · à deux' : ''}</small><b>${open ? w.name : '???'}</b></div>`
+        + `<div class="cinebtns"><button class="ghost" type="button" data-c="${two ? 'dpro' : 'pro'}" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} ${two ? 'Début à deux' : 'Prologue'}</button>`
+        + `<button class="play" type="button" data-c="${two ? 'dfin' : 'fin'}" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button>`
+        + (!two && i === 1 && petsFreed() ? `<button class="ghost" type="button" data-c="zoo" data-w="1">▶ Les animaux</button>` : '') + '</div>'
         + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'le choix et la fin' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
         + '</div>';
     }).join('');
-    if (duoSeen) $('cinemaList').innerHTML += `<div class="cinerow" style="--w1:#4fe0c8;--w2:#1f6f8a"><span class="wicon">👥</span><div><small>Partie à deux</small><b>Étincelle</b></div>`
-      + `<div class="cinebtns"><button class="ghost" type="button" data-c="duo" data-w="0">▶ L'histoire à deux</button></div></div>`;
-    $('cinemaCount').textContent = `${ends} cinématique${ends > 1 ? 's' : ''} de fin débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}. Termine un monde pour débloquer la sienne.`;
+    $('cinemaCount').textContent = two ? `En partie à deux, le Joueur 1 joue Nina et le Joueur 2 joue Malo. ${ends} fin${ends > 1 ? 's' : ''} à deux débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}.`
+      : `${ends} cinématique${ends > 1 ? 's' : ''} de fin débloquée${ends > 1 ? 's' : ''} sur ${WORLDS.length}. Termine un monde pour débloquer la sienne.`;
   }
   function openCinema() { initAudio(); renderCinema(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('cinema').hidden = false; }
   // relecture : le jeu n'est pas lancé, on prête juste le numéro du monde aux cinématiques
   function playCinema(kind, w) {
     cineReplay = true; replayWorld = world; $('cinema').hidden = true;
-    if (kind === 'pro') { startPrologue(w); return; }
-    if (kind === 'duo') { startDuoFilm(); return; }
+    cineDuo = kind[0] === 'd';
+    if (kind === 'pro' || kind === 'dpro') { startPrologue(w); return; }
+    if (kind === 'dentree') { startDuoFilm(null, true); return; }
     if (kind === 'zoo') { playFilm([...ZOO.avant(), ...ZOO.libre(`<b>${rocketName()}</b>`)], { w: 1, go: 'Terminer', end: backToCinema }); return; }
     world = w;
     if (w === WORLDS.length - 1) startFinale(); else startTransit();
   }
   function backToCinema() {
-    cineReplay = false; film = null; world = replayWorld;
+    cineReplay = cineDuo = false; film = null; world = replayWorld;
     for (const id of ['proCine', 'story', 'choice']) $(id).hidden = true;
     document.querySelector('.hud').style.visibility = $('toast').style.visibility = '';
     openCinema();
@@ -5601,7 +5768,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const sc = film.scenes[proScene], T = proT, m = Math.min(W, H);
     const top = Math.min(40, H * .05), sub = $('proSub').getBoundingClientRect().top;
     const zb = Math.max(top + 140, Math.min(H < 520 ? H * .66 : H * .6, sub - 12));
-    const Z = { T, t, m, top, zb, mid: (top + zb) / 2, h: zb - top, w: film.w, wd: WORLDS[film.w], clac: sc.clac ?? film.clac, last: proScene === proCount - 1 };
+    const Z = { T, t, m, top, zb, mid: (top + zb) / 2, h: zb - top, w: film.w, wd: WORLDS[film.w], clac: sc.clac ?? film.clac, last: proScene === proCount - 1, duo: !!film.duo, c2: film.duo ? p2Conf() : null };
     ctx.save();
     const draw = PLANS[sc.p] || PLANS.decor;
     filmBloom = 1;
@@ -5614,7 +5781,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     ctx.save();
     // en haut : où l'on est
     const title = typeof sc.at === 'string' ? sc.at.toUpperCase() : (() => { const wi = Z.last && film.next != null ? film.next : sc.at ?? film.w; return `MONDE ${wi + 1} · ${WORLDS[wi].name.toUpperCase()}`; })();
-    const tcol = sc.p === 'flashback' ? '#e8c890' : typeof sc.at === 'string' ? '#ffd86b' : WORLDS[Z.last && film.next != null ? film.next : sc.at ?? film.w].col[1];
+    const tcol = sc.p === 'flashback' ? '#e8c890' : sc.p === 'esprit' && sc.v === 'malo' ? '#4fe0c8' : typeof sc.at === 'string' ? '#ffd86b' : WORLDS[Z.last && film.next != null ? film.next : sc.at ?? film.w].col[1];
     // fondu au noir entre deux scènes + bandes cinéma
     ctx.globalAlpha = Math.max(0, 1 - T / .45); ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     // (aussi sur téléphone : certaines scènes ne dessinent pas tout en haut, on y voyait une bande d'une autre couleur)
@@ -5866,6 +6033,51 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     ctx.restore();
   }
   const rocketSize = Z => Math.min(3, Z.m / 260, Z.h / 110);
+  // ===== Partie à deux : les outils de dessin =====
+  const J_COL = { j1: ['#ffd86b', 'rgba(255, 216, 107, '], j2: ['#4fe0c8', 'rgba(79, 224, 200, '] };
+  const kidImgs = {};
+  function kidImg(b) { if (!kidImgs[b]) { const im = new Image(); im.src = avatar(b); kidImgs[b] = im; } return kidImgs[b]; }
+  // la lumière d'un joueur : un cœur blanc, un halo à sa couleur et une petite étoile qui tourne
+  function spark(x, y, r, j, t, a = 1) {
+    const [c, ca] = J_COL[j];
+    halo(x, y, r * 5, ca + '.55)', a); halo(x, y, r * 2.2, ca + '.9)', a);
+    ctx.globalAlpha = a; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x, y, r * .55, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+    star(x, y, r * 1.5, a * (.7 + .3 * Math.sin(t / 160)), t, 16, c);
+  }
+  // le portrait rond d'un enfant, cerclé de la couleur de son joueur ; a : apparition (0 à 1)
+  function kidMedal(b, x, y, R, j, t, a = 1, tag) {
+    if (a <= 0) return;
+    const [c, ca] = J_COL[j], im = kidImg(b), pulse = 1 + .04 * Math.sin(t / 260);
+    halo(x, y, R * 2.1 * pulse, ca + '.38)', a);
+    ctx.save(); ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fillStyle = '#0b0820'; ctx.fill();
+    if (im.complete && im.naturalWidth) { ctx.save(); ctx.clip(); ctx.drawImage(im, x - R, y - R, R * 2, R * 2); ctx.restore(); }
+    ctx.strokeStyle = c; ctx.lineWidth = Math.max(3, R * .07); ctx.shadowColor = c; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(x, y, R * pulse, 0, 7); ctx.stroke(); ctx.shadowBlur = 0;
+    if (tag) {
+      // l'étiquette sous le portrait : « J1 · NINA »
+      const fs = Math.max(11, Math.min(16, R * .24)); ctx.font = `700 ${fs}px Outfit, system-ui, sans-serif`;
+      const tw = ctx.measureText(tag).width + fs * 1.4, ty = y + R + fs * 1.1;
+      ctx.fillStyle = c; rrect(x - tw / 2, ty - fs * .85, tw, fs * 1.6, fs * .8); ctx.fill();
+      ctx.fillStyle = '#120a2a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(tag, x, ty - fs * .05); ctx.textBaseline = 'alphabetic';
+    }
+    ctx.restore();
+  }
+  // dans le cockpit de Nina : la liaison vidéo avec Malo, dans sa fusée à côté
+  function maloLink(Z) {
+    const { t, top, h } = Z, sz = Math.max(46, Math.min(92, h * .24, W * .2)), x = 12, y = top + 10;
+    ctx.save();
+    ctx.fillStyle = 'rgba(6, 26, 30, .85)'; rrect(x - 4, y - 4, sz + 8, sz + 24, 10); ctx.fill();
+    rrect(x, y, sz, sz, 8); ctx.save(); ctx.clip();
+    const im = kidImg('Malo'); if (im.complete && im.naturalWidth) ctx.drawImage(im, x, y + Math.sin(t / 700) * 1.5, sz, sz);
+    noise(x, y, sz, sz, .25, t);
+    ctx.fillStyle = 'rgba(79, 224, 200, .12)'; for (let yy = y; yy < y + sz; yy += 4) ctx.fillRect(x, yy, sz, 1);
+    ctx.restore();
+    ctx.strokeStyle = '#4fe0c8'; ctx.lineWidth = 2; rrect(x, y, sz, sz, 8); ctx.stroke();
+    ctx.fillStyle = Math.floor(t / 500) % 2 ? '#4fe0c8' : '#1f6f8a'; ctx.beginPath(); ctx.arc(x + 6, y + sz + 10, 3, 0, 7); ctx.fill();
+    ctx.fillStyle = '#4fe0c8'; ctx.font = `700 ${Math.max(9, Math.min(11, sz / 8))}px Outfit, system-ui, sans-serif`; ctx.textAlign = 'left';
+    ctx.fillText('J2 · MALO', x + 13, y + sz + 14);
+    ctx.restore();
+  }
 
   const ease = q => q < 0 ? 0 : q > 1 ? 1 : 1 - Math.pow(1 - q, 3);
   const PLANS = {
@@ -6040,14 +6252,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         // la baie 07 : la fusée couverte de poussière sous les projecteurs, et sa plaque
         const fy = Math.min(.72, (zb - top) / H * .85 + top / H);
         drawBay(ctx, W, H, t, fy);
-        drawRocket(ctx, W / 2, H * fy - rs * 30, rs, cfg, t, 0, 0);
-        ctx.fillStyle = 'rgba(130, 120, 100, .45)'; for (let i = 0; i < 60; i++) { const q = proPts[i + 400]; ctx.fillRect(W / 2 + (q.u - .5) * rs * 30, H * fy - rs * 30 + (q.v - .5) * rs * 50, 2, 2); }
+        // à deux : la grande fusée à gauche, sa petite fusée d'escorte (baie 08) à droite
+        const bx = Z.duo ? W * .36 : W / 2;
+        drawRocket(ctx, bx, H * fy - rs * 30, rs, cfg, t, 0, 0);
+        if (Z.duo) drawRocket(ctx, W * .7, H * fy - rs * 22, rs * .72, Z.c2, t, 0, 0);
+        ctx.fillStyle = 'rgba(130, 120, 100, .45)'; for (let i = 0; i < 60; i++) { const q = proPts[i + 400]; ctx.fillRect(bx + (q.u - .5) * rs * 30, H * fy - rs * 30 + (q.v - .5) * rs * 50, 2, 2); }
         ctx.fillStyle = '#04020c'; ctx.globalAlpha = .45; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
         // la plaque
-        const pw = Math.min(150, W * .32), px = W / 2 + rs * 24, py = H * fy - 30;
+        const pw = Math.min(150, W * .32), px = Z.duo ? W * .5 - pw / 2 : W / 2 + rs * 24, py = Z.duo ? H * fy + 6 : H * fy - 30;
         ctx.fillStyle = '#6a5a30'; ctx.strokeStyle = '#ffd86b'; ctx.lineWidth = 1.5; rrect(Math.min(px, W - pw - 8), py, pw, 34, 4); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#ffe9a8'; ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'left';
-        ctx.fillText('BAIE 07 · PORTEUSE DE', Math.min(px, W - pw - 8) + 8, py + 14); ctx.fillText('LUMIÈRE · 1 000 ANS', Math.min(px, W - pw - 8) + 8, py + 27);
+        if (Z.duo) { ctx.fillText('BAIES 07 ET 08 · NE VOLE', Math.min(px, W - pw - 8) + 8, py + 14); ctx.fillText('JAMAIS SANS LA BAIE 07', Math.min(px, W - pw - 8) + 8, py + 27); }
+        else { ctx.fillText('BAIE 07 · PORTEUSE DE', Math.min(px, W - pw - 8) + 8, py + 14); ctx.fillText('LUMIÈRE · 1 000 ANS', Math.min(px, W - pw - 8) + 8, py + 27); }
         // les lampes torches des enfants balaient la baie
         for (const [x, b] of [[W * .12, .5], [W * .88, -.5]]) { kid(x, zb, s * .9, x < W / 2 ? 'Malo' : 'Inès', b + Math.sin(t / 800 + x) * .15, t); }
       } else {
@@ -6058,12 +6274,52 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         // la façade un peu éclairée par l'aube : les enfants, en ombre noire devant, restent visibles
         ctx.fillStyle = '#4e3550'; const bw = Math.min(W * .9, 520); ctx.fillRect(W / 2 - bw / 2, zb - h * .18, bw, h * .18); ctx.beginPath(); ctx.arc(W / 2, zb - h * .18, bw * .15, Math.PI, 0); ctx.fill();
         const land = v === 'aube' ? ease(T / 2.4) : 1, ry = top + 20 + land * (zb - h * .18 - 30 - top - 20);
-        drawRocket(ctx, v === 'aube' ? W / 2 : W * .3, ry, rs * .7, cfg, t, 0, v === 'aube' ? .6 * (1 - land) + .1 : 0);
-        if (v === 'aube') { const run = ease((T - 1) / 2); kid(W * .1 + run * W * .25, zb - 1, s, 'Malo', 0, t * 3); kid(W * .9 - run * W * .25, zb - 1, s, 'Inès', 0, t * 3); }
+        drawRocket(ctx, v === 'aube' ? (Z.duo ? W * .42 : W / 2) : W * .3, ry, rs * .7, cfg, t, 0, v === 'aube' ? .6 * (1 - land) + .1 : 0);
+        if (Z.duo) drawRocket(ctx, v === 'aube' ? W * .6 : W * .15, ry + rs * 8, rs * .5, Z.c2, t, 0, v === 'aube' ? .6 * (1 - land) + .1 : 0);
+        if (v === 'aube') { const run = ease((T - 1) / 2); if (!Z.duo) kid(W * .1 + run * W * .25, zb - 1, s, 'Malo', 0, t * 3); kid(W * .9 - run * W * .25, zb - 1, s, 'Inès', 0, t * 3); }
         else {
           kid(W * .46, zb - 1, s, 'Nina', 0, t); kid(W * .58, zb - 1, s, 'Malo', 0, t); kid(W * .7, zb - 1, s, 'Inès', 0, t);
           portrait(bossById('crabe'), W * .84, zb - 18 * s, 34 * s);
         }
+      }
+    },
+    // Esprit : deux lumières (J1 dorée, J2 turquoise) descendent dans Nina et Malo
+    esprit(v, Z) {
+      const { T, t, top, zb, mid, h } = Z;
+      sky('#1c1248', '#04020c', .45); starfield(Z, '#ffffff', .03, 140, .8);
+      const R = Math.max(30, Math.min(W * .2, h * .3)), tr = Math.max(5, R * .14);
+      if (v === 'appel') {
+        // les deux lumières tournent l'une autour de l'autre, en laissant une traînée
+        const k = ease(T / 1.4), rr = Math.min(W, h) * .2 * (.4 + .6 * k), cx = W / 2, cy = mid;
+        for (const [j, ph] of [['j1', 0], ['j2', Math.PI]]) {
+          for (let i = 14; i > 0; i--) { const a = t / 650 + ph - i * .09; spark(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr * .55, tr * (1 - i / 16), j, t, (1 - i / 15) * .35 * k); }
+          const a = t / 650 + ph, x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * .55;
+          spark(x, y, tr, j, t, k);
+          const ta = ease((T - 1.2) / .6);
+          if (ta > 0) { ctx.globalAlpha = ta; ctx.fillStyle = J_COL[j][0]; ctx.font = `700 ${Math.max(13, tr * 2.2)}px Outfit, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillText(j === 'j1' ? 'J1' : 'J2', x, y - tr * 3.2); ctx.globalAlpha = 1; }
+        }
+      } else if (v === 'nina' || v === 'malo') {
+        // la Terre en bas ; la lumière plonge et se glisse dans le cœur de l'enfant
+        const j = v === 'nina' ? 'j1' : 'j2', b = v === 'nina' ? 'Nina' : 'Malo';
+        earth(ctx, W / 2, zb + R * 1.2, R * 2.2);
+        const px = W / 2, py = mid + h * .02, k = ease(T / 1.5), sx = v === 'nina' ? W * .9 : W * .1, sy = top + 10;
+        const x = sx + (px - sx) * k, y = sy + (py - sy) * k - Math.sin(k * Math.PI) * h * .12;
+        const show = ease((T - 1.25) / .7);
+        if (v === 'malo') kidMedal('Nina', W * .14 + R * .1, top + R * .55 + 6, R * .42, 'j1', t, .9, null);
+        kidMedal(b, px, py, R, j, t, show, show > .5 ? (j === 'j1' ? 'J1 · NINA' : 'J2 · MALO') : null);
+        // l'arrivée : un anneau de lumière qui s'élargit
+        if (T > 1.25 && T < 2.6) { const q = (T - 1.25) / 1.35; ctx.strokeStyle = J_COL[j][1] + (1 - q) + ')'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(px, py, R * (1 + q * 1.4), 0, 7); ctx.stroke(); }
+        if (k < 1) { for (let i = 1; i < 12; i++) { const q = Math.max(0, k - i * .03), xx = sx + (px - sx) * q, yy = sy + (py - sy) * q - Math.sin(q * Math.PI) * h * .12; spark(xx, yy, tr * (1 - i / 13), j, t, .3 * (1 - i / 12)); } spark(x, y, tr * 1.2, j, t, 1); }
+      } else {
+        // lien : Nina et Malo côte à côte, reliés par un fil de lumière
+        const d = Math.min(W * .25, R * 1.7), r = Math.min(R * .85, d * .78), y = mid + h * .02, k = ease(T / 1.2);
+        const x1 = W / 2 - d, x2 = W / 2 + d;
+        const g = ctx.createLinearGradient(x1, 0, x2, 0); g.addColorStop(0, 'rgba(255, 216, 107, .9)'); g.addColorStop(1, 'rgba(79, 224, 200, .9)');
+        ctx.strokeStyle = g; ctx.lineWidth = 3 + 2 * Math.sin(t / 200); ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 14;
+        ctx.beginPath(); ctx.moveTo(x1 + r, y); ctx.lineTo(x1 + r + (x2 - x1 - 2 * r) * k, y); ctx.stroke(); ctx.shadowBlur = 0;
+        for (let i = 0; i < 6; i++) { const q = ((t / 1400) + i / 6) % 1; spark(x1 + r + (x2 - x1 - 2 * r) * q * k, y + Math.sin(q * 9 + i) * 4, tr * .45, q < .5 ? 'j1' : 'j2', t, .8 * k); }
+        kidMedal('Nina', x1, y, r, 'j1', t, 1, 'J1 · NINA');
+        kidMedal('Malo', x2, y, r, 'j2', t, 1, 'J2 · MALO');
       }
     },
     // Cockpit : la vue de l'intérieur de la fusée, avec Nina (et Clac quand il est à bord)
@@ -6074,6 +6330,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (v === 'nuit' || v === 'voyants') { ctx.fillStyle = '#0a0918'; ctx.fillRect(0, 0, W, H); drawBay(ctx, W, H, t, .9); }
       else { sky(c1, '#04020c', .3); starfield(Z, c2, v === 'alarme' ? .2 : .03); }
       if (v === 'terre') { const k = ease(T / 3); earth(ctx, W * .62, top + h * (.2 + k * .1), Math.min(W, h) * (.28 - k * .2)); }
+      if (Z.duo && !['nuit', 'voyants', 'plan'].includes(v)) drawRocket(ctx, W * .8 + Math.sin(t / 1300) * 8, top + h * .3 + Math.sin(t / 900) * 5, rocketSize(Z) * .45, Z.c2, t, .08, 1);
       if (v === 'plan') {
         // sur l'écran : le plan d'un vaisseau qui ressemble à celui de la plaque
         const sw = Math.min(W * .62, 340), sh = Math.min(h * .5, sw * .6), sx = W / 2 - sw / 2, sy = top + h * .08;
@@ -6146,6 +6403,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (v === 'rallume' && T < 1.4) noise(0, top, W, h, 1 - T / 1.4, t);
       if (dark > 0 && v !== 'nuit' && v !== 'voyants') { ctx.fillStyle = `rgba(0, 0, 0, ${dark * .5})`; ctx.fillRect(0, 0, W, H); }
       if (v === 'larmes') { ctx.fillStyle = '#9fe8ff'; const ty = ny - 30 * ns + bow + ((T * 40) % (20 * ns)); ctx.beginPath(); ctx.arc(nx + 4 * ns, ty, 2 * ns, 0, 7); ctx.fill(); }
+      if (Z.duo) maloLink(Z);
     },
     // Radio : un petit écran incrusté qui grésille, avec Malo et Inès dans le musée
     radio(v, Z) {
@@ -6165,7 +6423,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         else { ctx.fillStyle = '#1a1840'; for (let i = 0; i < 4; i++) ctx.fillRect(rx + rw * (.1 + i * .25), ry, rw * .06, rh); }
         ctx.fillStyle = roof ? '#141030' : '#0a0818'; ctx.fillRect(rx, ry + rh * .82, rw, rh * .18);
         const s = rh / 62;
-        kid(rx + rw * .36, ry + rh * .84, s, 'Malo', roof ? 0 : .3, t * 2); kid(rx + rw * .64, ry + rh * .84, s, 'Inès', roof ? 0 : -.3, t * 2);
+        if (Z.duo) kid(rx + rw * .5, ry + rh * .84, s, 'Inès', roof ? 0 : -.3, t * 2);
+        else { kid(rx + rw * .36, ry + rh * .84, s, 'Malo', roof ? 0 : .3, t * 2); kid(rx + rw * .64, ry + rh * .84, s, 'Inès', roof ? 0 : -.3, t * 2); }
       }
       noise(rx, ry, rw, rh, .5, t);
       ctx.restore();
@@ -6289,9 +6548,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         const o = ease(T / 1.2), roofY = zb - h * .12;
         ctx.fillStyle = '#141236'; ctx.fillRect(0, roofY, W / 2 - o * W * .3, h * .14); ctx.fillRect(W / 2 + o * W * .3, roofY, W, h * .14);
         const k = ease((T - .5) / 2);
-        drawRocket(ctx, W / 2, roofY - 20 - k * (roofY - top - 60), rs, cfg, t, 0, 1);
+        drawRocket(ctx, Z.duo ? W * .42 : W / 2, roofY - 20 - k * (roofY - top - 60), rs, cfg, t, 0, 1);
+        if (Z.duo) { const k2 = ease((T - .8) / 2); drawRocket(ctx, W * .6, roofY - 14 - k2 * (roofY - top - 90), rs * .72, Z.c2, t, .05, 1); }
         halo(W / 2, roofY, 120, 'rgba(255, 180, 80, .4)');
-        kid(W / 2 - W * .3 - 20, zb, 1.2, 'Malo', 0, t * 4); kid(W / 2 + W * .3 + 20, zb, 1.2, 'Inès', 0, t * 4);
+        if (!Z.duo) kid(W / 2 - W * .3 - 20, zb, 1.2, 'Malo', 0, t * 4); kid(W / 2 + W * .3 + 20, zb, 1.2, 'Inès', 0, t * 4);
       } else if (v === 'fuite' || v === 'scan') {
         // l'ombre géante se retourne et file dans un tourbillon noir
         const vx = W / 2, vy = top + h * .3, k = ease(T / 3);
@@ -6304,19 +6564,22 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.moveTo(vx + a * rr, cy + b * rr * .6); ctx.lineTo(vx + a * rr, cy + b * rr * .3); ctx.moveTo(vx + a * rr, cy + b * rr * .6); ctx.lineTo(vx + a * rr * .7, cy + b * rr * .6); ctx.stroke(); }
         }
         drawRocket(ctx, W / 2, zb - h * .15, rs * .6, cfg, t, 0, 1);
+        if (Z.duo) drawRocket(ctx, W / 2 + rs * 34, zb - h * .1, rs * .42, Z.c2, t, 0, 1);
       } else if (v === 'plonge') {
         // la fusée plonge vers une planète en fusion
         const k = ease(T / 3), R = Math.min(W, h) * (.15 + k * .4);
         const g = ctx.createRadialGradient(W / 2, zb + R * .3, R * .1, W / 2, zb + R * .3, R); g.addColorStop(0, '#ffcf5a'); g.addColorStop(.5, '#ff6a1a'); g.addColorStop(1, '#5a1004');
         halo(W / 2, zb + R * .3, R * 1.4, 'rgba(255, 100, 20, .5)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W / 2, zb + R * .3, R, 0, 7); ctx.fill();
         drawRocket(ctx, W / 2, top + h * .35 + k * h * .15, rs * (1 - k * .5), cfg, t, Math.PI, 1);
+        if (Z.duo) drawRocket(ctx, W / 2 + rs * 30 * (1 - k * .4), top + h * .22 + k * h * .18, rs * .7 * (1 - k * .5), Z.c2, t, Math.PI, 1);
       } else if (v === 'clac') {
         // la fusée s'échappe ; derrière, Clac retient les lianes et rapetisse
         const k = ease(T / 3.5);
         for (let i = 0; i < 7; i++) { ctx.strokeStyle = '#1e8a3a'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(W * (i + .5) / 7, zb + 10); ctx.quadraticCurveTo(W / 2 + (i - 3) * 20, zb - h * .3, W / 2 + (i - 3) * 6, zb - h * .2 - k * 20); ctx.stroke(); }
         portrait(bossById('crabe'), W / 2, zb - h * .2 - k * 20, Math.max(30, 70 * (1 - k * .6)));
         drawRocket(ctx, W / 2, top + h * .4 - k * h * .1, rs * .8, cfg, t, 0, 1.2);
-      } else drawRocket(ctx, W / 2, mid, rs, cfg, t, 0, 1);
+        if (Z.duo) drawRocket(ctx, W / 2 + rs * 30, top + h * .5 - k * h * .14, rs * .55, Z.c2, t, .1, 1.2);
+      } else { drawRocket(ctx, Z.duo ? W * .44 : W / 2, mid, rs, cfg, t, 0, 1); if (Z.duo) drawRocket(ctx, W * .6, mid + rs * 10, rs * .7, Z.c2, t, 0, 1); }
     },
     // Flashback : il y a mille ans, en couleurs passées, avec du grain et des bords arrondis
     flashback(v, Z) {
@@ -6490,6 +6753,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         sky('#0f3a1a'); starfield(Z, '#7dff8a', .02);
         const k = v === 'lianes' ? ease(T / 2) : 1, hold = v === 'pinces' ? ease(T / 1.5) : 0, rx = W / 2, ry = mid;
         drawRocket(ctx, rx, ry, rs * .8, cfg, t, Math.sin(t / 120) * .05, .4);
+        // à deux : la fusée de Malo tourne autour, sans réussir à couper les lianes
+        if (Z.duo) drawRocket(ctx, rx - Math.min(W * .26, 130) + Math.sin(t / 500) * 10, ry + h * .12, rs * .5, Z.c2, t, .3 + Math.sin(t / 300) * .1, 1);
         for (let i = 0; i < 8; i++) {
           const a = i / 8 * Math.PI * 2, far = Math.max(W, h) * .7, r = 40 + (1 - k) * far * .5 + hold * 50;
           ctx.strokeStyle = '#1e8a3a'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath();
@@ -6505,7 +6770,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         ctx.fillStyle = '#000'; ctx.strokeStyle = '#ff4f6d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(W / 2, mid - h * .05, gw / 2, Math.max(4, gh / 2), 0, 0, 7); ctx.fill(); ctx.stroke();
         ctx.fillStyle = '#d9d0ff';
         for (let i = 0; i < 12; i++) for (const sd of [-1, 1]) { const x = W / 2 - gw * .42 + i * gw * .84 / 11, y = mid - h * .05 + sd * gh * .42 * Math.sqrt(1 - ((x - W / 2) / (gw / 2)) ** 2); ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y); ctx.lineTo(x, y - sd * 16 * o); ctx.fill(); }
-        drawRocket(ctx, W / 2, zb - h * .12, rs * .55, cfg, t, 0, 1);
+        drawRocket(ctx, Z.duo ? W * .44 : W / 2, zb - h * .12, rs * .55, cfg, t, 0, 1);
+        if (Z.duo) drawRocket(ctx, W * .58, zb - h * .09, rs * .4, Z.c2, t, 0, 1);
         if (v === 'renforts') {
           const team = ['meduse', 'pingouin', 'phenix', 'mante', 'dragon', 'yeti'].map(bossById).filter(Boolean);
           team.forEach((d, i) => { const k = ease((T - .3 - i * .15) / 1), sd = i % 2 ? 1 : -1, x = W / 2 + sd * (W * .7 - k * W * (.18 + Math.floor(i / 2) * .12)), y = top + h * (.25 + Math.floor(i / 2) * .2); portrait(d, x, y, Math.min(64, h * .2), k); });
@@ -6521,11 +6787,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         // fin B : un dernier tir, et une explosion de lumière
         ctx.fillStyle = '#05010a'; ctx.fillRect(0, 0, W, H);
         const k = ease(T / .8), boom = ease((T - .8) / 1.5), ex = W / 2, ey = top + h * .3;
-        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1 - boom; ctx.fillRect(ex - 2, ey + (zb - h * .15 - ey) * (1 - k), 4, (zb - h * .15 - ey) * k); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 1 - boom; if (Z.duo) { const sy = zb - h * .15; for (const x0 of [W * .44, W * .58]) { ctx.beginPath(); ctx.moveTo(x0 - 2 + (ex - x0) * (1 - k), sy + (ey - sy) * (1 - k)); ctx.lineTo(x0, sy); ctx.lineTo(x0 + 2, sy); ctx.closePath(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, sy); ctx.lineTo(x0 + (ex - x0) * k, sy + (ey - sy) * k); ctx.stroke(); } } else ctx.fillRect(ex - 2, ey + (zb - h * .15 - ey) * (1 - k), 4, (zb - h * .15 - ey) * k); ctx.globalAlpha = 1;
         if (boom < .3) drawElio(ctx, ex, ey, Math.min(1.6, h / 120), t, 1);
         halo(ex, ey, boom * Math.max(W, h) * .6, 'rgba(255, 246, 216, .9)', 1 - boom * .6);
         for (let i = 0; i < 70; i++) { const q = proPts[i + 300], a = q.a * 3, r = boom * Math.max(W, h) * (.2 + q.d * .5); star(ex + Math.cos(a) * r, ey + Math.sin(a) * r, 2 + q.z, boom * (1 - boom * .3), t, 10); }
-        drawRocket(ctx, W / 2, zb - h * .15, rs * .6, cfg, t, 0, .4);
+        drawRocket(ctx, Z.duo ? W * .44 : W / 2, zb - h * .15, rs * .6, cfg, t, 0, .4);
+        if (Z.duo) drawRocket(ctx, W * .58, zb - h * .12, rs * .45, Z.c2, t, 0, .4);
       }
     },
   };
@@ -7978,7 +8245,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   const play = () => { duo = false; if (prologueSeen(startWorld)) start(); else { initAudio(); startPrologue(startWorld); } };
   // partie à deux : l'histoire d'Étincelle la première fois, puis on décolle
-  const playDuo = () => { duo = true; initAudio(); if (duoSeen) start(); else startDuoFilm(); };
+  const playDuo = () => { duo = true; initAudio(); duoTakeoff(() => { duo = true; start(); }, duoSeen); };
   $('startBtn').onclick = play;
   $('duoBtn').onclick = () => openTeam();
   $('mapGo').onclick = () => { if (teamDetour) { closePanels(); return; } $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
@@ -8280,7 +8547,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     } else if (m.t === 'film' && Array.isArray(m.scenes)) {
       for (const id of ['team', 'menu', 'over']) $(id).hidden = true;
       const o = m.opt || {};
-      playFilm(m.scenes, { w: +o.w || 0, next: o.next, clac: o.clac, note: o.note, go: 'OK', end: () => { showBanner('On attend ton équipe', 'La suite arrive…'); } });
+      playFilm(m.scenes, { w: +o.w || 0, next: o.next, clac: o.clac, note: o.note, duo: !!o.duo, go: 'OK', end: () => { showBanner('On attend ton équipe', 'La suite arrive…'); } });
     }
   }
   function netCloseFilm() {
@@ -8532,11 +8799,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     myReady = peerReady = false;
     $('team').hidden = true; duo = true; initAudio();
     let seen = false; try { seen = localStorage.getItem('comete-duo-ligne') === '1'; } catch (e) {}
-    if (seen) start();
-    else playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Décoller à deux', end: () => {
-      try { localStorage.setItem('comete-duo-ligne', '1'); localStorage.setItem('comete-duo', '1'); } catch (e) {}
-      duoSeen = true; duo = true; start();
-    } });
+    duoTakeoff(() => { try { localStorage.setItem('comete-duo-ligne', '1'); } catch (e) {} duo = true; start(); }, seen);
   }
   $('teamCreate').onclick = () => { $('teamJoinForm').hidden = true; teamCreate(); };
   $('teamJoin').onclick = () => {
@@ -8561,14 +8824,15 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   $('teamHangar').onclick = teamGo(() => { openHangar(); $('goBtn').textContent = 'Retour à l\'équipe'; });
   $('teamTrophies').onclick = teamGo(openTrophies);
   $('teamRank').onclick = teamGo(openRanking);
-  $('teamCinema').onclick = teamGo(openCinema);
+  $('teamCinema').onclick = teamGo(() => { cineTab = 'duo'; openCinema(); });
   $('teamWorld').onclick = () => { if (netRole !== 'host') return; teamGo(() => { openMap(); $('mapGo').textContent = 'Retour à l\'équipe'; })(); };
   // revoir l'histoire à deux (le chef d'équipe la lance, elle passe chez les deux), puis retour au Hangar d'équipe
   $('teamStory').onclick = () => {
     if (netRole !== 'host' || countT > 0) return;
     myReady = false; netSend({ t: 'ready', r: false });
     $('team').hidden = true;
-    playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Retour au hangar', replayGo: false, end: () => openTeam() });
+    const w = startWorld;
+    playFilm([...DUO.entree(), ...DUO.pro[w](...duoArgs())], { w, duo: true, clac: w > 0 && w < WORLDS.length - 1, go: 'Retour au hangar', replayGo: false, end: () => openTeam() });
   };
   // changer le nom de sa fusée, directement dans le Hangar d'équipe
   $('teamMeName').addEventListener('change', e => {
