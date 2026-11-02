@@ -8212,6 +8212,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const netRevive = (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? (v.$b ? bossById(v.$b) : v.$s !== undefined ? SPECIES[v.$s] : v) : v;
   const GAME_ST = ['play', 'pause', 'launch', 'dying', 'talk', 'choice', 'over', 'film'];
   function netHostTick() { if (performance.now() - netIn.at > 1500) { netIn.f = false; netIn.k = [0, 0]; } }
+  let netScN = 0;
   function netHostSend(t) {
     if (!netOpen() || !netPeer) return;
     const inGame = GAME_ST.includes(state) && !cineReplay;
@@ -8224,7 +8225,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       pw: [power.def.id, power.cd, power.active, power.maxCd], bh, lfx: levelFx ? levelFx.lv : 0,
       pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx], l2: p2 ? p2.lives : 0, ko: [player.ko ? 1 : 0, p2 && p2.ko ? 1 : 0],
       p2: p2 && [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill || 0, p2.vx, p2.ammo, p2.reload, (p2.gun || gun).mag, (p2.gun || gun).reload],
-      pet: [pet.x, pet.y, pet.guardT],
+      pet: [pet.x, pet.y, pet.guardT], tm: time,
+      sc: (netScN = (netScN + 1) % 4) === 0 ? scenery.filter(o => o.type !== 'drift' && o.type !== 'bolt') : undefined,
       it: items, sh: shots.slice(-160), eb: ebullets.slice(-260), zp: zaps, sm: smokes, fx: netFx.splice(0) };
     let txt = JSON.stringify(m, netRep);
     // un message trop gros ne passe pas partout : on garde l'essentiel
@@ -8316,6 +8318,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     if (Array.isArray(m.ko)) { player.ko = !!m.ko[0]; if (p2) p2.ko = !!m.ko[1]; }
     [pet.x, pet.y, pet.guardT] = m.pet;
+    // le fond : même temps de partie (la nébuleuse et les étoiles défilent pareil) et même décor que chez l'hôte
+    if (Number.isFinite(m.tm) && Math.abs(m.tm - time) > .08) time = m.tm;
+    if (Array.isArray(m.sc)) netScenery(m.sc);
     items = m.it; shots = m.sh; ebullets = m.eb; zaps = m.zp || []; smokes = m.sm || [];
     boss = items.find(i => i.boss) || null;
     for (const f of m.fx || []) {
@@ -8349,6 +8354,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     openTeam();
   }
   // chez le pote, à chaque image : on fait avancer ce qui bouge entre deux nouvelles de l'hôte, et on envoie ses commandes
+  // le décor de l'hôte : on garde ses propres particules (neige, braises…) et on refait les images des planètes une seule fois
+  const netPlanetImg = new Map();
+  function netScenery(list) {
+    const keep = scenery.filter(o => o.type === 'drift' || o.type === 'bolt');
+    for (const o of list) {
+      if (!o || typeof o !== 'object') continue;
+      if (o.type === 'planet') {
+        if (!o.st || !(o.r > 0)) continue;
+        const key = JSON.stringify(o.st) + '|' + Math.round(o.r);
+        let img = netPlanetImg.get(key);
+        if (!img) { try { img = makePlanet(o.st, o.r); } catch (e) { continue; } if (netPlanetImg.size > 24) netPlanetImg.clear(); netPlanetImg.set(key, img); }
+        o.img = img;
+      }
+      if (o.type === 'fighter' && !(o.fireT > 0)) o.fireT = .5;
+      keep.push(o);
+    }
+    scenery = keep;
+  }
   // la fusée du pote bouge chez lui tout de suite (même conduite que dans updateP2)
   function netPilot(dt, kx, ky) {
     if (!p2 || p2.ko) return;
@@ -8368,6 +8391,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const gky = (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['z'] || keys['w'] ? 1 : 0);
     if (gkx || gky) target = null;
     if (state === 'play') {
+      time += dt;
       netPilot(dt, gkx, gky);
       if (player.tx !== undefined && !player.ko) {
         const k = Math.min(1, dt * 14);
@@ -9868,7 +9892,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
 
   function addPlanet(style, r, x, y, vy) {
-    scenery.push({ type: 'planet', img: makePlanet(style, r), x, y, r, vy });
+    scenery.push({ type: 'planet', img: makePlanet(style, r), st: style, x, y, r, vy });
   }
   // les planètes se rangent sur les côtés (le milieu reste libre pour jouer), du côté opposé au grand astre du décor
   // et à l'autre planète encore visible, pour ne jamais se chevaucher
@@ -9915,6 +9939,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
   function updateScenery(dt) {
     const k = state === 'play' ? speed : .6, m = reduce ? .3 : 1;
+    // partie en équipe, chez le pote : le décor (planètes, vaisseaux, comètes…) vient de l'hôte, on ne l'invente pas ici
+    if (netRole === 'guest' && GAME_ST.includes(state) && state !== 'film') { planetT = fightT = cruiserT = meteorT = cometT = swarmT = 99; }
     planetT -= dt; fightT -= dt; cruiserT -= dt; meteorT -= dt;
     if (planetT <= 0) { if (scenery.filter(o => o.type === 'planet').length < 2) randomPlanet(); planetT = 10 + Math.random() * 14; }
     if (!reduce && fightT <= 0) { addFight(); fightT = 4 + Math.random() * 5; }
