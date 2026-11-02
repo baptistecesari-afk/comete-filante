@@ -844,37 +844,93 @@ body:not(.jeu) .hud { opacity: 0; }
   transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
 }
 #menu .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
-/* Équipe en ligne : les deux fusées côte à côte, puis Créer / Rejoindre / Partager */
-.teampanel { max-width: 560px; }
-.teamslots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.tslot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px 12px; border-radius: 20px;
-  background: radial-gradient(circle at 50% 35%, rgba(122, 216, 255, .14), rgba(8, 6, 26, .55) 70%); border: 2px solid rgba(255, 255, 255, .12); }
-.tslot.me { border-color: color-mix(in srgb, var(--star) 55%, transparent); }
-.tslot.friend { border-style: dashed; }
-.tslot.friend.on { border-style: solid; border-color: #4fe0c8; background: radial-gradient(circle at 50% 35%, rgba(79, 224, 200, .18), rgba(8, 6, 26, .55) 70%); }
-.tslot canvas { width: 100%; max-width: 150px; aspect-ratio: 5 / 6; height: auto; }
-.tslot b { font-family: var(--display); font-size: 16px; color: var(--ink); }
-.tslot small { color: var(--muted); font-size: 13px; }
-.tplus { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); font: 54px var(--display); color: rgba(255, 255, 255, .35); pointer-events: none; }
-.tslot.friend.on .tplus { display: none; }
-.teamstatus { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 15px; line-height: 1.45; min-height: 1.4em; }
+/* ===== Écran Équipe : un hangar multijoueur en plein écran ===== */
+.teamscreen { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; touch-action: pan-y;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(14px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px));
+  background: radial-gradient(120% 70% at 50% 0%, #2a2a7a 0%, #16124a 45%, #0a0820 100%); color: var(--ink); }
+.teamscreen[hidden] { display: none; }
+.tsbg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(122, 216, 255, .07) 0 2px, transparent 2px 64px) bottom / 100% 42% no-repeat,
+    repeating-linear-gradient(0deg, rgba(122, 216, 255, .07) 0 2px, transparent 2px 48px) bottom / 100% 42% no-repeat,
+    linear-gradient(transparent 55%, rgba(79, 224, 200, .1) 58%, rgba(10, 8, 32, .9) 100%); }
+.tsbg::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 14px;
+  background: repeating-linear-gradient(-45deg, #ffd86b 0 18px, #0a0820 18px 36px); opacity: .85; }
+.beam { position: absolute; top: -10%; width: 34vw; height: 120%; background: linear-gradient(rgba(122, 216, 255, .16), transparent 70%);
+  transform-origin: top center; filter: blur(6px); }
+.beam.b1 { left: -6vw; transform: rotate(16deg); }
+.beam.b2 { left: 33vw; background: linear-gradient(rgba(255, 216, 107, .12), transparent 70%); animation: beamSway 7s ease-in-out infinite alternate; }
+.beam.b3 { right: -6vw; transform: rotate(-16deg); }
+@keyframes beamSway { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+@media (prefers-reduced-motion: reduce) { .beam.b2 { animation: none; } }
+.teamscreen > :not(.tsbg) { position: relative; z-index: 1; }
+.tshead { display: flex; align-items: center; gap: 12px; padding-top: 10px; max-width: 760px; width: 100%; margin: 0 auto; }
+.tsback { flex: none; width: 46px; height: 46px; border-radius: 14px; border: 2px solid rgba(255, 255, 255, .25); background: rgba(10, 8, 32, .6); color: var(--ink);
+  font: 30px/1 var(--display); cursor: var(--cur-clic); display: grid; place-items: center; padding-bottom: 4px; }
+.tstitle { flex: 1; min-width: 0; }
+.tstitle small { display: block; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #7ad8ff; }
+.tstitle h2 { margin: 0; font: clamp(26px, 7vw, 40px)/1.05 var(--display); color: var(--star); text-shadow: 0 3px 0 #8a5a12, 0 0 24px rgba(255, 216, 107, .35); }
+.tschip { flex: none; font: 15px var(--display); letter-spacing: .14em; padding: 8px 12px; border-radius: 12px; background: rgba(79, 224, 200, .16); border: 2px solid #4fe0c8; color: #c8fff4; }
+.tspads { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 3vw, 28px); max-width: 760px; width: 100%; margin: clamp(10px, 3vh, 28px) auto 0; }
+.tpad { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 30px 8px 14px; border-radius: 24px; min-width: 0;
+  background: linear-gradient(rgba(10, 8, 32, .25), rgba(10, 8, 32, .7)); border: 2px solid rgba(255, 255, 255, .12); }
+.tpad.me { border-color: color-mix(in srgb, var(--star) 60%, transparent); box-shadow: 0 0 30px rgba(255, 216, 107, .12) inset; }
+.tpad.friend { border-style: dashed; }
+.tpad.friend.on { border-style: solid; border-color: #4fe0c8; box-shadow: 0 0 30px rgba(79, 224, 200, .15) inset; }
+.tpad.isready { box-shadow: 0 0 0 3px #7dff8a, 0 0 34px rgba(125, 255, 138, .35); }
+.ttag { position: absolute; top: 8px; left: 10px; font: 13px var(--display); padding: 3px 9px; border-radius: 999px; background: #ffd86b; color: #1a1240; }
+.tpad.friend .ttag { background: #4fe0c8; }
+.tpad canvas { width: 100%; max-width: 190px; aspect-ratio: 4 / 5; height: auto; }
+.tbase { display: block; width: 74%; height: 16px; margin-top: -18px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(122, 216, 255, .55), rgba(122, 216, 255, .08) 70%, transparent); box-shadow: 0 0 22px rgba(122, 216, 255, .35); }
+.tpad.friend:not(.on) .tbase { opacity: .35; }
+.tname { font: clamp(15px, 4vw, 19px) var(--display); color: var(--ink); text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 6px; }
+input.tname { width: 100%; max-width: 12em; background: rgba(4, 2, 12, .55); border: 2px dashed rgba(255, 216, 107, .6); border-radius: 12px; padding: 6px 8px; }
+input.tname:focus { outline: none; border-style: solid; border-color: var(--star); }
+input.tname.todo { animation: namePulse 1.4s ease-in-out infinite; }
+@keyframes namePulse { 50% { border-color: #ff7aa8; box-shadow: 0 0 14px rgba(255, 122, 168, .5); } }
+@media (prefers-reduced-motion: reduce) { input.tname.todo { animation: none; border-color: #ff7aa8; } }
+.tkit { color: var(--muted); font-size: 13px; text-align: center; line-height: 1.35; }
+.tready { font: 13px var(--display); min-height: 1.3em; color: var(--muted); letter-spacing: .04em; }
+.tpad.isready .tready { color: #7dff8a; }
+.tplus { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); font: 64px var(--display); color: rgba(255, 255, 255, .3); pointer-events: none; }
+.tpad.friend.on .tplus { display: none; }
+.tsbody { display: flex; flex-direction: column; gap: 14px; max-width: 560px; width: 100%; margin: 16px auto 0; flex: 1; }
+.teamstatus { margin: 0; text-align: center; color: #d9d0ff; font-size: 16px; line-height: 1.45; min-height: 1.4em; }
 .teamstatus.err { color: #ff9aa8; }
-.teamcode { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 18px; background: rgba(79, 224, 200, .1); border: 2px solid rgba(79, 224, 200, .45); }
+.teamcode { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 18px; background: rgba(79, 224, 200, .1); border: 2px solid rgba(79, 224, 200, .5); }
 .teamcode small { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 12px; }
-.teamcode b { font: 40px var(--display); letter-spacing: .18em; color: #c8fff4; }
+.teamcode b { font: clamp(34px, 11vw, 46px) var(--display); letter-spacing: .18em; color: #c8fff4; }
 .teamlink { font-size: 13px; color: var(--muted); word-break: break-all; text-align: center; }
 .teamjoin { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .teamjoin input { font: 26px var(--display); letter-spacing: .2em; text-transform: uppercase; text-align: center; width: 8.5em; max-width: 100%; padding: 10px 12px;
   border-radius: 16px; border: 2px solid #4fe0c8; background: rgba(4, 2, 12, .7); color: #c8fff4; }
 .teamjoin .play { padding: 12px 24px; font-size: 18px; }
 .teambtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.tbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 18px; cursor: var(--cur-clic);
+.tbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px; border-radius: 18px; cursor: var(--cur-clic);
   font: 15px var(--display); color: var(--ink); background: linear-gradient(#3a5ee8, #2a3fb0); border: 0; box-shadow: 0 5px 0 #18266e; transition: transform .1s; }
-.tbtn span { font-size: 26px; }
+.tbtn span { font-size: 28px; }
 .tbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #18266e; }
 .tbtn:disabled { opacity: .45; cursor: default; filter: grayscale(.6); }
 .tbtn.on { background: linear-gradient(#2fbf9f, #1f8a74); box-shadow: 0 5px 0 #0e4a3e; }
-#teamGo { align-self: center; }
+.tbtn.small { flex-direction: row; padding: 12px 16px; gap: 8px; }
+.tbtn.small span { font-size: 20px; }
+.tsready { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
+.tsgo { min-width: 12em; }
+.tsgo.on { background: #7dff8a; box-shadow: 0 6px 0 #2f9a45, 0 0 40px rgba(125, 255, 138, .5); }
+.tsfoot { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.tscount { position: fixed; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  background: rgba(6, 4, 20, .7); backdrop-filter: blur(4px); }
+.tscount[hidden] { display: none; }
+.tscount b { font: clamp(110px, 32vw, 200px)/1 var(--display); color: var(--star); text-shadow: 0 8px 0 #8a5a12, 0 0 60px rgba(255, 216, 107, .6); animation: countPop .6s ease-out; }
+.tscount small { font: 20px var(--display); color: #c8fff4; }
+@keyframes countPop { from { transform: scale(1.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (max-width: 420px) { .tpad { padding-top: 28px; } .tkit { font-size: 12px; } .tbtn { font-size: 13px; } }
+@media (max-height: 640px) { .tpad canvas { max-width: 120px; } }
+/* partie en équipe sur deux écrans de forme différente : le décor flou remplit les bords */
+#gameFill { position: fixed; inset: -4%; width: 108%; height: 108%; display: none; filter: blur(18px) brightness(.5) saturate(1.3); pointer-events: none; }
+body.fit #gameFill { display: block; }
+body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0, 0, 0, .7); }
 /* Partie à deux : turquoise, la couleur d'Étincelle */
 #menu .duobtn { border-color: #4fe0c8; color: #c8fff4; }
 #menu .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
@@ -923,6 +979,7 @@ body:not(.jeu) .hud { opacity: 0; }
 </head>
 <body>
 
+<canvas id="gameFill" aria-hidden="true"></canvas>
 <canvas id="game" aria-label="Ciel de jeu"></canvas>
 
 <div class="hud">
@@ -988,25 +1045,37 @@ body:not(.jeu) .hud { opacity: 0; }
   </div>
 </div>
 
-<div class="panel" id="team" hidden>
-  <div class="hangar atelier teampanel">
-    <button class="xclose" data-back="teamBack" aria-label="Fermer" title="Fermer">✕</button>
-    <h2>👥 Équipe</h2>
-    <div class="teamslots">
-      <div class="tslot me">
-        <canvas id="teamMe" width="200" height="240" aria-label="Ta fusée"></canvas>
-        <b id="teamMeName"></b><small>Toi</small>
-      </div>
-      <div class="tslot friend" id="teamFriendSlot">
-        <canvas id="teamFriend" width="200" height="240" aria-label="La fusée de ton pote"></canvas>
-        <span class="tplus" aria-hidden="true">+</span>
-        <b id="teamFriendName">Ton pote</b><small id="teamFriendState">Pas encore là</small>
-      </div>
+<div class="teamscreen" id="team" hidden>
+  <div class="tsbg" aria-hidden="true"><i class="beam b1"></i><i class="beam b2"></i><i class="beam b3"></i></div>
+  <header class="tshead">
+    <button type="button" class="tsback" id="teamBack" aria-label="Retour au menu">‹</button>
+    <div class="tstitle"><small id="teamKicker">Mode multijoueur</small><h2 id="teamTitle">Équipe</h2></div>
+    <span class="tschip notypo" id="teamChip" hidden></span>
+  </header>
+  <div class="tspads">
+    <div class="tpad me" id="padMe">
+      <span class="ttag" id="tagMe">J1</span>
+      <canvas id="teamMe" width="240" height="300" aria-label="Ta fusée"></canvas>
+      <i class="tbase" aria-hidden="true"></i>
+      <input class="tname" id="teamMeName" maxlength="16" autocomplete="off" spellcheck="false" aria-label="Nom de ta fusée">
+      <small class="tkit" id="teamMeKit"></small>
+      <b class="tready" id="readyMe"></b>
     </div>
+    <div class="tpad friend" id="teamFriendSlot">
+      <span class="ttag" id="tagFriend">J2</span>
+      <canvas id="teamFriend" width="240" height="300" aria-label="La fusée de ton pote"></canvas>
+      <span class="tplus" aria-hidden="true">+</span>
+      <i class="tbase" aria-hidden="true"></i>
+      <b class="tname" id="teamFriendName">Ton pote</b>
+      <small class="tkit" id="teamFriendState">Pas encore là</small>
+      <b class="tready" id="readyFriend"></b>
+    </div>
+  </div>
+  <div class="tsbody">
     <p class="teamstatus" id="teamStatus"></p>
     <div class="teamcode" id="teamCodeBox" hidden>
       <small>Code de l'équipe</small>
-      <b id="teamCode"></b>
+      <b id="teamCode" class="notypo"></b>
       <span class="teamlink notypo" id="teamLink"></span>
     </div>
     <form class="teamjoin" id="teamJoinForm" hidden>
@@ -1018,13 +1087,16 @@ body:not(.jeu) .hud { opacity: 0; }
       <button type="button" class="tbtn" id="teamJoin"><span aria-hidden="true">🤝</span>Rejoindre</button>
       <button type="button" class="tbtn" id="teamShare" disabled><span aria-hidden="true">📤</span>Partager</button>
     </div>
-    <button type="button" class="play" id="teamGo" hidden>Décoller à deux</button>
-    <div class="row">
+    <div class="tsready" id="teamReadyRow" hidden>
+      <button type="button" class="play tsgo" id="teamReady">Prêt !</button>
+      <button type="button" class="tbtn small" id="teamStory"><span aria-hidden="true">📖</span>Histoire</button>
+    </div>
+    <div class="tsfoot">
       <button type="button" class="toggle" id="teamLocal">Jouer à deux sur le même appareil</button>
       <button type="button" class="toggle" id="teamQuit" hidden>Quitter l'équipe</button>
     </div>
-    <div class="row"><button type="button" class="ghost" id="teamBack">Retour</button></div>
   </div>
+  <div class="tscount" id="teamCount" hidden><b id="teamCountN">3</b><small>Préparez-vous !</small></div>
 </div>
 
 <div class="panel" id="hangar" hidden>
@@ -7937,7 +8009,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (ch.label === 'u') netU = ch; else netR = ch;
     ch.onmessage = e => { let m; try { m = JSON.parse(e.data, netRevive); } catch (err) { return; } netOnMsg(m); };
     if (ch.label === 'r') {
-      ch.onopen = () => { netStatus = 'connected'; netMsg = ''; netHello(); renderTeam(); beep(880, .2, 'triangle', .1, 300); };
+      ch.onopen = () => { netStatus = 'connected'; netMsg = ''; myReady = peerReady = false; netHello(); renderTeam(); beep(880, .2, 'triangle', .1, 300); };
       ch.onclose = () => netDrop();
       if (ch.readyState === 'open') ch.onopen();
     }
@@ -8033,15 +8105,27 @@ body:not(.jeu) .hud { opacity: 0; }
     netHW = w; netHH = h;
     const k = Math.min(innerWidth / w, innerHeight / h);
     Object.assign(cv.style, { width: w + 'px', height: h + 'px', inset: 'auto', left: ((innerWidth - w * k) / 2).toFixed(1) + 'px', top: ((innerHeight - h * k) / 2).toFixed(1) + 'px', transform: `scale(${k})`, transformOrigin: '0 0' });
+    document.body.classList.add('fit');
     if (W !== w || H !== h) resize();
   }
-  function netUnfit() { netHW = netHH = 0; cv.removeAttribute('style'); resize(); }
+  function netUnfit() { netHW = netHH = 0; cv.removeAttribute('style'); document.body.classList.remove('fit'); resize(); }
+  // le décor flou derrière le terrain : une petite copie de l'image du jeu, étirée sur tout l'écran (4 fois par seconde suffit)
+  const fillCv = $('gameFill'), fillCtx = fillCv.getContext('2d');
+  let fillT = 0;
+  function drawFill(t) {
+    if (!netHW || t - fillT < 120) return;
+    fillT = t;
+    const k = Math.max(innerWidth / netHW, innerHeight / netHH), w = 160, h = Math.round(w * innerHeight / innerWidth);
+    if (fillCv.width !== w || fillCv.height !== h) { fillCv.width = w; fillCv.height = h; }
+    const dw = netHW * k * w / innerWidth, dh = netHH * k * h / innerHeight;
+    try { fillCtx.drawImage(cv, (w - dw) / 2, (h - dh) / 2, dw, dh); } catch (e) {}
+  }
   addEventListener('resize', () => { if (netRole === 'guest' && netHW) netFit(netHW, netHH); else if (netRole === 'host' && netHW) netField(); });
-  // l'hôte choisit un terrain entre la forme de son écran et celle du pote (un téléphone en hauteur, un ordinateur en largeur) :
-  // chacun voit une partie plus grande que s'il fallait faire tenir tout l'écran de l'autre
+  // l'hôte prend pour terrain la forme de l'écran le plus en hauteur des deux : un téléphone joue toujours en plein écran,
+  // et l'ordinateur montre ce terrain au milieu, le reste de l'écran flouté
   function netField() {
     if (!netPeer || !(netPeer.vw > 100 && netPeer.vh > 100)) return;
-    const mine = innerWidth / innerHeight, a = Math.sqrt(mine * (netPeer.vw / netPeer.vh));
+    const mine = innerWidth / innerHeight, a = Math.min(mine, netPeer.vw / netPeer.vh);
     let fw = innerWidth, fh = innerHeight;
     if (a < mine) fw = Math.round(fh * a); else fh = Math.round(fw / a);
     if (fw < innerWidth - 4 || fh < innerHeight - 4) netFit(fw, fh); else if (netHW) netUnfit();
@@ -8086,11 +8170,13 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- les messages reçus ---
   function netOnMsg(m) {
     if (m.t === 'hello') {
-      netPeer = { cfg: cleanCfg(m.cfg), name: cleanName(m.name), vw: +m.vw || 0, vh: +m.vh || 0, ...(netRole === 'host' ? peerGun(m.gun) : {}) };
+      netPeer = { cfg: cleanCfg(m.cfg), name: cleanName(m.name), kit: kitOf(m.cfg), vw: +m.vw || 0, vh: +m.vh || 0, ...(netRole === 'host' ? peerGun(m.gun) : {}) };
       if (netRole === 'host' && p2) { p2.gun = netPeer.gun; p2.pow = netPeer.pow; }
       renderTeam();
       return;
     }
+    if (m.t === 'ready') { peerReady = !!m.r; renderTeam(); tryCount(); return; }
+    if (m.t === 'count' && netRole === 'guest') { if (!$('team').hidden) runCount(); return; }
     if (netRole === 'host') {
       if (m.t === 'in' && Array.isArray(m.k)) {
         const c = v => Math.max(-1, Math.min(1, Math.round(Number(v) || 0)));
@@ -8181,7 +8267,7 @@ body:not(.jeu) .hud { opacity: 0; }
     for (const id of ['paused', 'over', 'pauseBtn', 'powerBtn', 'weapons', 'cine', 'sayBubble']) $(id).hidden = true;
     $('againBtn').hidden = false;
     netUnfit(); duo = false; reset();
-    netMsg = 'Ton équipe est revenue au menu. Elle peut relancer une partie.';
+    netMsg = '';
     openTeam();
   }
   // chez le pote, à chaque image : on fait avancer ce qui bouge entre deux nouvelles de l'hôte, et on envoie ses commandes
@@ -8210,22 +8296,38 @@ body:not(.jeu) .hud { opacity: 0; }
     }
   }
 
-  // --- le panneau Équipe ---
+  // --- l'écran Équipe : d'abord Créer / Rejoindre, puis le Hangar d'équipe (les deux pistes, Prêt !, compte à rebours) ---
+  let myReady = false, peerReady = false, countT = 0;
+  const kitOf = c => `${byId(GUNS, c && c.gun).name} · ${byId(POWERS, c && c.power).name}`;
   function openTeam() {
     initAudio();
     for (const id of ['menu', 'over', 'hangar', 'trophies', 'help', 'cinema', 'mapPanel']) $(id).hidden = true;
     state = 'hangar'; $('team').hidden = false;
-    if (netOpen()) netHello();
+    myReady = false; if (netOpen()) { netSend({ t: 'ready', r: false }); netHello(); }
     renderTeam();
   }
   function renderTeam() {
     const on = netOpen() && !!netPeer, host = netRole === 'host';
-    $('teamMeName').textContent = rocketName();
+    $('team').classList.toggle('linked', on);
+    $('teamTitle').textContent = on ? 'Hangar d\'équipe' : 'Équipe';
+    $('teamKicker').textContent = on ? (host ? 'Tu es chef d\'équipe' : 'Tu as rejoint l\'équipe') : 'Mode multijoueur';
+    $('teamChip').hidden = !netCode || !netRole; $('teamChip').textContent = netCode;
+    const inp = $('teamMeName');
+    if (document.activeElement !== inp) inp.value = rocketName();
+    inp.classList.toggle('todo', on && rocketName() === DEFAULT.name);
+    $('teamMeKit').textContent = kitOf(cfg);
+    $('tagMe').textContent = on ? (host ? 'J1 👑' : 'J2') : 'Toi';
+    $('tagFriend').textContent = on ? (host ? 'J2' : 'J1 👑') : 'Ton pote';
     $('teamFriendSlot').classList.toggle('on', on);
     $('teamFriendName').textContent = on ? netPeer.name : 'Ton pote';
     const wait = { creating: 'Création de l\'équipe…', waiting: 'En attente…', joining: 'Connexion…', linking: 'Connexion…' }[netStatus];
-    $('teamFriendState').textContent = on ? (host ? 'Prêt' : 'Chef d\'équipe') : wait || 'Pas encore là';
-    const txt = on ? (host ? 'Ton pote est là ! Lance la partie quand vous êtes prêts.' : 'Tu es dans l\'équipe ! Ton pote va lancer la partie.')
+    $('teamFriendState').textContent = on ? netPeer.kit || '' : wait || 'Pas encore là';
+    $('padMe').classList.toggle('isready', on && myReady);
+    $('teamFriendSlot').classList.toggle('isready', on && peerReady);
+    $('readyMe').textContent = on ? (myReady ? '✓ Prêt' : 'Pas prêt') : '';
+    $('readyFriend').textContent = on ? (peerReady ? '✓ Prêt' : 'Pas prêt') : '';
+    const txt = on ? (rocketName() === DEFAULT.name ? 'Donne un nom à ta fusée (touche son nom), puis appuie sur « Prêt ! ».'
+        : myReady && peerReady ? 'Décollage imminent !' : myReady ? `On attend ${netPeer.name}…` : peerReady ? `${netPeer.name} est prêt. Et toi ?` : 'Appuyez tous les deux sur « Prêt ! » pour décoller.')
       : netStatus === 'creating' ? 'Création de l\'équipe…'
       : netStatus === 'waiting' ? 'Envoie ce code (ou le lien) à ton pote. Il tape le code dans « Rejoindre » sur son appareil.'
       : netStatus === 'joining' || netStatus === 'linking' ? 'Connexion à l\'équipe…'
@@ -8239,20 +8341,63 @@ body:not(.jeu) .hud { opacity: 0; }
     $('teamJoin').classList.toggle('on', netRole === 'guest');
     $('teamShare').disabled = !showCode;
     $('teamBtns').hidden = on;
-    $('teamGo').hidden = !(on && host);
+    if (on) $('teamJoinForm').hidden = true;
+    $('teamReadyRow').hidden = !on;
+    $('teamReady').textContent = myReady ? '✓ Prêt !' : 'Prêt !';
+    $('teamReady').classList.toggle('on', myReady);
+    $('teamReady').disabled = countT > 0;
+    $('teamStory').hidden = !host;
     $('teamQuit').hidden = !netRole;
     $('teamLocal').hidden = !!netRole;
   }
-  // les deux fusées qui flottent côte à côte
+  // les deux fusées qui flottent au-dessus de leur piste
   function drawTeam(t) {
     for (const [id, conf] of [['teamMe', cfg], ['teamFriend', netOpen() && netPeer ? netPeer.cfg : null]]) {
       const c = $(id), k = c.getContext('2d');
       k.clearRect(0, 0, c.width, c.height);
       if (!conf) continue;
-      const g = k.createRadialGradient(100, 120, 10, 100, 120, 110); g.addColorStop(0, 'rgba(255, 216, 107, .18)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      const ready = id === 'teamMe' ? myReady : peerReady, ph = id === 'teamMe' ? 0 : 2;
+      const g = k.createRadialGradient(120, 150, 10, 120, 150, 130); g.addColorStop(0, ready ? 'rgba(125, 255, 138, .22)' : 'rgba(255, 216, 107, .16)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
       k.fillStyle = g; k.fillRect(0, 0, c.width, c.height);
-      drawRocket(k, 100, 110 + Math.sin(t / 500 + (id === 'teamMe' ? 0 : 2)) * 6, 2.1, conf, t, Math.sin(t / 900 + (id === 'teamMe' ? 0 : 1)) * .08, .5);
+      drawRocket(k, 120, 135 + Math.sin(t / 500 + ph) * 7, 2.5, conf, t, Math.sin(t / 900 + ph) * .07, ready ? 1.4 : .5);
     }
+  }
+  function setReady(r) {
+    if (!netOpen() || countT > 0) return;
+    myReady = r; netSend({ t: 'ready', r });
+    beep(r ? 880 : 440, .15, 'triangle', .1, r ? 300 : -100);
+    renderTeam(); tryCount();
+  }
+  // les deux sont prêts : l'hôte lance le compte à rebours chez les deux
+  function tryCount() {
+    if (netRole !== 'host' || !myReady || !peerReady || countT > 0 || $('team').hidden) return;
+    netSend({ t: 'count' }); runCount();
+  }
+  function runCount() {
+    countT = 3; renderTeam();
+    const box = $('teamCount'), n = $('teamCountN');
+    box.hidden = false;
+    const tick = () => {
+      if (countT <= 0 || $('team').hidden && netRole !== 'host') { box.hidden = true; countT = 0; return; }
+      n.textContent = countT; n.style.animation = 'none'; void n.offsetWidth; n.style.animation = '';
+      beep(countT > 1 ? 520 : 880, .18, 'square', .08);
+      countT--;
+      if (countT > 0) setTimeout(tick, 700);
+      else setTimeout(() => { box.hidden = true; if (netRole === 'host') teamLaunch(); }, 700);
+    };
+    tick();
+  }
+  // l'hôte décolle : l'histoire à deux la première fois en ligne (chez les deux), sinon on part tout de suite
+  function teamLaunch() {
+    if (!netOpen() || netRole !== 'host') return;
+    myReady = peerReady = false;
+    $('team').hidden = true; duo = true; initAudio();
+    let seen = false; try { seen = localStorage.getItem('comete-duo-ligne') === '1'; } catch (e) {}
+    if (seen) start();
+    else playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Décoller à deux', end: () => {
+      try { localStorage.setItem('comete-duo-ligne', '1'); localStorage.setItem('comete-duo', '1'); } catch (e) {}
+      duoSeen = true; duo = true; start();
+    } });
   }
   $('teamCreate').onclick = () => { $('teamJoinForm').hidden = true; teamCreate(); };
   $('teamJoin').onclick = () => {
@@ -8266,14 +8411,25 @@ body:not(.jeu) .hud { opacity: 0; }
     try { await navigator.clipboard.writeText(`${text}\n${url}`); netMsg = ''; $('teamStatus').textContent = 'Lien copié ! Colle-le dans un message à ton pote.'; }
     catch (e) { $('teamStatus').textContent = 'Copie le lien affiché sous le code et envoie-le à ton pote.'; }
   };
-  $('teamGo').onclick = () => {
-    if (!netOpen() || netRole !== 'host') return;
-    $('team').hidden = true; duo = true; initAudio();
-    if (duoSeen) start(); else startDuoFilm();
+  $('teamReady').onclick = () => setReady(!myReady);
+  // revoir l'histoire à deux (le chef d'équipe la lance, elle passe chez les deux), puis retour au Hangar d'équipe
+  $('teamStory').onclick = () => {
+    if (netRole !== 'host' || countT > 0) return;
+    myReady = false; netSend({ t: 'ready', r: false });
+    $('team').hidden = true;
+    playFilm(DUO_FILM(`<b>${rocketName()}</b>`), { w: 0, clac: false, go: 'Retour au hangar', replayGo: false, end: () => openTeam() });
   };
+  // changer le nom de sa fusée, directement dans le Hangar d'équipe
+  $('teamMeName').addEventListener('change', e => {
+    const v = e.target.value.replace(/[<>&"]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
+    if (v) { cfg.name = v; saveCfg(); if ($('shipName')) $('shipName').value = v; }
+    if (netOpen()) netHello();
+    renderTeam();
+  });
+  $('teamMeName').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
   $('teamLocal').onclick = () => { $('team').hidden = true; state = 'menu'; playDuo(); };
-  $('teamQuit').onclick = () => { netClose(); netRole = null; netPeer = null; netCode = ''; netStatus = 'idle'; netMsg = ''; $('teamJoinForm').hidden = true; renderTeam(); };
-  $('teamBack').onclick = () => { $('teamJoinForm').hidden = true; closePanels(); };
+  $('teamQuit').onclick = () => { netClose(); netRole = null; netPeer = null; netCode = ''; netStatus = 'idle'; netMsg = ''; myReady = peerReady = false; $('teamJoinForm').hidden = true; renderTeam(); };
+  $('teamBack').onclick = () => { $('teamJoinForm').hidden = true; if (netOpen()) { myReady = false; netSend({ t: 'ready', r: false }); } closePanels(); };
   $('teamJoinInput').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
   // le lien d'invitation : ?equipe=CODE ouvre le panneau Équipe et rejoint tout seul (après avoir nommé sa fusée la 1re fois)
   {
@@ -9862,12 +10018,19 @@ body:not(.jeu) .hud { opacity: 0; }
     if (launchT > 1.2 && launchBeeps === 3) { launchBeeps = 4; beep(70, 1.4, 'sawtooth', .2, 60); beep(140, 1, 'square', .06, 300); }
     // fumée et flammes au décollage
     if (launchT > 1.2 && launchT < 2.8) {
-      const { rx, ry } = launchRocket();
-      const n = reduce ? 1 : 5;
-      for (let i = 0; i < n; i++) {
-        const smoke = launchT < 1.7;
-        lparts.push({ x: rx + (Math.random() - .5) * 14, y: ry + 30, vx: (Math.random() - .5) * (smoke ? 320 : 60), vy: smoke ? 40 + Math.random() * 80 : 220 + Math.random() * 120,
-          life: smoke ? 1 + Math.random() * .6 : .4, r: smoke ? 8 + Math.random() * 10 : 3 + Math.random() * 3, smoke });
+      // à deux : de la fumée sous chacune des deux fusées, chacune dans sa moitié d'écran
+      const sides = launchSplit() ? launchConfs().map(([c], side) => [c, side]) : [[cfg, undefined]];
+      const fullW = W, keep = cfg;
+      for (const [c, side] of sides) {
+        if (side !== undefined) { W = fullW / 2; cfg = c; }
+        const { rx, ry } = launchRocket();
+        W = fullW; cfg = keep;
+        const n = reduce ? 1 : side === undefined ? 5 : 3;
+        for (let i = 0; i < n; i++) {
+          const smoke = launchT < 1.7;
+          lparts.push({ x: rx + (Math.random() - .5) * 14, y: ry + 30, vx: (Math.random() - .5) * (smoke ? 320 : 60) * (side === undefined ? 1 : .6), vy: smoke ? 40 + Math.random() * 80 : 220 + Math.random() * 120,
+            life: smoke ? 1 + Math.random() * .6 : .4, r: smoke ? 8 + Math.random() * 10 : 3 + Math.random() * 3, smoke, side });
+        }
       }
     }
     for (const p of lparts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .97; p.life -= dt; if (p.smoke) p.r += 14 * dt; }
@@ -10654,7 +10817,31 @@ body:not(.jeu) .hud { opacity: 0; }
     }
     ctx.restore();
   }
+  // le style des deux fusées au décollage, la sienne à gauche
+  let launchSide;
+  function launchConfs() {
+    const c1 = netRole === 'guest' && netPeer ? netPeer.cfg : cfg, c2 = p2Conf();
+    return netRole === 'guest' ? [[c2, 1], [c1, 0]] : [[c1, 0], [c2, 1]];
+  }
+  const launchSplit = () => duo && !!p2;
   function drawLaunch(t) {
+    if (!launchSplit()) return drawLaunchOne(t);
+    const fullW = W, keep = cfg, names = netPeer ? (netRole === 'guest' ? [netPeer.name, netMine.name] : [rocketName(), netPeer.name]) : [rocketName(), DUO_NAME];
+    launchConfs().forEach(([c, who], side) => {
+      ctx.save(); ctx.beginPath(); ctx.rect(side * fullW / 2, 0, fullW / 2, H); ctx.clip(); ctx.translate(side * fullW / 2, 0);
+      W = fullW / 2; cfg = c; launchSide = side;
+      try { drawLaunchOne(t); } finally { W = fullW; cfg = keep; launchSide = undefined; ctx.restore(); }
+      // le nom de chaque pilote en haut de sa moitié
+      ctx.save(); ctx.textAlign = 'center'; ctx.font = `${Math.round(Math.min(18, fullW / 26))}px Bungee, Impact, sans-serif`;
+      ctx.lineWidth = 4; ctx.strokeStyle = '#0b0820'; ctx.fillStyle = who ? '#4fe0c8' : '#ffd86b';
+      const label = `${who ? 'J2' : 'J1'} · ${String(names[who] || '').replace(/[<>&"]/g, '')}`;
+      ctx.strokeText(label, side * fullW / 2 + fullW / 4, 118); ctx.fillText(label, side * fullW / 2 + fullW / 4, 118); ctx.restore();
+    });
+    // la séparation entre les deux bases
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255, 216, 107, 0)'); g.addColorStop(.5, 'rgba(255, 216, 107, .8)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+    ctx.fillStyle = g; ctx.fillRect(fullW / 2 - 1.5, 0, 3, H);
+  }
+  function drawLaunchOne(t) {
     const { rx, ry, stationY, lift } = launchRocket();
     ctx.save();
     if (!reduce && launchT > 1.2 && launchT < 2.4) ctx.translate((Math.random() - .5) * 8, (Math.random() - .5) * 8);
@@ -10702,6 +10889,7 @@ body:not(.jeu) .hud { opacity: 0; }
     }
     // fumée et flammes
     for (const p of lparts) {
+      if (p.side !== launchSide) continue;
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life)) * (p.smoke ? .5 : .9);
       ctx.fillStyle = p.smoke ? ({ requin: '#c8fbff', predateur: '#5a3a3a', legende: '#fff2c8', aile: '#f0c89a', ovni: '#b6ff6b', abeille: '#ffe9a0', chevalier: '#f3eefe', galion: '#d6dcea', mecha: '#ff7ad9', cristal: '#e6f9ff', arcade: '#ff4fd8', pixel: '#ffffff', coeur: '#ffd0e4' }[cfg.model] || '#d9d0ff') : flameColsOf(cfg.flame, t)[1];
       if (model === 'pixel' || model === 'arcade') { const z = Math.round(p.r / 4) * 4 * 1.6; ctx.fillRect(Math.round((p.x - z / 2) / 4) * 4, Math.round((p.y - z / 2) / 4) * 4, z, z); }
@@ -11720,6 +11908,7 @@ body:not(.jeu) .hud { opacity: 0; }
     }
     if (netRole === 'host') netHostSend(t);
     if (!$('team').hidden) drawTeam(t);
+    drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
