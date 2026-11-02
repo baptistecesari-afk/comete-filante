@@ -3860,7 +3860,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     devoreur: ['vortex', 'Dévoreur de lumière', '#ff4f6d'],
   };
   // la fusée est-elle protégée (bouclier, pouvoir, clignotement après un coup) ?
-  const playerSafe = () => shield > 0 || player.hurt > 0 || (power.active > 0 && ['hyper', 'supernova', 'miroir'].includes(power.def.id));
+  // une fusée protégée (bouclier, juste touchée, ou son propre pouvoir qui la rend invincible)
+  const playerSafe = (pl = player) => { const pw = powOf(pl); return shield > 0 || pl.hurt > 0 || (pw.active > 0 && ['hyper', 'supernova', 'miroir'].includes(pw.def.id)); };
   function bossTier(it) { return Math.min(2, (it.idx || 0) / 9 + world * .3 + cycle * .3); }
   function sigCooldown(it) { return Math.max(5.5, 12 - (it.idx || 0) * .5 - world * .7); }
   function startSig(it) {
@@ -3893,17 +3894,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (first) P.started = true;
     const lock = P.kind === 'dash' || P.kind === 'teleport';
     if (g < 0) { if (P.kind === 'teleport') it.alpha = 1 - P.t / P.warn; return lock; }
-    const hit = () => { if (!playerSafe()) { hitPlayer(); return true; } return false; };
+    // les attaques spéciales du boss touchent les deux fusées
+    const hit = pl => { if (!playerSafe(pl)) { hitPlayer(pl); return true; } return false; };
     const k = P.kind;
     if (k === 'summon' && first) {
       for (let i = 0; i < 2 + Math.round(tier * 1.5); i++) items.push({ kind: 'alien', type: 'chaser', sp: pickSpecies('chaser'), mini: true, x: it.x + (i - 1) * 40, y: it.y + 30, r: 12, hp: 1 + Math.round(tier), pts: 15, vy: 110, t: Math.random() * 9, hitT: 0 });
     } else if (k === 'mines' && first) {
       for (let i = 0; i < 3 + Math.round(tier * 2); i++) shot(it.x, it.y + 20, (Math.random() - .5) * 260, 60 + Math.random() * 80, P.col, 9, { fuse: 1.4 + Math.random() * .6, fn: 6 + Math.round(tier * 3), fs: 150 * bs, fc: P.col });
     } else if (k === 'laser' || k === 'pillars') {
-      for (const x of d.xs) if (Math.abs(player.x - x) < (k === 'laser' ? 13 : 16) && (k === 'pillars' || player.y > it.y) && hit()) return true;
+      for (const x of d.xs) for (const pl of rockets()) if (Math.abs(pl.x - x) < (k === 'laser' ? 13 : 16) && (k === 'pillars' || pl.y > it.y) && hit(pl)) return true;
     } else if (k === 'storm') {
       if (first) shake = .2;
-      for (const q of d.pts) if (Math.hypot(player.x - q.x, player.y - q.y) < 42 && hit()) return true;
+      for (const q of d.pts) for (const pl of rockets()) if (Math.hypot(pl.x - q.x, pl.y - q.y) < 42 && hit(pl)) return true;
     } else if (k === 'meteor' && first) {
       for (const x of d.xs) shot(x, -20, 0, (300 + tier * 60), P.col, 12);
     } else if (k === 'wall' && first) {
@@ -3927,7 +3929,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (it.aimT2 === undefined || it.aimT2 <= 0) { it.spin = (it.spin || 0) + .35; const arms = 2 + Math.round(tier); for (let j = 0; j < arms; j++) { const a = it.spin + j / arms * Math.PI * 2; shot(it.x, it.y, Math.cos(a) * 170 * bs, Math.sin(a) * 170 * bs, P.col, 5); } it.aimT2 = .11; }
       it.aimT2 -= sp;
     } else if (k === 'snake') {
-      if (it.aimT2 === undefined || it.aimT2 <= 0) { const a = Math.atan2(player.y - it.y, player.x - it.x), off = Math.sin(g * 9) * .5; shot(it.x, it.y + 20, Math.cos(a + off) * 230 * bs, Math.sin(a + off) * 230 * bs, P.col, 6); it.aimT2 = .09; }
+      if (it.aimT2 === undefined || it.aimT2 <= 0) { const a = Math.atan2(nearest(it.x, it.y).y - it.y, nearest(it.x, it.y).x - it.x), off = Math.sin(g * 9) * .5; shot(it.x, it.y + 20, Math.cos(a + off) * 230 * bs, Math.sin(a + off) * 230 * bs, P.col, 6); it.aimT2 = .09; }
       it.aimT2 -= sp;
     } else if (k === 'wave') {
       const rings = 1 + Math.round(tier / 1.2);
@@ -3944,8 +3946,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     } else if (k === 'sweep') {
       const q = Math.min(1, g / SIG_DUR.sweep), a = Math.PI / 2 + d.dir * (d.a0 - q * 2 * d.a0) * 2.2;
       d.a = a;
-      const dx = player.x - it.x, dy = player.y - it.y, along = dx * Math.cos(a) + dy * Math.sin(a), side = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
-      if (along > 0 && side < 12 && hit()) return true;
+      for (const pl of rockets()) {
+        const dx = pl.x - it.x, dy = pl.y - it.y, along = dx * Math.cos(a) + dy * Math.sin(a), side = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
+        if (along > 0 && side < 12 && hit(pl)) return true;
+      }
     } else if (k === 'heal') {
       it.hp = Math.min(it.maxHp, it.hp + it.maxHp * (.05 + tier * .02) * sp / SIG_DUR.heal);
     } else if (k === 'shrink') {
@@ -4197,7 +4201,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function strokeLine(c, w, pts) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke(); }
   // tirs avec options : ax/ay (accélération), pre puis wait (avance, s'arrête, repart), fuse/fn/fs/fc (explose en anneau), sq (carré)
   function shot(x, y, vx, vy, c, s, o) { const b = { x, y, vx, vy, c, s, ...o }; ebullets.push(b); return b; }
-  function aimed(x, y, sp, c, s, o, spread = 0) { const a = Math.atan2(player.y - y, player.x - x) + spread; return shot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s, o); }
+  function aimed(x, y, sp, c, s, o, spread = 0) { const a = Math.atan2(nearest(x, y).y - y, nearest(x, y).x - x) + spread; return shot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s, o); }
   function ringO(x, y, n, sp, off, c, s, o) { for (let i = 0; i < n; i++) { const a = off + i / n * Math.PI * 2; shot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s, o); } }
   function wall(y, gaps, sp, c, step = 34, o) {
     const n = Math.floor(W / step);
@@ -4216,7 +4220,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     it.aimT = every;
   }
   const clampX = x => Math.max(60, Math.min(W - 60, x));
-  const playerAng = (x, y) => Math.atan2(player.y - y, player.x - x);
+  const playerAng = (x, y) => Math.atan2(nearest(x, y).y - y, nearest(x, y).x - x);
   // la cinématique dessine le boss en (0, 0) : on n'y dessine pas ce qui dépend de sa vraie position
   const inCine = it => it.x === 0 && it.y === 0;
   const HYDRA_HEADS = [[-42, -14], [0, -36], [42, -14]];
@@ -4448,7 +4452,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       quote: 'Sssplash ! Tu vas prendre un bain de lave !', desc: 'Zigzague très vite et lance des boules de lave en cloche.',
       move(it, sp, bs, dt, sweep) {
         sweep(1.3, 60); it.y = 150 + Math.sin(it.t * 3) * 25;
-        if (it.fireT <= 0) { for (let i = 0; i < 3; i++) shot(it.x, it.y, (player.x - it.x) * (.35 + i * .15) + (Math.random() - .5) * 60, -230, '#ff7b2a', 7, { ay: 380 * bs }); it.fireT = 1.3; beep(180, .2, 'sine', .08, 200); }
+        if (it.fireT <= 0) { for (let i = 0; i < 3; i++) shot(it.x, it.y, (nearest(it.x, it.y).x - it.x) * (.35 + i * .15) + (Math.random() - .5) * 60, -230, '#ff7b2a', 7, { ay: 380 * bs }); it.fireT = 1.3; beep(180, .2, 'sine', .08, 200); }
         if (it.aimT <= 0) { aimed(it.x, it.y + 20, 280 * bs, '#ffd86b', 4); it.aimT = .6; }
       },
       draw(it, t, wob) {
@@ -5023,7 +5027,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, w = Math.sin(it.t * 3 + i) * 10 * wob; strokeLine(i % 2 ? '#3a1a5a' : '#5b3a9e', 7, [[Math.cos(a) * 34, Math.sin(a) * 30], [Math.cos(a) * 56 + w, Math.sin(a) * 52 - w], [Math.cos(a + .3) * 74, Math.sin(a + .3) * 66]]); }
         ctx.shadowColor = '#c86bff'; ctx.shadowBlur = it.pre > 0 ? 40 : 24; ell(0, 0, 40, 34, '#1a0a2a'); ctx.shadowBlur = 0;
         ell(0, 0, 32, 26, '#e8e2ff');
-        const dx = player.x - it.x, dy = player.y - it.y, dd = Math.hypot(dx, dy) || 1;
+        const dx = nearest(it.x, it.y).x - it.x, dy = nearest(it.x, it.y).y - it.y, dd = Math.hypot(dx, dy) || 1;
         ell(dx / dd * 9, dy / dd * 7, 15, 15, '#c86bff'); ell(dx / dd * 9, dy / dd * 7, 6, it.pre > 0 || it.sweepT > 0 ? 13 : 6, '#0b0820');
       } },
     { id: 'devoreur', name: 'Le Dévoreur d\'étoiles', place: 'Cœur du Néant', col: '#ff4f6d', r: 56,
@@ -6962,7 +6966,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function aimShot(x, y, sp, c, s) { aimAt(x, y, player.x, player.y, sp, c, s); }
   function ring(x, y, n, sp, off, c, s) { for (let i = 0; i < n; i++) { const a = off + i / n * Math.PI * 2; eshot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s); } }
   function fan(x, y, n, arc, sp, c, s, aimed = true) {
-    const base = aimed ? Math.atan2(player.y - y, player.x - x) : Math.PI / 2;
+    const base = aimed ? Math.atan2(nearest(x, y).y - y, nearest(x, y).x - x) : Math.PI / 2;
     for (let i = 0; i < n; i++) { const a = base + (n === 1 ? 0 : (i / (n - 1) - .5) * arc); eshot(x, y, Math.cos(a) * sp, Math.sin(a) * sp, c, s); }
   }
 
@@ -7034,7 +7038,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     switch (it.type) {
       case 'chaser': {
         it.y += it.vy * speed * sp;
-        const dx = player.x - it.x;
+        const dx = nearest(it.x, it.y).x - it.x;
         it.x += Math.sign(dx) * Math.min(Math.abs(dx), 110 * sp);
         break;
       }
@@ -7056,7 +7060,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
             it.wait -= sp;
             if (it.wait <= 0) {
               it.dash = true;
-              const dx = player.x - it.x, dy = player.y - it.y, d = Math.hypot(dx, dy) || 1;
+              const dx = nearest(it.x, it.y).x - it.x, dy = nearest(it.x, it.y).y - it.y, d = Math.hypot(dx, dy) || 1;
               it.vx = dx / d * 480; it.vy = dy / d * 480;
               beep(700, .25, 'sawtooth', .06, -500);
             }
@@ -7111,7 +7115,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           if (it.aimT <= 0) { eshot(it.x, it.y + 16, 0, 720, '#bfe6ff', 6); it.aimT = .025; }
           if (it.beam <= 0) it.fireT = 2.4;
         } else {
-          const dx = player.x - it.x;
+          const dx = nearest(it.x, it.y).x - it.x;
           it.x += Math.sign(dx) * Math.min(Math.abs(dx), 70 * sp);
           it.fireT -= sp;
           if (it.fireT <= 0 && it.y > 40) { it.charge = 1; beep(600, .3, 'sine', .04, 600); }
@@ -7124,7 +7128,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         it.x = Math.max(30, Math.min(W - 30, it.x + Math.cos(it.t * 1.3) * 60 * sp));
         it.fireT -= sp;
         if (it.fireT <= 0 && it.y > 40 && it.y < player.y - 80) {
-          const a0 = Math.atan2(player.y - it.y, player.x - it.x);
+          const a0 = Math.atan2(nearest(it.x, it.y).y - it.y, nearest(it.x, it.y).x - it.x);
           for (let i = 0; i < 5; i++) { const a = a0 + (i / 4 - .5) * .9; shot(it.x, it.y + 12, Math.cos(a) * 170, Math.sin(a) * 170, '#e6f9ff', 7, { chill: 2.2, flake: true }); }
           it.fireT = 2.4; beep(1100, .3, 'sine', .04, 500);
         }
@@ -7137,7 +7141,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         it.fireT -= sp;
         if (it.fireT <= 0 && it.y > 40 && it.y < player.y - 120) {
           const g = 420, v0 = 260, dy = player.y - 40 - it.y, tt = (v0 + Math.sqrt(v0 * v0 + 2 * g * dy)) / g;
-          shot(it.x, it.y - 10, Math.max(-220, Math.min(220, (player.x - it.x) / tt)), -v0, '#ff7b2a', 8, { ay: g, fuse: tt * .92, fn: 7, fs: 150, fc: '#ffb020' });
+          shot(it.x, it.y - 10, Math.max(-220, Math.min(220, (nearest(it.x, it.y).x - it.x) / tt)), -v0, '#ff7b2a', 8, { ay: g, fuse: tt * .92, fn: 7, fs: 150, fc: '#ffb020' });
           it.fireT = 2.6; beep(120, .35, 'sawtooth', .07, 80);
         }
         break;
@@ -7256,7 +7260,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         if (it.breath > 0) {
           it.breath -= sp;
           if (it.aimT <= 0) {
-            const a = Math.atan2(player.y - it.y, player.x - it.x) + (Math.random() - .5) * .5, v = (260 + Math.random() * 80) * bs;
+            const a = Math.atan2(nearest(it.x, it.y).y - it.y, nearest(it.x, it.y).x - it.x) + (Math.random() - .5) * .5, v = (260 + Math.random() * 80) * bs;
             eshot(it.x, it.y + 30, Math.cos(a) * v, Math.sin(a) * v, Math.random() < .5 ? '#ff9a3c' : '#ff4f6d', 5);
             it.aimT = .05;
           }
@@ -7775,7 +7779,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         ctx.shadowBlur = 0; ctx.fillStyle = '#f3eefe'; ctx.beginPath(); ctx.arc(0, 0, 33, 0, 7); ctx.fill(); volume(33, 0, 0, false);
         ctx.strokeStyle = 'rgba(255, 79, 109, .55)'; ctx.lineWidth = 1.5;
         for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 33, Math.sin(a) * 33); ctx.quadraticCurveTo(Math.cos(a + .3) * 26, Math.sin(a + .3) * 26, Math.cos(a) * 20, Math.sin(a) * 20); ctx.stroke(); }
-        const dx = player.x - it.x, dy = player.y - it.y, dd = Math.hypot(dx, dy) || 1;
+        const dx = nearest(it.x, it.y).x - it.x, dy = nearest(it.x, it.y).y - it.y, dd = Math.hypot(dx, dy) || 1;
         const ix = dx / dd * 12, iy = dy / dd * 12;
         ctx.fillStyle = '#ff4f6d'; ctx.beginPath(); ctx.arc(ix, iy, 16, 0, 7); ctx.fill();
         ctx.fillStyle = '#0b0820'; ctx.beginPath(); ctx.arc(ix, iy, 7 + (it.burstT > 0 ? 3 : 0), 0, 7); ctx.fill();
@@ -7973,12 +7977,19 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (let i = 0; i < 4; i++) { const a = i * 1.6, d = it.r * .7; setTimeout(() => { if (state === 'play') explode(it.x + Math.cos(a) * d, it.y + Math.sin(a) * d, it.def.col, 1.4); }, 120 + i * 140); }
       shake = .6; flash = .5; flashColor = '200, 255, 210';
       ebullets = [];
-      const bonus = lives < lifeCap();
-      if (bonus) { lives++; lifeWon(); }
+      // partie à deux : le coéquipier K.O. revient avec un seul cœur, et la vie bonus va à ceux qui ont tenu
+      const two = duo && p2, back = two ? [player, p2].filter(pl => pl.ko) : [];
+      let bonus = false;
+      for (const pl of two ? [player, p2].filter(pl => !pl.ko) : [player]) {
+        if (pl === p2) { if (p2.lives < lifeCap()) { p2.lives++; bonus = true; } }
+        else if (lives < lifeCap()) { lives++; bonus = true; }
+      }
+      if (bonus) lifeWon();
+      for (const pl of back) revive(pl);
       run.bosses++; if (run.bosses >= 2) feat('boss2'); if (run.bosses >= 5) feat('boss5');
       if (netRole === 'host') netSend({ t: 'beaten', id: it.def.id, open: Math.max(worldsOpen, bossInWorld >= 9 && world < WORLDS.length - 1 ? world + 2 : 0) });
       if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
-      showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
+      showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : '') + back.map(pl => ` · ${duoName(pl)} revient`).join(''));
       // sa réplique de défaite et la réaction à bord : en entier la première fois, ensuite juste sa réplique
       const tk = TALK[it.def.id];
       $('sayBubble').hidden = true; sayLeft = 0;
@@ -8053,6 +8064,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     pl.x = -600; pl.y = H + 600; pl.vx = pl.vy = 0;
     if (pl === player) { mouseFire = btnFire = false; reload = null; }
     showBanner(`${duoName(pl)} est K.O. !`, `${duoName(other)} doit tenir seul pour l'équipe`);
+    updateHud();
+  }
+
+  // après un boss battu : la fusée K.O. revient en bas de l'écran avec un seul cœur (et un court moment d'invincibilité)
+  function revive(pl) {
+    pl.ko = false; pl.hurt = 2; pl.chill = 0;
+    pl.x = W * (pl === p2 ? .62 : .38); pl.y = H * .78; pl.vx = pl.vy = 0; pl.tilt = 0;
+    if (pl === p2) { p2.lives = 1; p2.reload = 0; p2.ammo = (p2.gun || gun).mag; } else { lives = 1; reload = null; ammo = gun.mag; target = null; }
+    burst(pl.x, pl.y, '#ff7aa8', 30, 240); burst(pl.x, pl.y, '#ffd86b', 20, 180);
+    pop(pl.x, pl.y - 40, `${duoName(pl)} revient · 1 ❤`, '#ff7aa8');
+    beep(523, .12, 'triangle', .1); setTimeout(() => beep(784, .12, 'triangle', .1), 100); setTimeout(() => beep(1046, .3, 'triangle', .1, 200), 200);
     updateHud();
   }
 
