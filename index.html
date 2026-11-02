@@ -10270,105 +10270,323 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     { hull: ['#5ad86b', '#1f6a2a', '#0f3a1a'], tower: '#2f9a3a', jet: '182, 255, 107', win: '#d8ff6b', line: '#0f4a24' },
     { hull: ['#2a1a40', '#140a24', '#05020c'], tower: '#1a0f2e', jet: '200, 107, 255', win: '#c86bff', line: '#c86bff' },
   ];
+
+  // ===== Vaisseaux du décor, dessinés comme de vraies maquettes =====
+  // chaque vaisseau est peint une seule fois dans une image (plaques de coque, ombres, reflets, hublots),
+  // puis réutilisé ; seuls les feux, les réacteurs et ce qui bouge sont dessinés à chaque image.
+  // La lumière vient d'en haut à gauche, comme sur les planètes.
+  const shipCache = {};
+  function shipSprite(key, w, h, paint) {
+    if (shipCache[key]) return shipCache[key];
+    const Q = 3, c = document.createElement('canvas');
+    c.width = Math.ceil(w * Q); c.height = Math.ceil(h * Q);
+    const k = c.getContext('2d'); k.scale(Q, Q); k.translate(w / 2, h / 2);
+    // un hasard fixe par vaisseau : la même maquette à chaque fois
+    let s = 0; for (const ch of key) s = (s * 31 + ch.charCodeAt(0)) >>> 0;
+    const R = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    paint(k, R);
+    return (shipCache[key] = { c, w, h });
+  }
+  const blit = (sp, x = 0, y = 0, sc = 1) => ctx.drawImage(sp.c, x - sp.w * sc / 2, y - sp.h * sc / 2, sp.w * sc, sp.h * sc);
+  // feuille de la jungle : forme pointue, dégradé de lumière, nervure centrale et petites nervures
+  const leafSprite = col => shipSprite('leaf' + col, 24, 12, k => {
+    const leaf = () => { k.beginPath(); k.moveTo(-10, 0); k.quadraticCurveTo(-2, -6.5, 10, 0); k.quadraticCurveTo(-2, 6.5, -10, 0); k.closePath(); };
+    k.fillStyle = col; leaf(); k.fill(); lightOn(k, 0, -5, 0, 5, .35, .55);
+    k.strokeStyle = 'rgba(10, 40, 15, .55)'; k.lineWidth = .5; k.beginPath(); k.moveTo(-11.5, .4); k.lineTo(9, 0);
+    for (let i = -6; i <= 5; i += 2.6) { k.moveTo(i, 0); k.lineTo(i + 2.6, -3); k.moveTo(i, 0); k.lineTo(i + 2.6, 3); }
+    k.stroke();
+  });
+  // lumière et ombre posées sur une forme déjà remplie (haut éclairé, bas dans l'ombre)
+  function lightOn(k, x0, y0, x1, y1, lit = .32, dark = .6) {
+    k.save(); k.globalCompositeOperation = 'source-atop';
+    const g = k.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, `rgba(255, 255, 255, ${lit})`); g.addColorStop(.45, 'rgba(255, 255, 255, 0)'); g.addColorStop(.55, 'rgba(0, 0, 0, 0)'); g.addColorStop(1, `rgba(0, 0, 0, ${dark})`);
+    k.fillStyle = g; k.fillRect(-2000, -2000, 4000, 4000); k.restore();
+  }
+  // plaques de coque : petits rectangles un peu plus clairs ou plus sombres, et quelques joints
+  function plates(k, R, x0, y0, w, h, n, size) {
+    k.save(); k.globalCompositeOperation = 'source-atop';
+    for (let i = 0; i < n; i++) {
+      const pw = size * (.6 + R() * 1.8), ph = size * (.3 + R() * .8), x = x0 + R() * w, y = y0 + R() * h;
+      k.fillStyle = R() < .5 ? `rgba(255, 255, 255, ${.02 + R() * .05})` : `rgba(0, 0, 0, ${.04 + R() * .09})`;
+      k.fillRect(x, y, pw, ph);
+      if (R() < .3) { k.fillStyle = 'rgba(0, 0, 0, .25)'; k.fillRect(x, y + ph, pw, .35); }
+    }
+    k.restore();
+  }
+  const metal = (k, y0, y1, cols) => { const g = k.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, cols[0]); g.addColorStop(.5, cols[1]); g.addColorStop(1, cols[2]); return g; };
+
+  // croiseur à coque de métal (mondes 1 à 3) : long fuseau, superstructure en gradins, passerelle, trois tuyères
+  function paintHull(k, R, L, h, P, w) {
+    // tuyères
+    for (const yy of [-h * .2, 0, h * .2]) {
+      k.fillStyle = metal(k, yy - h * .1, yy + h * .1, ['#9a96a8', '#4a4658', '#16141f']);
+      k.beginPath(); k.moveTo(-L * .44, yy - h * .08); k.lineTo(-L * .53, yy - h * .11); k.lineTo(-L * .53, yy + h * .11); k.lineTo(-L * .44, yy + h * .08); k.closePath(); k.fill();
+      k.fillStyle = '#0a0812'; k.fillRect(-L * .535, yy - h * .09, L * .012, h * .18);
+    }
+    // coque principale
+    const hull = () => {
+      k.beginPath(); k.moveTo(L * .5, h * .02);
+      k.quadraticCurveTo(L * .36, -h * .2, L * .12, -h * .27); k.lineTo(-L * .38, -h * .33); k.lineTo(-L * .46, -h * .25);
+      k.lineTo(-L * .46, h * .25); k.lineTo(-L * .38, h * .33); k.lineTo(L * .12, h * .27); k.quadraticCurveTo(L * .36, h * .2, L * .5, h * .02); k.closePath();
+    };
+    k.fillStyle = metal(k, -h * .33, h * .33, P.hull); hull(); k.fill();
+    k.save(); hull(); k.clip();
+    // joints de plaques : longues lignes fines et quelques panneaux à peine plus clairs ou plus sombres
+    plates(k, R, -L * .46, -h * .33, L * .9, h * .66, 40, L * .05);
+    for (const yy of [-.22, -.06, .08, .2]) {
+      k.fillStyle = 'rgba(0, 0, 0, .22)'; k.fillRect(-L * .46, h * yy, L * .96, .35);
+      k.fillStyle = 'rgba(255, 255, 255, .1)'; k.fillRect(-L * .46, h * yy + .35, L * .96, .3);
+      for (let x = -L * .44; x < L * .4; x += L * (.03 + R() * .05)) { k.fillStyle = 'rgba(0, 0, 0, .18)'; k.fillRect(x, h * yy, .35, h * .14); }
+    }
+    // bande sombre du hangar sous la coque, et lignes de hublots allumés
+    k.fillStyle = 'rgba(0, 0, 0, .35)'; k.fillRect(-L * .3, h * .1, L * .45, h * .07);
+    for (const [yy, n] of [[-h * .12, 34], [h * .02, 26]]) for (let i = 0; i < n; i++) {
+      if (R() < .35) continue;
+      k.fillStyle = R() < .8 ? P.win : '#ffffff'; k.globalAlpha = .55 + R() * .45;
+      k.fillRect(-L * .4 + i * L * .021, yy, L * .008, h * .022);
+    }
+    k.globalAlpha = 1;
+    k.restore();
+    lightOn(k, 0, -h * .33, 0, h * .33, .35, .65);
+    // superstructure en gradins
+    const deck = (x0, x1, y0, y1, col) => {
+      k.fillStyle = metal(k, y1, y0, [col, P.hull[1], P.hull[2]]); k.fillRect(x0, y1, x1 - x0, y0 - y1);
+      k.fillStyle = 'rgba(255, 255, 255, .35)'; k.fillRect(x0, y1, x1 - x0, .6);
+      k.fillStyle = 'rgba(0, 0, 0, .35)'; k.fillRect(x0, y0 - .8, x1 - x0, .8);
+    };
+    deck(-L * .36, L * .02, -h * .3, -h * .4, P.hull[0]);
+    deck(-L * .34, -L * .1, -h * .39, -h * .48, P.tower);
+    // passerelle de commandement, avec sa vitre éclairée et une antenne
+    deck(-L * .31, -L * .2, -h * .47, -h * .6, P.hull[0]);
+    k.fillStyle = metal(k, -h * .68, -h * .6, [P.hull[0], P.tower, P.hull[2]]);
+    k.beginPath(); k.moveTo(-L * .33, -h * .6); k.lineTo(-L * .315, -h * .68); k.lineTo(-L * .19, -h * .68); k.lineTo(-L * .175, -h * .6); k.closePath(); k.fill();
+    k.fillStyle = P.win; k.globalAlpha = .9; k.fillRect(-L * .3, -h * .655, L * .1, h * .02); k.globalAlpha = 1;
+    k.strokeStyle = P.hull[0]; k.lineWidth = .7; k.beginPath(); k.moveTo(-L * .25, -h * .68); k.lineTo(-L * .25, -h * .82); k.moveTo(-L * .265, -h * .76); k.lineTo(-L * .235, -h * .76); k.stroke();
+    // petits détails sur le pont : tourelles et radômes
+    for (let i = 0; i < 7; i++) {
+      const x = -L * .08 + i * L * .07, top = -h * (.29 - i * .01);
+      k.fillStyle = metal(k, top - h * .06, top, [P.hull[0], P.hull[1], P.hull[2]]);
+      if (i % 3 === 1) { k.beginPath(); k.arc(x, top, h * .045, Math.PI, 0); k.fill(); }
+      else { k.fillRect(x - L * .012, top - h * .04, L * .024, h * .04); k.fillStyle = P.hull[2]; k.fillRect(x, top - h * .07, L * .018, h * .012); }
+    }
+    // arête éclairée sur le dessus, ombre fine dessous
+    k.strokeStyle = 'rgba(255, 255, 255, .45)'; k.lineWidth = .6;
+    k.beginPath(); k.moveTo(L * .48, -h * .01); k.quadraticCurveTo(L * .36, -h * .2, L * .12, -h * .27); k.lineTo(-L * .38, -h * .33); k.stroke();
+    if (w === 1) {
+      // Givre : coque gelée, grandes aiguilles de glace translucides
+      for (let i = 0; i < 9; i++) {
+        const x = -L * .4 + i * L * .09 + R() * L * .02, top = -h * (.33 - Math.max(0, x / L) * .2), len = h * (.25 + R() * .45);
+        const g = k.createLinearGradient(x, top, x, top - len); g.addColorStop(0, 'rgba(159, 216, 240, .95)'); g.addColorStop(1, 'rgba(255, 255, 255, .85)');
+        k.fillStyle = g; k.beginPath(); k.moveTo(x - L * .015, top + 1); k.lineTo(x + L * .004, top - len); k.lineTo(x + L * .015, top + 1); k.closePath(); k.fill();
+        k.fillStyle = 'rgba(79, 143, 200, .45)'; k.beginPath(); k.moveTo(x + L * .004, top - len); k.lineTo(x + L * .015, top + 1); k.lineTo(x + L * .002, top + 1); k.closePath(); k.fill();
+      }
+      k.save(); hull(); k.clip(); k.globalCompositeOperation = 'source-atop';
+      for (let i = 0; i < 60; i++) { k.fillStyle = `rgba(255, 255, 255, ${.08 + R() * .2})`; k.beginPath(); k.arc(-L * .46 + R() * L * .9, -h * .33 + R() * h * .25, R() * L * .012, 0, 7); k.fill(); }
+      k.restore();
+    }
+  }
+
+  // Jungle : une cosse géante vivante, nervurée, avec ses feuilles et ses bulles lumineuses
+  function paintPod(k, R, L, h, P) {
+    for (const sd of [-1, 1]) {
+      const g = k.createLinearGradient(-L * .1, 0, -L * .1, sd * h * .8);
+      g.addColorStop(0, '#2f7a3a'); g.addColorStop(1, '#0f3a1a');
+      k.fillStyle = g; k.beginPath(); k.ellipse(-L * .12, sd * h * .52, L * .3, h * .2, sd * .32, 0, 7); k.fill();
+      k.strokeStyle = 'rgba(182, 255, 107, .35)'; k.lineWidth = .7;
+      k.beginPath(); k.moveTo(-L * .38, sd * h * .4); k.quadraticCurveTo(-L * .1, sd * h * .5, L * .14, sd * h * .66); k.stroke();
+      for (let i = 0; i < 6; i++) { const x = -L * .32 + i * L * .08; k.beginPath(); k.moveTo(x, sd * (h * .43 + i * h * .025)); k.lineTo(x + L * .04, sd * (h * .6 + i * h * .02)); k.stroke(); }
+    }
+    const pod = () => { k.beginPath(); k.ellipse(0, 0, L * .5, h * .42, 0, 0, 7); };
+    const g = k.createRadialGradient(-L * .12, -h * .2, h * .05, 0, 0, L * .5);
+    g.addColorStop(0, P.hull[0]); g.addColorStop(.5, P.hull[1]); g.addColorStop(1, P.hull[2]);
+    k.fillStyle = g; pod(); k.fill();
+    k.save(); pod(); k.clip();
+    // nervures et taches de la peau
+    for (let i = -4; i <= 4; i++) {
+      k.strokeStyle = `rgba(10, 40, 18, ${.35 + R() * .2})`; k.lineWidth = 1.2;
+      k.beginPath(); k.moveTo(-L * .5, i * h * .1); k.bezierCurveTo(-L * .2, i * h * .13, L * .2, i * h * .12, L * .5, i * h * .03); k.stroke();
+      k.strokeStyle = 'rgba(200, 255, 150, .12)'; k.lineWidth = .6;
+      k.beginPath(); k.moveTo(-L * .5, i * h * .1 - 1.2); k.bezierCurveTo(-L * .2, i * h * .13 - 1.2, L * .2, i * h * .12 - 1.2, L * .5, i * h * .03 - 1.2); k.stroke();
+    }
+    for (let i = 0; i < 70; i++) { k.fillStyle = R() < .5 ? `rgba(15, 58, 26, ${.15 + R() * .25})` : `rgba(216, 255, 107, ${.05 + R() * .1})`; k.beginPath(); k.ellipse(-L * .5 + R() * L, -h * .4 + R() * h * .8, R() * L * .02, R() * h * .03, R() * 3, 0, 7); k.fill(); }
+    k.restore();
+    lightOn(k, 0, -h * .42, 0, h * .42, .25, .55);
+    k.strokeStyle = 'rgba(230, 255, 200, .35)'; k.lineWidth = .8; k.beginPath(); k.ellipse(0, 0, L * .49, h * .41, 0, Math.PI * 1.1, Math.PI * 1.7); k.stroke();
+  }
+
+  // Néant : un monolithe d'obsidienne taillé en losange, avec ses facettes qui accrochent la lumière
+  function paintMonolith(k, R, L, h, P) {
+    const pts = [[L * .5, 0], [L * .05, -h * .62], [-L * .5, 0], [L * .05, h * .62]];
+    const faces = [[0, 1, '#2e2244'], [1, 2, '#1a1028'], [2, 3, '#07040e'], [3, 0, '#120a1e']];
+    for (const [a, b, col] of faces) { k.fillStyle = col; k.beginPath(); k.moveTo(L * .02, 0); k.lineTo(...pts[a]); k.lineTo(...pts[b]); k.closePath(); k.fill(); }
+    k.save(); k.beginPath(); pts.forEach((p, i) => i ? k.lineTo(...p) : k.moveTo(...p)); k.closePath(); k.clip();
+    for (let i = 0; i < 18; i++) { k.strokeStyle = `rgba(200, 107, 255, ${.04 + R() * .1})`; k.lineWidth = .5; const x = -L * .5 + R() * L, y = -h * .6 + R() * h * 1.2; k.beginPath(); k.moveTo(x, y); k.lineTo(x + (R() - .5) * L * .3, y + (R() - .5) * h * .4); k.stroke(); }
+    k.restore();
+    k.strokeStyle = 'rgba(220, 180, 255, .55)'; k.lineWidth = .8; k.beginPath(); k.moveTo(-L * .5, 0); k.lineTo(L * .05, -h * .62); k.lineTo(L * .5, 0); k.stroke();
+    k.strokeStyle = 'rgba(200, 107, 255, .25)'; k.beginPath(); k.moveTo(L * .02, 0); pts.forEach(p => { k.moveTo(L * .02, 0); k.lineTo(...p); }); k.stroke();
+  }
+
+  const jetHex = P => '#' + P.jet.split(',').map(v => (+v).toString(16).padStart(2, '0')).join('');
   function drawCruiser(o) {
     const L = o.len, h = L * .28, P = CRUISERS[o.w] || CRUISERS[0], w = o.w || 0, T = performance.now();
+    const Lq = Math.max(60, Math.round(L / 20) * 20);
+    const sp = shipSprite(`cr${w}-${Lq}`, Lq * 1.15, Lq * .28 * 2, (k, R) => {
+      const hq = Lq * .28;
+      if (w === 3) paintPod(k, R, Lq, hq, P); else if (w === 4) paintMonolith(k, R, Lq, hq, P); else paintHull(k, R, Lq, hq, P, w);
+    });
     ctx.save(); ctx.translate(o.x, o.y); ctx.scale(o.dir, 1);
-    if (w === 3) {
-      // Jungle : une cosse géante avec ses feuilles et ses lianes
-      for (const sd of [-1, 1]) { ctx.fillStyle = '#2f9a3a'; ctx.beginPath(); ctx.ellipse(-L * .1, sd * h * .55, L * .28, h * .22, sd * .35, 0, 7); ctx.fill(); }
-      const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2); g.addColorStop(0, P.hull[0]); g.addColorStop(.6, P.hull[1]); g.addColorStop(1, P.hull[2]);
-      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, L * .5, h * .42, 0, 0, 7); ctx.fill();
-      ctx.strokeStyle = '#0f3a1a'; ctx.lineWidth = 2;
-      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(-L * .45, i * h * .12); ctx.quadraticCurveTo(0, i * h * .2 + Math.sin(T / 600 + i) * 3, L * .45, i * h * .08); ctx.stroke(); }
-      for (let i = 0; i < 9; i++) { ctx.fillStyle = P.win; ctx.beginPath(); ctx.arc(-L * .35 + i * L * .09, Math.sin(i * 2.1) * h * .2, 2.2, 0, 7); ctx.fill(); }
-      const jg = ctx.createRadialGradient(-L * .52, 0, 0, -L * .52, 0, h * .35); jg.addColorStop(0, `rgba(${P.jet}, .9)`); jg.addColorStop(1, `rgba(${P.jet}, 0)`);
-      ctx.fillStyle = jg; ctx.beginPath(); ctx.arc(-L * .52, 0, h * .35, 0, 7); ctx.fill();
-      ctx.restore(); return;
-    }
+    const sc = L / Lq, ga = ctx.globalAlpha;
     if (w === 4) {
-      // Néant : un monolithe noir avec un œil violet qui regarde
-      const jg = ctx.createRadialGradient(0, 0, h * .2, 0, 0, L * .55); jg.addColorStop(0, `rgba(${P.jet}, .35)`); jg.addColorStop(1, `rgba(${P.jet}, 0)`);
-      ctx.fillStyle = jg; ctx.beginPath(); ctx.ellipse(0, 0, L * .55, h * .9, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = P.hull[2]; ctx.strokeStyle = P.line; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(0, -h * .6); ctx.lineTo(-L * .5, 0); ctx.lineTo(0, h * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
-      const open = .25 + .75 * Math.abs(Math.sin(T / 1400));
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.ellipse(0, 0, h * .32, h * .2 * open, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = P.win; ctx.beginPath(); ctx.arc(h * .05 * o.dir, 0, h * .14 * Math.max(.4, open), 0, 7); ctx.fill();
-      ctx.fillStyle = '#05020c'; ctx.beginPath(); ctx.arc(h * .05 * o.dir, 0, h * .06 * Math.max(.4, open), 0, 7); ctx.fill();
-      ctx.restore(); return;
+      // halo violet du monolithe, qui respire
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.35 + .15 * Math.sin(T / 900));
+      ctx.drawImage(softSprite('#c86bff'), -L * .6, -h * .9, L * 1.2, h * 1.8); ctx.restore();
     }
-    // réacteurs
-    for (const yy of [-h * .22, 0, h * .22]) {
-      const g = ctx.createRadialGradient(-L * .5, yy, 0, -L * .5, yy, h * .3);
-      g.addColorStop(0, `rgba(${P.jet}, .9)`); g.addColorStop(1, `rgba(${P.jet}, 0)`);
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(-L * .5, yy, h * .3, 0, 7); ctx.fill();
+    ctx.save(); ctx.scale(sc, sc); blit(sp); ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const fl = .85 + .15 * Math.sin(T / 70) * Math.sin(T / 37);
+    if (w === 3) {
+      // bulles lumineuses le long de la cosse, et souffle vert à l'arrière
+      for (let i = 0; i < 9; i++) { ctx.globalAlpha = ga * (.5 + .5 * Math.sin(T / 500 + i * 1.7)); ctx.drawImage(softSprite(P.win), -L * .35 + i * L * .09 - 4, Math.sin(i * 2.1) * h * .2 - 4, 8, 8); }
+      ctx.globalAlpha = ga * .7 * fl; ctx.drawImage(softSprite(jetHex(P)), -L * .66, -h * .3, h * .6, h * .6);
+    } else if (w === 4) {
+      // l'œil qui s'ouvre et se ferme
+      ctx.restore(); ctx.save();
+      const open = .25 + .75 * Math.abs(Math.sin(T / 1400)), ex = L * .02;
+      ctx.fillStyle = '#e9dcff'; ctx.beginPath(); ctx.ellipse(ex, 0, h * .3, h * .17 * open, 0, 0, 7); ctx.fill();
+      const ig = ctx.createRadialGradient(ex + h * .04, 0, 0, ex + h * .04, 0, h * .14 * Math.max(.4, open));
+      ig.addColorStop(0, '#ffffff'); ig.addColorStop(.25, P.win); ig.addColorStop(1, '#3a1060');
+      ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(ex + h * .04, 0, h * .14 * Math.max(.4, open), 0, 7); ctx.fill();
+      ctx.fillStyle = '#05020c'; ctx.beginPath(); ctx.arc(ex + h * .04, 0, h * .055 * Math.max(.4, open), 0, 7); ctx.fill();
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * .5; ctx.drawImage(softSprite('#c86bff'), ex - h * .5, -h * .4, h, h * .8);
+    } else {
+      // flammes bleues des trois tuyères : un cœur blanc et une longue lueur
+      for (const yy of [-h * .2, 0, h * .2]) {
+        ctx.globalAlpha = ga * .9 * fl; ctx.drawImage(softSprite(jetHex(P)), -L * .62, yy - h * .16, h * .5, h * .32);
+        ctx.globalAlpha = ga * .45 * fl; ctx.drawImage(softSprite(jetHex(P)), -L * .78, yy - h * .1, h * .9, h * .2);
+        ctx.globalAlpha = ga * fl; ctx.drawImage(softSprite('#ffffff'), -L * .56, yy - h * .06, h * .16, h * .12);
+      }
+      if (w === 2) {
+        // Forge : fissures de lave qui rougeoient sur la coque
+        ctx.globalAlpha = ga * (.65 + .35 * Math.sin(T / 300));
+        ctx.strokeStyle = '#ff7b2a'; ctx.lineWidth = 1.6; ctx.shadowColor = '#ff4f1a'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.moveTo(-L * .43, -h * .22); ctx.lineTo(-L * .25, -h * .1); ctx.lineTo(-L * .1, -h * .17); ctx.lineTo(L * .05, -h * .08); ctx.lineTo(L * .22, -h * .12);
+        ctx.moveTo(-L * .38, h * .26); ctx.lineTo(-L * .18, h * .14); ctx.lineTo(0, h * .2); ctx.lineTo(L * .18, h * .1); ctx.stroke();
+        ctx.lineWidth = .6; ctx.strokeStyle = '#ffd86b'; ctx.stroke(); ctx.shadowBlur = 0;
+      }
+      // feux de position qui clignotent : rouge à bâbord, vert à tribord, blanc au sommet de l'antenne
+      const on = Math.floor(T / 600) % 2 === 0;
+      if (on) {
+        ctx.globalAlpha = ga; ctx.drawImage(softSprite('#ff4f6d'), L * .08 - 4, -h * .3 - 4, 8, 8); ctx.drawImage(softSprite('#7dff8a'), L * .08 - 4, h * .26 - 4, 8, 8);
+      }
+      if (Math.floor(T / 150) % 9 === 0) { ctx.globalAlpha = ga; ctx.drawImage(softSprite('#ffffff'), -L * .25 - 5, -h * .82 - 5, 10, 10); }
     }
-    // coque en pointe
-    const g = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
-    g.addColorStop(0, P.hull[0]); g.addColorStop(.55, P.hull[1]); g.addColorStop(1, P.hull[2]);
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, -h / 2); ctx.lineTo(-L * .5, h / 2); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = P.line; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(L * .5, 0); ctx.lineTo(-L * .5, 0); ctx.stroke();
-    if (w === 1) {
-      // Givre : des pics de glace sur le dos de la forteresse
-      ctx.fillStyle = '#e6f9ff';
-      for (let i = 0; i < 6; i++) { const fx = -L * .4 + i * L * .13, top = (h / 2) * (1 - (fx + L * .5) / L); ctx.beginPath(); ctx.moveTo(fx - 5, -top + 2); ctx.lineTo(fx, -top - 10 - (i % 3) * 7); ctx.lineTo(fx + 5, -top + 2); ctx.closePath(); ctx.fill(); }
-    } else if (w === 2) {
-      // Forge : des fissures de lave qui rougeoient sur la coque
-      ctx.strokeStyle = `rgba(255, 123, 42, ${(.6 + .4 * Math.sin(T / 300)).toFixed(2)})`; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(-L * .45, -h * .25); ctx.lineTo(-L * .2, -h * .1); ctx.lineTo(0, -h * .18); ctx.lineTo(L * .25, -h * .04);
-      ctx.moveTo(-L * .4, h * .3); ctx.lineTo(-L * .1, h * .12); ctx.lineTo(L * .15, h * .14); ctx.stroke();
-    }
-    // tour de commandement
-    ctx.fillStyle = P.tower;
-    ctx.fillRect(-L * .42, -h * .5 - h * .28, L * .16, h * .28);
-    ctx.fillRect(-L * .38, -h * .5 - h * .42, L * .08, h * .16);
-    // hublots
-    ctx.fillStyle = P.win;
-    for (let i = 0; i < 14; i++) {
-      const fx = -L * .45 + i * L * .055, maxY = (h / 2) * (1 - (fx + L * .5) / L);
-      if (Math.floor(i * 7.3) % 3) ctx.fillRect(fx, maxY * .45, 2, 1.5);
-    }
+    ctx.restore();
     ctx.restore();
   }
 
+  // petits chasseurs : une maquette par monde et par camp
+  function fighterSprite(kind, w) {
+    if (kind === 'ally') return shipSprite('fa', 26, 22, (k, R) => {
+      // chasseur allié : fuselage effilé, ailes en flèche, verrière bleue, bande rouge
+      for (const sd of [-1, 1]) {
+        k.fillStyle = metal(k, sd * 2, sd * 10, ['#c9c6d8', '#7c7890', '#3c3a4c']);
+        k.beginPath(); k.moveTo(2, sd * 1.5); k.lineTo(-5, sd * 9.5); k.lineTo(-8, sd * 9.5); k.lineTo(-6, sd * 1.5); k.closePath(); k.fill();
+        k.fillStyle = '#ff4f6d'; k.fillRect(-7, sd * 8.6 - .5, 2.2, 1);
+        k.fillStyle = '#8a8698'; k.fillRect(-7.5, sd * 9.5 - .6, 5, 1.2);
+      }
+      k.fillStyle = metal(k, -2.6, 2.6, ['#e8e6f2', '#9894ac', '#3a384a']);
+      k.beginPath(); k.moveTo(11, 0); k.quadraticCurveTo(4, -2.8, -9, -2.4); k.lineTo(-9, 2.4); k.quadraticCurveTo(4, 2.8, 11, 0); k.closePath(); k.fill();
+      plates(k, R, -9, -2.6, 20, 5.2, 14, 1.2);
+      const cg = k.createLinearGradient(0, -1.6, 0, 1.6); cg.addColorStop(0, '#d8f4ff'); cg.addColorStop(.4, '#4fa8e0'); cg.addColorStop(1, '#0a2040');
+      k.fillStyle = cg; k.beginPath(); k.ellipse(3.5, -.2, 3.2, 1.3, 0, 0, 7); k.fill();
+      k.fillStyle = '#ff4f6d'; k.fillRect(-4, -2.5, 1.2, 5);
+      k.fillStyle = '#1a1824'; k.fillRect(-10, -1.6, 1.2, 3.2);
+    });
+    return shipSprite('fe' + w, 26, 22, ALIEN_PAINT[w]);
+  }
+  // maquettes des chasseurs ennemis : une par monde
+  const ALIEN_PAINT = [
+    // Voie lactée : soucoupe de métal sombre avec un cœur vert et des feux tout autour
+    (k, R) => {
+      const g = k.createRadialGradient(-2.5, -2.5, 1, 0, 0, 10); g.addColorStop(0, '#b8b4cc'); g.addColorStop(.55, '#5a5672'); g.addColorStop(1, '#1a1828');
+      k.fillStyle = g; k.beginPath(); k.arc(0, 0, 9.5, 0, 7); k.fill();
+      k.strokeStyle = 'rgba(0, 0, 0, .45)'; k.lineWidth = .5; k.beginPath(); k.arc(0, 0, 6.5, 0, 7); k.stroke();
+      for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; k.beginPath(); k.moveTo(Math.cos(a) * 6.5, Math.sin(a) * 6.5); k.lineTo(Math.cos(a) * 9.3, Math.sin(a) * 9.3); k.stroke(); }
+      const d = k.createRadialGradient(-1, -1, .3, 0, 0, 4); d.addColorStop(0, '#eaffea'); d.addColorStop(.35, '#7dff8a'); d.addColorStop(1, '#0f4a24');
+      k.fillStyle = d; k.beginPath(); k.arc(0, 0, 4, 0, 7); k.fill();
+      k.strokeStyle = 'rgba(255, 255, 255, .5)'; k.lineWidth = .5; k.beginPath(); k.arc(0, 0, 9.2, Math.PI * 1.05, Math.PI * 1.6); k.stroke();
+    },
+    // Givre : éclat de cristal à facettes, transparent, avec un cœur bleu
+    k => {
+      const p = [[11, 0], [2, -8], [-8, -3], [-8, 3], [2, 8]], cols = ['rgba(255, 255, 255, .92)', 'rgba(191, 239, 255, .8)', 'rgba(122, 184, 224, .75)', 'rgba(79, 143, 200, .8)', 'rgba(159, 216, 240, .85)'];
+      for (let i = 0; i < p.length; i++) { k.fillStyle = cols[i]; k.beginPath(); k.moveTo(1, 0); k.lineTo(...p[i]); k.lineTo(...p[(i + 1) % p.length]); k.closePath(); k.fill(); }
+      k.strokeStyle = 'rgba(255, 255, 255, .9)'; k.lineWidth = .5; k.beginPath(); p.forEach((q, i) => i ? k.lineTo(...q) : k.moveTo(...q)); k.closePath(); k.stroke();
+      k.strokeStyle = 'rgba(255, 255, 255, .45)'; k.beginPath(); p.forEach(q => { k.moveTo(1, 0); k.lineTo(...q); }); k.stroke();
+    },
+    // Forge : bloc de basalte taillé en flèche, veiné de lave
+    (k, R) => {
+      k.fillStyle = metal(k, -7, 7, ['#5a3a30', '#2a1610', '#0a0604']);
+      k.beginPath(); k.moveTo(10, 0); k.lineTo(3, -4); k.lineTo(-2, -8); k.lineTo(-7, -6); k.lineTo(-5, 0); k.lineTo(-7, 6); k.lineTo(-2, 8); k.lineTo(3, 4); k.closePath(); k.fill();
+      plates(k, R, -8, -8, 18, 16, 20, 1.5);
+      k.strokeStyle = '#ff7b2a'; k.lineWidth = .7; k.beginPath(); k.moveTo(8, 0); k.lineTo(2, -1); k.lineTo(-1, -5); k.moveTo(2, -1); k.lineTo(-4, 1); k.lineTo(-2, 6); k.stroke();
+      k.strokeStyle = '#ffd86b'; k.lineWidth = .3; k.stroke();
+    },
+    // Jungle : coléoptère à carapace luisante (les ailes battent, elles sont dessinées à part)
+    (k, R) => {
+      k.fillStyle = '#1a2a10'; k.beginPath(); k.ellipse(6, 0, 2.6, 2.2, 0, 0, 7); k.fill();
+      k.strokeStyle = '#1a2a10'; k.lineWidth = .5; k.beginPath(); k.moveTo(8, -1); k.quadraticCurveTo(11, -3, 12, -4.5); k.moveTo(8, 1); k.quadraticCurveTo(11, 3, 12, 4.5); k.stroke();
+      const g = k.createLinearGradient(0, -4, 0, 4); g.addColorStop(0, '#9dff8a'); g.addColorStop(.35, '#2f9a3a'); g.addColorStop(1, '#0a2a10');
+      k.fillStyle = g; k.beginPath(); k.ellipse(-1, 0, 7, 4, 0, 0, 7); k.fill();
+      k.strokeStyle = 'rgba(5, 20, 8, .7)'; k.lineWidth = .5; k.beginPath(); k.moveTo(5, 0); k.lineTo(-8, 0); k.stroke();
+      k.fillStyle = 'rgba(255, 216, 107, .8)'; for (const x of [-4, -.5, 3]) { k.beginPath(); k.ellipse(x, -2, .9, .6, 0, 0, 7); k.ellipse(x, 2, .9, .6, 0, 0, 7); k.fill(); }
+      k.fillStyle = 'rgba(255, 255, 255, .55)'; k.beginPath(); k.ellipse(-1, -2.4, 4, .8, 0, 0, 7); k.fill();
+    },
+    // Néant : drone d'ombre anguleux, bordé d'une lumière violette
+    k => {
+      k.fillStyle = metal(k, -7, 7, ['#2a1a40', '#0c0618', '#000000']);
+      k.beginPath(); k.moveTo(10, 0); k.lineTo(-3, -7.5); k.lineTo(-7, -7.5); k.lineTo(-4, 0); k.lineTo(-7, 7.5); k.lineTo(-3, 7.5); k.closePath(); k.fill();
+      k.strokeStyle = 'rgba(200, 107, 255, .85)'; k.lineWidth = .6; k.beginPath(); k.moveTo(-7, -7.5); k.lineTo(-3, -7.5); k.lineTo(10, 0); k.stroke();
+      k.strokeStyle = 'rgba(200, 107, 255, .3)'; k.beginPath(); k.moveTo(10, 0); k.lineTo(-3, 7.5); k.lineTo(-7, 7.5); k.stroke();
+    },
+  ];
+  const JET_OF = ['#7ad8ff', '#bfefff', '#ff7b2a', '#b6ff6b', '#c86bff'];
   function drawFighter(o) {
+    const w = (o.w | 0) % 5, T = performance.now(), ga = ctx.globalAlpha;
     ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.atan2(o.vy, o.vx));
+    const fl = .8 + .2 * Math.sin(T / 45 + o.x);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
     if (o.kind === 'ally') {
-      ctx.strokeStyle = '#eef0ff'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(9, 0); ctx.stroke();
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(-5, -7); ctx.lineTo(3, 7); ctx.moveTo(-5, 7); ctx.lineTo(3, -7); ctx.stroke();
-      ctx.fillStyle = '#ff4f6d'; ctx.fillRect(-10, -1.5, 3, 3);
-    } else if (o.w === 1) {
-      // Givre : un éclat de cristal
-      ctx.fillStyle = '#bfefff'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(0, -8); ctx.lineTo(-8, 0); ctx.lineTo(0, 8); ctx.closePath(); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#4f8fc8'; ctx.beginPath(); ctx.arc(1, 0, 2.5, 0, 7); ctx.fill();
-    } else if (o.w === 2) {
-      // Forge : une boule de feu à ailerons
-      ctx.drawImage(softSprite('#ff7b2a'), -12, -12, 24, 24);
-      ctx.fillStyle = '#3a1a10'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, -7); ctx.lineTo(-3, 0); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#ffd86b'; ctx.beginPath(); ctx.arc(2, 0, 2.4, 0, 7); ctx.fill();
-    } else if (o.w === 3) {
-      // Jungle : un insecte avec ses ailes qui battent
-      const fl = Math.sin(performance.now() / 40) * 4;
-      ctx.fillStyle = 'rgba(220, 255, 220, .55)'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(-1, sd * (5 + fl * .3), 6, 3, sd * .5, 0, 7); ctx.fill(); }
-      ctx.fillStyle = '#2f9a3a'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 3.5, 0, 0, 7); ctx.fill();
-      ctx.fillStyle = '#ffd86b'; ctx.fillRect(-4, -3, 2, 6); ctx.fillRect(0, -3, 2, 6);
-    } else if (o.w === 4) {
-      // Néant : un drone d'ombre à l'œil violet
-      ctx.drawImage(softSprite('#c86bff'), -11, -11, 22, 22);
-      ctx.fillStyle = '#05020c'; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-7, -7); ctx.lineTo(-7, 7); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 2.4, 0, 7); ctx.fill();
+      // traînée bleue du réacteur
+      ctx.globalAlpha = ga * .8 * fl; ctx.drawImage(softSprite('#7ad8ff'), -22, -4, 16, 8);
+      ctx.globalAlpha = ga * fl; ctx.drawImage(softSprite('#ffffff'), -13, -2, 5, 4);
     } else {
-      ctx.fillStyle = '#5a5478';
-      ctx.fillRect(-2, -9, 4, 18);
-      ctx.strokeStyle = '#8f86b8'; ctx.lineWidth = 1;
-      ctx.strokeRect(-2, -9, 4, 18);
-      ctx.fillStyle = '#7dff8a'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, 7); ctx.fill();
-      ctx.fillStyle = '#0b0820'; ctx.beginPath(); ctx.arc(1.5, 0, 1.6, 0, 7); ctx.fill();
+      const jc = JET_OF[w];
+      if (w === 2) { ctx.globalAlpha = ga * .9 * fl; ctx.drawImage(softSprite('#ff7b2a'), -20, -7, 20, 14); ctx.drawImage(softSprite('#ffd86b'), -12, -3, 8, 6); }
+      else if (w === 4) { ctx.globalAlpha = ga * .6; ctx.drawImage(softSprite(jc), -13, -13, 26, 26); }
+      else if (w !== 3) { ctx.globalAlpha = ga * .7 * fl; ctx.drawImage(softSprite(jc), -20, -5, 14, 10); }
+    }
+    ctx.restore();
+    if (o.kind === 'ally') blit(fighterSprite('ally', w));
+    else {
+      if (w === 3) {
+        // ailes translucides qui battent, avec leurs nervures
+        const fla = Math.abs(Math.sin(T / 35));
+        for (const sd of [-1, 1]) {
+          ctx.fillStyle = 'rgba(220, 255, 230, .35)'; ctx.strokeStyle = 'rgba(255, 255, 255, .45)'; ctx.lineWidth = .4;
+          ctx.beginPath(); ctx.ellipse(-2, sd * (4 + fla * 3), 7, 2.4 + fla, sd * .45, 0, 7); ctx.fill(); ctx.stroke();
+        }
+      }
+      blit(fighterSprite('alien', w));
+      if (w === 0) {
+        // feux qui tournent autour de la soucoupe
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 6; i++) { const a = T / 400 + i / 6 * 6.28; ctx.globalAlpha = ga * (.4 + .6 * Math.max(0, Math.sin(a * 2))); ctx.drawImage(softSprite('#7dff8a'), Math.cos(a) * 8 - 2, Math.sin(a) * 8 - 2, 4, 4); }
+        ctx.restore();
+      } else if (w === 1 || w === 4) {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.6 + .4 * Math.sin(T / 300));
+        ctx.drawImage(softSprite(w === 1 ? '#7ad8ff' : '#ffffff'), -3, -4, 8, 8); ctx.restore();
+      }
     }
     ctx.restore();
   }
@@ -10385,44 +10603,81 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     for (const o of scenery) {
       // dans le Néant, les planètes restent presque invisibles
       if (o.type === 'planet') { ctx.globalAlpha = world === WORLDS.length - 1 ? .18 : 1; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
-      else if (o.type === 'cruiser') { ctx.globalAlpha = .55; drawCruiser(o); }
-      else if (o.type === 'fighter') { ctx.globalAlpha = .65; drawFighter(o); }
+      else if (o.type === 'cruiser') { ctx.globalAlpha = .8; drawCruiser(o); }
+      else if (o.type === 'fighter') { ctx.globalAlpha = .85; drawFighter(o); }
       else if (o.type === 'bolt') {
-        ctx.globalAlpha = .8; ctx.strokeStyle = o.col; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .025, o.y - o.vy * .025); ctx.stroke();
+        // tir laser : une lueur colorée autour d'un trait blanc très chaud
+        const tx = o.x - o.vx * .03, ty = o.y - o.vy * .03;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+        ctx.globalAlpha = .35; ctx.strokeStyle = o.col; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.globalAlpha = .9; ctx.lineWidth = 2; ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = .8; ctx.stroke();
+        ctx.restore();
       } else if (o.type === 'comet') {
-        // comète : tête brillante et longue queue aux couleurs du niveau
-        ctx.globalAlpha = Math.min(1, o.life) * .85;
-        const tl = 110, tx = o.x - o.vx / Math.hypot(o.vx, o.vy) * tl, ty = o.y - o.vy / Math.hypot(o.vx, o.vy) * tl;
-        const cg = ctx.createLinearGradient(o.x, o.y, tx, ty);
-        cg.addColorStop(0, '#ffffff'); cg.addColorStop(.25, neb[1]); cg.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.strokeStyle = cg; ctx.lineWidth = 5; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(tx, ty); ctx.stroke(); ctx.lineCap = 'butt';
-        ctx.drawImage(softSprite('#ffffff'), o.x - 9, o.y - 9, 18, 18);
+        // comète : noyau brillant dans sa chevelure, queue de poussière large et courbée, queue de gaz bleue toute droite
+        const a = Math.min(1, o.life), sp = Math.hypot(o.vx, o.vy) || 1, ux = o.vx / sp, uy = o.vy / sp, nx = -uy, ny = ux;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const tl = 150, tx = o.x - ux * tl, ty = o.y - uy * tl, bend = 26;
+        const dg = ctx.createLinearGradient(o.x, o.y, tx, ty);
+        dg.addColorStop(0, 'rgba(255, 244, 220, .75)'); dg.addColorStop(.3, 'rgba(255, 226, 180, .3)'); dg.addColorStop(1, 'rgba(255, 210, 160, 0)');
+        ctx.globalAlpha = a; ctx.fillStyle = dg;
+        ctx.beginPath(); ctx.moveTo(o.x + nx * 3, o.y + ny * 3);
+        ctx.quadraticCurveTo(o.x - ux * tl * .5 + nx * (bend + 10), o.y - uy * tl * .5 + ny * (bend + 10), tx + nx * (bend + 22), ty + ny * (bend + 22));
+        ctx.lineTo(tx + nx * (bend - 8), ty + ny * (bend - 8));
+        ctx.quadraticCurveTo(o.x - ux * tl * .5 + nx * 4, o.y - uy * tl * .5 + ny * 4, o.x - nx * 3, o.y - ny * 3);
+        ctx.closePath(); ctx.fill();
+        const ig = ctx.createLinearGradient(o.x, o.y, o.x - ux * tl * 1.3, o.y - uy * tl * 1.3);
+        ig.addColorStop(0, 'rgba(170, 220, 255, .8)'); ig.addColorStop(.4, neb[1] + '55'); ig.addColorStop(1, 'rgba(120, 180, 255, 0)');
+        ctx.strokeStyle = ig; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - ux * tl * 1.3, o.y - uy * tl * 1.3); ctx.stroke();
+        ctx.globalAlpha = a * .6; ctx.drawImage(softSprite('#bfe4ff'), o.x - 16, o.y - 16, 32, 32);
+        ctx.globalAlpha = a; ctx.drawImage(softSprite('#ffffff'), o.x - 6, o.y - 6, 12, 12);
+        ctx.restore();
       } else if (o.type === 'swarm') {
         // escadrille lointaine en formation en V
-        ctx.globalAlpha = .55 * Math.min(1, o.life);
-        const d = Math.sign(o.vx), sc = (SCENE_SETS[o.w] || SCENE_SETS[0]).swarm, glow = o.w === 3 || o.w === 4;
+        ctx.globalAlpha = .7 * Math.min(1, o.life);
+        const d = Math.sign(o.vx) || 1, sc = (SCENE_SETS[o.w] || SCENE_SETS[0]).swarm, glow = o.w === 3 || o.w === 4;
+        const spr = glow ? null : fighterSprite('ally', 0), ga = ctx.globalAlpha;
         for (let i = 0; i < o.n; i++) {
           const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, x = o.x - d * row * 14, y = o.y + side * row * 9 + Math.sin(o.life * 3 + i + o.ph) * 2;
-          // lucioles dans la jungle, yeux dans le Néant, petits vaisseaux ailleurs
-          if (glow) { ctx.drawImage(softSprite(sc), x - 6, y - 6, 12, 12); continue; }
-          ctx.fillStyle = sc; ctx.beginPath(); ctx.moveTo(x + d * 5, y); ctx.lineTo(x - d * 4, y - 3); ctx.lineTo(x - d * 4, y + 3); ctx.closePath(); ctx.fill();
-          ctx.fillStyle = neb[0]; ctx.fillRect(x - d * 6, y - .8, 2, 1.6);
+          // lucioles dans la jungle, yeux dans le Néant : une lueur douce et un point vif au centre
+          if (glow) {
+            ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.6 + .4 * Math.sin(o.life * 5 + i));
+            ctx.drawImage(softSprite(sc), x - 7, y - 7, 14, 14); ctx.drawImage(softSprite('#ffffff'), x - 2, y - 2, 4, 4); ctx.restore(); continue;
+          }
+          // petits vaisseaux : la même maquette que les chasseurs, en tout petit, avec le point de leur réacteur
+          ctx.save(); ctx.translate(x, y); ctx.scale(d * .42, .42); blit(spr); ctx.restore();
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(softSprite(sc === '#c9c3ea' ? '#7ad8ff' : sc), x - d * 6 - 3, y - 2, 6, 4); ctx.restore();
         }
       } else if (o.type === 'meteor') {
-        ctx.globalAlpha = Math.min(1, o.life);
-        const g = ctx.createLinearGradient(o.x, o.y, o.x - o.vx * .15, o.y - o.vy * .15);
+        // étoile filante : une traînée qui s'affine, une tête blanche qui brûle
+        const a = Math.min(1, o.life), tx = o.x - o.vx * .18, ty = o.y - o.vy * .18, sp = Math.hypot(o.vx, o.vy) || 1, nx = -o.vy / sp, ny = o.vx / sp;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a;
+        const g = ctx.createLinearGradient(o.x, o.y, tx, ty);
         g.addColorStop(0, o.col || '#ffffff'); g.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.strokeStyle = g; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x - o.vx * .15, o.y - o.vy * .15); ctx.stroke();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(o.x + nx * 1.4, o.y + ny * 1.4); ctx.lineTo(tx, ty); ctx.lineTo(o.x - nx * 1.4, o.y - ny * 1.4); ctx.closePath(); ctx.fill();
+        ctx.drawImage(softSprite(o.col || '#ffffff'), o.x - 5, o.y - 5, 10, 10); ctx.drawImage(softSprite('#ffffff'), o.x - 2, o.y - 2, 4, 4);
+        ctx.restore();
       } else if (o.type === 'drift') {
-        if (o.dk === 'neige') { ctx.globalAlpha = .75; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(o.x, o.y, o.z, 0, 7); ctx.fill(); }
-        else if (o.dk === 'braises') { ctx.globalAlpha = .5 + .5 * Math.abs(Math.sin(o.ph * 3)); ctx.drawImage(softSprite(o.z > 2 ? '#ffd86b' : '#ff7b2a'), o.x - o.z * 3, o.y - o.z * 3, o.z * 6, o.z * 6); }
+        if (o.dk === 'neige') {
+          // flocons : les plus gros sont près de nous, donc flous ; les petits sont nets et lointains
+          const z = o.z || 2;
+          if (z > 2.6) { ctx.globalAlpha = .45; ctx.drawImage(softSprite('#ffffff'), o.x - z * 2.2, o.y - z * 2.2, z * 4.4, z * 4.4); }
+          else { ctx.globalAlpha = .55; ctx.drawImage(softSprite('#eaf6ff'), o.x - z * 1.6, o.y - z * 1.6, z * 3.2, z * 3.2); ctx.globalAlpha = .9; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(o.x, o.y, z * .45, 0, 7); ctx.fill(); }
+        }
+        else if (o.dk === 'braises') {
+          // braises : une lueur orange, un cœur jaune, qui vacillent
+          const f = .5 + .5 * Math.abs(Math.sin(o.ph * 3));
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = f;
+          ctx.drawImage(softSprite('#ff4f1a'), o.x - o.z * 4, o.y - o.z * 4, o.z * 8, o.z * 8);
+          ctx.drawImage(softSprite(o.z > 2 ? '#ffd86b' : '#ff9a3c'), o.x - o.z * 1.5, o.y - o.z * 1.5, o.z * 3, o.z * 3);
+          ctx.restore();
+        }
         else if (o.dk === 'feuilles') {
-          ctx.globalAlpha = .7; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot + o.ph);
-          ctx.fillStyle = o.col; ctx.beginPath(); ctx.ellipse(0, 0, o.z, o.z * .45, 0, 0, 7); ctx.fill();
-          ctx.strokeStyle = 'rgba(15, 58, 26, .7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-o.z, 0); ctx.lineTo(o.z, 0); ctx.stroke(); ctx.restore();
+          // feuilles : vraie forme de feuille, nervures, ombre ; elle se retourne en tombant
+          ctx.globalAlpha = .8; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate((o.rot || 0) + o.ph);
+          ctx.scale(1, .35 + .65 * Math.abs(Math.cos(o.ph * 1.3)));
+          blit(leafSprite(o.col || '#7dff8a'), 0, 0, o.z / 10);
+          ctx.restore();
         } else { ctx.globalAlpha = .55 * Math.min(1, o.life * 4); ctx.fillStyle = o.col; ctx.fillRect(o.x, o.y, o.z * 2, o.z * .4); ctx.fillRect(o.x + o.z * .6, o.y + o.z * .6, o.z, o.z * .3); }
       }
     }
