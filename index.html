@@ -58,6 +58,13 @@ body.sanscurseur #game { cursor: none; }
 .lives { display: flex; gap: 6px; margin-top: 4px; }
 .lives i { width: 12px; height: 12px; border-radius: 50%; background: var(--tail); box-shadow: 0 0 10px var(--tail); }
 .lives i.extra { background: var(--star); box-shadow: 0 0 10px var(--star); }
+.lives.two { flex-direction: column; align-items: flex-end; gap: 5px; }
+.lives .lv { display: flex; gap: 5px; align-items: center; }
+.lives .lv b { font: 11px var(--display); margin-right: 2px; color: #ffd86b; }
+.lives .lv.j2 b { color: #4fe0c8; }
+.lives .lv.j2 i:not(.lost) { background: #4fe0c8; box-shadow: 0 0 10px #4fe0c8; }
+.lives .lv.ko { opacity: .5; }
+.lives .lv.ko b::after { content: ' K.O.'; color: #ff9aa8; }
 .lives i.lost { background: transparent; box-shadow: inset 0 0 0 2px var(--rock); }
 .combo { color: var(--star); font-family: var(--display); font-size: 14px; min-height: 18px; }
 .btn-pause {
@@ -880,6 +887,8 @@ body:not(.jeu) .hud { opacity: 0; }
 .tpad.isready { box-shadow: 0 0 0 3px #7dff8a, 0 0 34px rgba(125, 255, 138, .35); }
 .ttag { position: absolute; top: 8px; left: 10px; font: 13px var(--display); padding: 3px 9px; border-radius: 999px; background: #ffd86b; color: #1a1240; }
 .tpad.friend .ttag { background: #4fe0c8; }
+.ttag.j2 { background: #4fe0c8; }
+.tpad.friend .ttag.j1 { background: #ffd86b; }
 .tpad canvas { width: 100%; max-width: 190px; aspect-ratio: 4 / 5; height: auto; }
 .tbase { display: block; width: 74%; height: 16px; margin-top: -18px; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(122, 216, 255, .55), rgba(122, 216, 255, .08) 70%, transparent); box-shadow: 0 0 22px rgba(122, 216, 255, .35); }
@@ -915,6 +924,21 @@ input.tname.todo { animation: namePulse 1.4s ease-in-out infinite; }
 .tbtn.on { background: linear-gradient(#2fbf9f, #1f8a74); box-shadow: 0 5px 0 #0e4a3e; }
 .tbtn.small { flex-direction: row; padding: 12px 16px; gap: 8px; }
 .tbtn.small span { font-size: 20px; }
+.tsgear { display: flex; flex-direction: column; gap: 8px; }
+.tsgearh { text-align: center; font: 13px var(--display); letter-spacing: .14em; text-transform: uppercase; color: #7ad8ff; }
+.tsgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.gbtn { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; text-align: left; min-width: 0;
+  padding: 10px 12px; border-radius: 16px; cursor: var(--cur-clic); color: var(--ink); background: linear-gradient(rgba(58, 94, 232, .35), rgba(42, 63, 176, .25));
+  border: 2px solid rgba(122, 216, 255, .35); box-shadow: 0 4px 0 rgba(10, 8, 32, .8); transition: transform .1s, border-color .15s; }
+.gbtn span { grid-row: span 2; font-size: 26px; }
+.gbtn b { font: 14px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gbtn small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gbtn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(10, 8, 32, .8); }
+.gbtn:disabled { cursor: default; opacity: .75; border-style: dashed; }
+@media (hover: hover) { .gbtn:not(:disabled):hover { border-color: var(--star); } }
+@media (max-width: 620px) { .tsgrid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px) and (max-height: 900px) { .tpad canvas { max-width: 120px; } .tpad { padding-top: 24px; } .tsbody { margin-top: 10px; gap: 10px; } }
+.tsgo:disabled { opacity: .6; filter: grayscale(.5); cursor: default; }
 .tsready { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; }
 .tsgo { min-width: 12em; }
 .tsgo.on { background: #7dff8a; box-shadow: 0 6px 0 #2f9a45, 0 0 40px rgba(125, 255, 138, .5); }
@@ -1086,6 +1110,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       <button type="button" class="tbtn" id="teamCreate"><span aria-hidden="true">👑</span>Créer</button>
       <button type="button" class="tbtn" id="teamJoin"><span aria-hidden="true">🤝</span>Rejoindre</button>
       <button type="button" class="tbtn" id="teamShare" disabled><span aria-hidden="true">📤</span>Partager</button>
+    </div>
+    <div class="tsgear" id="teamGear" hidden>
+      <small class="tsgearh">Mon équipement</small>
+      <div class="tsgrid">
+        <button type="button" class="gbtn" data-go="persoOpts"><span aria-hidden="true">🎨</span><b>Ma fusée</b><small id="gStyle"></small></button>
+        <button type="button" class="gbtn" data-go="optGun"><span aria-hidden="true">🔫</span><b>Pistolet</b><small id="gGun"></small></button>
+        <button type="button" class="gbtn" data-go="optPower"><span aria-hidden="true">⚡</span><b>Pouvoir</b><small id="gPower"></small></button>
+        <button type="button" class="gbtn" data-go="skills"><span aria-hidden="true">⭐</span><b>Compétences</b><small id="gSkills"></small></button>
+        <button type="button" class="gbtn" data-go="petOpt" id="gPetBtn"><span aria-hidden="true">🐾</span><b>Compagnon</b><small id="gPet"></small></button>
+        <button type="button" class="gbtn" id="teamWorld"><span aria-hidden="true">🗺️</span><b>Monde</b><small id="gWorld"></small></button>
+      </div>
     </div>
     <div class="tsready" id="teamReadyRow" hidden>
       <button type="button" class="play tsgo" id="teamReady">Prêt !</button>
@@ -1391,12 +1426,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // finesse maximale de l'image : baisse toute seule si l'appareil n'arrive pas à suivre (voir dprCheck)
   let dprCap = 2;
 
+  // partie en équipe sur deux écrans de forme différente : le terrain (W × H) est plus large que l'écran le plus étroit.
+  // Chaque écran le montre sur toute sa hauteur et en plein écran ; une caméra suit sa propre fusée de gauche à droite.
+  let camS = 1, camX = 0, netHW = 0, netHH = 0;
+  function baseT() { ctx.setTransform(DPR * camS, 0, 0, DPR * camS, -camX * DPR * camS, 0); }
+  const viewW = () => cv.clientWidth / camS;
   function resize() {
     const ow = W, oh = H;
     DPR = Math.min(window.devicePixelRatio || 1, dprCap);
-    W = cv.clientWidth; H = cv.clientHeight;
-    cv.width = W * DPR; cv.height = H * DPR;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const vw = cv.clientWidth, vh = cv.clientHeight;
+    if (netHW) { W = netHW; H = netHH; camS = vh / netHH; } else { W = vw; H = vh; camS = 1; camX = 0; }
+    cv.width = vw * DPR; cv.height = vh * DPR;
+    baseT();
     if (ow && oh && (ow !== W || oh !== H)) {
       const kx = W / ow, ky = H / oh;
       player.x *= kx; player.y *= ky;
@@ -2345,8 +2386,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // gagner une vie (cœur, 1UP, boss) ; si on est au maximum, ça donne des points
   function lifeWon() { run.lives++; bump('vies'); if (run.lives >= 3) feat('vies3'); }
   function gainLife(x, y, label) {
-    if (lives < lifeCap()) {
-      lives++; lifeWon(); pop(x, y, label, '#ff7aa8');
+    const toP2 = duo && p2 && !p2.ko && (player.ko || p2.lives < lives);
+    if (toP2 ? p2.lives < lifeCap() : lives < lifeCap()) {
+      if (toP2) p2.lives++; else lives++;
+      lifeWon(); if (duo && p2) label = `${label} · ${duoName(toP2 ? p2 : player)}`; pop(x, y, label, '#ff7aa8');
       burst(x, y, '#ff7aa8', 22, 200); flash = .25; flashColor = '255, 122, 168';
       beep(523, .1, 'triangle', .1); setTimeout(() => beep(659, .1, 'triangle', .1), 90); setTimeout(() => beep(1046, .25, 'triangle', .1), 180);
     } else { score += 100; pop(x, y, 'Vies au max · +100', '#ff7aa8'); beep(880, .12, 'triangle', .08); }
@@ -3647,7 +3690,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       ], { duration: 560 + Math.random() * 260, easing: 'ease-out' }).onfinish = () => p.remove();
     }
   });
-  function closePanels() { if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() {
+    if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel']) $(id).hidden = true; openTeam(); return; } }
+    if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -3658,11 +3703,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   $('overTrophyBtn').onclick = openTrophies;
   $('trophyBack').onclick = closeHangar;
   $('hangarBtn').onclick = openHangar;
-  $('overHangarBtn').onclick = openHangar;
+  $('overHangarBtn').onclick = () => { if (netRole && netOpen()) teamHome(); else openHangar(); };
   $('backBtn').onclick = closeHangar;
   // la croix en haut à droite fait comme le bouton Retour du panneau
   document.querySelectorAll('.xclose').forEach(b => { b.onclick = () => $(b.dataset.back).click(); });
-  $('goBtn').onclick = () => { preview = null; duo = false; start(); };
+  $('goBtn').onclick = () => { if (teamDetour) { closeHangar(); return; } preview = null; duo = false; start(); };
 
   // --- fond étoilé ---
   const bg = Array.from({ length: 170 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random() * .8 + .2 }));
@@ -3695,9 +3740,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const DUO_CONF = { ...DEFAULT, name: DUO_NAME, color: 'turquoise', flame: 'plasma', shot: 'emeraude' };
   let duo = false, p2 = null, p2Id = null, target2 = null, duoSeen = false;
   try { duoSeen = localStorage.getItem('comete-duo') === '1'; } catch (e) {}
-  const rockets = () => duo && p2 ? [player, p2] : [player];
+  const rockets = () => duo && p2 ? [player, p2].filter(r => !r.ko) : [player];
   // la fusée la plus proche d'un point : c'est elle que visent les ennemis
-  const nearest = (x, y) => !duo || !p2 ? player : Math.hypot(p2.x - x, p2.y - y) < Math.hypot(player.x - x, player.y - y) ? p2 : player;
+  const nearest = (x, y) => !duo || !p2 || p2.ko ? player : player.ko ? p2 : Math.hypot(p2.x - x, p2.y - y) < Math.hypot(player.x - x, player.y - y) ? p2 : player;
 
   function reset() {
     player = { x: W * (duo ? .38 : .5), y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0 };
@@ -3706,7 +3751,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0, abilT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     // la 2e fusée a le même pistolet que la 1re, avec son propre chargeur
-    p2 = duo && (netRole !== 'host' || netPeer) ? { x: W * .62, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0, chill: 0, fireT: 0, ammo: gun.mag, reload: 0 } : null;
+    p2 = duo && (netRole !== 'host' || netPeer) ? { x: W * .62, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0, chill: 0, fireT: 0, ammo: gun.mag, reload: 0, lives: maxLives() } : null;
+    player.ko = false;
     // la fusée du pote garde son pistolet et ses compétences du Hangar
     if (p2 && netRole === 'host' && netPeer) { p2.gun = netPeer.gun; p2.ammo = p2.gun.mag; p2.pow = netPeer.pow; }
     p2Id = null; target2 = null;
@@ -3932,7 +3978,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('level').textContent = level;
     $('levelLabel').textContent = `Monde ${world + 1} · Niveau`;
     $('combo').textContent = combo > 1 ? 'combo ×' + combo : '';
-    $('lives').innerHTML = Array.from({ length: Math.max(maxLives(), lives) }, (_, i) => `<i class="${i < lives ? '' : 'lost'}${i >= maxLives() ? ' extra' : ''}"></i>`).join('');
+    const dots = n => Array.from({ length: Math.max(maxLives(), n) }, (_, i) => `<i class="${i < n ? '' : 'lost'}${i >= maxLives() ? ' extra' : ''}"></i>`).join('');
+    // partie à deux : une rangée de vies par fusée (J1 en or, J2 en turquoise)
+    $('lives').classList.toggle('two', !!(duo && p2));
+    $('lives').innerHTML = duo && p2 ? `<span class="lv j1${player.ko ? ' ko' : ''}"><b>J1</b>${dots(Math.max(0, lives))}</span><span class="lv j2${p2.ko ? ' ko' : ''}"><b>J2</b>${dots(Math.max(0, p2.lives | 0))}</span>` : dots(lives);
   }
 
   let lastPowerUi = '';
@@ -7665,12 +7714,29 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     run.clean = false;
     if (boss) run.bossHit = true;
-    lives--; combo = 0; comboT = 0; pl.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
-    pop(pl.x, pl.y - 34, lives > 0 ? (duo && p2 ? `${pl === p2 ? DUO_NAME : rocketName()} : −1 vie` : '−1 vie') : 'Plus de vie !');
+    // partie à deux : chaque fusée a ses propres vies
+    const two = duo && p2, mine = two && pl === p2 ? 'p2' : 'p1';
+    if (mine === 'p2') p2.lives--; else lives--;
+    const left = mine === 'p2' ? p2.lives : lives;
+    combo = 0; comboT = 0; pl.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
+    pop(pl.x, pl.y - 34, left > 0 ? (two ? `${duoName(pl)} : −1 vie` : '−1 vie') : 'Plus de vie !');
     burst(pl.x, pl.y, '#ff7aa8', 10); explode(pl.x, pl.y, '#ff7aa8', .7);
     beep(120, .35, 'sawtooth', .18, -60);
     updateHud();
-    if (lives <= 0) startDeath();
+    if (left > 0) return;
+    const other = !two ? null : pl === p2 ? player : p2;
+    if (other && !other.ko) knockOut(pl, other); else startDeath();
+  }
+  const duoName = pl => pl === p2 ? (netPeer && netRole === 'host' ? netPeer.name : netPeer && netRole === 'guest' ? netMine.name : DUO_NAME) : (netRole === 'guest' && netPeer ? netPeer.name : rocketName());
+  // une fusée n'a plus de vie : elle quitte le combat, son coéquipier continue seul
+  function knockOut(pl, other) {
+    pl.ko = true; pl.hurt = 0;
+    explode(pl.x, pl.y, '#ffb020', 1.8); burst(pl.x, pl.y, '#ffd86b', 30, 260); shake = .8; flash = .45; flashColor = '255, 200, 120';
+    beep(90, .6, 'sawtooth', .2, -40);
+    pl.x = -600; pl.y = H + 600; pl.vx = pl.vy = 0;
+    if (pl === player) { mouseFire = btnFire = false; reload = null; }
+    showBanner(`${duoName(pl)} est K.O. !`, `${duoName(other)} doit tenir seul pour l'équipe`);
+    updateHud();
   }
 
   // ===== Explosion de la fusée à la fin de la partie =====
@@ -7680,10 +7746,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     mouseFire = btnFire = false;
     for (const id of ['pauseBtn', 'powerBtn', 'weapons', 'sayBubble']) $(id).hidden = true;
     $('banner').classList.remove('show');
-    const x = player.x, y = player.y, body = byId(COLORS, cfg.color).hex || '#ff5a6e';
+    const last = duo && p2 && player.ko ? p2 : player;
+    const x = last.x, y = last.y, body = byId(COLORS, last === p2 ? p2Conf().color : cfg.color).hex || '#ff5a6e';
     flash = .5; flashColor = '255, 236, 200'; shake = 1.3;
     explode(x, y, '#ffb020', 3.2);
-    if (duo && p2) explode(p2.x, p2.y, '#ffb020', 2.4);
+    if (duo && p2 && !p2.ko && last !== p2) explode(p2.x, p2.y, '#ffb020', 2.4);
     // morceaux de la fusée qui partent en tournoyant et en brûlant
     for (let i = 0; i < (reduce ? 5 : 12); i++) {
       const a = Math.random() * 7, v = 120 + Math.random() * 260;
@@ -7869,6 +7936,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     defi('scoreParties', score); saveDefi(); renderDefi();
     if (defiRunWon) $('finalInfo').innerHTML += `<br>🎯 Défi du jour réussi · +${astros(defiRunWon.r)} Astros bonus`;
     else if (!defiSave.done) $('finalInfo').innerHTML += `<br>🎯 Défi du jour : ${defiToday().text} (${defiShow(defiToday(), defiSave.p)})`;
+    // en équipe, on revient au Hangar d'équipe (sans se quitter) plutôt qu'au Hangar tout seul
+    $('overHangarBtn').textContent = netRole && netOpen() ? 'Hangar d\'équipe' : 'Hangar';
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
     if (duo) {}
@@ -7969,7 +8038,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const TEAM_API = /\.vercel\.app$|^localhost$|^127\./.test(location.hostname) ? '/api/equipe' : 'https://comete-filante.vercel.app/api/equipe';
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:stun.cloudflare.com:3478' }];
   let netRole = null, netPeer = null, netMine = cfg, netIn = { k: [0, 0], tg: null, f: false, at: 0 }, netFx = [];
-  let netPc = null, netR = null, netU = null, netCode = '', netStatus = 'idle', netMsg = '', netSent = 0, netInT = 0, netLastSt = '', netHW = 0, netHH = 0, netAsk = 0;
+  let netPc = null, netR = null, netU = null, netCode = '', netStatus = 'idle', netMsg = '', netSent = 0, netInT = 0, netLastSt = '', netAsk = 0;
   const STYLE_LISTS = { model: MODELS, color: COLORS, accent: ACCENTS, motif: MOTIFS, glass: GLASSES, flame: FLAMES, trail: TRAILS, shot: SHOTS };
   // la fusée de l'autre joueur : seulement des styles qui existent dans le jeu
   function cleanCfg(c) {
@@ -8074,7 +8143,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // on se présente : la fusée du Hangar, son nom, son pistolet et ses compétences
   function netHello() {
     netMine = cfg;
-    netSend({ t: 'hello', cfg, name: rocketName(), vw: innerWidth, vh: innerHeight, gun: { id: cfg.gun, up: { chargeur: up('chargeur'), recharge: up('recharge'), cadence: up('cadence'), puissance: up('puissance') } } });
+    netSend({ t: 'hello', cfg, name: rocketName(), vw: innerWidth, vh: innerHeight, w: netRole === 'host' ? startWorld : undefined, gun: { id: cfg.gun, up: { chargeur: up('chargeur'), recharge: up('recharge'), cadence: up('cadence'), puissance: up('puissance') } } });
   }
   // le pote est parti, ou la connexion est coupée
   function netDrop() {
@@ -8099,21 +8168,57 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     netStatus = msg ? 'error' : 'idle'; netMsg = msg || '';
     reset(); openTeam();
   }
-  // chez le pote : le jeu garde la taille de l'écran de l'hôte, réduit pour tenir dans le sien
+  // le terrain commun de l'équipe : on le montre en plein écran, sur toute la hauteur, avec une caméra qui suit sa fusée
   function netFit(w, h) {
     if (!(w > 100 && h > 100)) return;
+    const was = netHW;
     netHW = w; netHH = h;
-    const k = Math.min(innerWidth / w, innerHeight / h);
-    Object.assign(cv.style, { width: w + 'px', height: h + 'px', inset: 'auto', left: ((innerWidth - w * k) / 2).toFixed(1) + 'px', top: ((innerHeight - h * k) / 2).toFixed(1) + 'px', transform: `scale(${k})`, transformOrigin: '0 0' });
-    document.body.classList.add('fit');
-    if (W !== w || H !== h) resize();
+    if (!was || W !== w || H !== h || Math.abs(camS - cv.clientHeight / h) > .001) resize();
+  }
+  // la caméra : centrée sur sa propre fusée (ou sur celle du coéquipier si la sienne est K.O.), sans sortir du terrain
+  function camUpdate(dt) {
+    if (!netHW) { camX = 0; return; }
+    const vw = viewW();
+    if (vw >= W - 1) camX = 0;
+    else {
+      let f = netRole === 'guest' && p2 ? p2 : player;
+      if (f && f.ko) f = f === p2 ? player : p2;
+      const tx = Math.max(0, Math.min(W - vw, (f && f.x > -100 ? f.x : W / 2) - vw / 2));
+      camX = state === 'play' || state === 'pause' || state === 'dying' ? camX + (tx - camX) * Math.min(1, dt * 7) : tx;
+      camX = Math.max(0, Math.min(W - vw, camX));
+    }
+    baseT();
+  }
+  // pendant le décollage (une petite scène), on travaille à la taille de l'écran, sans la caméra
+  function onScreen(fn) {
+    if (!(netHW && state === 'launch')) return fn();
+    const sw = W, sh = H, sc = camS, sx = camX;
+    W = cv.clientWidth; H = cv.clientHeight; camS = 1; camX = 0; baseT();
+    try { return fn(); } finally { W = sw; H = sh; camS = sc; camX = sx; baseT(); }
+  }
+  // la fusée du coéquipier hors de l'écran : une flèche au bord, à sa hauteur, avec son nom
+  function drawMateArrow() {
+    if (!netHW || !duo || !p2 || !['play', 'pause'].includes(state)) return;
+    const mate = netRole === 'guest' ? player : p2;
+    if (mate.ko) return;
+    const vw = cv.clientWidth, sx = (mate.x - camX) * camS, sy = mate.y * camS;
+    if (sx > -10 && sx < vw + 10) return;
+    const right = sx > vw, x = right ? vw - 22 : 22, y = Math.max(110, Math.min(cv.clientHeight - 120, sy));
+    const col = netRole === 'guest' ? '#ffd86b' : '#4fe0c8', name = netPeer ? netPeer.name : DUO_NAME;
+    ctx.save(); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = col; ctx.strokeStyle = 'rgba(4, 2, 12, .85)'; ctx.lineWidth = 3;
+    ctx.beginPath(); const d = right ? 1 : -1;
+    ctx.moveTo(x + d * 14, y); ctx.lineTo(x - d * 6, y - 12); ctx.lineTo(x - d * 6, y + 12); ctx.closePath(); ctx.stroke(); ctx.fill();
+    ctx.font = '11px Bungee, Impact, sans-serif'; ctx.textAlign = right ? 'right' : 'left';
+    ctx.strokeText(name, x - d * 10, y + 28); ctx.fillText(name, x - d * 10, y + 28);
+    ctx.restore();
   }
   function netUnfit() { netHW = netHH = 0; cv.removeAttribute('style'); document.body.classList.remove('fit'); resize(); }
   // le décor flou derrière le terrain : une petite copie de l'image du jeu, étirée sur tout l'écran (4 fois par seconde suffit)
   const fillCv = $('gameFill'), fillCtx = fillCv.getContext('2d');
   let fillT = 0;
   function drawFill(t) {
-    if (!netHW || t - fillT < 120) return;
+    if (!netHW || !document.body.classList.contains('fit') || t - fillT < 120) return;
     fillT = t;
     const k = Math.max(innerWidth / netHW, innerHeight / netHH), w = 160, h = Math.round(w * innerHeight / innerWidth);
     if (fillCv.width !== w || fillCv.height !== h) { fillCv.width = w; fillCv.height = h; }
@@ -8121,14 +8226,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     try { fillCtx.drawImage(cv, (w - dw) / 2, (h - dh) / 2, dw, dh); } catch (e) {}
   }
   addEventListener('resize', () => { if (netRole === 'guest' && netHW) netFit(netHW, netHH); else if (netRole === 'host' && netHW) netField(); });
-  // l'hôte prend pour terrain la forme de l'écran le plus en hauteur des deux : un téléphone joue toujours en plein écran,
-  // et l'ordinateur montre ce terrain au milieu, le reste de l'écran flouté
+  // le terrain prend la forme de l'écran le plus large des deux, à la hauteur de l'écran de l'hôte :
+  // l'écran large le voit en entier, l'écran étroit (un téléphone) en plein écran avec la caméra qui suit sa fusée
   function netField() {
     if (!netPeer || !(netPeer.vw > 100 && netPeer.vh > 100)) return;
-    const mine = innerWidth / innerHeight, a = Math.min(mine, netPeer.vw / netPeer.vh);
-    let fw = innerWidth, fh = innerHeight;
-    if (a < mine) fw = Math.round(fh * a); else fh = Math.round(fw / a);
-    if (fw < innerWidth - 4 || fh < innerHeight - 4) netFit(fw, fh); else if (netHW) netUnfit();
+    const a = Math.max(innerWidth / innerHeight, netPeer.vw / netPeer.vh), fh = innerHeight, fw = Math.round(fh * a);
+    if (fw > innerWidth + 4) netFit(fw, fh); else if (netHW) netUnfit();
   }
 
   // --- ce que l'hôte envoie ---
@@ -8157,7 +8260,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (ch.bufferedAmount > 200000) return; // le réseau du pote est lent : on saute une image plutôt que d'accumuler du retard
     const m = { t: 's', st: state, W, H, score, lives, level, world, bossInWorld, combo, shield, infinite, flash, flashColor, shake, cineT, speed, sayLeft,
       pw: [power.def.id, power.cd, power.active, power.maxCd], bh, lfx: levelFx ? levelFx.lv : 0,
-      pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx],
+      pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx], l2: p2 ? p2.lives : 0, ko: [player.ko ? 1 : 0, p2 && p2.ko ? 1 : 0],
       p2: p2 && [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill || 0, p2.vx, p2.ammo, p2.reload, (p2.gun || gun).mag, (p2.gun || gun).reload],
       pet: [pet.x, pet.y, pet.guardT],
       it: items, sh: shots.slice(-160), eb: ebullets.slice(-260), zp: zaps, sm: smokes, fx: netFx.splice(0) };
@@ -8170,13 +8273,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // --- les messages reçus ---
   function netOnMsg(m) {
     if (m.t === 'hello') {
-      netPeer = { cfg: cleanCfg(m.cfg), name: cleanName(m.name), kit: kitOf(m.cfg), vw: +m.vw || 0, vh: +m.vh || 0, ...(netRole === 'host' ? peerGun(m.gun) : {}) };
+      netPeer = { cfg: cleanCfg(m.cfg), name: cleanName(m.name), kit: kitOf(m.cfg), w: Math.max(0, Math.min(WORLDS.length - 1, m.w | 0)), vw: +m.vw || 0, vh: +m.vh || 0, ...(netRole === 'host' ? peerGun(m.gun) : {}) };
       if (netRole === 'host' && p2) { p2.gun = netPeer.gun; p2.pow = netPeer.pow; }
       renderTeam();
       return;
     }
-    if (m.t === 'ready') { peerReady = !!m.r; renderTeam(); tryCount(); return; }
+    if (m.t === 'ready') { peerReady = !!m.r; renderTeam(); return; }
     if (m.t === 'count' && netRole === 'guest') { if (!$('team').hidden) runCount(); return; }
+    if (m.t === 'team') { if (GAME_ST.includes(state) || !$('over').hidden) { creditRun(); netBackToTeam(); } return; }
     if (netRole === 'host') {
       if (m.t === 'in' && Array.isArray(m.k)) {
         const c = v => Math.max(-1, Math.min(1, Math.round(Number(v) || 0)));
@@ -8236,7 +8340,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     power = { def: byId(POWERS, m.pw[0]), cd: m.pw[1], active: m.pw[2], maxCd: m.pw[3] };
     bh = m.bh;
     [player.x, player.y, player.tilt, player.hurt, player.chill, player.vx] = m.pl;
-    if (m.p2) { if (!p2) p2 = { r: 12, vy: 0 }; [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill, p2.vx, p2.ammo, p2.reload] = m.p2; p2.gun = { mag: m.p2[8], reload: m.p2[9] }; }
+    if (m.p2) { if (!p2) p2 = { r: 12, vy: 0 }; [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill, p2.vx, p2.ammo, p2.reload] = m.p2; p2.gun = { mag: m.p2[8], reload: m.p2[9] }; p2.lives = m.l2 | 0; }
+    if (Array.isArray(m.ko)) { player.ko = !!m.ko[0]; if (p2) p2.ko = !!m.ko[1]; }
     [pet.x, pet.y, pet.guardT] = m.pet;
     items = m.it; shots = m.sh; ebullets = m.eb; zaps = m.zp || []; smokes = m.sm || [];
     boss = items.find(i => i.boss) || null;
@@ -8277,7 +8382,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (const b of ebullets) if (!(b.wait > 0) && !b.orbit) { b.x += (b.vx || 0) * dt; b.y += (b.vy || 0) * dt; }
       for (const it of items) if (it.kind !== 'alien' && it.vy) it.y += it.vy * speed * dt;
       for (const [pl, c] of [[player, netPeer ? netPeer.cfg : cfg], [p2, netMine]]) {
-        if (!pl || reduce) continue;
+        if (!pl || pl.ko || reduce) continue;
         const fl = flameColsOf(c.flame, performance.now());
         parts.push({ x: pl.x - Math.sin(pl.tilt) * 18 + (Math.random() - .5) * 6, y: pl.y + Math.cos(pl.tilt) * 18, vx: (Math.random() - .5) * 40, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
       }
@@ -8298,6 +8403,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   // --- l'écran Équipe : d'abord Créer / Rejoindre, puis le Hangar d'équipe (les deux pistes, Prêt !, compte à rebours) ---
   let myReady = false, peerReady = false, countT = 0;
+  // on est parti régler sa fusée (Hangar, carte des mondes) depuis le Hangar d'équipe : en revenant, on y retourne
+  var teamDetour = false;
   const kitOf = c => `${byId(GUNS, c && c.gun).name} · ${byId(POWERS, c && c.power).name}`;
   function openTeam() {
     initAudio();
@@ -8318,16 +8425,33 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('teamMeKit').textContent = kitOf(cfg);
     $('tagMe').textContent = on ? (host ? 'J1 👑' : 'J2') : 'Toi';
     $('tagFriend').textContent = on ? (host ? 'J2' : 'J1 👑') : 'Ton pote';
+    // J1 toujours en or, J2 toujours en turquoise, comme dans la partie
+    $('tagMe').classList.toggle('j2', on && !host); $('tagFriend').classList.toggle('j1', on && !host);
     $('teamFriendSlot').classList.toggle('on', on);
     $('teamFriendName').textContent = on ? netPeer.name : 'Ton pote';
     const wait = { creating: 'Création de l\'équipe…', waiting: 'En attente…', joining: 'Connexion…', linking: 'Connexion…' }[netStatus];
     $('teamFriendState').textContent = on ? netPeer.kit || '' : wait || 'Pas encore là';
-    $('padMe').classList.toggle('isready', on && myReady);
-    $('teamFriendSlot').classList.toggle('isready', on && peerReady);
-    $('readyMe').textContent = on ? (myReady ? '✓ Prêt' : 'Pas prêt') : '';
-    $('readyFriend').textContent = on ? (peerReady ? '✓ Prêt' : 'Pas prêt') : '';
-    const txt = on ? (rocketName() === DEFAULT.name ? 'Donne un nom à ta fusée (touche son nom), puis appuie sur « Prêt ! ».'
-        : myReady && peerReady ? 'Décollage imminent !' : myReady ? `On attend ${netPeer.name}…` : peerReady ? `${netPeer.name} est prêt. Et toi ?` : 'Appuyez tous les deux sur « Prêt ! » pour décoller.')
+    // le chef d'équipe (J1) annonce le décollage ; J2 dit qu'il est prêt
+    $('padMe').classList.toggle('isready', on && !host && myReady);
+    $('teamFriendSlot').classList.toggle('isready', on && host && peerReady);
+    $('readyMe').textContent = on ? (host ? '👑 Chef d\'équipe' : myReady ? '✓ Prêt' : 'Pas prêt') : '';
+    $('readyFriend').textContent = on ? (host ? (peerReady ? '✓ Prêt' : 'Pas prêt') : '👑 Chef d\'équipe') : '';
+    $('teamGear').hidden = !on;
+    if (on) {
+      $('gStyle').textContent = byId(MODELS, cfg.model).name;
+      $('gGun').textContent = byId(GUNS, cfg.gun).name;
+      $('gPower').textContent = byId(POWERS, cfg.power).name;
+      $('gSkills').textContent = `${shop.credits} Astros`;
+      const pet = petNow();
+      $('gPetBtn').hidden = !petsFreed();
+      $('gPet').textContent = pet ? pet.name : 'Aucun';
+      const w = host ? startWorld : netPeer.w || 0;
+      $('gWorld').textContent = host ? WORLDS[w].name : `${WORLDS[w].name} (J1)`;
+      $('teamWorld').disabled = !host;
+    }
+    const txt = on ? (countT > 0 ? 'Décollage imminent !' : rocketName() === DEFAULT.name ? (host ? 'Donne un nom à ta fusée (touche son nom), règle ton équipement, puis décolle avec ton pote.' : 'Donne un nom à ta fusée (touche son nom), règle ton équipement, puis appuie sur « Prêt ! ».')
+        : host ? (peerReady ? `${netPeer.name} est prêt. À toi d'annoncer le décollage !` : `Règle ta fusée en attendant que ${netPeer.name} soit prêt.`)
+        : myReady ? `Tu es prêt. ${netPeer.name} va annoncer le décollage…` : 'Règle ta fusée, puis appuie sur « Prêt ! ».')
       : netStatus === 'creating' ? 'Création de l\'équipe…'
       : netStatus === 'waiting' ? 'Envoie ce code (ou le lien) à ton pote. Il tape le code dans « Rejoindre » sur son appareil.'
       : netStatus === 'joining' || netStatus === 'linking' ? 'Connexion à l\'équipe…'
@@ -8343,9 +8467,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('teamBtns').hidden = on;
     if (on) $('teamJoinForm').hidden = true;
     $('teamReadyRow').hidden = !on;
-    $('teamReady').textContent = myReady ? '✓ Prêt !' : 'Prêt !';
-    $('teamReady').classList.toggle('on', myReady);
-    $('teamReady').disabled = countT > 0;
+    $('teamReady').textContent = host ? '🚀 Décoller à deux' : myReady ? '✓ Prêt !' : 'Prêt !';
+    $('teamReady').classList.toggle('on', host ? peerReady : myReady);
+    $('teamReady').disabled = countT > 0 || (host && !peerReady);
     $('teamStory').hidden = !host;
     $('teamQuit').hidden = !netRole;
     $('teamLocal').hidden = !!netRole;
@@ -8366,11 +8490,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (!netOpen() || countT > 0) return;
     myReady = r; netSend({ t: 'ready', r });
     beep(r ? 880 : 440, .15, 'triangle', .1, r ? 300 : -100);
-    renderTeam(); tryCount();
+    renderTeam();
   }
-  // les deux sont prêts : l'hôte lance le compte à rebours chez les deux
+  // J2 est prêt : le chef d'équipe annonce le décollage, le compte à rebours part chez les deux
   function tryCount() {
-    if (netRole !== 'host' || !myReady || !peerReady || countT > 0 || $('team').hidden) return;
+    if (netRole !== 'host' || !peerReady || countT > 0 || $('team').hidden) return;
     netSend({ t: 'count' }); runCount();
   }
   function runCount() {
@@ -8411,7 +8535,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     try { await navigator.clipboard.writeText(`${text}\n${url}`); netMsg = ''; $('teamStatus').textContent = 'Lien copié ! Colle-le dans un message à ton pote.'; }
     catch (e) { $('teamStatus').textContent = 'Copie le lien affiché sous le code et envoie-le à ton pote.'; }
   };
-  $('teamReady').onclick = () => setReady(!myReady);
+  $('teamReady').onclick = () => { if (netRole === 'host') tryCount(); else setReady(!myReady); };
+  // régler sa fusée sans quitter l'équipe : le Hangar s'ouvre à la bonne rubrique, et « Retour à l'équipe » ramène ici
+  document.querySelectorAll('#teamGear .gbtn[data-go]').forEach(b => { b.onclick = () => {
+    if (countT > 0) return;
+    if (netRole === 'guest' && myReady) setReady(false);
+    teamDetour = true; $('team').hidden = true; openHangar();
+    $('goBtn').textContent = 'Retour à l\'équipe';
+    const el = $(b.dataset.go), box = $('hangar');
+    requestAnimationFrame(() => { if (!el || !box) return; if (b.dataset.go === 'persoOpts') box.scrollTop = 0; else (el.closest('.opt') || el).scrollIntoView({ block: 'start' }); });
+  }; });
+  $('teamWorld').onclick = () => { if (netRole !== 'host' || countT > 0) return; teamDetour = true; $('team').hidden = true; openMap(); };
   // revoir l'histoire à deux (le chef d'équipe la lance, elle passe chez les deux), puis retour au Hangar d'équipe
   $('teamStory').onclick = () => {
     if (netRole !== 'host' || countT > 0) return;
@@ -8571,7 +8705,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
   };
 
+  // en équipe : on quitte la partie, pas l'équipe ; les deux reviennent au Hangar d'équipe
+  function teamHome() { if (netOpen()) netSend({ t: 'team' }); creditRun(); netBackToTeam(); }
   $('quitBtn').onclick = () => {
+    if (netRole && netOpen()) { teamHome(); return; }
     if (netRole === 'guest') { netLeave('Tu as quitté la partie de ton équipe.'); return; }
     $('cine').style.visibility = ''; $('toast').style.visibility = '';
     if (state !== 'pause') return;
@@ -8610,7 +8747,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
   const pt = (x, y, kind) => {
-    if (netHW) { const r = cv.getBoundingClientRect(); x = (x - r.left) * W / r.width; y = (y - r.top) * H / r.height; }
+    if (netHW) { x = x / camS + camX; y = y / camS; }
     // si on a attrapé la fusée, elle garde sa place sous le doigt (ou le stylet)
     if (grab && kind !== 'mouse') target = { x: x + grab.dx, y: y + grab.dy };
     else target = { x, y: y - (kind === 'touch' ? 70 : 0) };
@@ -8618,8 +8755,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // toucher la fusée : on l'attrape et elle tire une fois (on peut taper plusieurs fois de suite)
   const grabAt = (x, y) => {
     grab = null;
-    if (state === 'play' && Math.hypot(x - player.x, y - player.y) < 70) {
-      grab = { dx: player.x - x, dy: player.y - y };
+    if (netHW) { x = x / camS + camX; y = y / camS; }
+    const me = netRole === 'guest' && p2 ? p2 : player;
+    if (state === 'play' && Math.hypot(x - me.x, y - me.y) < 70) {
+      grab = { dx: me.x - x, dy: me.y - y };
       tapShots = Math.min(3, tapShots + 1);
     }
   };
@@ -8809,6 +8948,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const chilled = player.chill > 0;
     const thrust = (hyper ? 3600 : 2600) * (bossPw('freeze') || chilled ? .45 : 1);
     // siphons du Néant : la fusée est aspirée vers eux
+    if (!player.ko) {
     for (const it of items) if (it.type === 'vortex' && !it.dead && it.y > 0 && it.t <= it.stay) {
       const dx = it.x - player.x, dy = it.y - player.y, dd = Math.hypot(dx, dy) || 1;
       if (dd > 40 && dd < 420) { player.x += dx / dd * 80 * dt; player.y += dy / dd * 80 * dt; }
@@ -8825,12 +8965,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     player.x = Math.max(player.r, Math.min(W - player.r, player.x + player.vx * dt));
     player.y = Math.max(player.r + 70, Math.min(H - player.r - 10, player.y + player.vy * dt));
     player.tilt += (Math.max(-.45, Math.min(.45, player.vx / 900)) - player.tilt) * Math.min(1, dt * 10);
-    if (duo && p2) updateP2(dt, hyper, nova);
+    }
+    if (duo && p2 && !p2.ko) updateP2(dt, hyper, nova);
     if (netRole === 'host') netHostTick(dt);
 
     // particules de réacteur
     const fl = flameColsOf(cfg.flame, performance.now());
-    const n = reduce ? 1 : (hyper ? 4 : 2), tr = byId(TRAILS, cfg.trail);
+    const n = player.ko ? 0 : reduce ? 1 : (hyper ? 4 : 2), tr = byId(TRAILS, cfg.trail);
     for (let i = 0; i < n; i++) {
       const ex = player.x - Math.sin(player.tilt) * 18, ey = player.y + Math.cos(player.tilt) * 18;
       parts.push({ x: ex + (Math.random() - .5) * 6, y: ey, vx: (Math.random() - .5) * 40 - player.vx * .1, vy: 160 + Math.random() * 120, life: (.3 + Math.random() * .2) * (tr.life || 1),
@@ -8847,7 +8988,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (reload) {
       reload.t += dt;
       if (reload.t >= reload.dur) finishReload(false);
-    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (duo && !netRole && moveId !== null) || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
+    } else if (!player.ko && (keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (duo && !netRole && moveId !== null) || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
       if (tapShots > 0) tapShots--;
       fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova) ammo--;
@@ -8889,7 +9030,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const foes = () => items.filter(it => !it.dead && (it.kind === 'rock' || it.kind === 'alien') && it.y > 0 && it.y < H);
     // l'animal suit la fusée sur le côté, avec un peu de retard, et lance ses étincelles sur l'ennemi le plus proche
     const pd = petNow();
-    if (pd) {
+    if (pd && !player.ko) {
       const side = player.x < 80 ? 1 : -1, kf = 1 - Math.exp(-dt * 5);
       pet.x += (player.x + side * 46 - pet.x) * kf; pet.y += (player.y + 12 - pet.y) * kf;
       if (pet.guardT > 0) pet.guardT -= dt;
@@ -9250,7 +9391,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // la 2e fusée (Étincelle), son nom au-dessus et sa jauge de munitions en dessous
   function drawP2(t, hyper) {
     const alive = state !== 'over' && state !== 'dying';
-    if (alive && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
+    if (alive && !p2.ko && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
       if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(flameColsOf(p2Conf().flame, t)[1]), p2.x - 22, p2.y + 6, 44, 60); ctx.restore(); }
       drawRocket(ctx, p2.x, p2.y, 1, p2Conf(), t, p2.tilt, hyper ? 1 : 0);
       if (shield > 0 || hyper) {
@@ -9268,8 +9409,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // J1 / J2 au-dessus des fusées, pour que chacun retrouve la sienne
     ctx.save(); ctx.font = '12px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4, 2, 12, .8)';
     const lab = netPeer ? (netRole === 'host' ? [rocketName(), netPeer.name] : [netPeer.name, netMine.name]) : ['J1', 'J2'];
-    for (const [pl, txt, col] of [[player, lab[0], '#ffd86b'], [p2, lab[1], '#4fe0c8']]) { ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
+    for (const [pl, txt, col] of [[player, lab[0], '#ffd86b'], [p2, lab[1], '#4fe0c8']]) { if (pl.ko) continue; ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
     // munitions d'Étincelle : une petite jauge sous la fusée (elle recharge toute seule)
+    if (p2.ko) { ctx.restore(); return; }
     const g2 = p2.gun || gun, w = 34, k = infinite > 0 ? 1 : p2.reload > 0 ? 1 - p2.reload / g2.reload : p2.ammo / g2.mag;
     ctx.fillStyle = 'rgba(4, 2, 12, .6)'; ctx.fillRect(p2.x - w / 2 - 1, p2.y + 27, w + 2, 6);
     ctx.fillStyle = p2.reload > 0 ? '#ff9a3c' : infinite > 0 ? '#ffd86b' : '#4fe0c8'; ctx.fillRect(p2.x - w / 2, p2.y + 28, w * Math.max(0, Math.min(1, k)), 4);
@@ -9995,16 +10137,19 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     state = 'launch'; launchT = 0; lparts = []; launchBeeps = 0;
     for (const id of ['pauseBtn', 'powerBtn', 'weapons']) $(id).hidden = true;
   }
+  // la fusée arrive par le bas de l'écran (à deux : côte à côte)
+  function placeStart() {
+    player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
+    if (duo && p2) { player.x = W * .38; target.x = W * .38; p2.x = W * .62; p2.y = H + 40; target2 = { x: W * .62, y: H * .72 }; }
+  }
   function finishLaunch() {
     state = 'play';
     lparts = [];
     $('pauseBtn').hidden = false; $('powerBtn').hidden = false; $('weapons').hidden = false;
-    // la fusée arrive par le bas de l'écran
-    player.y = H + 40; player.x = W / 2; target = { x: W / 2, y: H * .72 };
+    placeStart();
     last = performance.now();
     // partie à deux : les fusées arrivent côte à côte, et on rappelle les commandes
     if (duo && p2) {
-      player.x = W * .38; target.x = W * .38; p2.x = W * .62; p2.y = H + 40; target2 = { x: W * .62, y: H * .72 };
       showBanner('Partie à deux', matchMedia('(pointer: coarse)').matches ? 'Un doigt chacun, de son côté de l\'écran' : 'J1 : ZQSD + F · J2 : flèches + Entrée');
       return;
     }
@@ -10020,11 +10165,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (launchT > 1.2 && launchT < 2.8) {
       // à deux : de la fumée sous chacune des deux fusées, chacune dans sa moitié d'écran
       const sides = launchSplit() ? launchConfs().map(([c], side) => [c, side]) : [[cfg, undefined]];
-      const fullW = W, keep = cfg;
+      const fullW = W, fullH = H, keep = cfg;
       for (const [c, side] of sides) {
-        if (side !== undefined) { W = fullW / 2; cfg = c; }
+        if (side !== undefined) { const h = launchHalf(side, fullW, fullH); W = h.w; H = h.h; cfg = c; }
         const { rx, ry } = launchRocket();
-        W = fullW; cfg = keep;
+        W = fullW; H = fullH; cfg = keep;
         const n = reduce ? 1 : side === undefined ? 5 : 3;
         for (let i = 0; i < n; i++) {
           const smoke = launchT < 1.7;
@@ -10824,22 +10969,37 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     return netRole === 'guest' ? [[c2, 1], [c1, 0]] : [[c1, 0], [c2, 1]];
   }
   const launchSplit = () => duo && !!p2;
+  // la moitié d'écran de chaque fusée : côte à côte sur un écran large, l'une au-dessus de l'autre sur un téléphone en hauteur
+  const launchVert = (w, h) => w < h * .8;
+  function launchHalf(side, w, h) {
+    // en hauteur, la moitié du haut commence sous le score
+    if (launchVert(w, h)) { const top = Math.min(96, h * .12), hh = (h - top) / 2; return { x: 0, y: top + side * hh, w, h: hh }; }
+    return { x: side * w / 2, y: 0, w: w / 2, h };
+  }
   function drawLaunch(t) {
     if (!launchSplit()) return drawLaunchOne(t);
-    const fullW = W, keep = cfg, names = netPeer ? (netRole === 'guest' ? [netPeer.name, netMine.name] : [rocketName(), netPeer.name]) : [rocketName(), DUO_NAME];
+    const fullW = W, fullH = H, keep = cfg, vert = launchVert(fullW, fullH), names = netPeer ? (netRole === 'guest' ? [netPeer.name, netMine.name] : [rocketName(), netPeer.name]) : [rocketName(), DUO_NAME];
     launchConfs().forEach(([c, who], side) => {
-      ctx.save(); ctx.beginPath(); ctx.rect(side * fullW / 2, 0, fullW / 2, H); ctx.clip(); ctx.translate(side * fullW / 2, 0);
-      W = fullW / 2; cfg = c; launchSide = side;
-      try { drawLaunchOne(t); } finally { W = fullW; cfg = keep; launchSide = undefined; ctx.restore(); }
-      // le nom de chaque pilote en haut de sa moitié
-      ctx.save(); ctx.textAlign = 'center'; ctx.font = `${Math.round(Math.min(18, fullW / 26))}px Bungee, Impact, sans-serif`;
+      const h = launchHalf(side, fullW, fullH);
+      ctx.save(); ctx.beginPath(); ctx.rect(h.x, h.y, h.w, h.h); ctx.clip(); ctx.translate(h.x, h.y);
+      W = h.w; H = h.h; cfg = c; launchSide = side;
+      try { drawLaunchOne(t); } finally { W = fullW; H = fullH; cfg = keep; launchSide = undefined; ctx.restore(); }
+      // le nom de chaque pilote en haut de sa moitié (et « toi » sur la sienne)
+      ctx.save(); ctx.textAlign = vert ? 'left' : 'center'; ctx.font = `${Math.round(Math.min(18, Math.max(13, fullW / 26)))}px Bungee, Impact, sans-serif`;
       ctx.lineWidth = 4; ctx.strokeStyle = '#0b0820'; ctx.fillStyle = who ? '#4fe0c8' : '#ffd86b';
-      const label = `${who ? 'J2' : 'J1'} · ${String(names[who] || '').replace(/[<>&"]/g, '')}`;
-      ctx.strokeText(label, side * fullW / 2 + fullW / 4, 118); ctx.fillText(label, side * fullW / 2 + fullW / 4, 118); ctx.restore();
+      const label = `${who ? 'J2' : 'J1'} · ${String(names[who] || '').replace(/[<>&"]/g, '')}${side === 0 && netRole ? ' (toi)' : ''}`;
+      const lx = vert ? h.x + 16 : h.x + h.w / 2, ly = vert ? h.y + 26 : 118;
+      ctx.strokeText(label, lx, ly); ctx.fillText(label, lx, ly); ctx.restore();
     });
     // la séparation entre les deux bases
-    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255, 216, 107, 0)'); g.addColorStop(.5, 'rgba(255, 216, 107, .8)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
-    ctx.fillStyle = g; ctx.fillRect(fullW / 2 - 1.5, 0, 3, H);
+    const mid = launchHalf(1, fullW, fullH);
+    if (vert) {
+      const g = ctx.createLinearGradient(0, 0, W, 0); g.addColorStop(0, 'rgba(255, 216, 107, 0)'); g.addColorStop(.5, 'rgba(255, 216, 107, .8)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      ctx.fillStyle = g; ctx.fillRect(0, mid.y - 1.5, W, 3);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255, 216, 107, 0)'); g.addColorStop(.5, 'rgba(255, 216, 107, .8)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      ctx.fillStyle = g; ctx.fillRect(fullW / 2 - 1.5, 0, 3, H);
+    }
   }
   function drawLaunchOne(t) {
     const { rx, ry, stationY, lift } = launchRocket();
@@ -11454,7 +11614,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       }
       ctx.strokeStyle = '#3a1d5a'; ctx.lineWidth = 1.5;
       for (let i = 0; i < 3; i++) { ctx.globalAlpha = a * .25; ctx.beginPath(); ctx.ellipse(0, 0, S * (.08 + i * .06), S * (.04 + i * .03), T * .15 * (i % 2 ? 1 : -1), 0, 7); ctx.stroke(); }
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      baseT();
       const cyc = (T * .2) % 1;
       if (cyc < .1 && !reduce) {
         const n = Math.floor(T * .2); let x = seeded(n + 1600) * W, y = 0;
@@ -11892,7 +12052,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (netRole === 'guest' && ['play', 'pause', 'dying', 'talk', 'choice', 'over'].includes(state)) netGuestTick(dt);
     else if (state === 'play') update(dt);
-    else if (state === 'launch') updateLaunch(dt);
+    else if (state === 'launch') { onScreen(() => updateLaunch(dt)); if (state === 'play') placeStart(); }
     else if (state === 'dying') updateDying(dt);
     else if (state === 'film') updatePrologue(dt);
     else if (state === 'over') updateFx(dt);
@@ -11904,7 +12064,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (state !== 'hangar' || t - bgDrawn > 45) {
       bgDrawn = t;
       // chez le pote, la fusée 1 est celle de l'hôte : on prête son style pendant le dessin
-      if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t);
+      camUpdate(dt);
+      // le décollage est une petite scène : on la dessine à la taille de l'écran, sans la caméra
+      onScreen(() => { if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t); });
+      drawMateArrow();
     }
     if (netRole === 'host') netHostSend(t);
     if (!$('team').hidden) drawTeam(t);
