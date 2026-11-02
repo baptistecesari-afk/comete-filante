@@ -844,6 +844,37 @@ body:not(.jeu) .hud { opacity: 0; }
   transition: transform .16s cubic-bezier(.3, 1.6, .5, 1), border-color .2s, box-shadow .2s, color .2s;
 }
 #menu .menugrid .ghost:active { transform: translateY(2px) scale(.96); border-color: var(--star); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .5), 0 0 18px rgba(255, 216, 107, .35); }
+/* Équipe en ligne : les deux fusées côte à côte, puis Créer / Rejoindre / Partager */
+.teampanel { max-width: 560px; }
+.teamslots { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tslot { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px 12px; border-radius: 20px;
+  background: radial-gradient(circle at 50% 35%, rgba(122, 216, 255, .14), rgba(8, 6, 26, .55) 70%); border: 2px solid rgba(255, 255, 255, .12); }
+.tslot.me { border-color: color-mix(in srgb, var(--star) 55%, transparent); }
+.tslot.friend { border-style: dashed; }
+.tslot.friend.on { border-style: solid; border-color: #4fe0c8; background: radial-gradient(circle at 50% 35%, rgba(79, 224, 200, .18), rgba(8, 6, 26, .55) 70%); }
+.tslot canvas { width: 100%; max-width: 150px; aspect-ratio: 5 / 6; height: auto; }
+.tslot b { font-family: var(--display); font-size: 16px; color: var(--ink); }
+.tslot small { color: var(--muted); font-size: 13px; }
+.tplus { position: absolute; top: 34%; left: 50%; transform: translate(-50%, -50%); font: 54px var(--display); color: rgba(255, 255, 255, .35); pointer-events: none; }
+.tslot.friend.on .tplus { display: none; }
+.teamstatus { margin: 4px 0 0; text-align: center; color: var(--muted); font-size: 15px; line-height: 1.45; min-height: 1.4em; }
+.teamstatus.err { color: #ff9aa8; }
+.teamcode { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px; border-radius: 18px; background: rgba(79, 224, 200, .1); border: 2px solid rgba(79, 224, 200, .45); }
+.teamcode small { color: var(--muted); text-transform: uppercase; letter-spacing: .12em; font-size: 12px; }
+.teamcode b { font: 40px var(--display); letter-spacing: .18em; color: #c8fff4; }
+.teamlink { font-size: 13px; color: var(--muted); word-break: break-all; text-align: center; }
+.teamjoin { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.teamjoin input { font: 26px var(--display); letter-spacing: .2em; text-transform: uppercase; text-align: center; width: 8.5em; max-width: 100%; padding: 10px 12px;
+  border-radius: 16px; border: 2px solid #4fe0c8; background: rgba(4, 2, 12, .7); color: #c8fff4; }
+.teamjoin .play { padding: 12px 24px; font-size: 18px; }
+.teambtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px; border-radius: 18px; cursor: var(--cur-clic);
+  font: 15px var(--display); color: var(--ink); background: linear-gradient(#3a5ee8, #2a3fb0); border: 0; box-shadow: 0 5px 0 #18266e; transition: transform .1s; }
+.tbtn span { font-size: 26px; }
+.tbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #18266e; }
+.tbtn:disabled { opacity: .45; cursor: default; filter: grayscale(.6); }
+.tbtn.on { background: linear-gradient(#2fbf9f, #1f8a74); box-shadow: 0 5px 0 #0e4a3e; }
+#teamGo { align-self: center; }
 /* Partie à deux : turquoise, la couleur d'Étincelle */
 #menu .duobtn { border-color: #4fe0c8; color: #c8fff4; }
 #menu .worldbtn { position: relative; isolation: isolate; box-shadow: 0 0 18px color-mix(in srgb, var(--w2, var(--star)) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .15), 0 10px 22px rgba(0, 0, 0, .4); }
@@ -954,6 +985,45 @@ body:not(.jeu) .hud { opacity: 0; }
       <button class="toggle" id="soundBtn">Son : activé</button>
       <button class="toggle" id="handBtn">Droitier</button>
     </div>
+  </div>
+</div>
+
+<div class="panel" id="team" hidden>
+  <div class="hangar atelier teampanel">
+    <button class="xclose" data-back="teamBack" aria-label="Fermer" title="Fermer">✕</button>
+    <h2>👥 Équipe</h2>
+    <div class="teamslots">
+      <div class="tslot me">
+        <canvas id="teamMe" width="200" height="240" aria-label="Ta fusée"></canvas>
+        <b id="teamMeName"></b><small>Toi</small>
+      </div>
+      <div class="tslot friend" id="teamFriendSlot">
+        <canvas id="teamFriend" width="200" height="240" aria-label="La fusée de ton pote"></canvas>
+        <span class="tplus" aria-hidden="true">+</span>
+        <b id="teamFriendName">Ton pote</b><small id="teamFriendState">Pas encore là</small>
+      </div>
+    </div>
+    <p class="teamstatus" id="teamStatus"></p>
+    <div class="teamcode" id="teamCodeBox" hidden>
+      <small>Code de l'équipe</small>
+      <b id="teamCode"></b>
+      <span class="teamlink notypo" id="teamLink"></span>
+    </div>
+    <form class="teamjoin" id="teamJoinForm" hidden>
+      <input id="teamJoinInput" maxlength="5" autocomplete="off" spellcheck="false" placeholder="CODE" aria-label="Code de l'équipe">
+      <button class="play" type="submit">Rejoindre</button>
+    </form>
+    <div class="teambtns" id="teamBtns">
+      <button type="button" class="tbtn" id="teamCreate"><span aria-hidden="true">👑</span>Créer</button>
+      <button type="button" class="tbtn" id="teamJoin"><span aria-hidden="true">🤝</span>Rejoindre</button>
+      <button type="button" class="tbtn" id="teamShare" disabled><span aria-hidden="true">📤</span>Partager</button>
+    </div>
+    <button type="button" class="play" id="teamGo" hidden>Décoller à deux</button>
+    <div class="row">
+      <button type="button" class="toggle" id="teamLocal">Jouer à deux sur le même appareil</button>
+      <button type="button" class="toggle" id="teamQuit" hidden>Quitter l'équipe</button>
+    </div>
+    <div class="row"><button type="button" class="ghost" id="teamBack">Retour</button></div>
   </div>
 </div>
 
@@ -1172,6 +1242,7 @@ body:not(.jeu) .hud { opacity: 0; }
     <h2>Comment jouer</h2>
     <div class="rules">
       <span>Bouger</span><span>Souris, doigt, ou flèches / ZQSD</span>
+      <span>En équipe</span><span>Menu « Partie à deux » puis « Créer » : tu reçois un code de 5 lettres et un lien à envoyer à ton pote (bouton « Partager »). Il tape le code dans « Rejoindre » (ou ouvre le lien) sur son ordinateur, sa tablette ou son téléphone, et vos deux fusées apparaissent côte à côte. Celui qui a créé l'équipe lance la partie. Chacun pilote sa propre fusée du Hangar, avec son pistolet et ses compétences. À la fin, chacun gagne les Astros de la partie dans son Hangar, et les boss battus comptent pour les deux.</span>
       <span>À deux</span><span>Menu « Partie à deux » : deux fusées dans la même partie. Joueur 1 : ZQSD (ou WASD) et F pour tirer, ou la souris. Joueur 2 : flèches et Entrée (ou L) pour tirer. Sur écran tactile, chaque joueur pose un doigt de son côté de l'écran et sa fusée tire toute seule. Les vies et le super-pouvoir sont partagés, les ennemis ont deux fois plus de vie (mais pas plus d'ennemis), et les parties à deux ne comptent pas pour le classement mondial.</span>
       <span>Tir</span><span>Clic gauche, F, le bouton Tir (garde appuyé), ou sur écran tactile : un doigt déplace la fusée et un autre doigt tape n'importe où pour tirer. Avec un stylet posé, la fusée tire toute seule. Gaucher ? Change de côté dans le menu. Ton chargeur est limité : choisis ton pistolet dans le hangar.</span>
       <span>Recharge</span><span>R, ou touche ta jauge de munitions. Appuie une 2e fois quand l'aiguille passe dans la zone dorée : recharge parfaite, balles dorées qui font double dégâts. Rate-la et tu recharges plus lentement.</span>
@@ -2246,6 +2317,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- son ---
   let actx = null, soundOn = true;
   function beep(freq, dur = .12, type = 'sine', vol = .15, slide = 0) {
+    if (netRole === 'host' && netFx.length < 300) netFx.push(['s', freq, dur, type, vol, slide]);
     if (!soundOn || !actx) return;
     const o = actx.createOscillator(), g = actx.createGain();
     o.type = type; o.frequency.value = freq;
@@ -3503,7 +3575,7 @@ body:not(.jeu) .hud { opacity: 0; }
       ], { duration: 560 + Math.random() * 260, easing: 'ease-out' }).onfinish = () => p.remove();
     }
   });
-  function closePanels() { $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
+  function closePanels() { if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -3528,6 +3600,7 @@ body:not(.jeu) .hud { opacity: 0; }
   let mouseFire = false, btnFire = false, infAt = null, tapShots = 0, grab = null, secretAt = null, bonusT = 0, bonusSpawn = 0;
   // au doigt : le premier doigt sur l'écran déplace la fusée, les autres doigts tirent ; le stylet tire tout seul
   let moveId = null, penId = null; const fireTouches = new Set();
+  const gunNow = () => gun;
   let gun = GUNS[0], ammo = 0, reload = null, golden = false, infinite = 0;
   let zapT = 0, missT = 0, zaps = [];
   let run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: 0, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }, bh = null, starT = 0, cloneT = 0, ringT = 0;
@@ -3561,7 +3634,9 @@ body:not(.jeu) .hud { opacity: 0; }
     items = []; parts = []; pops = []; shots = []; ebullets = []; boss = null; run = { perfect: 0, bossHit: false, clean: true, nextLife: 2500, credited: 0, bestBefore: best, lives: 0, bosses: 0, scored: 0, noPow: true, bossPow: false, bossT0: 0, streak: 0, secrets: [] }; runTrophies = []; defiRun = 0; defiRunWon = null; secretAt = null; bonusT = 0; bh = null; zaps = []; bossCount = 0; sector = 0; world = startWorld; bossInWorld = 0; cycle = 0; storyAt = 0; clacAt = 0; bordAt = 0; zooAt = 0; pet = { x: player.x - 46, y: player.y + 10, fireT: 1, guardT: 0, abilT: 0 }; cineT = 0; lvT = 0; newSector = false; fireT = 0;
     equipLoadout();
     // la 2e fusée a le même pistolet que la 1re, avec son propre chargeur
-    p2 = duo ? { x: W * .62, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0, chill: 0, fireT: 0, ammo: gun.mag, reload: 0 } : null;
+    p2 = duo && (netRole !== 'host' || netPeer) ? { x: W * .62, y: H * .72, r: 12, vx: 0, vy: 0, tilt: 0, hurt: 0, chill: 0, fireT: 0, ammo: gun.mag, reload: 0 } : null;
+    // la fusée du pote garde son pistolet et ses compétences du Hangar
+    if (p2 && netRole === 'host' && netPeer) { p2.gun = netPeer.gun; p2.ammo = p2.gun.mag; p2.pow = netPeer.pow; }
     p2Id = null; target2 = null;
     infinite = 0;
     infAt = 4 + Math.random() * 10;
@@ -5271,6 +5346,8 @@ body:not(.jeu) .hud { opacity: 0; }
   }
   const bossById = id => ALL_BOSSES.find(d => d.id === id);
   function playFilm(scenes, opt) {
+    // en ligne, le pote regarde la même cinématique en même temps
+    if (netRole === 'host') netSend({ t: 'film', scenes, opt: { w: opt.w, next: opt.next, clac: opt.clac, note: opt.note } });
     film = { w: 0, clac: true, go: 'Suivant', ...opt, scenes };
     proCount = scenes.length;
     for (const id of ['menu', 'over', 'help', 'hangar', 'story', 'cinema', 'pauseBtn', 'powerBtn', 'weapons', 'sayBubble', 'cine', 'talk', 'choice']) $(id).hidden = true;
@@ -6506,6 +6583,7 @@ body:not(.jeu) .hud { opacity: 0; }
     $('cinePlace').textContent = cycle ? `Il revient, plus fort (${cycle + 1}e fois).` : '';
     $('cineQuote').textContent = `«\u202f${def.quote}\u202f»`;
     c.hidden = true; void c.offsetWidth; c.hidden = false;
+    if (netRole === 'host') netSend({ t: 'cine', num: $('cineNum').textContent, name: def.name, place: $('cinePlace').textContent, quote: $('cineQuote').textContent, col: def.col });
     for (const id of ['weapons', 'powerBtn']) $(id).hidden = true;
     $('banner').classList.remove('show');
     for (let i = 0; i < 4; i++) setTimeout(() => beep(i % 2 ? 520 : 390, .28, 'square', .07), i * 330);
@@ -7376,6 +7454,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function burst(x, y, color, n = 14, sp = 220, size = 4) {
+    if (netRole === 'host') netFx.push(['b', x | 0, y | 0, color, n, sp, size]);
     if (reduce) n = Math.ceil(n / 3);
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2, v = Math.random() * sp;
@@ -7386,6 +7465,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // explosion réaliste : boule de feu, fumée, étincelles, débris et onde de choc
   // kind : 'feu' (alien, fusée) ou 'roche' (astéroïde : poussière et cailloux, pas de feu)
   function explode(x, y, col, sc = 1, kind = 'feu') {
+    if (netRole === 'host') netFx.push(['e', x | 0, y | 0, col, sc, kind]);
     const m = reduce ? .35 : 1, R = Math.random;
     if (kind === 'feu') {
       for (let i = 0; i < Math.ceil(9 * sc * m); i++) {
@@ -7417,7 +7497,7 @@ body:not(.jeu) .hud { opacity: 0; }
     }
   }
 
-  function pop(x, y, text, color = '#ff7aa8') { pops.push({ x, y, text, color, life: 1.1 }); }
+  function pop(x, y, text, color = '#ff7aa8') { if (netRole === 'host') netFx.push(['p', x | 0, y | 0, text, color]); pops.push({ x, y, text, color, life: 1.1 }); }
 
   // dégâts sur un astéroïde ou un alien
   function damage(it, dmg) {
@@ -7458,6 +7538,7 @@ body:not(.jeu) .hud { opacity: 0; }
       const bonus = lives < lifeCap();
       if (bonus) { lives++; lifeWon(); }
       run.bosses++; if (run.bosses >= 2) feat('boss2'); if (run.bosses >= 5) feat('boss5');
+      if (netRole === 'host') netSend({ t: 'beaten', id: it.def.id, open: Math.max(worldsOpen, bossInWorld >= 9 && world < WORLDS.length - 1 ? world + 2 : 0) });
       if (!beaten.includes(it.def.id)) { beaten.push(it.def.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); renderWorldPick(); }
       showBanner(`${it.def.name} vaincu !`, `+${it.pts} points` + (bonus ? ' et +1 vie' : ''));
       // sa réplique de défaite et la réaction à bord : en entier la première fois, ensuite juste sa réplique
@@ -7582,6 +7663,7 @@ body:not(.jeu) .hud { opacity: 0; }
     beep(300, .08, 'square', .05);
   }
   function tryReload() {
+    if (netRole === 'guest') return;
     if (state !== 'play' || infinite > 0) return;
     if (!reload) { startReload(); return; }
     if (reload.tried) return;
@@ -7649,6 +7731,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function activatePower() {
+    if (netRole === 'guest') { if (state === 'play') netSend({ t: 'power' }); return; }
     if (state !== 'play' || power.cd > 0 || power.active > 0) return;
     const d = power.def;
     power.active = d.dur; power.cd = power.maxCd; bump('pouvoirs');
@@ -7683,7 +7766,10 @@ body:not(.jeu) .hud { opacity: 0; }
   $('powerBtn').addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); activatePower(); });
 
   function start() {
+    if (netRole === 'guest') return; // chez le pote, c'est l'hôte qui lance la partie
     initAudio();
+    if (netRole === 'host' && netPeer) netField(); else if (netHW) netUnfit();
+    if (netRole === 'host') netSend({ t: 'go', W, H, cfg: cfg, name: rocketName() });
     reset(); state = 'play'; bump('parties');
     for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
     $('cine').hidden = true;
@@ -7727,6 +7813,7 @@ body:not(.jeu) .hud { opacity: 0; }
   const WHO_COL = { n: '#ffd86b', '???': '#ffd86b', Clac: '#ff7b4a', Nina: '#7ad8ff', Malo: '#7dff8a', 'Inès': '#ff9ad8', 'Le Dévoreur': '#c86bff', Elio: '#ffe9a8', 'Serpent de Givre': '#4fe0c8', '': '#a99fd0' };
   // une réplique de boss dans une bulle en haut de l'écran, sans pause
   function bossSay(def, text) {
+    if (netRole === 'host') netSend({ t: 'say', name: def.name, col: def.col, text });
     const b = $('sayBubble');
     b.style.setProperty('--boss', def.col);
     $('sayWho').innerHTML = whoHtml(def.name).replace(/^<span class="who">|<\/span>$/g, ''); $('sayText').textContent = typo(`«${text}»`);
@@ -7771,6 +7858,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function showBanner(title, sub) {
+    if (netRole === 'host') netSend({ t: 'banner', title, sub });
     const b = $('banner');
     b.textContent = title;
     if (sub) { const s = document.createElement('small'); s.textContent = sub; b.appendChild(s); }
@@ -7780,6 +7868,7 @@ body:not(.jeu) .hud { opacity: 0; }
   }
 
   function togglePause() {
+    if (netRole === 'guest') { netSend({ t: 'pause' }); return; }
     if (state === 'play') { state = 'pause'; $('paused').hidden = false; $('cine').style.visibility = 'hidden'; $('toast').style.visibility = 'hidden'; }
     else if (state === 'pause') { state = 'play'; $('paused').hidden = true; $('cine').style.visibility = ''; $('toast').style.visibility = ''; last = performance.now(); }
   }
@@ -7788,7 +7877,7 @@ body:not(.jeu) .hud { opacity: 0; }
   // partie à deux : l'histoire d'Étincelle la première fois, puis on décolle
   const playDuo = () => { duo = true; initAudio(); if (duoSeen) start(); else startDuoFilm(); };
   $('startBtn').onclick = play;
-  $('duoBtn').onclick = playDuo;
+  $('duoBtn').onclick = () => openTeam();
   $('mapGo').onclick = () => { $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; play(); };
   $('storyBtn').onclick = () => { initAudio(); startPrologue(startWorld); };
   $('proSkip').onclick = () => { if (proLastStep()) proGoto(0); else endFilm(); };
@@ -7800,6 +7889,402 @@ body:not(.jeu) .hud { opacity: 0; }
   $('pauseBtn').onclick = togglePause;
   $('resumeBtn').onclick = togglePause;
   // quitter depuis la pause : on garde les points et on revient au menu
+  // ===== Équipe en ligne : jouer à deux sur deux appareils =====
+  // L'hôte crée l'équipe : il reçoit un code de 5 lettres et un lien à envoyer à son pote.
+  // Le serveur (api/equipe.js) sert juste à se trouver ; ensuite les deux appareils se parlent directement (WebRTC).
+  // L'hôte fait tourner la partie (sa fusée = J1, celle du pote = J2) et envoie ce qu'il se passe 20 fois par seconde ;
+  // le pote envoie ses commandes et voit la même partie, réduite à la taille de l'écran de l'hôte.
+  const TEAM_API = /\.vercel\.app$|^localhost$|^127\./.test(location.hostname) ? '/api/equipe' : 'https://comete-filante.vercel.app/api/equipe';
+  const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:stun.cloudflare.com:3478' }];
+  let netRole = null, netPeer = null, netMine = cfg, netIn = { k: [0, 0], tg: null, f: false, at: 0 }, netFx = [];
+  let netPc = null, netR = null, netU = null, netCode = '', netStatus = 'idle', netMsg = '', netSent = 0, netInT = 0, netLastSt = '', netHW = 0, netHH = 0, netAsk = 0;
+  const STYLE_LISTS = { model: MODELS, color: COLORS, accent: ACCENTS, motif: MOTIFS, glass: GLASSES, flame: FLAMES, trail: TRAILS, shot: SHOTS };
+  // la fusée de l'autre joueur : seulement des styles qui existent dans le jeu
+  function cleanCfg(c) {
+    const o = { ...DEFAULT };
+    if (c && typeof c === 'object') for (const k in STYLE_LISTS) if (typeof c[k] === 'string') o[k] = byId(STYLE_LISTS[k], c[k]).id;
+    if (c && c.accent === 'auto') o.accent = 'auto';
+    return o;
+  }
+  const cleanName = n => String(n || '').replace(/[<>&"]/g, '').slice(0, 16) || 'Ton pote';
+  // le pistolet du pote, calculé ici à partir de ses niveaux de compétences (jamais plus que le maximum)
+  function peerGun(g) {
+    const lv = (k, m) => Math.max(0, Math.min(m, Math.floor(Number(g && g.up && g.up[k]) || 0)));
+    const base = byId(GUNS, g && g.id);
+    return { gun: { ...base, mag: Math.round(base.mag * (1 + .2 * lv('chargeur', 5))), reload: base.reload * (1 - .12 * lv('recharge', 4)), rate: base.rate * (1 - .08 * lv('cadence', 5)) }, pow: lv('puissance', 4) };
+  }
+  const p2Conf = () => netPeer && netRole === 'host' ? netPeer.cfg : netRole === 'guest' ? netMine : DUO_CONF;
+  const netOpen = () => netR && netR.readyState === 'open';
+  function netSend(m, fast) {
+    const ch = fast && netU && netU.readyState === 'open' ? netU : netR;
+    if (!ch || ch.readyState !== 'open') return;
+    try { ch.send(typeof m === 'string' ? m : JSON.stringify(m)); } catch (e) {}
+  }
+  const teamLink = code => (/^https?:$/.test(location.protocol) && !/^localhost$|^127\./.test(location.hostname) ? location.origin + location.pathname : 'https://comete-filante.vercel.app/') + '?equipe=' + code;
+  async function teamCall(method, body, code) {
+    const r = await fetch(TEAM_API + (code ? '?code=' + encodeURIComponent(code) : ''), method === 'GET' ? { cache: 'no-store' } : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Le serveur d\'équipe ne répond pas.');
+    return j;
+  }
+  // on attend que l'appareil ait trouvé ses adresses (au plus 3 secondes)
+  const iceDone = pc => new Promise(res => {
+    if (pc.iceGatheringState === 'complete') return res();
+    pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') res(); });
+    setTimeout(res, 3000);
+  });
+  function wire(ch) {
+    if (ch.label === 'u') netU = ch; else netR = ch;
+    ch.onmessage = e => { let m; try { m = JSON.parse(e.data, netRevive); } catch (err) { return; } netOnMsg(m); };
+    if (ch.label === 'r') {
+      ch.onopen = () => { netStatus = 'connected'; netMsg = ''; netHello(); renderTeam(); beep(880, .2, 'triangle', .1, 300); };
+      ch.onclose = () => netDrop();
+      if (ch.readyState === 'open') ch.onopen();
+    }
+  }
+  function netNewPc() {
+    netClose();
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    pc.onconnectionstatechange = () => { if (pc === netPc && ['failed', 'closed'].includes(pc.connectionState)) netDrop(); };
+    netPc = pc;
+    return pc;
+  }
+  function netClose() {
+    netAsk++;
+    for (const ch of [netR, netU]) if (ch) { ch.onclose = null; try { ch.close(); } catch (e) {} }
+    if (netPc) { const pc = netPc; netPc = null; try { pc.close(); } catch (e) {} }
+    netR = netU = null;
+  }
+  async function teamCreate() {
+    if (!window.RTCPeerConnection) return teamError('Ce navigateur ne sait pas jouer en équipe. Essaie avec Chrome, Safari ou Firefox à jour.');
+    netRole = 'host'; netPeer = null; netCode = ''; netStatus = 'creating'; netMsg = ''; renderTeam();
+    try {
+      const pc = netNewPc(), ask = netAsk;
+      wire(pc.createDataChannel('r'));
+      wire(pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 }));
+      await pc.setLocalDescription(await pc.createOffer());
+      await iceDone(pc);
+      const j = await teamCall('POST', { action: 'create', offer: pc.localDescription.sdp });
+      if (ask !== netAsk) return;
+      netCode = j.code; netStatus = 'waiting'; renderTeam();
+      // on regarde toutes les 1,5 seconde si le pote a répondu (pendant 30 minutes au plus)
+      for (let i = 0; i < 1200 && ask === netAsk; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (ask !== netAsk) return;
+        const g = await teamCall('GET', null, netCode).catch(() => null);
+        if (g && g.answer) { netStatus = 'linking'; renderTeam(); await pc.setRemoteDescription({ type: 'answer', sdp: g.answer }); linkTimeout(ask); return; }
+      }
+    } catch (e) { teamError(e.message); }
+  }
+  async function teamJoin(code) {
+    code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    if (code.length !== 5) return teamError('Le code a 5 lettres ou chiffres.');
+    if (!window.RTCPeerConnection) return teamError('Ce navigateur ne sait pas jouer en équipe. Essaie avec Chrome, Safari ou Firefox à jour.');
+    netRole = 'guest'; netPeer = null; netCode = code; netStatus = 'joining'; netMsg = ''; renderTeam();
+    try {
+      const pc = netNewPc(), ask = netAsk;
+      pc.ondatachannel = e => wire(e.channel);
+      const j = await teamCall('GET', null, code);
+      if (ask !== netAsk) return;
+      await pc.setRemoteDescription({ type: 'offer', sdp: j.offer });
+      await pc.setLocalDescription(await pc.createAnswer());
+      await iceDone(pc);
+      await teamCall('POST', { action: 'answer', code, answer: pc.localDescription.sdp });
+      if (ask !== netAsk) return;
+      netStatus = 'linking'; renderTeam(); linkTimeout(ask);
+    } catch (e) { teamError(e.message); }
+  }
+  // si les deux appareils n'arrivent pas à se parler (certains réseaux d'école ou de 4G bloquent), on le dit
+  function linkTimeout(ask) {
+    setTimeout(() => { if (ask === netAsk && !netOpen()) teamError('Vos deux appareils n\'arrivent pas à se connecter. Essayez sur le même Wi-Fi, ou avec un autre réseau, puis recréez une équipe.'); }, 20000);
+  }
+  function teamError(msg) { netClose(); netRole = null; netPeer = null; netStatus = 'error'; netMsg = msg; renderTeam(); }
+  // on se présente : la fusée du Hangar, son nom, son pistolet et ses compétences
+  function netHello() {
+    netMine = cfg;
+    netSend({ t: 'hello', cfg, name: rocketName(), vw: innerWidth, vh: innerHeight, gun: { id: cfg.gun, up: { chargeur: up('chargeur'), recharge: up('recharge'), cadence: up('cadence'), puissance: up('puissance') } } });
+  }
+  // le pote est parti, ou la connexion est coupée
+  function netDrop() {
+    if (!netRole) return;
+    const was = netRole, playing = ['play', 'pause', 'launch', 'dying', 'talk', 'film', 'choice', 'over'].includes(state);
+    netClose(); netPeer = null;
+    if (was === 'guest') { netLeave('La connexion avec ton équipe est coupée.'); return; }
+    netRole = null; netStatus = 'error'; netMsg = 'Ton pote a quitté l\'équipe.';
+    if (playing && p2) { p2 = null; duo = false; showBanner('Ton pote est parti', 'Tu continues seul'); }
+    renderTeam();
+  }
+  // le pote quitte : on remet son écran normal et on revient au panneau Équipe
+  function netLeave(msg) {
+    const wasGuest = netRole === 'guest';
+    netClose(); netRole = null; netPeer = null; duo = false; p2 = null; netMine = cfg;
+    if (wasGuest) netUnfit();
+    film = null;
+    for (const id of ['proCine', 'paused', 'over', 'pauseBtn', 'powerBtn', 'weapons', 'cine', 'sayBubble', 'talk', 'choice']) $(id).hidden = true;
+    $('againBtn').hidden = false;
+    document.querySelector('.hud').style.visibility = $('toast').style.visibility = '';
+    $('banner').classList.remove('show');
+    netStatus = msg ? 'error' : 'idle'; netMsg = msg || '';
+    reset(); openTeam();
+  }
+  // chez le pote : le jeu garde la taille de l'écran de l'hôte, réduit pour tenir dans le sien
+  function netFit(w, h) {
+    if (!(w > 100 && h > 100)) return;
+    netHW = w; netHH = h;
+    const k = Math.min(innerWidth / w, innerHeight / h);
+    Object.assign(cv.style, { width: w + 'px', height: h + 'px', inset: 'auto', left: ((innerWidth - w * k) / 2).toFixed(1) + 'px', top: ((innerHeight - h * k) / 2).toFixed(1) + 'px', transform: `scale(${k})`, transformOrigin: '0 0' });
+    if (W !== w || H !== h) resize();
+  }
+  function netUnfit() { netHW = netHH = 0; cv.removeAttribute('style'); resize(); }
+  addEventListener('resize', () => { if (netRole === 'guest' && netHW) netFit(netHW, netHH); else if (netRole === 'host' && netHW) netField(); });
+  // l'hôte choisit un terrain entre la forme de son écran et celle du pote (un téléphone en hauteur, un ordinateur en largeur) :
+  // chacun voit une partie plus grande que s'il fallait faire tenir tout l'écran de l'autre
+  function netField() {
+    if (!netPeer || !(netPeer.vw > 100 && netPeer.vh > 100)) return;
+    const mine = innerWidth / innerHeight, a = Math.sqrt(mine * (netPeer.vw / netPeer.vh));
+    let fw = innerWidth, fh = innerHeight;
+    if (a < mine) fw = Math.round(fh * a); else fh = Math.round(fw / a);
+    if (fw < innerWidth - 4 || fh < innerHeight - 4) netFit(fw, fh); else if (netHW) netUnfit();
+  }
+
+  // --- ce que l'hôte envoie ---
+  // les objets du jeu partent tels quels, sauf les liens entre eux ; un boss ou une espèce d'alien part sous son numéro
+  const netRep = (k, v) => {
+    if (k === 'tg' || k === 'pierce' || (k === 'boss' && typeof v === 'object')) return undefined;
+    // les images déjà dessinées (texture d'un astéroïde…) se refont chez le pote
+    if (v && typeof v === 'object' && (v instanceof HTMLCanvasElement || v instanceof HTMLImageElement || (window.OffscreenCanvas && v instanceof OffscreenCanvas) || (window.CanvasPattern && v instanceof CanvasPattern) || (window.CanvasGradient && v instanceof CanvasGradient))) return undefined;
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      if (k === 'def' && v.id) return { $b: v.id };
+      if (k === 'sp') return { $s: SPECIES.indexOf(v) };
+    }
+    if (typeof v === 'number') return Math.round(v * 100) / 100;
+    return v;
+  };
+  const netRevive = (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? (v.$b ? bossById(v.$b) : v.$s !== undefined ? SPECIES[v.$s] : v) : v;
+  const GAME_ST = ['play', 'pause', 'launch', 'dying', 'talk', 'choice', 'over', 'film'];
+  function netHostTick() { if (performance.now() - netIn.at > 1500) { netIn.f = false; netIn.k = [0, 0]; } }
+  function netHostSend(t) {
+    if (!netOpen() || !netPeer) return;
+    const inGame = GAME_ST.includes(state) && !cineReplay;
+    if (t - netSent < (inGame && state !== 'film' ? 50 : 400)) return;
+    netSent = t;
+    if (!inGame || state === 'film') { netFx.length = 0; netSend({ t: 's', st: cineReplay ? 'menu' : state }, true); return; }
+    const ch = netU && netU.readyState === 'open' ? netU : netR;
+    if (ch.bufferedAmount > 200000) return; // le réseau du pote est lent : on saute une image plutôt que d'accumuler du retard
+    const m = { t: 's', st: state, W, H, score, lives, level, world, bossInWorld, combo, shield, infinite, flash, flashColor, shake, cineT, speed, sayLeft,
+      pw: [power.def.id, power.cd, power.active, power.maxCd], bh, lfx: levelFx ? levelFx.lv : 0,
+      pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx],
+      p2: p2 && [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill || 0, p2.vx, p2.ammo, p2.reload, (p2.gun || gun).mag, (p2.gun || gun).reload],
+      pet: [pet.x, pet.y, pet.guardT],
+      it: items, sh: shots.slice(-160), eb: ebullets.slice(-260), zp: zaps, sm: smokes, fx: netFx.splice(0) };
+    let txt = JSON.stringify(m, netRep);
+    // un message trop gros ne passe pas partout : on garde l'essentiel
+    if (txt.length > 60000) { m.sm = []; m.fx = m.fx.filter(f => f[0] !== 's').slice(-40); m.sh = m.sh.slice(-80); m.eb = m.eb.slice(-140); txt = JSON.stringify(m, netRep); }
+    try { ch.send(txt); } catch (e) {}
+  }
+
+  // --- les messages reçus ---
+  function netOnMsg(m) {
+    if (m.t === 'hello') {
+      netPeer = { cfg: cleanCfg(m.cfg), name: cleanName(m.name), vw: +m.vw || 0, vh: +m.vh || 0, ...(netRole === 'host' ? peerGun(m.gun) : {}) };
+      if (netRole === 'host' && p2) { p2.gun = netPeer.gun; p2.pow = netPeer.pow; }
+      renderTeam();
+      return;
+    }
+    if (netRole === 'host') {
+      if (m.t === 'in' && Array.isArray(m.k)) {
+        const c = v => Math.max(-1, Math.min(1, Math.round(Number(v) || 0)));
+        netIn = { k: [c(m.k[0]), c(m.k[1])], tg: Array.isArray(m.tg) ? [Math.max(0, Math.min(W, +m.tg[0] || 0)), Math.max(0, Math.min(H, +m.tg[1] || 0))] : null, f: !!m.f, at: performance.now() };
+      } else if (m.t === 'power' && state === 'play') activatePower();
+      else if (m.t === 'pause' && (state === 'play' || state === 'pause')) togglePause();
+      return;
+    }
+    // chez le pote
+    if (m.t === 'go') {
+      if (m.cfg && netPeer) { netPeer.cfg = cleanCfg(m.cfg); netPeer.name = cleanName(m.name); }
+      netFit(m.W, m.H);
+      netCloseFilm();
+      for (const id of ['menu', 'team', 'over', 'paused', 'hangar', 'trophies', 'help', 'cinema', 'mapPanel', 'rankPanel', 'savePanel']) $(id).hidden = true;
+      duo = true; reset(); netMine = cfg;
+      $('againBtn').hidden = true;
+      netLastSt = 'launch'; beginLaunch();
+    } else if (m.t === 's') netApply(m);
+    else if (m.t === 'banner') showBanner(m.title, m.sub);
+    else if (m.t === 'say') bossSay({ name: cleanName(m.name), col: m.col }, String(m.text || ''));
+    else if (m.t === 'cine') {
+      const c = $('cine');
+      c.style.setProperty('--boss', m.col);
+      $('cineNum').textContent = m.num; $('cineName').textContent = m.name; $('cinePlace').textContent = m.place; $('cineQuote').textContent = m.quote;
+      c.hidden = true; void c.offsetWidth; c.hidden = false;
+    } else if (m.t === 'beaten') {
+      // les boss battus comptent aussi pour le pote
+      if (bossById(m.id) && !beaten.includes(m.id)) { beaten.push(m.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
+      const op = Math.min(WORLDS.length, Math.floor(Number(m.open) || 0));
+      if (op > worldsOpen) { worldsOpen = op; saveWorlds(); }
+      renderWorldPick();
+    } else if (m.t === 'film' && Array.isArray(m.scenes)) {
+      for (const id of ['team', 'menu', 'over']) $(id).hidden = true;
+      const o = m.opt || {};
+      playFilm(m.scenes, { w: +o.w || 0, next: o.next, clac: o.clac, note: o.note, go: 'OK', end: () => { showBanner('On attend ton équipe', 'La suite arrive…'); } });
+    }
+  }
+  function netCloseFilm() {
+    if (!film && state !== 'film') return;
+    film = null; $('proCine').hidden = true;
+    document.querySelector('.hud').style.visibility = $('toast').style.visibility = '';
+  }
+  // chez le pote : on recopie la partie de l'hôte
+  function netApply(m) {
+    const st = m.st;
+    if (!GAME_ST.includes(st)) {
+      // l'hôte est revenu au menu
+      if (GAME_ST.includes(state) && state !== 'film' || (state === 'film' && !film)) netBackToTeam();
+      return;
+    }
+    if (st === 'film' || !m.pl) return;
+    netFit(m.W, m.H);
+    if (m.level !== level) setTheme(m.level);
+    ({ score, lives, level, world, bossInWorld, combo, shield, infinite, flash, flashColor, shake, cineT, speed } = m);
+    if (m.sayLeft > 0 && sayLeft <= 0) sayLeft = m.sayLeft;
+    if (m.lfx && (!levelFx || levelFx.lv !== m.lfx)) { const th = themeOf(m.lfx); levelFx = { t: performance.now(), name: th.name, col: th.neb[0], col2: th.neb[1], lv: m.lfx }; }
+    power = { def: byId(POWERS, m.pw[0]), cd: m.pw[1], active: m.pw[2], maxCd: m.pw[3] };
+    bh = m.bh;
+    [player.x, player.y, player.tilt, player.hurt, player.chill, player.vx] = m.pl;
+    if (m.p2) { if (!p2) p2 = { r: 12, vy: 0 }; [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill, p2.vx, p2.ammo, p2.reload] = m.p2; p2.gun = { mag: m.p2[8], reload: m.p2[9] }; }
+    [pet.x, pet.y, pet.guardT] = m.pet;
+    items = m.it; shots = m.sh; ebullets = m.eb; zaps = m.zp || []; smokes = m.sm || [];
+    boss = items.find(i => i.boss) || null;
+    for (const f of m.fx || []) {
+      if (f[0] === 'b') burst(f[1], f[2], f[3], f[4], f[5], f[6]);
+      else if (f[0] === 'e') explode(f[1], f[2], f[3], f[4], f[5]);
+      else if (f[0] === 'p') pop(f[1], f[2], String(f[3]), f[4]);
+      else if (f[0] === 's') beep(f[1], f[2], f[3], f[4], f[5]);
+    }
+    if (cineT <= 0 && !$('cine').hidden) $('cine').hidden = true;
+    const prev = state;
+    const was = netLastSt; netLastSt = st;
+    if (st === 'launch') { if (was !== 'launch' && prev !== 'launch') { netCloseFilm(); beginLaunch(); } return; }
+    if (st === 'over') {
+      if (prev !== 'over') { netCloseFilm(); state = 'play'; gameOver(); $('againBtn').hidden = true; $('finalInfo').innerHTML += '<br>Ton équipe peut relancer une partie.'; }
+      return;
+    }
+    if (prev === 'film' || film) netCloseFilm();
+    if (prev === 'over') $('over').hidden = true;
+    state = st;
+    $('paused').hidden = st !== 'pause';
+    for (const id of ['pauseBtn', 'powerBtn']) $(id).hidden = st !== 'play' || cineT > 0;
+    if (st === 'talk' && prev !== 'talk') showBanner('Dialogue', 'Ton équipe lit la scène…');
+    if (st !== prev || Math.random() < .1) { updateHud(); updatePowerUi(); }
+  }
+  function netBackToTeam() {
+    netCloseFilm();
+    for (const id of ['paused', 'over', 'pauseBtn', 'powerBtn', 'weapons', 'cine', 'sayBubble']) $(id).hidden = true;
+    $('againBtn').hidden = false;
+    netUnfit(); duo = false; reset();
+    netMsg = 'Ton équipe est revenue au menu. Elle peut relancer une partie.';
+    openTeam();
+  }
+  // chez le pote, à chaque image : on fait avancer ce qui bouge entre deux nouvelles de l'hôte, et on envoie ses commandes
+  function netGuestTick(dt) {
+    if (state === 'play') {
+      for (const s of shots) { s.x += (s.vx || 0) * dt; s.y += (s.vy || 0) * dt; }
+      for (const b of ebullets) if (!(b.wait > 0) && !b.orbit) { b.x += (b.vx || 0) * dt; b.y += (b.vy || 0) * dt; }
+      for (const it of items) if (it.kind !== 'alien' && it.vy) it.y += it.vy * speed * dt;
+      for (const [pl, c] of [[player, netPeer ? netPeer.cfg : cfg], [p2, netMine]]) {
+        if (!pl || reduce) continue;
+        const fl = flameColsOf(c.flame, performance.now());
+        parts.push({ x: pl.x - Math.sin(pl.tilt) * 18 + (Math.random() - .5) * 6, y: pl.y + Math.cos(pl.tilt) * 18, vx: (Math.random() - .5) * 40, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
+      }
+    }
+    updateFx(dt);
+    if (sayLeft > 0) { if ((sayLeft -= dt) <= 0) $('sayBubble').hidden = true; else placeSay(); }
+    $('weapons').hidden = true;
+    if ((netInT -= dt) <= 0) {
+      netInT = 1 / 30;
+      const kx = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['q'] || keys['a'] ? 1 : 0);
+      const ky = (keys['arrowdown'] || keys['s'] ? 1 : 0) - (keys['arrowup'] || keys['z'] || keys['w'] ? 1 : 0);
+      if (kx || ky) target = null;
+      const f = state === 'play' && !!(keys['f'] || keys['j'] || keys['x'] || keys['enter'] || keys['l'] || mouseFire || btnFire || moveId !== null || penId !== null || tapShots > 0);
+      tapShots = 0;
+      netSend({ t: 'in', k: [kx, ky], tg: target ? [target.x | 0, target.y | 0] : null, f }, true);
+    }
+  }
+
+  // --- le panneau Équipe ---
+  function openTeam() {
+    initAudio();
+    for (const id of ['menu', 'over', 'hangar', 'trophies', 'help', 'cinema', 'mapPanel']) $(id).hidden = true;
+    state = 'hangar'; $('team').hidden = false;
+    if (netOpen()) netHello();
+    renderTeam();
+  }
+  function renderTeam() {
+    const on = netOpen() && !!netPeer, host = netRole === 'host';
+    $('teamMeName').textContent = rocketName();
+    $('teamFriendSlot').classList.toggle('on', on);
+    $('teamFriendName').textContent = on ? netPeer.name : 'Ton pote';
+    const wait = { creating: 'Création de l\'équipe…', waiting: 'En attente…', joining: 'Connexion…', linking: 'Connexion…' }[netStatus];
+    $('teamFriendState').textContent = on ? (host ? 'Prêt' : 'Chef d\'équipe') : wait || 'Pas encore là';
+    const txt = on ? (host ? 'Ton pote est là ! Lance la partie quand vous êtes prêts.' : 'Tu es dans l\'équipe ! Ton pote va lancer la partie.')
+      : netStatus === 'creating' ? 'Création de l\'équipe…'
+      : netStatus === 'waiting' ? 'Envoie ce code (ou le lien) à ton pote. Il tape le code dans « Rejoindre » sur son appareil.'
+      : netStatus === 'joining' || netStatus === 'linking' ? 'Connexion à l\'équipe…'
+      : netMsg || 'Crée une équipe et envoie le code à ton pote, ou rejoins la sienne.';
+    $('teamStatus').textContent = txt;
+    $('teamStatus').classList.toggle('err', netStatus === 'error' && !on);
+    const showCode = host && !!netCode && !on;
+    $('teamCodeBox').hidden = !showCode;
+    if (showCode) { $('teamCode').textContent = netCode; $('teamLink').textContent = teamLink(netCode); }
+    $('teamCreate').classList.toggle('on', host);
+    $('teamJoin').classList.toggle('on', netRole === 'guest');
+    $('teamShare').disabled = !showCode;
+    $('teamBtns').hidden = on;
+    $('teamGo').hidden = !(on && host);
+    $('teamQuit').hidden = !netRole;
+    $('teamLocal').hidden = !!netRole;
+  }
+  // les deux fusées qui flottent côte à côte
+  function drawTeam(t) {
+    for (const [id, conf] of [['teamMe', cfg], ['teamFriend', netOpen() && netPeer ? netPeer.cfg : null]]) {
+      const c = $(id), k = c.getContext('2d');
+      k.clearRect(0, 0, c.width, c.height);
+      if (!conf) continue;
+      const g = k.createRadialGradient(100, 120, 10, 100, 120, 110); g.addColorStop(0, 'rgba(255, 216, 107, .18)'); g.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      k.fillStyle = g; k.fillRect(0, 0, c.width, c.height);
+      drawRocket(k, 100, 110 + Math.sin(t / 500 + (id === 'teamMe' ? 0 : 2)) * 6, 2.1, conf, t, Math.sin(t / 900 + (id === 'teamMe' ? 0 : 1)) * .08, .5);
+    }
+  }
+  $('teamCreate').onclick = () => { $('teamJoinForm').hidden = true; teamCreate(); };
+  $('teamJoin').onclick = () => {
+    if (netRole === 'host') { netClose(); netRole = null; netCode = ''; netStatus = 'idle'; }
+    $('teamJoinForm').hidden = false; renderTeam(); $('teamJoinInput').focus();
+  };
+  $('teamJoinForm').onsubmit = e => { e.preventDefault(); $('teamJoinForm').hidden = true; teamJoin($('teamJoinInput').value); };
+  $('teamShare').onclick = async () => {
+    const url = teamLink(netCode), text = `Viens jouer avec moi à Comète Filante ! Code de l'équipe : ${netCode}`;
+    try { if (navigator.share) { await navigator.share({ title: 'Comète Filante', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(`${text}\n${url}`); netMsg = ''; $('teamStatus').textContent = 'Lien copié ! Colle-le dans un message à ton pote.'; }
+    catch (e) { $('teamStatus').textContent = 'Copie le lien affiché sous le code et envoie-le à ton pote.'; }
+  };
+  $('teamGo').onclick = () => {
+    if (!netOpen() || netRole !== 'host') return;
+    $('team').hidden = true; duo = true; initAudio();
+    if (duoSeen) start(); else startDuoFilm();
+  };
+  $('teamLocal').onclick = () => { $('team').hidden = true; state = 'menu'; playDuo(); };
+  $('teamQuit').onclick = () => { netClose(); netRole = null; netPeer = null; netCode = ''; netStatus = 'idle'; netMsg = ''; $('teamJoinForm').hidden = true; renderTeam(); };
+  $('teamBack').onclick = () => { $('teamJoinForm').hidden = true; closePanels(); };
+  $('teamJoinInput').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); });
+  // le lien d'invitation : ?equipe=CODE ouvre le panneau Équipe et rejoint tout seul (après avoir nommé sa fusée la 1re fois)
+  {
+    const code = new URLSearchParams(location.search).get('equipe');
+    if (code) {
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+      const tryJoin = () => { if (!$('naming').hidden) return setTimeout(tryJoin, 500); openTeam(); $('teamJoinInput').value = code.toUpperCase().slice(0, 5); teamJoin(code); };
+      setTimeout(tryJoin, 400);
+    }
+  }
+
   // ===== Classement mondial =====
   // les scores sont envoyés au serveur du jeu sur Vercel
   const RANK_API = /\.vercel\.app$/.test(location.hostname) ? '/api/scores' : 'https://comete-filante.vercel.app/api/scores';
@@ -7931,6 +8416,7 @@ body:not(.jeu) .hud { opacity: 0; }
   };
 
   $('quitBtn').onclick = () => {
+    if (netRole === 'guest') { netLeave('Tu as quitté la partie de ton équipe.'); return; }
     $('cine').style.visibility = ''; $('toast').style.visibility = '';
     if (state !== 'pause') return;
     creditRun(); saveRecord();
@@ -7968,6 +8454,7 @@ body:not(.jeu) .hud { opacity: 0; }
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
   const pt = (x, y, kind) => {
+    if (netHW) { const r = cv.getBoundingClientRect(); x = (x - r.left) * W / r.width; y = (y - r.top) * H / r.height; }
     // si on a attrapé la fusée, elle garde sa place sous le doigt (ou le stylet)
     if (grab && kind !== 'mouse') target = { x: x + grab.dx, y: y + grab.dy };
     else target = { x, y: y - (kind === 'touch' ? 70 : 0) };
@@ -7990,7 +8477,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (penId !== null) return; // le stylet est posé : c'est lui qui pilote
     if (moveId !== null && !stillDown(moveId, e.touches)) { moveId = null; grab = null; }
     // partie à deux : moitié gauche pour le joueur 1, moitié droite pour le joueur 2
-    if (duo && p2) {
+    if (duo && p2 && !netRole) {
       if (p2Id !== null && !stillDown(p2Id, e.touches)) p2Id = null;
       for (const t of e.changedTouches) {
         if (!isFinger(t)) continue;
@@ -8014,7 +8501,7 @@ body:not(.jeu) .hud { opacity: 0; }
   cv.addEventListener('touchmove', e => {
     if (e.cancelable) e.preventDefault();
     if (penId !== null) return;
-    if (duo && p2) {
+    if (duo && p2 && !netRole) {
       for (const c of e.changedTouches) {
         if (c.identifier === moveId) pt(c.clientX, c.clientY, 'touch');
         else if (c.identifier === p2Id) target2 = { x: c.clientX, y: c.clientY - 70 };
@@ -8073,7 +8560,10 @@ body:not(.jeu) .hud { opacity: 0; }
   // --- boucle ---
   // la 2e fusée : déplacement aux flèches (ou au doigt) et tir avec Entrée / L (ou tant que le doigt est posé)
   function updateP2(dt, hyper, nova) {
-    const bx = (keys['arrowright'] ? 1 : 0) - (keys['arrowleft'] ? 1 : 0), by = (keys['arrowdown'] ? 1 : 0) - (keys['arrowup'] ? 1 : 0);
+    // en ligne : les commandes arrivent de l'ordinateur du pote (netIn)
+    const ni = netRole === 'host' ? netIn : null, gun = p2.gun || gunNow();
+    const bx = ni ? ni.k[0] : (keys['arrowright'] ? 1 : 0) - (keys['arrowleft'] ? 1 : 0), by = ni ? ni.k[1] : (keys['arrowdown'] ? 1 : 0) - (keys['arrowup'] ? 1 : 0);
+    if (ni) target2 = ni.tg ? { x: ni.tg[0], y: ni.tg[1] } : (bx || by ? null : target2);
     if (p2.chill > 0) p2.chill -= dt;
     if (p2.hurt > 0) p2.hurt -= dt;
     const cold = bossPw('freeze') || p2.chill > 0;
@@ -8087,21 +8577,21 @@ body:not(.jeu) .hud { opacity: 0; }
     p2.x = Math.max(p2.r, Math.min(W - p2.r, p2.x + p2.vx * dt));
     p2.y = Math.max(p2.r + 70, Math.min(H - p2.r - 10, p2.y + p2.vy * dt));
     p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
-    const fl = flameColsOf(DUO_CONF.flame, performance.now());
+    const fl = flameColsOf(p2Conf().flame, performance.now());
     for (let i = 0; i < (reduce ? 1 : 2); i++) {
       parts.push({ x: p2.x - Math.sin(p2.tilt) * 18 + (Math.random() - .5) * 6, y: p2.y + Math.cos(p2.tilt) * 18, vx: (Math.random() - .5) * 40 - p2.vx * .1, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
     }
     p2.fireT -= dt;
     if (infinite > 0 || nova) p2.reload = 0;
     if (p2.reload > 0) { if ((p2.reload -= dt) <= 0) { p2.reload = 0; p2.ammo = gun.mag; } }
-    else if ((keys['enter'] || keys['l'] || p2Id !== null || nova) && p2.fireT <= 0) {
+    else if ((ni ? ni.f : keys['enter'] || keys['l'] || p2Id !== null || nova) && p2.fireT <= 0) {
       p2.fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova && --p2.ammo <= 0) p2.reload = gun.reload;
       const cs = Math.cos(p2.tilt), sn = Math.sin(p2.tilt);
       gun.barrels.forEach(([lx, ly, a0], bi) => {
         const a = a0 + (gun.jitter ? (Math.random() - .5) * 2 * gun.jitter : 0);
         const sp = gun.big ? 520 : 720, x = p2.x + lx * cs - ly * sn;
-        shots.push({ x, y: p2.y + lx * sn + ly * cs, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, dmg: (1 + .25 * up('puissance')) * (gun.dmg || 1), p2: true, inf: infinite > 0,
+        shots.push({ x, y: p2.y + lx * sn + ly * cs, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, dmg: (1 + .25 * (p2.pow ?? up('puissance'))) * (gun.dmg || 1), p2: true, inf: infinite > 0,
           big: gun.big, pierce: gun.pierce ? [] : null, bounce: gun.bounce || 0, wave: gun.wave ? { bx: x, t: 0, ph: bi * Math.PI } : null });
       });
       beep(1300, .05, 'square', .025, -600);
@@ -8156,7 +8646,7 @@ body:not(.jeu) .hud { opacity: 0; }
     const invincible = hyper || nova || (on && pid === 'miroir') || shield > 0;
 
     // déplacement de la fusée
-    const arrows = !(duo && p2);
+    const arrows = !(duo && p2) || !!netRole;
     const ax = ((arrows && keys['arrowright']) || keys['d'] ? 1 : 0) - ((arrows && keys['arrowleft']) || keys['q'] || keys['a'] ? 1 : 0);
     const ay = ((arrows && keys['arrowdown']) || keys['s'] ? 1 : 0) - ((arrows && keys['arrowup']) || keys['z'] || keys['w'] ? 1 : 0);
     if (player.chill > 0) player.chill -= dt;
@@ -8180,6 +8670,7 @@ body:not(.jeu) .hud { opacity: 0; }
     player.y = Math.max(player.r + 70, Math.min(H - player.r - 10, player.y + player.vy * dt));
     player.tilt += (Math.max(-.45, Math.min(.45, player.vx / 900)) - player.tilt) * Math.min(1, dt * 10);
     if (duo && p2) updateP2(dt, hyper, nova);
+    if (netRole === 'host') netHostTick(dt);
 
     // particules de réacteur
     const fl = flameColsOf(cfg.flame, performance.now());
@@ -8200,7 +8691,7 @@ body:not(.jeu) .hud { opacity: 0; }
     if (reload) {
       reload.t += dt;
       if (reload.t >= reload.dur) finishReload(false);
-    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (duo && moveId !== null) || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
+    } else if ((keys['f'] || keys['j'] || keys['x'] || mouseFire || btnFire || fireTouches.size > 0 || (duo && !netRole && moveId !== null) || (penId !== null && state === 'play') || nova || tapShots > 0) && fireT <= 0) {
       if (tapShots > 0) tapShots--;
       fireT = gun.rate * (nova ? .33 : infinite ? .7 : 1);
       if (!infinite && !nova) ammo--;
@@ -8604,8 +9095,8 @@ body:not(.jeu) .hud { opacity: 0; }
   function drawP2(t, hyper) {
     const alive = state !== 'over' && state !== 'dying';
     if (alive && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
-      if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(flameColsOf(DUO_CONF.flame, t)[1]), p2.x - 22, p2.y + 6, 44, 60); ctx.restore(); }
-      drawRocket(ctx, p2.x, p2.y, 1, DUO_CONF, t, p2.tilt, hyper ? 1 : 0);
+      if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(flameColsOf(p2Conf().flame, t)[1]), p2.x - 22, p2.y + 6, 44, 60); ctx.restore(); }
+      drawRocket(ctx, p2.x, p2.y, 1, p2Conf(), t, p2.tilt, hyper ? 1 : 0);
       if (shield > 0 || hyper) {
         ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
         ctx.globalAlpha = !hyper && shield < 1.5 ? (Math.sin(t / 60) + 1) / 2 : .9;
@@ -8620,9 +9111,10 @@ body:not(.jeu) .hud { opacity: 0; }
     if (!alive || state === 'talk') return;
     // J1 / J2 au-dessus des fusées, pour que chacun retrouve la sienne
     ctx.save(); ctx.font = '12px Bungee, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4, 2, 12, .8)';
-    for (const [pl, txt, col] of [[player, 'J1', '#ffd86b'], [p2, 'J2', '#4fe0c8']]) { ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
+    const lab = netPeer ? (netRole === 'host' ? [rocketName(), netPeer.name] : [netPeer.name, netMine.name]) : ['J1', 'J2'];
+    for (const [pl, txt, col] of [[player, lab[0], '#ffd86b'], [p2, lab[1], '#4fe0c8']]) { ctx.fillStyle = col; ctx.strokeText(txt, pl.x, pl.y - 34); ctx.fillText(txt, pl.x, pl.y - 34); }
     // munitions d'Étincelle : une petite jauge sous la fusée (elle recharge toute seule)
-    const w = 34, k = infinite > 0 ? 1 : p2.reload > 0 ? 1 - p2.reload / gun.reload : p2.ammo / gun.mag;
+    const g2 = p2.gun || gun, w = 34, k = infinite > 0 ? 1 : p2.reload > 0 ? 1 - p2.reload / g2.reload : p2.ammo / g2.mag;
     ctx.fillStyle = 'rgba(4, 2, 12, .6)'; ctx.fillRect(p2.x - w / 2 - 1, p2.y + 27, w + 2, 6);
     ctx.fillStyle = p2.reload > 0 ? '#ff9a3c' : infinite > 0 ? '#ffd86b' : '#4fe0c8'; ctx.fillRect(p2.x - w / 2, p2.y + 28, w * Math.max(0, Math.min(1, k)), 4);
     ctx.restore();
@@ -8675,7 +9167,7 @@ body:not(.jeu) .hud { opacity: 0; }
       for (let i = 0; i < 10; i++) { const b = i * Math.PI / 5 + t / 200, rr = i % 2 ? 3 : 7; ctx.lineTo(Math.cos(b) * rr, Math.sin(b) * rr); }
       ctx.closePath(); ctx.fill(); ctx.restore(); return;
     }
-    const sh = byId(SHOTS, s.p2 ? DUO_CONF.shot : cfg.shot);
+    const sh = byId(SHOTS, s.p2 ? p2Conf().shot : cfg.shot);
     const base = sh.rainbow ? ['#ffffff', `hsl(${(t / 3 + s.x + s.y) % 360}, 100%, 62%)`] : sh.c || [fl[0], fl[1]];
     const c1 = s.inf ? `hsl(${(t / 4 + s.x) % 360}, 100%, 65%)` : s.gold ? '#ffd86b' : base[1], c0 = s.gold || s.inf ? '#fffaf0' : base[0], k = s.gold ? 1.4 : 1;
     glowAt(0, -2 * k, (s.gold || sh.rainbow ? 20 : 14) * k, c1, .55);
@@ -11184,7 +11676,8 @@ body:not(.jeu) .hud { opacity: 0; }
     .replace(/«[ \u00a0\u202f]*/g, '«\u202f')
     .replace(/(\S)[ \u00a0\u202f]*(»|[!?;]+|:(?=\s|$))/g, (m, a, b) => a === '\u202f' ? m : a + '\u202f' + b)
     .replace(/^[ \u00a0]+(»|[!?;]+|:(?=\s|$))/, '\u202f$1');
-  const skipTypo = n => /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode ? n.parentNode.nodeName : '');
+  // .notypo : un lien à recopier tel quel (pas d'espace avant le « ? »)
+  const skipTypo = n => /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode ? n.parentNode.nodeName : '') || !!(n.parentNode && n.parentNode.closest && n.parentNode.closest('.notypo'));
   const typoText = n => { if (skipTypo(n)) return; const v = typo(n.data); if (v !== n.data) n.data = v; };
   function typoTree(root) { const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); for (let n; (n = tw.nextNode());) typoText(n); }
   typoTree(document.body);
@@ -11209,7 +11702,8 @@ body:not(.jeu) .hud { opacity: 0; }
     dprCheck(t, t - last);
     litCheck(t, (t - last) / 1000);
     const dt = Math.min(.033, (t - last) / 1000); last = t;
-    if (state === 'play') update(dt);
+    if (netRole === 'guest' && ['play', 'pause', 'dying', 'talk', 'choice', 'over'].includes(state)) netGuestTick(dt);
+    else if (state === 'play') update(dt);
     else if (state === 'launch') updateLaunch(dt);
     else if (state === 'dying') updateDying(dt);
     else if (state === 'film') updatePrologue(dt);
@@ -11219,7 +11713,13 @@ body:not(.jeu) .hud { opacity: 0; }
     document.body.classList.toggle('sanscurseur', !cineReplay && state === 'play');
     // fluidité : derrière un panneau (Hangar, trophées, carte…), le décor n'est qu'un fond voilé qui bouge à peine,
     // on le redessine donc une image sur trois ; toute la puissance va aux aperçus du Hangar
-    if (state !== 'hangar' || t - bgDrawn > 45) { bgDrawn = t; draw(t); }
+    if (state !== 'hangar' || t - bgDrawn > 45) {
+      bgDrawn = t;
+      // chez le pote, la fusée 1 est celle de l'hôte : on prête son style pendant le dessin
+      if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t);
+    }
+    if (netRole === 'host') netHostSend(t);
+    if (!$('team').hidden) drawTeam(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
