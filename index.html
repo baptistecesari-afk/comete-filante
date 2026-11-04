@@ -2980,24 +2980,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // En montant de niveau, la pièce ne se multiplie pas : elle gagne un détail (mi-parcours), puis une lueur animée (niveau max).
   // Coordonnées dans le repère du vaisseau (le nez vers le haut, x symétrique).
   const EVO_ANCH = {
-    classique: { mat: 'metal', nose: [0, -21], muz: [6.2, -13.4], hull: [8.3, -12, -3], pod: [10.4, 6, 5], band: { y: -11.4, w: 6.6 }, core: [0, -3, 5.6], eng: [[0, 14.5, 9]], tips: [[14.2, 14.4]] },
-    navette: { mat: 'metal', nose: [0, -18.6], muz: [3.4, -12], hull: [6.2, -3, 6], pod: [11.5, 9.6, 4], band: { y: 3, w: 3.4 }, core: [0, -6, 6], eng: [[0, 14.2, 7]], tips: [[16.5, 11.6]] },
-    eclair: { mat: 'metal', nose: [0, -24.4], muz: [3.3, -17], hull: [4.3, -6, 3], pod: [8.6, 12.5, 3.6], band: { y: 4.5, w: 3.6 }, core: [0, -11, 4.4], eng: [[0, 16.8, 5]], tips: [[11.2, 16.4]] },
-    aile: { mat: 'metal', nose: [0, -29], muz: [3.4, -20], hull: [10.6, -4, 6], pod: [15.5, 11, 3.6], band: { y: 5, w: 3.4 }, core: [0, -8, 6.2], eng: [[0, 14, 8]], tips: [[20.4, 12.6]] },
-    ovni: { mat: 'metal', nose: [0, -11.4], muz: [6, -9.6], hull: [21.5, 1, 8], pod: [13, 9.4, 3], band: { y: 3, w: 23, ring: [24, 7] }, core: [0, -6, 10.5], eng: [[0, 12, 8]], tips: [[24, 3]] },
-    tie: { mat: 'metal', nose: [0, -6.6], muz: [4.4, -5], hull: [16.4, -9, 15], pod: [11, 3, 2.6], band: { y: 3, w: 14.6, from: 10 }, core: [0, 3, 6.6], eng: [[0, 12.6, 6]], tips: [[18, -13.6], [18, 20.4]] },
-    faucon: { mat: 'metal', nose: [0, -15], muz: [7, -24.6], hull: [17.3, -2, 11], pod: [12.5, 16.5, 3], band: { y: 4, w: 0, ring: [11.6, 11.6], arc: [3.5, 5.9] }, core: [16, -6, 4.2], eng: [[0, 17.5, 6]], tips: [[-17.5, 4]] },
-    requin: { mat: 'metal', nose: [0, -25.6], muz: [6.4, -11], hull: [8.4, -8, 2], pod: [14, 7.4, 3], band: { y: 11.4, w: 6 }, core: [0, -1, 4.4], eng: [[0, 16, 6]], tips: [[18.4, 9.5]] },
-    abeille: { mat: 'organic', nose: [8.7, -23.2], muz: [2.6, -12.8], hull: [10.2, -4, 12], pod: [9.6, 14.6, 2.6], band: { y: 1.2, w: 9.4 }, core: [4.2, -8, 5.2, true], eng: [[0, 18, 4]], tips: [[13, -5]] },
-    chevalier: { mat: 'royal', nose: [0, -30], muz: [15.5, -13.6], hull: [10.6, -14, 13], pod: [16, -1.6, 2.6], band: { y: -11, w: 7 }, core: [0, 3, 5.8], eng: [[0, 19.6, 6]], tips: [[19.6, -3]] },
-    galion: { mat: 'wood', nose: [0, -29.6], muz: [16.2, 10.4], hull: [14, 8, 12.5], pod: [11, 4.6, 2.6], band: { y: -12, w: 9.5 }, core: [0, -15, 3.6], eng: [[0, 17.6, 5]], tips: [[16.4, 7.4]] },
-    mecha: { mat: 'metal', nose: [0, -29], muz: [14, -17.6], hull: [10.3, -8, 7], pod: [14, 1.6, 2.4], band: { y: -21, w: 5.6 }, core: [0, -1, 5.4], eng: [[6.4, 13.8, 4]], tips: [[14.2, 7.2]] },
-    cristal: { mat: 'crystal', nose: [0, -30.6], muz: [7.6, -16], hull: [9.1, -8, 4], pod: [6.4, 11.4, 2.4], band: { y: 13, w: 3.6, facet: true }, core: [0, -12, 4.2], eng: [[0, 18, 4]], tips: [[10, -12]] },
-    pixel: { mat: 'pixel', px: 2.2, nose: [0, -26], muz: [4.4, -19.8], hull: [6.6, -10, 2], pod: [8.8, 4.4, 2.2], band: { y: -12.2, w: 4.4 }, core: [0, -7, 4.4], eng: [[0, 17.6, 4.4], [11, 17.6, 4.4]], tips: [[13.2, 6.6]] },
-    arcade: { mat: 'pixel', px: 3, nose: [0, -21], muz: [15, -21], hull: [8.4, -12, -4], pod: [21, 3, 3], band: { y: -8.4, w: 6 }, core: [0, -14, 4], eng: [[0, 14.6, 3], [12, 14.6, 3]], tips: [[22.4, -6]] },
-    coeur: { mat: 'heart', nose: [0, -20.6], muz: [10.6, -24.6], hull: [17.4, -11, 1], pod: [10, 10, 2.6], band: { y: 9, w: 8.4 }, core: [0, -6, 9], eng: [[0, 16.2, 6]], tips: [[25, -2]] },
-    predateur: { mat: 'metal', nose: [0, -28.4], muz: [13.5, -7.6], hull: [12.6, 0, 8.6], pod: [18.6, 13, 2.6], band: { y: 7.1, w: 10.6, from: 6.8 }, core: [0, -11, 5.6], eng: [[5, 18.6, 4]], tips: [[21.6, 16.8]] },
-    legende: { mat: 'divine', nose: [0, -30.6], muz: [5.4, -19], hull: [16.6, 7.6, 12.6], pod: [19.4, 15, 2.6], band: { y: -2.2, w: 6 }, core: [0, -11, 5.8], eng: [[0, 20.4, 5]], tips: [[26.6, 17.8]] },
+    classique: { mat: 'metal', nose: [0, -21], muz: [6.2, -13.4], hull: [8.3, -12, -3], pod: [10.4, 6, 5], band: { y: -11.4, w: 6.6 }, core: { x: 0, y: -3, rx: 5.9, ry: 5.9 }, eng: [[0, 14.5, 9]], tips: [[14.2, 14.4]] },
+    navette: { mat: 'metal', nose: [0, -18.6], muz: [3.4, -12], hull: [6.2, -3, 6], pod: [11.5, 9.6, 4], band: { y: 3, w: 3.4 }, core: { x: 0, y: -7, rx: 4.6, ry: 6.1 }, eng: [[0, 14.2, 7]], tips: [[16.5, 11.6]] },
+    eclair: { mat: 'metal', nose: [0, -24.4], muz: [3.3, -17], hull: [4.3, -6, 3], pod: [8.6, 12.5, 3.6], band: { y: 4.5, w: 3.6 }, core: { x: 0, y: -12, rx: 4.1, ry: 4.1 }, eng: [[0, 16.8, 5]], tips: [[11.2, 16.4]] },
+    aile: { mat: 'metal', nose: [0, -29], muz: [3.4, -20], hull: [10.6, -4, 6], pod: [15.5, 11, 3.6], band: { y: 5, w: 3.4 }, core: { x: 0, y: -7, rx: 4.6, ry: 7.6 }, eng: [[0, 14, 8]], tips: [[20.4, 12.6]] },
+    ovni: { mat: 'metal', nose: [0, -11.4], muz: [6, -9.6], hull: [21.5, 1, 8], pod: [13, 9.4, 3], band: { y: 3, w: 23, ring: [24, 7] }, core: { x: 0, y: -5, rx: 11.6, ry: 12.6, dome: true }, eng: [[0, 12, 8]], tips: [[24, 3]] },
+    tie: { mat: 'metal', nose: [0, -6.6], muz: [4.4, -5], hull: [16.4, -9, 15], pod: [11, 3, 2.6], band: { y: 3, w: 14.6, from: 10 }, core: { x: 0, y: -1, rx: 6.5, ry: 6.5 }, eng: [[0, 12.6, 6]], tips: [[18, -13.6], [18, 20.4]] },
+    faucon: { mat: 'metal', nose: [0, -15], muz: [7, -24.6], hull: [17.3, -2, 11], pod: [12.5, 16.5, 3], band: { y: 4, w: 0, ring: [11.6, 11.6], arc: [3.5, 5.9] }, core: { x: 16, y: -10, rx: 4.4, ry: 4.4 }, eng: [[0, 17.5, 6]], tips: [[-17.5, 4]] },
+    requin: { mat: 'metal', nose: [0, -25.6], muz: [6.4, -11], hull: [8.4, -8, 2], pod: [14, 7.4, 3], band: { y: 11.4, w: 6 }, core: { x: 0, y: -2, rx: 3.9, ry: 5.4 }, eng: [[0, 16, 6]], tips: [[18.4, 9.5]] },
+    abeille: { mat: 'organic', nose: [8.7, -23.2], muz: [2.6, -12.8], hull: [10.2, -4, 12], pod: [9.6, 14.6, 2.6], band: { y: 1.2, w: 9.4 }, core: { x: 4, y: -9, rx: 4.6, ry: 5.4, rot: .3, pair: true }, eng: [[0, 18, 4]], tips: [[13, -5]] },
+    chevalier: { mat: 'royal', nose: [0, -30], muz: [15.5, -13.6], hull: [10.6, -14, 13], pod: [16, -1.6, 2.6], band: { y: -11, w: 7 }, core: { x: 0, y: 3, rx: 5.8, ry: 5.8 }, eng: [[0, 19.6, 6]], tips: [[19.6, -3]] },
+    galion: { mat: 'wood', nose: [0, -29.6], muz: [16.2, 10.4], hull: [14, 8, 12.5], pod: [11, 4.6, 2.6], band: { y: -12, w: 9.5 }, core: { x: 0, y: -15, rx: 3.6, ry: 3.6 }, eng: [[0, 17.6, 5]], tips: [[16.4, 7.4]] },
+    mecha: { mat: 'metal', nose: [0, -29], muz: [14, -17.6], hull: [10.3, -8, 7], pod: [14, 1.6, 2.4], band: { y: -21, w: 5.6 }, core: { x: 0, y: -1, rx: 5.4, ry: 5.4 }, eng: [[6.4, 13.8, 4]], tips: [[14.2, 7.2]] },
+    cristal: { mat: 'crystal', nose: [0, -30.6], muz: [7.6, -16], hull: [9.1, -8, 4], pod: [6.4, 11.4, 2.4], band: { y: 13, w: 3.6, facet: true }, core: { x: 0, y: -10, top: -20.4, bot: -4.2, w: 4.9 }, eng: [[0, 18, 4]], tips: [[10, -12]] },
+    pixel: { mat: 'pixel', px: 2.2, nose: [0, -26], muz: [4.4, -19.8], hull: [6.6, -10, 2], pod: [8.8, 4.4, 2.2], band: { y: -12.2, w: 4.4 }, core: { x: 0, y: -7, rx: 4.4, ry: 4.4 }, eng: [[0, 17.6, 4.4], [11, 17.6, 4.4]], tips: [[13.2, 6.6]] },
+    arcade: { mat: 'pixel', px: 3, nose: [0, -21], muz: [15, -21], hull: [8.4, -12, -4], pod: [21, 3, 3], band: { y: -8.4, w: 6 }, core: { x: 0, y: -14, rx: 4, ry: 4 }, eng: [[0, 14.6, 3], [12, 14.6, 3]], tips: [[22.4, -6]] },
+    coeur: { mat: 'heart', nose: [0, -20.6], muz: [10.6, -24.6], hull: [17.4, -11, 1], pod: [10, 10, 2.6], band: { y: 9, w: 8.4 }, core: { x: 0, y: -7, rx: 7, ry: 8.6 }, eng: [[0, 16.2, 6]], tips: [[25, -2]] },
+    predateur: { mat: 'metal', nose: [0, -28.4], muz: [13.5, -7.6], hull: [12.6, 0, 8.6], pod: [18.6, 13, 2.6], band: { y: 7.1, w: 10.6, from: 6.8 }, core: { x: 0, y: -9, top: -19.2, bot: -5.4, w: 4.8 }, eng: [[5, 18.6, 4]], tips: [[21.6, 16.8]] },
+    legende: { mat: 'divine', nose: [0, -30.6], muz: [5.4, -19], hull: [16.6, 7.6, 12.6], pod: [19.4, 15, 2.6], band: { y: -2.2, w: 6 }, core: { x: 0, y: -11, top: -20.4, bot: -3.4, w: 5.4 }, eng: [[0, 20.4, 5]], tips: [[26.6, 17.8]] },
   };
   function drawEvo(c, U, t, conf, body, dark, light) {
     const A = EVO_ANCH[conf.model] || EVO_ANCH.classique, mat = A.mat;
@@ -3128,20 +3128,37 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     c.shadowBlur = 0;
 
-    // --- Super-batterie : l'énergie fait briller le tour du hublot (sans le cacher) ---
+    // --- Super-batterie : un contour d'énergie qui épouse la forme du hublot (sans le cacher) ---
     q = lv('pouvoir');
     if (q) {
-      const [cx, cy, cr, pair] = A.core;
-      for (const sd of pair ? [-1, 1] : [1]) {
-        const x = cx * (pair ? sd : 1);
+      const K = A.core;
+      for (const sd of K.pair ? [-1, 1] : [1]) {
+        const x = K.x * sd, y = K.y;
         glow(q, acc, 8);
         c.globalAlpha = .55 + .45 * (q >= 1 ? pulse(2) : .6);
-        if (mat === 'pixel') { c.fillStyle = acc; for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) c.fillRect(snap(x + dx * cr) - P / 2, snap(cy + dy * cr) - P / 2, P, P); }
-        else {
-          line(.7, acc); c.setLineDash(q >= .5 ? [] : [1.4, 1.6]);
-          c.beginPath(); if (pair) c.arc(x, cy, cr, sd > 0 ? -Math.PI * .6 : Math.PI * .4, sd > 0 ? Math.PI * .6 : Math.PI * 1.6); else c.arc(x, cy, cr, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
-          if (q >= .5) { c.fillStyle = hi; const a = pair ? (sd > 0 ? 0 : Math.PI) + Math.sin(t / 700) * .5 : reduce ? 0 : t / 700; c.beginPath(); c.arc(x + Math.cos(a) * cr, cy + Math.sin(a) * cr, .8, 0, 7); c.fill(); }
+        if (mat === 'pixel') { c.fillStyle = acc; for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) c.fillRect(snap(x + dx * K.rx) - P / 2, snap(y + dy * K.ry) - P / 2, P, P); c.globalAlpha = 1; continue; }
+        line(.7, acc); c.setLineDash(q >= .5 ? [] : [1.4, 1.6]);
+        let dot;
+        c.beginPath();
+        if (K.top !== undefined) {
+          // hublot en losange : un losange un peu plus grand
+          c.moveTo(x, K.top); c.lineTo(x + K.w, y); c.lineTo(x, K.bot); c.lineTo(x - K.w, y); c.closePath();
+          const k = reduce ? 0 : (t / 2400) % 1, pts = [[x, K.top], [x + K.w, y], [x, K.bot], [x - K.w, y]], i = Math.floor(k * 4), f = k * 4 - i, a = pts[i], b = pts[(i + 1) % 4];
+          dot = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+        } else if (K.dome) {
+          // dôme de la soucoupe : seulement l'arc du dessus
+          c.ellipse(x, y, K.rx, K.ry, 0, Math.PI, Math.PI * 2);
+          const a = Math.PI + (reduce ? .5 : (Math.sin(t / 900) * .5 + .5)) * Math.PI; dot = [x + Math.cos(a) * K.rx, y + Math.sin(a) * K.ry];
+        } else if (K.pair) {
+          // les yeux de l'abeille : le côté extérieur de chaque œil, sans qu'ils se croisent
+          c.ellipse(x, y, K.rx, K.ry, sd * (K.rot || 0), sd > 0 ? -Math.PI * .55 : Math.PI * .45, sd > 0 ? Math.PI * .55 : Math.PI * 1.55);
+          const a = (sd > 0 ? 0 : Math.PI) + Math.sin(t / 700) * .5; dot = [x + Math.cos(a) * K.rx, y + Math.sin(a) * K.ry];
+        } else {
+          c.ellipse(x, y, K.rx, K.ry, 0, 0, Math.PI * 2);
+          const a = reduce ? -Math.PI / 2 : t / 700; dot = [x + Math.cos(a) * K.rx, y + Math.sin(a) * K.ry];
         }
+        c.stroke(); c.setLineDash([]);
+        if (q >= .5) { c.fillStyle = hi; c.beginPath(); c.arc(dot[0], dot[1], .8, 0, 7); c.fill(); }
         c.globalAlpha = 1;
       }
     }
