@@ -11068,10 +11068,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // gros vaisseau lointain : cargo à conteneurs, porte-vaisseaux qui lance ses chasseurs, ou vaisseau-mère alien
   // la flotte du fond grandit avec les niveaux du monde : d'abord des cargos, puis des porte-vaisseaux, enfin des vaisseaux-mères
   const fleetTier = () => Math.min(2, Math.floor(((Math.max(1, level | 0) - 1) % 12) / 4));
-  const FLEET = [['cargo', 'cargo', 'porte'], ['cargo', 'porte', 'porte', 'mere'], ['porte', 'mere', 'mere']];
+  const FLEET = [['cargo', 'cargo', 'porte', 'eclaireur', 'remorqueur', 'citerne', 'voilier', 'fregate'],
+    ['cargo', 'porte', 'mere', 'fregate', 'minier', 'yacht', 'station', 'citerne', 'voilier'],
+    ['porte', 'mere', 'croiseur', 'arche', 'station', 'yacht', 'croiseur', 'arche']];
   function addBigShip() {
     const R = Math.random, fromLeft = R() < .5, dir = fromLeft ? 1 : -1, tier = fleetTier(), F = FLEET[tier], m = F[Math.floor(R() * F.length)];
-    const len = (m === 'mere' ? Math.min(230, W * .5) : Math.min(m === 'porte' ? 360 : 330, W * .74)) * (.78 + tier * .1 + R() * .22);
+    const NS = NEW_SHIPS[m], len = (NS ? Math.min(NS.Lq * 1.1, W * .7) : m === 'mere' ? Math.min(230, W * .5) : Math.min(m === 'porte' ? 360 : 330, W * .74)) * (.78 + tier * .1 + R() * .22);
     scenery.push({ type: 'bigship', m, w: world, dir, len, x: fromLeft ? -len * .6 : W + len * .6, y: H * (.12 + R() * .38), vx: dir * (m === 'mere' ? 14 + R() * 8 : 16 + R() * 10),
       hitT: 0, hits: 0, lost: [], launchT: 2 + R() * 3, beamT: 0, ph: R() * 6.28 });
   }
@@ -11371,6 +11373,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       case 'cruiser': return Math.abs(dx) < o.len * .46 && Math.abs(dy) < o.len * .1;
       case 'bigship':
         if (o.m === 'mere') { const ex = dx / (o.len * .5), ey = (dy + o.len * .03) / (o.len * .13); return ex * ex + ey * ey < 1; }
+        if (NEW_SHIPS[o.m]) return Math.abs(dx) < o.len * .47 && Math.abs(dy) < o.len * NEW_SHIPS[o.m].hr * .5;
         return Math.abs(dx) < o.len * .47 && Math.abs(dy) < o.len * (o.m === 'porte' ? .08 : .075);
       case 'meteor': case 'debris': return dx * dx + dy * dy < 200;
       case 'comet': return dx * dx + dy * dy < 260;
@@ -11475,6 +11478,268 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // antenne sur la cabine
     k.fillStyle = P.tower; k.fillRect(L * .36, -h * .5, L * .006, h * .2);
   }
+  // ===== 10 nouveaux gros vaisseaux du fond, peints comme de vraies maquettes, aux couleurs de chaque monde =====
+  // Ils regardent vers la droite (+x). Lumière en haut à gauche : coque en métal dégradé, plaques, joints, reflet sur l'arête du haut,
+  // ombre en bas, hublots allumés, antennes et petits détails. Une image par vaisseau et par monde, peinte une seule fois.
+  const nvPath = (k, pts) => { k.beginPath(); k.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) { const p = pts[i]; if (p.length === 4) k.quadraticCurveTo(p[0], p[1], p[2], p[3]); else k.lineTo(p[0], p[1]); } k.closePath(); };
+  // une pièce de coque : métal, plaques, joints verticaux et liseré de lumière sur le dessus
+  function nvHull(k, R, pts, x0, y0, x1, y1, cols, n = 30, joint = 18) {
+    k.fillStyle = metal(k, y0, y1, cols); nvPath(k, pts); k.fill();
+    k.save(); nvPath(k, pts); k.clip();
+    plates(k, R, x0, y0, x1 - x0, y1 - y0, n, (x1 - x0) * .04);
+    k.strokeStyle = 'rgba(0, 0, 0, .28)'; k.lineWidth = .5; k.beginPath();
+    for (let x = x0 + joint * (.5 + R()); x < x1; x += joint * (.7 + R() * .6)) { k.moveTo(x, y0); k.lineTo(x, y1); }
+    k.stroke();
+    const sh = k.createLinearGradient(0, y0, 0, y1); sh.addColorStop(0, 'rgba(255, 255, 255, .22)'); sh.addColorStop(.18, 'rgba(255, 255, 255, 0)'); sh.addColorStop(.7, 'rgba(0, 0, 0, 0)'); sh.addColorStop(1, 'rgba(0, 0, 0, .45)');
+    k.fillStyle = sh; k.fillRect(x0, y0, x1 - x0, y1 - y0);
+    k.restore();
+    k.strokeStyle = nvRim; k.lineWidth = .6; nvPath(k, pts); k.stroke();
+  }
+  let nvRim = 'rgba(255, 255, 255, .2)';
+  // rangée de hublots allumés (certains éteints), et bande de couleur du monde
+  function nvWindows(k, R, x0, x1, y, P, step = 4, sz = 1.2) {
+    for (let x = x0; x < x1; x += step) { if (R() < .25) continue; k.globalAlpha = .45 + R() * .55; k.fillStyle = P.win; k.fillRect(x, y - sz / 2, sz * 1.3, sz); }
+    k.globalAlpha = 1;
+  }
+  const nvStripe = (k, x0, x1, y, hh, col, a = .55) => { k.globalAlpha = a; k.fillStyle = col; k.fillRect(x0, y, x1 - x0, hh); k.globalAlpha = 1; };
+  function nvGreebles(k, R, x0, x1, y0, y1, n, cols) {
+    for (let i = 0; i < n; i++) {
+      const w = 2 + R() * 7, hh = 1 + R() * 3, x = x0 + R() * (x1 - x0 - w), y = y0 + R() * (y1 - y0 - hh);
+      k.fillStyle = metal(k, y, y + hh, cols); k.fillRect(x, y, w, hh);
+      k.fillStyle = 'rgba(0, 0, 0, .35)'; k.fillRect(x, y + hh, w, .5);
+    }
+  }
+  const nvAntenna = (k, x, y, len, col) => { k.strokeStyle = col; k.lineWidth = .7; k.beginPath(); k.moveTo(x, y); k.lineTo(x, y - len); k.stroke(); k.fillStyle = col; k.fillRect(x - 1.5, y - len * .6, 3, .6); };
+  function nvNozzles(k, x, ys, r, P) {
+    for (const y of ys) {
+      k.fillStyle = metal(k, y - r, y + r, ['#a8a4b4', '#4a4658', '#16141f']);
+      k.beginPath(); k.moveTo(x + r * .8, y - r * .7); k.lineTo(x - r * .6, y - r); k.lineTo(x - r * .6, y + r); k.lineTo(x + r * .8, y + r * .7); k.closePath(); k.fill();
+      k.fillStyle = '#07050c'; k.fillRect(x - r * .7, y - r * .8, r * .2, r * 1.6);
+    }
+  }
+
+  // 1. Frégate : coque en coin effilée, aileron dorsal, passerelle vitrée
+  function paintFregate(k, R, L, h, P) {
+    nvNozzles(k, -L * .47, [-h * .18, h * .18], h * .16, P);
+    k.fillStyle = metal(k, -h * 1.1, -h * .4, [P.tower, P.hull[1], P.hull[2]]); nvPath(k, [[-L * .34, -h * .45], [-L * .08, -h * .45], [-L * .26, -h * 1.15], [-L * .31, -h * 1.15]]); k.fill();
+    nvHull(k, R, [[-L * .46, -h * .5], [L * .12, -h * .56], [L * .5, -h * .02], [L * .14, h * .5], [-L * .46, h * .44]], -L * .46, -h * .56, L * .5, h * .5, P.hull, 40, 16);
+    nvStripe(k, -L * .4, L * .2, h * .05, h * .08, P.line);
+    nvWindows(k, R, -L * .3, L * .18, -h * .18, P, 3.4);
+    k.fillStyle = metal(k, -h * .8, -h * .48, [P.hull[0], P.hull[1], P.hull[2]]); nvPath(k, [[L * .02, -h * .5], [L * .08, -h * .82], [L * .2, -h * .8], [L * .26, -h * .5]]); k.fill();
+    k.globalAlpha = .9; k.fillStyle = P.win; k.fillRect(L * .1, -h * .74, L * .09, h * .1); k.globalAlpha = 1;
+    nvGreebles(k, R, -L * .4, L * .05, -h * .5, -h * .3, 10, P.hull);
+    nvAntenna(k, -L * .28, -h * 1.15, h * .4, P.tower);
+    lightOn(k, 0, -h * 1.2, 0, h * .55, .25, .45);
+  }
+  // 2. Croiseur lourd : longue coque blindée, trois tourelles, tour de commandement
+  function paintCroiseur(k, R, L, h, P) {
+    nvNozzles(k, -L * .48, [-h * .22, 0, h * .22], h * .14, P);
+    nvHull(k, R, [[-L * .48, -h * .36], [L * .3, -h * .36], [L * .5, -h * .08], [L * .5, h * .06], [L * .32, h * .42], [-L * .48, h * .42]], -L * .48, -h * .36, L * .5, h * .42, P.hull, 60, 14);
+    // ceinture de blindage
+    k.fillStyle = metal(k, h * .02, h * .24, [P.hull[1], P.hull[2], '#07050c']); k.fillRect(-L * .46, h * .04, L * .82, h * .18);
+    nvWindows(k, R, -L * .42, L * .3, -h * .12, P, 3);
+    // tour
+    nvHull(k, R, [[-L * .14, -h * .36], [-L * .1, -h * .9], [L * .06, -h * .9], [L * .12, -h * .36]], -L * .14, -h * .9, L * .12, -h * .36, [P.tower, P.hull[1], P.hull[2]], 12, 8);
+    nvWindows(k, R, -L * .09, L * .06, -h * .74, P, 2.4, 1);
+    nvAntenna(k, -L * .04, -h * .9, h * .5, P.tower); nvAntenna(k, L * .02, -h * .9, h * .3, P.tower);
+    // tourelles (décor : elles ne tirent pas)
+    for (const x of [-L * .34, L * .2, L * .32]) {
+      k.fillStyle = metal(k, -h * .56, -h * .36, [P.hull[0], P.hull[1], P.hull[2]]); k.beginPath(); k.ellipse(x, -h * .36, h * .2, h * .16, 0, Math.PI, 0); k.fill();
+      k.fillStyle = P.hull[2]; k.fillRect(x, -h * .5, h * .42, h * .05); k.fillRect(x, -h * .42, h * .42, h * .05);
+    }
+    lightOn(k, 0, -h * 1, 0, h * .45, .22, .45);
+  }
+  // 3. Station mobile : grand anneau habité autour d'un axe, panneaux solaires
+  function paintStation(k, R, L, h, P) {
+    // panneaux solaires (derrière)
+    for (const s of [-1, 1]) {
+      const y0 = s < 0 ? -h * 1.3 : h * .5;
+      const g = k.createLinearGradient(0, y0, 0, y0 + h * .8); g.addColorStop(0, '#1a2a5a'); g.addColorStop(.5, '#3a5a9a'); g.addColorStop(1, '#0c1430');
+      k.fillStyle = g; k.fillRect(-L * .44, y0, L * .22, h * .8);
+      k.strokeStyle = 'rgba(200, 220, 255, .25)'; k.lineWidth = .4; k.beginPath();
+      for (let x = -L * .44; x <= -L * .22; x += L * .022) { k.moveTo(x, y0); k.lineTo(x, y0 + h * .8); }
+      for (let y = y0; y <= y0 + h * .8; y += h * .16) { k.moveTo(-L * .44, y); k.lineTo(-L * .22, y); }
+      k.stroke();
+      k.fillStyle = P.hull[1]; k.fillRect(-L * .34, s < 0 ? -h * .5 : h * .2, L * .012, h * .3);
+    }
+    nvNozzles(k, -L * .48, [0], h * .16, P);
+    nvHull(k, R, [[-L * .47, -h * .14], [L * .46, -h * .14], [L * .5, 0], [L * .46, h * .14], [-L * .47, h * .14]], -L * .47, -h * .14, L * .5, h * .14, P.hull, 30, 12);
+    // anneau vu de profil (une ellipse épaisse), avec ses hublots
+    const cx = L * .08, rx = h * .55, ry = h * 1.05;
+    k.lineWidth = h * .26; k.strokeStyle = metal(k, -ry, ry, P.hull); k.beginPath(); k.ellipse(cx, 0, rx, ry, 0, 0, 7); k.stroke();
+    k.lineWidth = .5; k.strokeStyle = 'rgba(0, 0, 0, .4)'; for (let a = 0; a < 6.28; a += .35) { k.beginPath(); k.moveTo(cx + Math.cos(a) * (rx - h * .13), Math.sin(a) * (ry - h * .13)); k.lineTo(cx + Math.cos(a) * (rx + h * .13), Math.sin(a) * (ry + h * .13)); k.stroke(); }
+    for (let a = 0; a < 6.28; a += .2) { if (R() < .3) continue; k.globalAlpha = .5 + R() * .5; k.fillStyle = P.win; k.fillRect(cx + Math.cos(a) * rx - .6, Math.sin(a) * ry - .6, 1.3, 1.3); }
+    k.globalAlpha = 1;
+    // rayons qui tiennent l'anneau
+    k.strokeStyle = P.hull[1]; k.lineWidth = 1.2; for (const a of [.8, 2.35, 3.9, 5.5]) { k.beginPath(); k.moveTo(cx, 0); k.lineTo(cx + Math.cos(a) * rx, Math.sin(a) * ry); k.stroke(); }
+    k.fillStyle = metal(k, -h * .3, h * .3, [P.tower, P.hull[1], P.hull[2]]); k.beginPath(); k.arc(cx, 0, h * .3, 0, 7); k.fill();
+    nvWindows(k, R, L * .2, L * .44, 0, P, 3);
+    lightOn(k, 0, -h * 1.4, 0, h * 1.4, .25, .5);
+  }
+  // 4. Éclaireur : fuselage en aiguille et deux nacelles reliées par des bras
+  function paintEclaireur(k, R, L, h, P) {
+    for (const s of [-1, 1]) {
+      k.strokeStyle = P.hull[1]; k.lineWidth = 1.6; k.beginPath(); k.moveTo(-L * .1, 0); k.lineTo(-L * .22, s * h * .9); k.moveTo(L * .05, 0); k.lineTo(-L * .08, s * h * .9); k.stroke();
+      const y = s * h * .9;
+      nvNozzles(k, -L * .44, [y], h * .16, P);
+      nvHull(k, R, [[-L * .42, y - h * .2], [L * .02, y - h * .2], [L * .1, y], [L * .02, y + h * .2], [-L * .42, y + h * .2]], -L * .42, y - h * .2, L * .1, y + h * .2, P.hull, 14, 10);
+      nvStripe(k, -L * .38, -L * .05, y - h * .03, h * .06, P.line, .7);
+    }
+    nvHull(k, R, [[-L * .36, -h * .26], [L * .2, -h * .3], [L * .5, 0], [L * .2, h * .3], [-L * .36, h * .26]], -L * .36, -h * .3, L * .5, h * .3, P.hull, 24, 12);
+    k.globalAlpha = .9; k.fillStyle = P.win; nvPath(k, [[L * .22, -h * .24], [L * .36, -h * .1], [L * .24, -h * .06]]); k.fill(); k.globalAlpha = 1;
+    nvWindows(k, R, -L * .28, L * .14, h * .04, P, 4);
+    lightOn(k, 0, -h * 1.2, 0, h * 1.2, .22, .45);
+  }
+  // 5. Vaisseau minier : gros blocs empilés, foreuse à l'avant, bras de grue, bandes de danger
+  function paintMinier(k, R, L, h, P) {
+    nvNozzles(k, -L * .48, [-h * .25, h * .25], h * .2, P);
+    nvHull(k, R, [[-L * .47, -h * .45], [-L * .05, -h * .45], [-L * .05, -h * .6], [L * .22, -h * .6], [L * .26, -h * .3], [L * .3, -h * .3], [L * .3, h * .45], [-L * .47, h * .45]], -L * .47, -h * .6, L * .3, h * .45, P.hull, 50, 12);
+    // bandes de danger
+    k.save(); k.beginPath(); k.rect(-L * .44, h * .25, L * .7, h * .12); k.clip();
+    k.fillStyle = '#1a1612'; k.fillRect(-L * .44, h * .25, L * .7, h * .12); k.fillStyle = P.line; k.globalAlpha = .8;
+    for (let x = -L * .44; x < L * .3; x += h * .24) { k.beginPath(); k.moveTo(x, h * .37); k.lineTo(x + h * .12, h * .25); k.lineTo(x + h * .22, h * .25); k.lineTo(x + h * .1, h * .37); k.fill(); }
+    k.restore(); k.globalAlpha = 1;
+    // foreuse en cône, à spirale
+    k.fillStyle = metal(k, -h * .3, h * .3, ['#c8c4d0', '#6a6676', '#24202e']); nvPath(k, [[L * .3, -h * .3], [L * .5, 0], [L * .3, h * .3]]); k.fill();
+    k.strokeStyle = 'rgba(0, 0, 0, .4)'; k.lineWidth = .7; k.beginPath(); for (let i = 0; i < 6; i++) { const x = L * .3 + i * L * .03; k.moveTo(x, -h * .3 * (1 - i / 6)); k.lineTo(x + L * .025, h * .3 * (1 - (i + .8) / 6)); } k.stroke();
+    // grue
+    k.strokeStyle = P.tower; k.lineWidth = 1.4; k.beginPath(); k.moveTo(-L * .2, -h * .45); k.lineTo(-L * .1, -h * 1.1); k.lineTo(L * .12, -h * .95); k.stroke();
+    k.lineWidth = .5; k.beginPath(); k.moveTo(L * .12, -h * .95); k.lineTo(L * .12, -h * .7); k.stroke();
+    nvWindows(k, R, L * .0, L * .2, -h * .45, P, 3);
+    nvGreebles(k, R, -L * .44, L * .25, -h * .4, h * .2, 18, P.hull);
+    lightOn(k, 0, -h * 1.2, 0, h * .5, .22, .45);
+  }
+  // 6. Citerne : poutre centrale portant quatre grosses sphères de carburant, cabine à l'avant
+  function paintCiterne(k, R, L, h, P) {
+    nvNozzles(k, -L * .48, [-h * .1, h * .1], h * .14, P);
+    nvHull(k, R, [[-L * .47, -h * .1], [L * .3, -h * .1], [L * .3, h * .1], [-L * .47, h * .1]], -L * .47, -h * .1, L * .3, h * .1, [P.hull[1], P.hull[2], '#07050c'], 20, 10);
+    for (let i = 0; i < 4; i++) {
+      const x = -L * .34 + i * L * .16, r = h * .44;
+      const g = k.createRadialGradient(x - r * .4, -r * .45, r * .1, x, 0, r * 1.05);
+      g.addColorStop(0, P.hull[0]); g.addColorStop(.55, P.hull[1]); g.addColorStop(1, P.hull[2]);
+      k.fillStyle = g; k.beginPath(); k.arc(x, 0, r, 0, 7); k.fill();
+      k.strokeStyle = 'rgba(0, 0, 0, .3)'; k.lineWidth = .6; k.beginPath(); k.ellipse(x, 0, r * .35, r, 0, 0, 7); k.moveTo(x - r, 0); k.lineTo(x + r, 0); k.stroke();
+      k.fillStyle = 'rgba(255, 255, 255, .35)'; k.beginPath(); k.ellipse(x - r * .4, -r * .5, r * .22, r * .1, -.5, 0, 7); k.fill();
+      nvStripe(k, x - r * .9, x + r * .9, r * .3, r * .1, P.line, .5);
+    }
+    nvHull(k, R, [[L * .3, -h * .3], [L * .42, -h * .3], [L * .5, -h * .05], [L * .46, h * .3], [L * .3, h * .3]], L * .3, -h * .3, L * .5, h * .3, P.hull, 10, 6);
+    k.globalAlpha = .9; k.fillStyle = P.win; k.fillRect(L * .42, -h * .24, L * .04, h * .12); k.globalAlpha = 1;
+    nvAntenna(k, L * .36, -h * .3, h * .4, P.tower);
+    lightOn(k, 0, -h * .7, 0, h * .7, .2, .45);
+  }
+  // 7. Yacht royal : coque courbe et élégante, grande baie vitrée, liseré doré du monde
+  function paintYacht(k, R, L, h, P) {
+    nvNozzles(k, -L * .46, [0], h * .22, P);
+    nvHull(k, R, [[-L * .45, -h * .3], [-L * .1, -h * .62, L * .3, -h * .5], [L * .52, -h * .1, L * .5, h * .05], [L * .2, h * .5, -L * .3, h * .42], [-L * .45, h * .3]], -L * .45, -h * .62, L * .52, h * .5, [P.hull[0], P.hull[1], P.hull[2]], 30, 22);
+    // grande baie vitrée qui suit la courbe
+    k.save(); k.beginPath(); k.moveTo(-L * .28, -h * .2); k.quadraticCurveTo(L * .05, -h * .42, L * .36, -h * .2); k.lineTo(L * .34, -h * .1); k.quadraticCurveTo(L * .05, -h * .3, -L * .27, -h * .1); k.closePath();
+    const gw = k.createLinearGradient(0, -h * .4, 0, -h * .1); gw.addColorStop(0, '#ffffffaa'); gw.addColorStop(.3, P.win + 'cc'); gw.addColorStop(1, P.hull[2] + 'ee'); k.fillStyle = gw; k.fill(); k.restore();
+    k.strokeStyle = P.tower; k.globalAlpha = .8; k.lineWidth = .9; k.beginPath(); k.moveTo(-L * .42, h * .12); k.quadraticCurveTo(L * .1, h * .22, L * .46, h * .02); k.stroke(); k.globalAlpha = 1;
+    nvWindows(k, R, -L * .3, L * .3, h * .02, P, 5, 1);
+    // aileron arrière et petite antenne
+    k.fillStyle = metal(k, -h * 1, -h * .3, [P.tower, P.hull[1], P.hull[2]]); nvPath(k, [[-L * .42, -h * .3], [-L * .3, -h * .38], [-L * .4, -h * .95]]); k.fill();
+    lightOn(k, 0, -h * 1, 0, h * .5, .3, .4);
+  }
+  // 8. Arche : vaisseau géant qui transporte un jardin sous un dôme de verre
+  function paintArche(k, R, L, h, P) {
+    nvNozzles(k, -L * .48, [-h * .1, h * .12, h * .32], h * .14, P);
+    nvHull(k, R, [[-L * .47, -h * .1], [L * .38, -h * .1], [L * .5, h * .1], [L * .36, h * .48], [-L * .4, h * .48], [-L * .47, h * .36]], -L * .47, -h * .1, L * .5, h * .48, P.hull, 60, 12);
+    // dôme de verre et son jardin
+    const cx = -L * .02, rx = L * .34, ry = h * .62;
+    k.save(); k.beginPath(); k.ellipse(cx, -h * .1, rx, ry, 0, Math.PI, 0); k.closePath(); k.clip();
+    const gg = k.createLinearGradient(0, -h * .7, 0, -h * .1); gg.addColorStop(0, '#0c2a1a'); gg.addColorStop(1, '#1a4a28'); k.fillStyle = gg; k.fillRect(cx - rx, -h * .75, rx * 2, h * .7);
+    for (let i = 0; i < 26; i++) { const x = cx - rx * .9 + R() * rx * 1.8, s = 2 + R() * 5; k.fillStyle = R() < .5 ? '#2a6a3a' : '#3a8a4a'; k.beginPath(); k.arc(x, -h * .12 - s * .6, s, 0, 7); k.fill(); k.fillStyle = '#1a2a14'; k.fillRect(x - .4, -h * .12 - s * .2, .8, s * .3); }
+    for (let i = 0; i < 12; i++) { k.globalAlpha = .6 + R() * .4; k.fillStyle = P.win; k.fillRect(cx - rx * .8 + R() * rx * 1.6, -h * .14 - R() * h * .1, 1, 1); }
+    k.globalAlpha = 1;
+    const gl = k.createLinearGradient(cx - rx, -h * .7, cx + rx * .3, -h * .1); gl.addColorStop(0, 'rgba(255, 255, 255, .35)'); gl.addColorStop(.35, 'rgba(255, 255, 255, .05)'); gl.addColorStop(1, 'rgba(255, 255, 255, 0)'); k.fillStyle = gl; k.fillRect(cx - rx, -h * .75, rx * 2, h * .7);
+    k.restore();
+    k.strokeStyle = 'rgba(220, 235, 255, .35)'; k.lineWidth = .5; k.beginPath(); k.ellipse(cx, -h * .1, rx, ry, 0, Math.PI, 0); k.stroke();
+    for (let a = .3; a < 3; a += .3) { k.beginPath(); k.moveTo(cx, -h * .1 - ry); k.quadraticCurveTo(cx + Math.cos(Math.PI + a) * rx * .9, -h * .1 - ry * .5, cx + Math.cos(Math.PI + a) * rx, -h * .1); k.stroke(); }
+    nvWindows(k, R, -L * .4, L * .36, h * .2, P, 3);
+    nvStripe(k, -L * .42, L * .34, h * .3, h * .05, P.line, .6);
+    lightOn(k, 0, -h * .8, 0, h * .5, .18, .45);
+  }
+  // 9. Remorqueur : petit vaisseau trapu qui tire un astéroïde au bout d'un câble
+  function paintRemorqueur(k, R, L, h, P) {
+    // un gros bloc de minerai cristallin, pris dans un filet (pas un astéroïde : on ne doit pas croire qu'il faut le viser)
+    const ax = -L * .28, ar = h * .7;
+    const crys = [[-.9, .1, .5, -.3], [-.5, -.6, .55, -.1], [0, -.85, .6, .1], [.45, -.5, .5, .35], [.6, .2, .45, .6], [-.2, .3, .6, -.05]];
+    for (const [cx0, cy0, sz, rot] of crys) {
+      const x = ax + cx0 * ar * .8, y = cy0 * ar * .7, s2 = ar * sz;
+      k.save(); k.translate(x, y); k.rotate(rot);
+      const cg = k.createLinearGradient(-s2 * .4, -s2, s2 * .4, s2 * .3); cg.addColorStop(0, P.hull[0]); cg.addColorStop(.5, P.hull[1]); cg.addColorStop(1, P.hull[2]);
+      k.fillStyle = cg; nvPath(k, [[0, -s2], [s2 * .38, -s2 * .55], [s2 * .3, s2 * .4], [-s2 * .3, s2 * .4], [-s2 * .38, -s2 * .55]]); k.fill();
+      k.fillStyle = 'rgba(255, 255, 255, .18)'; nvPath(k, [[0, -s2], [s2 * .38, -s2 * .55], [0, -s2 * .3]]); k.fill();
+      k.globalAlpha = .55; k.strokeStyle = P.line; k.lineWidth = .7; k.beginPath(); k.moveTo(0, -s2 * .85); k.lineTo(0, s2 * .3); k.stroke(); k.globalAlpha = 1;
+      k.restore();
+    }
+    k.strokeStyle = 'rgba(210, 220, 235, .3)'; k.lineWidth = .4; k.beginPath();
+    for (let i = -4; i <= 4; i++) { k.moveTo(ax + i * ar * .22, -ar * .75); k.lineTo(ax + i * ar * .22 + ar * .2, ar * .55); k.moveTo(ax - ar, i * ar * .16); k.lineTo(ax + ar, i * ar * .16 + ar * .1); }
+    k.stroke();
+    // câbles
+    k.strokeStyle = P.hull[1]; k.lineWidth = .8; k.beginPath(); k.moveTo(ax + ar * .7, -ar * .3); k.lineTo(L * .12, -h * .1); k.moveTo(ax + ar * .7, ar * .3); k.lineTo(L * .12, h * .1); k.stroke();
+    nvNozzles(k, L * .14, [-h * .3, h * .3], h * .14, P);
+    nvHull(k, R, [[L * .16, -h * .42], [L * .4, -h * .42], [L * .5, -h * .1], [L * .48, h * .3], [L * .4, h * .42], [L * .16, h * .42]], L * .16, -h * .42, L * .5, h * .42, P.hull, 20, 8);
+    k.globalAlpha = .9; k.fillStyle = P.win; k.fillRect(L * .4, -h * .32, L * .05, h * .14); k.globalAlpha = 1;
+    nvStripe(k, L * .17, L * .46, h * .12, h * .1, P.line, .65);
+    nvAntenna(k, L * .3, -h * .42, h * .35, P.tower);
+    lightOn(k, 0, -h * .8, 0, h * .8, .22, .45);
+  }
+  // 10. Voilier solaire : coque fine et immenses voiles qui captent la lumière
+  function paintVoilier(k, R, L, h, P) {
+    for (const s of [-1, 1]) {
+      const y0 = s < 0 ? -h * 2.6 : h * .5, hh = h * 2.1;
+      const g = k.createLinearGradient(-L * .3, y0, L * .2, y0 + hh); g.addColorStop(0, P.hull[0] + 'cc'); g.addColorStop(.5, P.hull[1] + '99'); g.addColorStop(1, P.hull[2] + 'cc');
+      k.fillStyle = g; nvPath(k, s < 0 ? [[-L * .3, -h * .5], [L * .22, -h * .5], [L * .1, y0], [-L * .2, y0]] : [[-L * .3, h * .5], [L * .22, h * .5], [L * .1, y0 + hh], [-L * .2, y0 + hh]]); k.fill();
+      k.strokeStyle = 'rgba(255, 255, 255, .25)'; k.lineWidth = .4; k.beginPath();
+      for (let i = 1; i < 6; i++) { const q = i / 6; k.moveTo(-L * .3 + q * L * .1, s * h * .5); k.lineTo(-L * .2 + q * L * .3, s < 0 ? y0 : y0 + hh); }
+      k.stroke();
+      const sh = k.createLinearGradient(-L * .3, 0, L * .2, 0); sh.addColorStop(0, 'rgba(255, 255, 255, 0)'); sh.addColorStop(.4, 'rgba(255, 255, 255, .18)'); sh.addColorStop(.55, 'rgba(255, 255, 255, 0)');
+      k.fillStyle = sh; nvPath(k, s < 0 ? [[-L * .3, -h * .5], [L * .22, -h * .5], [L * .1, y0], [-L * .2, y0]] : [[-L * .3, h * .5], [L * .22, h * .5], [L * .1, y0 + hh], [-L * .2, y0 + hh]]); k.fill();
+      k.strokeStyle = P.tower; k.lineWidth = .8; k.beginPath(); k.moveTo(-L * .04, s * h * .5); k.lineTo(-L * .04, s < 0 ? y0 : y0 + hh); k.stroke();
+    }
+    nvNozzles(k, -L * .48, [0], h * .3, P);
+    nvHull(k, R, [[-L * .47, -h * .5], [L * .3, -h * .5], [L * .5, 0], [L * .3, h * .5], [-L * .47, h * .5]], -L * .47, -h * .5, L * .5, h * .5, P.hull, 20, 14);
+    nvWindows(k, R, -L * .36, L * .3, 0, P, 4);
+    lightOn(k, 0, -h * 2.8, 0, h * 2.8, .12, .3);
+  }
+  // Lq : longueur de la maquette ; hr : hauteur de la coque ; H : hauteur de l'image (en hauteurs de coque) ;
+  // eng : réacteurs [x, y] (x en longueurs, y en hauteurs) ; nav : feux de position [x, y haut, y bas]
+  const NEW_SHIPS = {
+    fregate: { Lq: 300, hr: .17, H: 3.3, eng: [[-.5, -.18], [-.5, .18]], nav: [.1, -.56, .5], paint: paintFregate },
+    croiseur: { Lq: 330, hr: .2, H: 3, eng: [[-.5, -.22], [-.5, 0], [-.5, .22]], nav: [.3, -.36, .42], paint: paintCroiseur },
+    station: { Lq: 240, hr: .16, H: 3.4, eng: [[-.5, 0]], nav: [.08, -1.2, 1.2], paint: paintStation },
+    eclaireur: { Lq: 220, hr: .16, H: 2.8, eng: [[-.46, -.9], [-.46, .9]], nav: [.3, -.3, .3], paint: paintEclaireur },
+    minier: { Lq: 280, hr: .26, H: 2.8, eng: [[-.5, -.25], [-.5, .25]], nav: [.2, -.6, .45], paint: paintMinier },
+    citerne: { Lq: 300, hr: .22, H: 2.2, eng: [[-.5, -.1], [-.5, .1]], nav: [.44, -.3, .3], paint: paintCiterne },
+    yacht: { Lq: 260, hr: .2, H: 2.4, eng: [[-.48, 0]], nav: [.3, -.5, .45], paint: paintYacht },
+    arche: { Lq: 340, hr: .32, H: 2.2, eng: [[-.5, -.1], [-.5, .12], [-.5, .32]], nav: [-.02, -.72, .48], paint: paintArche },
+    remorqueur: { Lq: 240, hr: .26, H: 2.2, eng: [[.12, -.3], [.12, .3]], nav: [.44, -.42, .42], paint: paintRemorqueur },
+    voilier: { Lq: 260, hr: .1, H: 6, eng: [[-.5, 0]], nav: [.1, -2.6, 2.6], paint: paintVoilier },
+  };
+  // une seule image par vaisseau, pour le monde en cours : celles des autres mondes sont oubliées en changeant de monde (la mémoire ne grossit pas)
+  function newShipSprite(w, m) {
+    const N = NEW_SHIPS[m], C = CRUISERS[w] || CRUISERS[0], h = N.Lq * N.hr;
+    // dans le Néant, la coque est un peu plus claire que les anciens vaisseaux : sinon elle disparaît dans le noir
+    const P = w === 4 ? { ...C, hull: ['#5a4080', '#2e1a52', '#0e0620'], tower: '#3a2460' } : C;
+    // un liseré de lumière sur les arêtes ; dans le Néant, il prend la couleur du monde pour qu'on voie la coque sombre
+    return shipSprite(`nv-${m}${w}`, N.Lq * 1.1, h * N.H, (k, R) => { nvRim = w === 4 ? P.line + 'aa' : 'rgba(255, 255, 255, .2)'; N.paint(k, R, N.Lq, h, P); }, 2);
+  }
+  function drawNewShip(o, N, w, P, ga, jc, fl, T) {
+    const L = o.len, Lq = N.Lq, sc = L / Lq, h = Lq * N.hr;
+    ctx.save(); ctx.scale(sc, sc); blit(newShipSprite(w, o.m));
+    ctx.globalCompositeOperation = 'lighter';
+    for (const [ex, ey] of N.eng) {
+      ctx.globalAlpha = ga * .85 * fl; ctx.drawImage(softSprite(jc), ex * Lq - h * .55, ey * h - h * .13, h * .55, h * .26);
+      ctx.globalAlpha = ga * fl; ctx.drawImage(softSprite('#ffffff'), ex * Lq - h * .2, ey * h - h * .05, h * .14, h * .1);
+    }
+    // feux de position (rouge en haut, vert en bas) et un éclat blanc de temps en temps
+    if (Math.floor(T / 700 + o.ph) % 2 === 0) { ctx.globalAlpha = ga * .9; ctx.drawImage(softSprite('#e05a6a'), N.nav[0] * Lq - 4, N.nav[1] * h - 4, 8, 8); ctx.drawImage(softSprite('#5ac47a'), N.nav[0] * Lq - 4, N.nav[2] * h - 4, 8, 8); }
+    if (Math.floor(T / 140 + o.ph * 3) % 12 === 0) { ctx.globalAlpha = ga; ctx.drawImage(softSprite('#ffffff'), Lq * .4 - 5, -5, 10, 10); }
+    ctx.restore();
+    shieldFx(L * .55, L * N.hr * .9, jc, o.hitT);
+    ctx.restore();
+  }
   // fluidité : chaque gros vaisseau est peint une seule fois par monde, à une taille fixe, puis agrandi ou réduit
   // (avant, chaque petite différence de taille refaisait une grande image : la mémoire se remplissait et le jeu saccadait)
   const bigLq = m => m === 'mere' ? 220 : 320;
@@ -11491,7 +11756,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function warmBigShips(w) {
     if (warmedW === w) return;
     warmedW = w;
+    // on oublie les nouveaux vaisseaux peints pour les autres mondes
+    for (const m in NEW_SHIPS) for (let i = 0; i < 5; i++) if (i !== w) delete shipCache[`nv-${m}${i}`];
     const jobs = ['cargo', 'porte', 'mere'].map(m => () => bigSprite(w, m));
+    for (const m in NEW_SHIPS) jobs.push(() => newShipSprite(w, m));
     const Lq = bigLq('cargo');
     for (let i = 0; i < 5; i++) jobs.push(() => { const [, , cw, ch] = cargoSlot(i, Lq); containerSprite(SCENE_SETS[w].cargo[(i * 3 + 1) % 5], cw, ch); });
     const idle = window.requestIdleCallback || (f => setTimeout(f, 60));
@@ -11576,6 +11844,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.4 + .15 * Math.sin(T / 900 + o.ph));
       ctx.drawImage(softSprite('#c86bff'), -L * .62, -L * .2, L * 1.24, L * .4); ctx.restore();
     }
+    if (NEW_SHIPS[o.m]) { drawNewShip(o, NEW_SHIPS[o.m], w, P, ga, jc, fl, T); return; }
     if (o.m === 'mere') {
       const sp = bigSprite(w, 'mere'), D = L;
       if (o.beamT > 0) {
