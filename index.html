@@ -1492,17 +1492,31 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     return k;
   }
   // couche 1 terminée : grandes lueurs colorées du monde, puis on l'assombrit dans la couleur profonde du monde (un peu plus pendant un boss)
+  // les couleurs des grandes nappes changent à chaque niveau : celles du décor du niveau, rendues plus profondes
+  const washCache = {};
+  function washOf(ti) {
+    const key = world + ':' + ti;
+    if (washCache[key]) return washCache[key];
+    const D = depthOf(), n = THEMES[ti].neb;
+    const f = world === 4 ? .22 : .42; // le Néant est très noir : ses nappes gardent plus de leur couleur
+    return (washCache[key] = [mixHex(n[0], D.haze, f), mixHex(n[1], D.haze, f), D.wash[ti % 3]]);
+  }
   function farTone(t, dim, par) {
     const k = farL.k, D = depthOf(), w = farL.cv.width, h = farL.cv.height, sc = farL.s;
+    const kk = Math.min(1, Math.max(0, (t - bgStart) / 2000));
     k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
-    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .36 + dim * .14; k.fillStyle = D.haze; k.fillRect(0, 0, w, h);
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .32 + dim * .16; k.fillStyle = D.haze; k.fillRect(0, 0, w, h);
     // trois grandes nappes de couleur qui respirent très lentement : la couleur du monde passe par de grandes zones douces
     k.globalCompositeOperation = 'screen';
     const R = Math.max(w, h) * .8, q = reduce ? 0 : t / 9000, AT = [[.2, .25], [.8, .62], [.45, .95]];
     for (let i = 0; i < 3; i++) {
       const x = w * AT[i][0] + Math.sin(q + i * 2) * w * .06 + par * sc * .15, y = h * AT[i][1] + Math.cos(q * .8 + i) * h * .05;
-      k.globalAlpha = (.85 - dim * .3) * (.85 + .15 * Math.sin(q * 1.7 + i));
-      k.drawImage(softSprite(D.wash[i]), x - R, y - R, R * 2, R * 2);
+      const al = (.95 - dim * .3) * (.85 + .15 * Math.sin(q * 1.7 + i));
+      // fondu de 2 secondes entre les couleurs de l'ancien niveau et celles du nouveau
+      for (const [ti, f] of [[bgPrev, 1 - kk], [bgIdx, kk]]) {
+        if (f <= .01) continue;
+        k.globalAlpha = al * f; k.drawImage(softSprite(washOf(ti)[i]), x - R, y - R, R * 2, R * 2);
+      }
     }
     k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
   }
@@ -1510,7 +1524,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function midTone(dim) {
     const k = midL.k, D = depthOf();
     k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
-    k.globalCompositeOperation = 'source-atop'; k.globalAlpha = .5 + dim * .1; k.fillStyle = D.tint; k.fillRect(0, 0, midL.cv.width, midL.cv.height);
+    k.globalCompositeOperation = 'source-atop'; k.globalAlpha = .42 + dim * .14; k.fillStyle = D.tint; k.fillRect(0, 0, midL.cv.width, midL.cv.height);
     k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
   }
   // couche 3 : brume basse entre le décor et le jeu
@@ -5600,10 +5614,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   const WORLDS = [
     { name: 'Voie lactée', icon: '🌌', col: ['#5b3a9e', '#ff7aa8'], bosses: BOSSES },
-    { name: 'Royaume de Givre', icon: '❄️', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 13, 14, 15] },
-    { name: 'Forge Volcanique', icon: '🌋', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 17, 18, 19] },
-    { name: 'Jungle Cosmique', icon: '🌿', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 21, 22, 23] },
-    { name: 'Le Néant', icon: '🕳️', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 25, 26, 27] },
+    { name: 'Royaume de Givre', icon: '❄️', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 28, 13, 29, 14, 30, 15, 31, 32, 33, 34, 35] },
+    { name: 'Forge Volcanique', icon: '🌋', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 36, 17, 37, 18, 38, 19, 39, 40, 41, 42, 43] },
+    { name: 'Jungle Cosmique', icon: '🌿', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 44, 21, 45, 22, 46, 23, 47, 48, 49, 50, 51] },
+    { name: 'Le Néant', icon: '🕳️', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 52, 25, 53, 26, 54, 27, 55, 56, 57, 58, 59] },
   ];
   const ALL_BOSSES = WORLDS.flatMap(w => w.bosses);
 
@@ -11052,9 +11066,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     scenery.push({ type: 'astre', k, c0, c1, sz, x: W * (.06 + Math.random() * .88), y: -sz * 2, vy: 6 + Math.random() * 5, ph: Math.random() * 6.28, seed: Math.floor(Math.random() * 1e6), glint: 0 });
   }
   // gros vaisseau lointain : cargo à conteneurs, porte-vaisseaux qui lance ses chasseurs, ou vaisseau-mère alien
+  // la flotte du fond grandit avec les niveaux du monde : d'abord des cargos, puis des porte-vaisseaux, enfin des vaisseaux-mères
+  const fleetTier = () => Math.min(2, Math.floor(((Math.max(1, level | 0) - 1) % 12) / 4));
+  const FLEET = [['cargo', 'cargo', 'porte'], ['cargo', 'porte', 'porte', 'mere'], ['porte', 'mere', 'mere']];
   function addBigShip() {
-    const R = Math.random, fromLeft = R() < .5, dir = fromLeft ? 1 : -1, m = ['cargo', 'porte', 'mere'][Math.floor(R() * 3)];
-    const len = (m === 'mere' ? Math.min(230, W * .5) : Math.min(m === 'porte' ? 360 : 330, W * .74)) * (.85 + R() * .3);
+    const R = Math.random, fromLeft = R() < .5, dir = fromLeft ? 1 : -1, tier = fleetTier(), F = FLEET[tier], m = F[Math.floor(R() * F.length)];
+    const len = (m === 'mere' ? Math.min(230, W * .5) : Math.min(m === 'porte' ? 360 : 330, W * .74)) * (.78 + tier * .1 + R() * .22);
     scenery.push({ type: 'bigship', m, w: world, dir, len, x: fromLeft ? -len * .6 : W + len * .6, y: H * (.12 + R() * .38), vx: dir * (m === 'mere' ? 14 + R() * 8 : 16 + R() * 10),
       hitT: 0, hits: 0, lost: [], launchT: 2 + R() * 3, beamT: 0, ph: R() * 6.28 });
   }
@@ -11112,8 +11129,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (bigT < 6) warmBigShips(world % 5);
     if (bigT <= 0) {
       const busy = scenery.some(o => o.type === 'bigship' || (o.type === 'cruiser' && o.x > 0 && o.x < W));
-      if (!busy) addBigShip();
-      bigT = busy ? 6 : 24 + Math.random() * 14;
+      // plus on avance dans le monde, plus la flotte passe souvent, escortée par des chasseurs au dernier palier
+      if (!busy) { addBigShip(); if (fleetTier() === 2 && !reduce) addFight(); }
+      bigT = busy ? 6 : 24 - fleetTier() * 6 + Math.random() * 14;
     }
     if (astreT <= 0) { if (scenery.filter(o => o.type === 'astre').length < 2) addAstre(); astreT = 12 + Math.random() * 12; }
     // particules du monde : neige, braises, feuilles ou pixels qui bugguent
@@ -12949,6 +12967,43 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     { name: 'Horizon brisé', top: '#020208', bottom: '#140a24', neb: ['#7ad8ff', '#ff4f6d'], feature: 'blackhole' },
     { name: 'Faille', top: '#040008', bottom: '#1a0624', neb: ['#c86bff', '#4fe0c8'], feature: 'glitch' },
     { name: 'Dernière étoile', top: '#000000', bottom: '#100818', neb: ['#ffd86b', '#5b3a9e'], feature: 'pulsar' },
+    // chaque monde a 12 décors, comme le monde 1 : un nouveau ciel à chaque niveau passé
+    // monde 2 : Royaume de Givre (28 à 35)
+    { name: 'Glacier lunaire', top: '#06101c', bottom: '#1c3550', neb: ['#8fd0ff', '#4a6ad8'], feature: 'belt' },
+    { name: 'Tempête de neige', top: '#0a0f1a', bottom: '#283a4e', neb: ['#cfe8ff', '#7aa0c8'], feature: 'snow' },
+    { name: 'Lagon gelé', top: '#021418', bottom: '#0c3a40', neb: ['#5fe0d0', '#2a7ab8'], feature: 'aurora' },
+    { name: 'Comète de glace', top: '#070a1c', bottom: '#1a2550', neb: ['#a8b8ff', '#6ad0ff'], feature: 'galaxy' },
+    { name: 'Givre violet', top: '#0c0820', bottom: '#2a2058', neb: ['#b8a0ff', '#7ad0ff'], feature: 'snow' },
+    { name: 'Cœur du blizzard', top: '#040a12', bottom: '#14283c', neb: ['#e0f4ff', '#3a8ac0'], feature: 'pulsar' },
+    { name: 'Aube polaire', top: '#0a0c1e', bottom: '#2a2a4a', neb: ['#e0a8d0', '#8ad8ff'], feature: 'aurora' },
+    { name: 'Palais de glace', top: '#04101a', bottom: '#183a5a', neb: ['#9fe8ff', '#c8d8ff'], feature: 'galaxy' },
+    // monde 3 : Forge Volcanique (36 à 43)
+    { name: 'Lac de magma', top: '#150403', bottom: '#3e1006', neb: ['#ff5a2a', '#a02810'], feature: 'embers' },
+    { name: 'Fumerolles', top: '#100808', bottom: '#2e1a16', neb: ['#a07a6a', '#d0502a'], feature: 'belt' },
+    { name: 'Cratère géant', top: '#180606', bottom: '#401808', neb: ['#e06a30', '#7a2a50'], feature: 'sun' },
+    { name: 'Pluie de cendres', top: '#0c0a0a', bottom: '#241c1a', neb: ['#8a7a70', '#c85a30'], feature: 'embers' },
+    { name: 'Coulée pourpre', top: '#140410', bottom: '#3a0e22', neb: ['#d04a6a', '#e0703a'], feature: 'galaxy' },
+    { name: 'Enclume du ciel', top: '#0a0606', bottom: '#2a120c', neb: ['#e8905a', '#6a2a1a'], feature: 'pulsar' },
+    { name: 'Geysers de feu', top: '#160604', bottom: '#46160a', neb: ['#ff7b4a', '#c89040'], feature: 'embers' },
+    { name: 'Cœur de la forge', top: '#120202', bottom: '#3a0804', neb: ['#ff4f1a', '#e8a868'], feature: 'sun' },
+    // monde 4 : Jungle Cosmique (44 à 51)
+    { name: 'Sous-bois', top: '#020e06', bottom: '#0c2a14', neb: ['#4fd08a', '#2a8a4a'], feature: 'spores' },
+    { name: 'Rivière d\'émeraude', top: '#021210', bottom: '#0c3a30', neb: ['#3ad8b0', '#6ad060'], feature: 'aurora' },
+    { name: 'Orchidées', top: '#100616', bottom: '#2e1238', neb: ['#d07ad8', '#5ad08a'], feature: 'galaxy' },
+    { name: 'Pluie tropicale', top: '#04100c', bottom: '#14302a', neb: ['#8ad8c0', '#3a9a6a'], feature: 'spores' },
+    { name: 'Champignons lumineux', top: '#080816', bottom: '#1a1a3a', neb: ['#7a9aff', '#a0e070'], feature: 'spores' },
+    { name: 'Racines géantes', top: '#0c0a04', bottom: '#2a2410', neb: ['#c0a050', '#4a8a3a'], feature: 'belt' },
+    { name: 'Nid de lucioles', top: '#060a04', bottom: '#1c2a10', neb: ['#c8d070', '#60b060'], feature: 'spores' },
+    { name: 'Cœur de la jungle', top: '#020a04', bottom: '#0a2a10', neb: ['#5ae07a', '#2ac0a0'], feature: 'galaxy' },
+    // monde 5 : Le Néant (52 à 59)
+    { name: 'Brume du vide', top: '#030206', bottom: '#10081c', neb: ['#4a2a8a', '#2a1040'], feature: 'glitch' },
+    { name: 'Écho perdu', top: '#020408', bottom: '#0a1428', neb: ['#3a6ab8', '#6a3aa8'], feature: 'pulsar' },
+    { name: 'Fissures rouges', top: '#060204', bottom: '#200814', neb: ['#a02a4a', '#5a2a8a'], feature: 'glitch' },
+    { name: 'Étoiles mourantes', top: '#020206', bottom: '#0c0a1c', neb: ['#8a7ab8', '#3a2a6a'], feature: 'blackhole' },
+    { name: 'Mer d\'encre', top: '#000206', bottom: '#060c20', neb: ['#1a3a8a', '#4a1a6a'], feature: 'galaxy' },
+    { name: 'Spirale noire', top: '#030006', bottom: '#140620', neb: ['#7a3ac8', '#2a8aa8'], feature: 'blackhole' },
+    { name: 'Dernier souffle', top: '#020202', bottom: '#121018', neb: ['#6a6a8a', '#a04a8a'], feature: 'glitch' },
+    { name: 'Seuil du Dévoreur', top: '#040004', bottom: '#1c0418', neb: ['#c83a9a', '#4a1a8a'], feature: 'blackhole' },
   ];
   let bgIdx = 0, bgPrev = 0, bgStart = -1e9, levelFx = null;
   const vignette = { w: 0, h: 0, g: null };
