@@ -11019,6 +11019,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (cruiserT <= 0) { if (!scenery.some(o => o.type === 'cruiser')) addCruiser(); cruiserT = 22 + Math.random() * 18; }
     // un gros vaisseau à la fois, et pas en même temps qu'un croiseur bien visible (le fond reste lisible)
     bigT -= dt; astreT -= dt;
+    if (bigT < 6) warmBigShips(world % 5);
     if (bigT <= 0) {
       const busy = scenery.some(o => o.type === 'bigship' || (o.type === 'cruiser' && o.x > 0 && o.x < W));
       if (!busy) addBigShip();
@@ -11089,9 +11090,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // puis réutilisé ; seuls les feux, les réacteurs et ce qui bouge sont dessinés à chaque image.
   // La lumière vient d'en haut à gauche, comme sur les planètes.
   const shipCache = {};
-  function shipSprite(key, w, h, paint) {
+  function shipSprite(key, w, h, paint, Q = 3) {
     if (shipCache[key]) return shipCache[key];
-    const Q = 3, c = document.createElement('canvas');
+    const c = document.createElement('canvas');
     c.width = Math.ceil(w * Q); c.height = Math.ceil(h * Q);
     const k = c.getContext('2d'); k.scale(Q, Q); k.translate(w / 2, h / 2);
     // un hasard fixe par vaisseau : la même maquette à chaque fois
@@ -11279,7 +11280,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (o.m === 'cargo' && o.hits % 4 === 0 && o.lost.length < 6) {
         // un conteneur se détache et part en tournoyant
         const free = [...Array(10).keys()].filter(i => !o.lost.includes(i)), i = free[Math.floor(Math.random() * free.length)];
-        const Lq = Math.max(60, Math.round(o.len / 20) * 20), sc = o.len / Lq, [sx, sy, cw, ch] = cargoSlot(i, Lq);
+        const Lq = bigLq(o.m), sc = o.len / Lq, [sx, sy, cw, ch] = cargoSlot(i, Lq);
         o.lost.push(i);
         scenery.push({ type: 'debris', w, col: SCENE_SETS[w].cargo[(i * 3 + 1) % 5], cw, ch, sc, x: o.x + sx * sc * o.dir, y: o.y + sy * sc,
           vx: o.vx * .4 + (Math.random() - .5) * 30, vy: sy < 0 ? -12 - Math.random() * 14 : 16 + Math.random() * 18, rot: 0, vr: (Math.random() - .5) * 1.6, life: 14 });
@@ -11366,6 +11367,29 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // antenne sur la cabine
     k.fillStyle = P.tower; k.fillRect(L * .36, -h * .5, L * .006, h * .2);
   }
+  // fluidité : chaque gros vaisseau est peint une seule fois par monde, à une taille fixe, puis agrandi ou réduit
+  // (avant, chaque petite différence de taille refaisait une grande image : la mémoire se remplissait et le jeu saccadait)
+  const bigLq = m => m === 'mere' ? 220 : 320;
+  function bigSprite(w, m) {
+    const P = CRUISERS[w] || CRUISERS[0], Lq = bigLq(m);
+    if (m === 'mere') return shipSprite(`mere${w}`, Lq * 1.05, Lq * .5, (k, R) => paintMother(k, R, Lq, P), 2);
+    const h = Lq * (m === 'porte' ? .22 : .2);
+    return m === 'porte' ? shipSprite(`porte${w}`, Lq * 1.08, h * 1.9, (k, R) => paintCarrier(k, R, Lq, h, P), 2)
+      : shipSprite(`cargo${w}`, Lq * 1.08, h * 1.4, (k, R) => paintCargo(k, R, Lq, h, P), 2);
+  }
+  // les images des gros vaisseaux du monde sont préparées en avance, une par une, quand le navigateur a du temps libre
+  // (sinon, l'apparition d'un vaisseau ferait sauter une image et la souris accrocherait)
+  let warmedW = -1;
+  function warmBigShips(w) {
+    if (warmedW === w) return;
+    warmedW = w;
+    const jobs = ['cargo', 'porte', 'mere'].map(m => () => bigSprite(w, m));
+    const Lq = bigLq('cargo');
+    for (let i = 0; i < 5; i++) jobs.push(() => { const [, , cw, ch] = cargoSlot(i, Lq); containerSprite(SCENE_SETS[w].cargo[(i * 3 + 1) % 5], cw, ch); });
+    const idle = window.requestIdleCallback || (f => setTimeout(f, 60));
+    const next = () => { const j = jobs.shift(); if (!j) return; j(); idle(next); };
+    idle(next);
+  }
   function containerSprite(col, cw, ch) {
     return shipSprite('box' + col + Math.round(cw * 10), cw, ch, (k, R) => {
       k.fillStyle = col; k.fillRect(-cw / 2, -ch / 2, cw, ch);
@@ -11437,7 +11461,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
   function drawBigShip(o) {
     const P = CRUISERS[o.w] || CRUISERS[0], w = (o.w | 0) % 5, T = performance.now(), L = o.len, ga = ctx.globalAlpha;
-    const Lq = Math.max(60, Math.round(L / 20) * 20), sc = L / Lq, jc = jetHex(P), fl = .85 + .15 * Math.sin(T / 70) * Math.sin(T / 37);
+    const Lq = bigLq(o.m), sc = L / Lq, jc = jetHex(P), fl = .85 + .15 * Math.sin(T / 70) * Math.sin(T / 37);
     ctx.save(); ctx.translate(o.x, o.y + (o.m === 'mere' ? Math.sin(T / 1300 + o.ph) * 5 : 0)); ctx.scale(o.dir, 1);
     if (w === 4) {
       // dans le Néant, une lueur violette qui respire autour de la coque sombre (sinon on ne le verrait pas)
@@ -11445,7 +11469,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       ctx.drawImage(softSprite('#c86bff'), -L * .62, -L * .2, L * 1.24, L * .4); ctx.restore();
     }
     if (o.m === 'mere') {
-      const sp = shipSprite(`mere${w}-${Lq}`, Lq * 1.05, Lq * .5, (k, R) => paintMother(k, R, Lq, P)), D = L;
+      const sp = bigSprite(w, 'mere'), D = L;
       if (o.beamT > 0) {
         // rayon tracteur : un cône de lumière qui descend sous le cœur
         const a = Math.min(1, o.beamT * 2) * Math.min(1, (1.8 - o.beamT) * 4);
@@ -11469,8 +11493,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       ctx.restore(); return;
     }
     const h = Lq * (o.m === 'porte' ? .22 : .2);
-    const sp = o.m === 'porte' ? shipSprite(`porte${w}-${Lq}`, Lq * 1.08, h * 1.9, (k, R) => paintCarrier(k, R, Lq, h, P))
-      : shipSprite(`cargo${w}-${Lq}`, Lq * 1.08, h * 1.4, (k, R) => paintCargo(k, R, Lq, h, P));
+    const sp = bigSprite(w, o.m);
     ctx.save(); ctx.scale(sc, sc); blit(sp);
     if (o.m === 'cargo') for (let i = 0; i < 10; i++) {
       if (o.lost.includes(i)) continue;
@@ -11731,9 +11754,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       else if (o.type === 'astre') drawAstre(o, t);
       else if (o.type === 'bigship') { ctx.globalAlpha = .82; drawBigShip(o); }
       else if (o.type === 'spark') {
-        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, o.life * 2.5);
+        ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, o.life * 2.5);
         const z = 2 + o.life * 6; ctx.drawImage(softSprite(o.col), o.x - z, o.y - z, z * 2, z * 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(o.x - .7, o.y - .7, 1.4, 1.4);
-        ctx.restore();
+        ctx.globalCompositeOperation = 'source-over';
       }
       else if (o.type === 'debris') {
         ctx.globalAlpha = .8 * Math.min(1, o.life / 2); ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot); ctx.scale(o.sc || 1, o.sc || 1);
