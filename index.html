@@ -2622,34 +2622,32 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     if (rocketPart === 'flame') { c.restore(); return; }
 
-    // canons
-    c.fillStyle = '#3a3062';
-    if (conf.gun === 'double') {
-      c.fillRect(-12, -11, 3, 15); c.fillRect(9, -11, 3, 15);
-      c.fillStyle = fl[1]; c.fillRect(-12, -12, 3, 2); c.fillRect(9, -12, 3, 2);
-    } else if (conf.gun === 'eventail') {
-      c.save(); c.translate(0, -14);
-      for (const a of [-.35, .35]) { c.save(); c.rotate(a); c.fillRect(-1.5, -12, 3, 10); c.restore(); }
-      c.restore();
-    } else if (conf.gun === 'mitrailleuse') {
-      // trois tubes qui tournent
-      c.fillRect(-13, -6, 6, 14); c.fillRect(7, -6, 6, 14);
-      c.fillStyle = '#8a84b8'; const ph = (t / 40) % 3;
-      for (const sx of [-13, 7]) for (let i = 0; i < 3; i++) c.fillRect(sx + i * 2, -10 + ((i + ph) % 3), 1.6, 5);
-    } else if (conf.gun === 'vague') {
-      c.fillRect(-11, -8, 4, 13); c.fillRect(7, -8, 4, 13);
-      c.fillStyle = '#7ad8ff'; c.beginPath(); c.arc(-9, -9, 2.5, 0, 7); c.arc(9, -9, 2.5, 0, 7); c.fill();
-    } else if (conf.gun === 'plasma') {
-      c.fillRect(-12, -4, 6, 12); c.fillRect(6, -4, 6, 12);
-      c.fillStyle = '#c86bff'; c.shadowColor = '#c86bff'; c.shadowBlur = 8;
-      c.beginPath(); c.arc(-9, -1, 2.5 + Math.sin(t / 120), 0, 7); c.arc(9, -1, 2.5 + Math.sin(t / 120), 0, 7); c.fill(); c.shadowBlur = 0;
-    } else if (conf.gun === 'ricochet') {
-      for (const [x, a] of [[-10, -.5], [10, .5]]) { c.save(); c.translate(x, -4); c.rotate(a); c.fillRect(-1.8, -12, 3.6, 12); c.restore(); }
-    } else if (conf.gun === 'quintuple') {
-      c.save(); c.translate(0, -12);
-      for (const a of [-.6, -.3, .3, .6]) { c.save(); c.rotate(a); c.fillRect(-1.5, -13, 3, 11); c.restore(); }
-      c.restore();
-      c.fillStyle = '#ff7b2a'; c.fillRect(-14, 0, 4, 3); c.fillRect(10, 0, 4, 3);
+    // canons : placés selon la forme du vaisseau (derrière la coque, comme montés d'origine),
+    // dans une teinte foncée de sa couleur, avec la couleur secondaire au bout
+    {
+      const GM = GUN_MOUNT[conf.model] || GUN_MOUNT.classique, [cy, cs] = GM.c, [sx, sy, ss] = GM.s;
+      const gunCol = shade(body, -.55), tip = dark, det = light;
+      const side = fn => { for (const sd of [-1, 1]) { c.save(); c.translate(sd * sx, sy); c.scale(ss, ss); fn(sd); c.restore(); } };
+      const fan = (angles, len, w) => { c.save(); c.translate(0, cy); c.scale(cs, cs); for (const a of angles) { c.save(); c.rotate(a); c.fillStyle = gunCol; c.fillRect(-w / 2, -len - 2, w, len); c.fillStyle = tip; c.fillRect(-w / 2, -len - 2.6, w, 1.4); c.restore(); } c.restore(); };
+      if (conf.gun === 'double') side(() => { c.fillStyle = gunCol; c.fillRect(-1.5, -7.5, 3, 15); c.fillStyle = tip; c.fillRect(-1.5, -8.5, 3, 2); });
+      else if (conf.gun === 'eventail') fan([-.35, .35], 10, 3);
+      else if (conf.gun === 'mitrailleuse') side(sd => {
+        // trois tubes qui tournent
+        c.fillStyle = gunCol; c.fillRect(-3, -7, 6, 14);
+        c.fillStyle = det; const ph = (t / 40) % 3;
+        for (let i = 0; i < 3; i++) c.fillRect(-3 + i * 2, -11 + ((i + ph) % 3), 1.6, 5);
+      });
+      else if (conf.gun === 'vague') side(() => { c.fillStyle = gunCol; c.fillRect(-2, -6.5, 4, 13); c.fillStyle = '#7ad8ff'; c.beginPath(); c.arc(0, -7.5, 2.5, 0, 7); c.fill(); });
+      else if (conf.gun === 'plasma') side(() => {
+        c.fillStyle = gunCol; c.fillRect(-3, -6, 6, 12);
+        c.fillStyle = '#c86bff'; c.shadowColor = '#c86bff'; c.shadowBlur = 8;
+        c.beginPath(); c.arc(0, -3, 2.5 + Math.sin(t / 120), 0, 7); c.fill(); c.shadowBlur = 0;
+      });
+      else if (conf.gun === 'ricochet') side(sd => { c.rotate(sd * .5); c.fillStyle = gunCol; c.fillRect(-1.8, -12, 3.6, 12); c.fillStyle = tip; c.fillRect(-1.8, -13, 3.6, 1.6); });
+      else if (conf.gun === 'quintuple') {
+        fan([-.6, -.3, .3, .6], 11, 3);
+        side(() => { c.fillStyle = tip; c.fillRect(-2, -1.5, 4, 3); });
+      }
     }
 
     c.shadowColor = body; c.shadowBlur = 10 + boost * 20;
@@ -2952,6 +2950,27 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (conf.evo || conf === cfg) drawEvo(c, conf.evo || shop.up, t, conf, body, dark, light);
     c.restore();
   }
+  // montage des pistolets sur chaque vaisseau (repère du vaisseau, nez vers le haut)
+  const GUN_MOUNT = {
+    classique: { c: [-14, 1], s: [10.5, -3.5, 1] },
+    navette: { c: [-12, .85], s: [6.5, 1, .85] },
+    eclair: { c: [-17, .8], s: [5.4, -1, .8] },
+    aile: { c: [-20, .85], s: [8, 1, .85] },
+    ovni: { c: [-8, .65], s: [15, -2, .7] },
+    tie: { c: [-2, .55], s: [12.5, 3.5, .6] },
+    faucon: { c: [-12, .6], s: [14.5, 9, .75] },
+    requin: { c: [-19, .7], s: [8, 3, .75] },
+    abeille: { c: [-12, .55], s: [10, 9, .65] },
+    chevalier: { c: [-22, .65], s: [11.5, -5, .8] },
+    galion: { c: [-4, .65], s: [14.5, 9.5, .65] },
+    mecha: { c: [-23, .55], s: [14, -8, .8] },
+    cristal: { c: [-22, .65], s: [7, 7, .65] },
+    pixel: { c: [-20, .7], s: [9.5, 0, .75] },
+    arcade: { c: [-14, .7], s: [15, -4, .75] },
+    coeur: { c: [-20, .55], s: [14.5, 4, .65] },
+    predateur: { c: [-20, .7], s: [13.5, 0, .8] },
+    legende: { c: [-22, .7], s: [13.5, 6, .8] },
+  };
   // ===== Améliorations visibles : chaque compétence devient une pièce d'origine du vaisseau =====
   // Un emplacement fixe par compétence (jamais deux au même endroit) :
   //   Balles lourdes → pointe avant · Gâchette rapide → de chaque côté de l'avant · Gros chargeur → bas des flancs
@@ -2968,12 +2987,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     ovni: { mat: 'metal', nose: [0, -11.4], muz: [6, -9.6], hull: [21.5, 1, 8], pod: [13, 9.4, 3], band: { y: 3, w: 23, ring: [24, 7] }, core: [0, -6, 10.5], eng: [[0, 12, 8]], tips: [[24, 3]] },
     tie: { mat: 'metal', nose: [0, -6.6], muz: [4.4, -5], hull: [16.4, -9, 15], pod: [11, 3, 2.6], band: { y: 3, w: 14.6, from: 10 }, core: [0, 3, 6.6], eng: [[0, 12.6, 6]], tips: [[18, -13.6], [18, 20.4]] },
     faucon: { mat: 'metal', nose: [0, -15], muz: [7, -24.6], hull: [17.3, -2, 11], pod: [12.5, 16.5, 3], band: { y: 4, w: 0, ring: [11.6, 11.6], arc: [3.5, 5.9] }, core: [16, -6, 4.2], eng: [[0, 17.5, 6]], tips: [[-17.5, 4]] },
-    requin: { mat: 'metal', nose: [0, -25.6], muz: [6.4, -11], hull: [8.4, -8, 2], pod: [14, 7.4, 3], band: { y: 6.5, w: 7 }, core: [0, -1, 4.4], eng: [[0, 16, 6]], tips: [[18.4, 9.5]] },
+    requin: { mat: 'metal', nose: [0, -25.6], muz: [6.4, -11], hull: [8.4, -8, 2], pod: [14, 7.4, 3], band: { y: 11.4, w: 6 }, core: [0, -1, 4.4], eng: [[0, 16, 6]], tips: [[18.4, 9.5]] },
     abeille: { mat: 'organic', nose: [8.7, -23.2], muz: [2.6, -12.8], hull: [10.2, -4, 12], pod: [9.6, 14.6, 2.6], band: { y: 1.2, w: 9.4 }, core: [4.2, -8, 5.2, true], eng: [[0, 18, 4]], tips: [[13, -5]] },
     chevalier: { mat: 'royal', nose: [0, -30], muz: [15.5, -13.6], hull: [10.6, -14, 13], pod: [16, -1.6, 2.6], band: { y: -11, w: 7 }, core: [0, 3, 5.8], eng: [[0, 19.6, 6]], tips: [[19.6, -3]] },
     galion: { mat: 'wood', nose: [0, -29.6], muz: [16.2, 10.4], hull: [14, 8, 12.5], pod: [11, 4.6, 2.6], band: { y: -12, w: 9.5 }, core: [0, -15, 3.6], eng: [[0, 17.6, 5]], tips: [[16.4, 7.4]] },
     mecha: { mat: 'metal', nose: [0, -29], muz: [14, -17.6], hull: [10.3, -8, 7], pod: [14, 1.6, 2.4], band: { y: -21, w: 5.6 }, core: [0, -1, 5.4], eng: [[6.4, 13.8, 4]], tips: [[14.2, 7.2]] },
-    cristal: { mat: 'crystal', nose: [0, -30.6], muz: [7.6, -16], hull: [9.1, -8, 4], pod: [6.4, 11.4, 2.4], band: { y: 3, w: 8.2, facet: true }, core: [0, -12, 4.2], eng: [[0, 18, 4]], tips: [[10, -12]] },
+    cristal: { mat: 'crystal', nose: [0, -30.6], muz: [7.6, -16], hull: [9.1, -8, 4], pod: [6.4, 11.4, 2.4], band: { y: 13, w: 3.6, facet: true }, core: [0, -12, 4.2], eng: [[0, 18, 4]], tips: [[10, -12]] },
     pixel: { mat: 'pixel', px: 2.2, nose: [0, -26], muz: [4.4, -19.8], hull: [6.6, -10, 2], pod: [8.8, 4.4, 2.2], band: { y: -12.2, w: 4.4 }, core: [0, -7, 4.4], eng: [[0, 17.6, 4.4], [11, 17.6, 4.4]], tips: [[13.2, 6.6]] },
     arcade: { mat: 'pixel', px: 3, nose: [0, -21], muz: [15, -21], hull: [8.4, -12, -4], pod: [21, 3, 3], band: { y: -8.4, w: 6 }, core: [0, -14, 4], eng: [[0, 14.6, 3], [12, 14.6, 3]], tips: [[22.4, -6]] },
     coeur: { mat: 'heart', nose: [0, -20.6], muz: [10.6, -24.6], hull: [17.4, -11, 1], pod: [10, 10, 2.6], band: { y: 9, w: 8.4 }, core: [0, -6, 9], eng: [[0, 16.2, 6]], tips: [[25, -2]] },
