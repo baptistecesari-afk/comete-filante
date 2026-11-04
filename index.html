@@ -1657,6 +1657,59 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   // ===== Les animaux de l'espace, en lumière douce (s = 1 : environ 14 px de rayon) =====
   // chaque animal : une forme ombrée, une fourrure (ou une peau) avec ses mèches, une lumière froide de contour venue de l'espace, et des yeux vivants
+  // ===== Les animaux vivent : respiration, clignements, inertie et gestes au hasard =====
+  // chaque animal a son caractère : ses propres gestes d'attente, joués au hasard, jamais deux fois de suite
+  const PET_GESTURES = {
+    lumi: { list: ['dart', 'antenne', 'eclat', 'plane', 'regard'], dur: [.8, 1.6] },
+    pipo: { list: ['oreille', 'penche', 'clignelent', 'queue', 'regard', 'toilette'], dur: [1.2, 2.6] },
+    frimousse: { list: ['oreilles', 'penche', 'renifle', 'enroule', 'regard', 'queue'], dur: [1.2, 3.2] },
+    bulle: { list: ['nage', 'ondule', 'tourne', 'eclat', 'regard'], dur: [1.6, 3] },
+    hop: { list: ['nez', 'oreille', 'saut', 'regard', 'penche'], dur: [.9, 2] },
+    caillou: { list: ['rentre', 'regard', 'clignelent', 'pagaie', 'bascule'], dur: [2.2, 4] },
+    nuage: { list: ['souffle', 'queue', 'roule', 'chante', 'regard'], dur: [1.8, 3.4] },
+  };
+  // rythme d'attente entre deux gestes (secondes) : les nerveux enchaînent, les calmes prennent leur temps
+  const PET_PACE = { lumi: [1, 3], pipo: [2, 5], frimousse: [1.6, 4.4], bulle: [2.2, 5], hop: [1.2, 3.4], caillou: [3.5, 7], nuage: [2.6, 6] };
+  const PET_STATE = {};
+  function petPose(id, x, y, s, t, o) {
+    const key = id + ':' + s.toFixed(2), T = t / 1000, G = PET_GESTURES[id] || PET_GESTURES.pipo, pace = PET_PACE[id] || [2, 5];
+    let S = PET_STATE[key];
+    if (!S) S = PET_STATE[key] = { last: T, x, y, vx: 0, vy: 0, tail: [0, 0], earL: [0, 0], earR: [0, 0], g: null, g0: 0, gd: 1, side: 1, next: T + .8 + Math.random() * 2.5, blink: T + 1 + Math.random() * 3, bl0: -9, dbl: false, seed: Math.random() * 100, lastG: '' };
+    const dt = Math.min(.05, Math.max(0, T - S.last));
+    if (dt > 0) {
+      S.last = T;
+      // vitesse de l'animal à l'écran : sert à l'inertie de la queue, des oreilles et des poils
+      const vx = (x - S.x) / s / dt, vy = (y - S.y) / s / dt; S.x = x; S.y = y;
+      S.vx += (Math.max(-80, Math.min(80, vx)) - S.vx) * Math.min(1, dt * 10);
+      S.vy += (Math.max(-80, Math.min(80, vy)) - S.vy) * Math.min(1, dt * 10);
+      const spring = (sp, target, kk, c) => { sp[1] += (kk * (target - sp[0]) - c * sp[1]) * dt; sp[0] += sp[1] * dt; };
+      spring(S.tail, Math.max(-.7, Math.min(.7, -S.vx * .012 - S.vy * .004)), 34, 5);
+      spring(S.earL, Math.max(-.5, Math.min(.5, -S.vx * .007 + S.vy * .005)), 62, 8);
+      spring(S.earR, Math.max(-.5, Math.min(.5, -S.vx * .006 + S.vy * .006)), 55, 7);
+      // geste d'attente au hasard (jamais le même deux fois de suite), avec une durée et un côté au hasard
+      if (!S.g && T >= S.next && !o.still && !reduce) {
+        const pool = G.list.filter(g => g !== S.lastG);
+        S.g = pool[Math.floor(Math.random() * pool.length)]; S.g0 = T; S.gd = G.dur[0] + Math.random() * (G.dur[1] - G.dur[0]); S.side = Math.random() < .5 ? -1 : 1;
+      }
+      if (S.g && T > S.g0 + S.gd) { S.lastG = S.g; S.g = null; S.next = T + pace[0] + Math.random() * (pace[1] - pace[0]); }
+      // clignement toutes les 2 à 6 secondes, parfois double
+      if (T >= S.blink) { S.bl0 = T; S.dbl = Math.random() < .22; S.blink = T + 2 + Math.random() * 4; }
+    }
+    // bruit doux : plusieurs ondes à des rythmes qui ne se répètent pas
+    const n = (f, k2) => Math.sin(T * f + S.seed * k2) * .55 + Math.sin(T * f * 1.73 + S.seed * k2 * 2.1) * .3 + Math.sin(T * f * 2.91 + S.seed * k2 * 3.3) * .15;
+    const gp = S.g ? Math.min(1, (T - S.g0) / S.gd) : 0, env = S.g ? Math.sin(Math.PI * gp) : 0;
+    const bOne = u => u < 0 || u > .15 ? 0 : Math.sin(u / .15 * Math.PI), bt = T - S.bl0;
+    const P = { g: S.g, gp, env, side: S.side, n, is: g => S.g === g ? env : 0, tail: S.tail[0], earL: S.earL[0], earR: S.earR[0],
+      br: Math.sin(T * (1.5 + .25 * Math.sin(T * .21 + S.seed)) + S.seed), blink: Math.max(bOne(bt), S.dbl ? bOne(bt - .23) : 0),
+      lookX: n(.35, 1) * .7, lookY: n(.28, 2) * .35, dx: 0, dy: 0, rot: 0, sq: 0 };
+    if (!o.still) { P.dy = n(1, 3) * 1.1; P.dx = n(.55, 4) * .6; P.rot = n(.45, 5) * .03; }
+    // regarder autour de soi : les yeux font un tour lent
+    if (S.g === 'regard') { P.lookX = Math.sin(gp * Math.PI * 2) * 1.1 * S.side; P.lookY = -env * .4; }
+    // clignement lent (affection du chat, sagesse de la tortue)
+    if (S.g === 'clignelent') P.blink = Math.max(P.blink, Math.min(1, env * 1.7) * .9);
+    return P;
+  }
+
   function drawPet(k, id, x, y, s, t, o = {}) {
     const T = t / 1000;
     const rg = (x0, y0, r0, r1, st) => { const g = k.createRadialGradient(x0, y0, r0, x0, y0, r1); st.forEach(([p, c]) => g.addColorStop(p, c)); return g; };
@@ -1726,18 +1779,27 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const eye = (ex, ey, r, iris, wide = 1) => {
       soft(ex, ey + r * .15, r * 1.7, 'rgba(0, 0, 25, .28)');
       el(ex, ey, r, r * 1.08 * wide, '#07060c');
-      const iy = ey + r * .1;
-      el(ex, iy, r * .84, r * .88 * wide, rg(ex, iy + r * .38, 0, r * .9, [[0, shade(iris, .6)], [.42, iris], [.82, shade(iris, -.5)], [1, '#05040a']]));
-      k.save(); k.strokeStyle = shade(iris, .55); k.globalAlpha *= .45; k.lineWidth = r * .07;
-      for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; k.beginPath(); k.moveTo(ex + Math.cos(a) * r * .44, iy + Math.sin(a) * r * .44); k.lineTo(ex + Math.cos(a) * r * .74, iy + Math.sin(a) * r * .74); k.stroke(); }
-      k.restore();
-      el(ex, iy + r * .02, r * .38, r * .44 * wide, '#030208');
+      // l'iris suit le regard de l'animal (sans sortir de l'œil)
+      const ix = ex + lookX * r * .2, iy = ey + r * .1 + lookY * r * .18;
       k.save(); k.beginPath(); k.ellipse(ex, ey, r, r * 1.08 * wide, 0, 0, 7); k.clip();
-      k.fillStyle = lg(0, ey - r * 1.1, 0, ey, [[0, 'rgba(0, 0, 0, .65)'], [1, 'rgba(0, 0, 0, 0)']]); k.fillRect(ex - r, ey - r * 1.1, r * 2, r * 1.1);
-      k.strokeStyle = 'rgba(150, 205, 255, .4)'; k.lineWidth = r * .14; k.beginPath(); k.arc(ex, iy, r * .78, .5, 2.6); k.stroke();
+      el(ix, iy, r * .84, r * .88 * wide, rg(ix, iy + r * .38, 0, r * .9, [[0, shade(iris, .6)], [.42, iris], [.82, shade(iris, -.5)], [1, '#05040a']]));
+      k.save(); k.strokeStyle = shade(iris, .55); k.globalAlpha *= .45; k.lineWidth = r * .07;
+      for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; k.beginPath(); k.moveTo(ix + Math.cos(a) * r * .44, iy + Math.sin(a) * r * .44); k.lineTo(ix + Math.cos(a) * r * .74, iy + Math.sin(a) * r * .74); k.stroke(); }
       k.restore();
-      el(ex - r * .34, ey - r * .34, r * .32, r * .25, '#ffffff', -.5);
-      el(ex + r * .3, ey + r * .36, r * .12, r * .1, 'rgba(255, 255, 255, .8)');
+      el(ix, iy + r * .02, r * .38, r * .44 * wide, '#030208');
+      k.fillStyle = lg(0, ey - r * 1.1, 0, ey, [[0, 'rgba(0, 0, 0, .65)'], [1, 'rgba(0, 0, 0, 0)']]); k.fillRect(ex - r, ey - r * 1.1, r * 2, r * 1.1);
+      k.strokeStyle = 'rgba(150, 205, 255, .4)'; k.lineWidth = r * .14; k.beginPath(); k.arc(ix, iy, r * .78, .5, 2.6); k.stroke();
+      k.restore();
+      el(ix - r * .34, iy - r * .44, r * .32, r * .25, '#ffffff', -.5);
+      el(ix + r * .3, iy + r * .26, r * .12, r * .1, 'rgba(255, 255, 255, .8)');
+      // la paupière descend de la couleur du pelage, avec un trait de cils au bord
+      if (lid > .02) {
+        k.save(); k.beginPath(); k.ellipse(ex, ey, r * 1.06, r * 1.14 * wide, 0, 0, 7); k.clip();
+        const h = r * 2.3 * wide * Math.min(1, lid), top = ey - r * 1.15 * wide;
+        k.fillStyle = lidCol; k.fillRect(ex - r * 1.2, top, r * 2.4, h);
+        k.strokeStyle = 'rgba(20, 16, 40, .75)'; k.lineWidth = r * .16; k.beginPath(); k.moveTo(ex - r * 1.1, top + h); k.quadraticCurveTo(ex, top + h + r * .25, ex + r * 1.1, top + h); k.stroke();
+        k.restore();
+      }
     };
     // une petite truffe brillante
     const nose = (nx, ny, w, col) => {
@@ -1745,13 +1807,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       k.beginPath(); k.moveTo(nx - w, ny - w * .5); k.quadraticCurveTo(nx, ny - w * .9, nx + w, ny - w * .5); k.quadraticCurveTo(nx + w * .4, ny + w * .6, nx, ny + w * .7); k.quadraticCurveTo(nx - w * .4, ny + w * .6, nx - w, ny - w * .5); k.fill();
       el(nx - w * .3, ny - w * .4, w * .35, w * .18, 'rgba(255, 255, 255, .75)');
     };
-    k.save(); k.translate(x, y + (o.still ? 0 : Math.sin(T * 3.2 + id.length) * 1.2 * s)); k.scale(s, s);
+    const P = petPose(id, x, y, s, t, o);
+    let lid = P.blink, lidCol = '#8a7ca8', lookX = P.lookX, lookY = P.lookY;
+    // un groupe de pièces qui tourne autour d'un pivot (tête, oreille, queue…)
+    const grp = (px, py, rot, fn, sx = 1, sy = 1, dx = 0, dy = 0) => { k.save(); k.translate(px + dx, py + dy); k.rotate(rot); k.scale(sx, sy); k.translate(-px, -py); fn(); k.restore(); };
+    // gestes qui bougent tout l'animal
+    const hopUp = P.is('saut'), swim = P.is('nage'), dart = P.g === 'dart' ? Math.sin(P.gp * Math.PI * 2) * P.side : 0;
+    const roll = P.g === 'roule' || P.g === 'tourne' || P.g === 'bascule' ? Math.sin(P.gp * Math.PI * 2) * (P.g === 'tourne' ? .3 : P.g === 'roule' ? .18 : .1) * P.side : 0;
+    k.save(); k.translate(x + (P.dx + dart * 7) * s, y + (P.dy - hopUp * 7 - swim * 4) * s); k.scale(s, s);
+    // respiration : le corps gonfle très légèrement (et s'écrase un peu à la réception d'un saut)
+    k.translate(0, 13); k.rotate(P.rot + roll); k.scale(1 + P.br * .012 + hopUp * .04, 1 + P.br * .022 - hopUp * .05 + (P.gp > .85 && P.g === 'saut' ? -.06 : 0)); k.translate(0, -13);
     if (o.dim !== undefined) k.globalAlpha *= o.dim;
     k.lineCap = 'round'; k.lineJoin = 'round';
     // une ombre douce sous l'animal, et un halo à sa couleur
     soft(0, 15, 14, 'rgba(0, 0, 20, .3)');
     if (id === 'lumi') {
-      const pulse = .7 + .3 * Math.sin(T * 5), fl = .55 + .45 * Math.abs(Math.sin(T * 26));
+      // battement d'ailes rapide (presque arrêté quand elle plane), lueur qui pulse et s'emballe sur un éclat
+      lidCol = '#2e3858';
+      const pulse = Math.min(1.4, .7 + .3 * P.n(2.4, 6) + P.is('eclat') * .7), fl = .55 + .45 * Math.abs(Math.sin(T * 26 * (1 - P.is('plane') * .85) + P.n(.7, 7)));
       glow(0, 7, 30, 'rgba(120, 255, 190, .5)', pulse);
       // ailes : fines, irisées, avec leurs nervures
       for (const sx of [-1, 1]) for (const [wx, wy, wr, wh, wa] of [[9.5, -5.5, 11.5, 5.2, -.5], [8.5, 1.5, 8.5, 3.8, -.12]]) {
@@ -1780,7 +1853,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       eye(-2.6, -8.3, 2.2, '#5fc8ff'); eye(2.6, -8.3, 2.2, '#5fc8ff');
       // antennes en petits segments, avec une perle de lumière au bout
       for (const sx of [-1, 1]) {
-        const ay = -17.5 + Math.sin(T * 4 + sx);
+        // les antennes vibrent chacune à son rythme, et se dressent quand elle entend quelque chose
+        const ay = -17.5 + P.n(1.4, 8 + sx) * 1.1 - (P.g === 'antenne' && sx === P.side ? Math.abs(Math.sin(P.gp * Math.PI * 4)) * 2.4 : 0) + (sx < 0 ? P.earL : P.earR) * 3;
         k.strokeStyle = '#2a3450'; k.lineWidth = .8; k.beginPath(); k.moveTo(sx * 1.5, -12); k.quadraticCurveTo(sx * 4, -17, sx * 6.2, ay); k.stroke();
         for (let i = 1; i < 4; i++) el(sx * (1.5 + i * 1.3), -12 - i * 1.5, .45, .45, '#4a5878');
         glow(sx * 6.2, ay, 3.5, 'rgba(180, 255, 220, .9)'); el(sx * 6.2, ay, 1.1, 1.1, '#e6fff4');
@@ -1791,8 +1865,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (let i = 0; i < 4; i++) { const q = (T * .6 + i / 4) % 1; glow(-8 - q * 22, 10 + q * 14, 2.2, 'rgba(255, 255, 255, .9)', 1 - q); }
       const ORANGE = (cx, cy, r) => rg(cx - r * .35, cy - r * .45, 0, r * 1.35, [[0, '#ffe2b8'], [.45, '#f2a252'], [.85, '#b8601e'], [1, '#7a3a12']]);
       // la queue rayée qui s'enroule devant les pattes
-      k.strokeStyle = lg(9, 2, -2, 14, [[0, '#c86a24'], [1, '#f4b06a']]); k.lineWidth = 3.4; k.beginPath(); k.moveTo(7.5, 9); k.bezierCurveTo(13, 6, 12, 15, 4, 14.6); k.stroke();
-      k.strokeStyle = 'rgba(130, 60, 18, .55)'; k.lineWidth = 3.4; k.setLineDash([.9, 1.6]); k.stroke(); k.setLineDash([]);
+      lidCol = '#e08a3a';
+      // la queue suit les mouvements avec du retard, et fouette quand il est agacé
+      grp(7.5, 9, P.tail + P.n(.8, 6) * .14 + (P.g === 'queue' ? Math.sin(P.gp * Math.PI * 5) * .45 * P.env : 0), () => {
+        k.strokeStyle = lg(9, 2, -2, 14, [[0, '#c86a24'], [1, '#f4b06a']]); k.lineWidth = 3.4; k.beginPath(); k.moveTo(7.5, 9); k.bezierCurveTo(13, 6, 12, 15, 4, 14.6); k.stroke();
+        k.strokeStyle = 'rgba(130, 60, 18, .55)'; k.lineWidth = 3.4; k.setLineDash([.9, 1.6]); k.stroke(); k.setLineDash([]);
+      });
+      // la tête : penchée par curiosité, baissée pour faire sa toilette
+      const pHead = P.n(.4, 7) * .05 + P.is('penche') * .3 * P.side, pDy = P.is('toilette') * 2.4;
       // le corps tout doux, la poitrine crème
       fluff(0, 7.5, 7.6, 6.1, ORANGE(0, 7.5, 8), 26, 1.5, 201);
       clumps(0, 7.5, 6.5, 5, 'rgba(255, 225, 180, .45)', 'rgba(130, 60, 18, .35)', 16, 2, 211);
@@ -1804,8 +1884,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         for (let j = -1; j <= 1; j++) line('rgba(160, 100, 60, .55)', .3, [[sx * 3.7 + j * .9, 12.6], [sx * 3.7 + j * .9, 14.4]]);
         soft(sx * 3.7, 14.4, 1, 'rgba(255, 140, 160, .45)');
       }
-      // les oreilles, roses dedans, pleines de duvet, avec une petite touffe au bout
+      k.save(); k.translate(0, 5 + pDy); k.rotate(pHead); k.translate(0, -5);
+      // les oreilles, roses dedans, pleines de duvet, avec une petite touffe au bout ; chacune bouge seule
       for (const sx of [-1, 1]) {
+        const tw = P.g === 'oreille' && sx === P.side ? Math.sin(P.gp * Math.PI * 6) * .35 * P.env : 0;
+        k.save(); k.translate(sx * 4.4, -7); k.rotate((sx < 0 ? P.earL : P.earR) + sx * tw + P.n(.6, 9 + sx) * .04); k.translate(-sx * 4.4, 7);
         k.fillStyle = lg(0, -18, 0, -4, [[0, '#9a4a18'], [.45, '#e08a3a'], [1, '#f2a252']]);
         k.beginPath(); k.moveTo(sx * 2.4, -8); k.quadraticCurveTo(sx * 5.6, -15, sx * 8.6, -17.6); k.quadraticCurveTo(sx * 10.9, -11.4, sx * 10.4, -4.4); k.closePath(); k.fill();
         k.fillStyle = rg(sx * 7.6, -9, 0, 7, [[0, '#ffc8cc'], [.6, '#e88a98'], [1, '#a85a62']]);
@@ -1813,6 +1896,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         k.lineWidth = .28;
         for (let j = 0; j < 9; j++) { k.strokeStyle = j % 2 ? 'rgba(255, 250, 240, .9)' : 'rgba(255, 230, 200, .7)'; const bx = sx * (5 + j * .5), by = -7.6 - j * .15; k.beginPath(); k.moveTo(bx, by); k.quadraticCurveTo(bx + sx * .9, by - 2, bx + sx * (.4 + rnd(j) * .8), by - 3.6 - rnd(j + 9) * 1.6); k.stroke(); }
         for (let j = 0; j < 3; j++) line('rgba(250, 210, 170, .8)', .25, [[sx * 8.6, -17.4], [sx * (8.4 + j * .3), -18.4 - j * .2]]);
+        k.restore();
       }
       // la tête : une boule de poils, des joues en collerette
       fluff(0, -3, 9.6, 8.2, ORANGE(0, -3, 10), 34, 1.6, 251);
@@ -1838,10 +1922,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         for (const dy of [-.9, .2, 1.3]) { k.beginPath(); k.moveTo(sx * 3.2, 1.2 + dy * .4); k.quadraticCurveTo(sx * 8, .2 + dy, sx * 13, 1.2 + dy * 2); k.stroke(); }
         k.beginPath(); k.moveTo(sx * 2.6, -6.4); k.quadraticCurveTo(sx * 4, -8.6, sx * 5.6, -9.4); k.stroke();
       }
+      k.restore();
     } else if (id === 'frimousse') {
       const FROST = (cx, cy, r) => rg(cx - r * .35, cy - r * .45, 0, r * 1.35, [[0, '#ffffff'], [.5, '#d6ecfa'], [.85, '#8cb2d4'], [1, '#5a80a8']]);
       // la grosse queue touffue qui se balance, au bout blanc comme la neige
-      k.save(); k.translate(4, 9); k.rotate(Math.sin(T * 2) * .15 - .15);
+      lidCol = '#d6ecfa';
+      // la queue se balance lentement avec du retard sur le corps ; quand il s'assoit, il s'enroule dedans
+      const curl = P.is('enroule'), wag = P.g === 'queue' ? Math.sin(P.gp * Math.PI * 4) * .35 * P.env : 0;
+      k.save(); k.translate(4 - curl * 3, 9 + curl * 2); k.rotate(P.tail + P.n(.45, 6) * .16 - .15 + wag + curl * 1.1);
       k.save(); k.translate(7.5, -1); k.rotate(-.55);
       fluff(0, 0, 8, 4.6, lg(-8, 0, 8, 0, [[0, '#7aa0c4'], [.55, '#cfe6f8'], [1, '#ffffff']]), 24, 1.8, 301);
       clumps(0, 0, 6.5, 3.2, 'rgba(255, 255, 255, .55)', 'rgba(100, 140, 180, .35)', 16, 2.4, 311, 0);
@@ -1852,8 +1940,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       clumps(0, 8, 5, 4, 'rgba(255, 255, 255, .5)', 'rgba(90, 130, 175, .3)', 12, 1.8, 341);
       for (const sx of [-1, 1]) { el(sx * 3, 13.2, 2, 1.6, rg(sx * 2.8, 12.6, 0, 2.6, [[0, '#ffffff'], [1, '#b8d4ea']])); for (let j = -1; j <= 1; j++) line('rgba(80, 110, 150, .5)', .25, [[sx * 3 + j * .7, 12.8], [sx * 3 + j * .7, 14.3]]); }
       fluff(0, 3.4, 6, 3.4, FROST(0, 2, 6), 24, 2.2, 351, -.2, Math.PI + .2);
-      // les grandes oreilles aux bouts sombres, avec leur duvet blanc
+      // la tête : il la penche, renifle, et baisse les yeux quand il s'enroule
+      const fHead = P.n(.38, 7) * .05 + P.is('penche') * .32 * P.side - curl * .12 * P.side, sniff = P.is('renifle');
+      k.save(); k.translate(0, 3 + curl * 1.6 + Math.sin(T * 26) * sniff * .35); k.rotate(fHead); k.translate(0, -3);
+      // les grandes oreilles aux bouts sombres : elles bougent séparément, comme s'il entendait un bruit
       for (const sx of [-1, 1]) {
+        const hear = P.g === 'oreilles' ? (sx === P.side ? Math.max(0, Math.sin(P.gp * Math.PI * 2)) : Math.max(0, -Math.sin(P.gp * Math.PI * 2))) * .32 : 0;
+        k.save(); k.translate(sx * 5, -7); k.rotate((sx < 0 ? P.earL : P.earR) + sx * hear + P.n(.5, 9 + sx) * .04 - sx * curl * .15); k.translate(-sx * 5, 7);
         k.fillStyle = lg(0, -19.5, 0, -5, [[0, '#24405e'], [.28, '#6a94bc'], [1, '#e2f2ff']]);
         k.beginPath(); k.moveTo(sx * 2.2, -8.4); k.quadraticCurveTo(sx * 4.4, -15, sx * 7.6, -19.2); k.quadraticCurveTo(sx * 8.6, -19.6, sx * 9.1, -18.4); k.quadraticCurveTo(sx * 11.2, -11.4, sx * 10.6, -4.6); k.closePath(); k.fill();
         k.fillStyle = rg(sx * 7.4, -10, 0, 7, [[0, '#d8a8c0'], [.7, '#8a7098'], [1, '#4a4a6a']]);
@@ -1861,6 +1954,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         k.lineWidth = .28;
         for (let j = 0; j < 11; j++) { k.strokeStyle = j % 2 ? 'rgba(255, 255, 255, .95)' : 'rgba(225, 240, 255, .75)'; const bx = sx * (4.8 + j * .42), by = -7.8 - j * .2; k.beginPath(); k.moveTo(bx, by); k.quadraticCurveTo(bx + sx * .7, by - 2.4, bx + sx * (.2 + rnd(j + 40) * .8), by - 4 - rnd(j + 50) * 2.4); k.stroke(); }
         k.strokeStyle = 'rgba(220, 240, 255, .6)'; k.lineWidth = .5; k.beginPath(); k.moveTo(sx * 8.4, -18.4); k.quadraticCurveTo(sx * 10.6, -12, sx * 10.4, -5.4); k.stroke();
+        k.restore();
       }
       // la tête : ronde et duveteuse, avec des joues en collerette qui partent sur les côtés
       fluff(0, -4, 9.2, 6.8, FROST(0, -4, 9.5), 32, 1.5, 361);
@@ -1877,25 +1971,29 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       // les yeux en amande avec leur trait noir qui file vers les tempes
       eye(-4.2, -4.2, 2.05, '#ffaa18', .86); eye(4.2, -4.2, 2.05, '#ffaa18', .86);
       for (const sx of [-1, 1]) { k.strokeStyle = 'rgba(20, 24, 40, .9)'; k.lineWidth = .5; k.beginPath(); k.ellipse(sx * 4.2, -4.2, 2.1, 2.1 * 1.08 * .86, 0, Math.PI * 1.02, Math.PI * 1.98); k.stroke(); line('rgba(20, 24, 40, .85)', .45, [[sx * 6.3, -4.4], [sx * 7.6, -5.4]]); }
-      nose(0, 5.8, 1.5, '#2e2840');
+      // la truffe frétille quand il renifle
+      nose(0, 5.8 + Math.sin(T * 31) * sniff * .3, 1.5 * (1 + Math.abs(Math.sin(T * 31)) * sniff * .12), '#2e2840');
       k.strokeStyle = 'rgba(40, 40, 70, .7)'; k.lineWidth = .35; k.beginPath(); k.moveTo(-1, 7.2); k.quadraticCurveTo(0, 7.8, 1, 7.2); k.stroke();
       k.strokeStyle = 'rgba(255, 255, 255, .7)'; k.lineWidth = .25;
-      for (const sx of [-1, 1]) for (const dy of [-.4, .6]) { k.beginPath(); k.moveTo(sx * 2, 3.2 + dy); k.quadraticCurveTo(sx * 6, 2.6 + dy, sx * 10, 3.4 + dy * 2); k.stroke(); }
+      for (const sx of [-1, 1]) for (const dy of [-.4, .6]) { const wh = P.n(1.3, 10 + sx) * .4 + sniff * Math.sin(T * 24 + sx) * .5; k.beginPath(); k.moveTo(sx * 2, 3.2 + dy); k.quadraticCurveTo(sx * 6, 2.6 + dy + wh * .5, sx * 10, 3.4 + dy * 2 + wh); k.stroke(); }
+      k.restore();
       // des éclats de givre qui tournent autour de lui
       for (let i = 0; i < 4; i++) { const a = T * 1.5 + i * 1.6; glow(Math.cos(a) * 16, Math.sin(a) * 11, 3.2, 'rgba(200, 240, 255, .9)', .55 + .45 * Math.sin(T * 6 + i)); }
     } else if (id === 'bulle') {
-      const pulse = Math.sin(T * 3), sq = 1 + pulse * .07;
+      lidCol = 'rgba(255, 175, 230, .95)';
+      // le dôme se contracte à un rythme irrégulier, plus fort quand elle nage
+      const pulse = Math.max(-1, Math.min(1, P.n(1.9, 6) * 1.2 + (P.g === 'nage' ? Math.sin(P.gp * Math.PI * 5) * P.env : 0))), sq = 1 + pulse * .07, wave = 1 + P.is('ondule') * 1.6, shine = 1 + P.is('eclat') * .8;
       glow(0, -2, 26, 'rgba(255, 130, 220, .35)');
       // les longs filaments et les bras en ruban, qui ondulent
       for (let i = 0; i < 9; i++) {
         const bx = -9 + i * 2.25; k.strokeStyle = `rgba(255, ${180 + i * 6}, 240, .5)`; k.lineWidth = .5;
         k.beginPath(); k.moveTo(bx, 3);
-        for (let j = 1; j <= 7; j++) k.lineTo(bx + Math.sin(T * 4 + i * .8 + j * .9) * .7 * j * .6, 3 + j * 2.9);
+        for (let j = 1; j <= 7; j++) k.lineTo(bx + Math.sin(T * 4 + i * .8 + j * .9) * .7 * j * .6 * wave + P.tail * j * 1.2, 3 + j * 2.9 - swim * j * .5);
         k.stroke();
       }
       // trois bras en ruban, plus épais, qui ondulent lentement
       for (let i = 0; i < 3; i++) {
-        const bx = -4 + i * 4, pts = Array.from({ length: 7 }, (_, j) => [bx + Math.sin(T * 2.6 + i * 1.3 + j * .8) * .5 * j, 3 + j * 2.6]);
+        const bx = -4 + i * 4, pts = Array.from({ length: 7 }, (_, j) => [bx + Math.sin(T * 2.6 + i * 1.3 + j * .8) * .5 * j * wave + P.tail * j * 1.5, 3 + j * 2.6 - swim * j * .4]);
         line('rgba(220, 140, 255, .3)', 2.6, pts); line('rgba(255, 210, 255, .6)', .7, pts);
       }
       // le dôme transparent : bord plus lumineux, quatre anneaux roses dedans, et des points de lumière sur sa frange
@@ -1908,7 +2006,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (let i = -4; i <= 4; i++) { k.beginPath(); k.moveTo(i * .5, -10); k.quadraticCurveTo(i * 1.6, -5, i * 2.6, 3); k.stroke(); }
       k.restore();
       k.strokeStyle = 'rgba(255, 235, 255, .75)'; k.lineWidth = .8; k.beginPath(); k.moveTo(-12, 3); k.bezierCurveTo(-13, -15, 13, -15, 12, 3); k.stroke();
-      glow(0, -4, 8, 'rgba(255, 255, 255, .75)', .55 + .3 * pulse);
+      glow(0, -4, 8, 'rgba(255, 255, 255, .75)', (.55 + .3 * pulse) * shine);
       el(-4.5, -8.4, 3.4, 1.5, 'rgba(255, 255, 255, .7)', -.5); el(5.4, -6, 1, .6, 'rgba(255, 255, 255, .5)', .6);
       for (let i = 0; i < 7; i++) glow(-10 + i * 3.33, 2.6, 1.6, 'rgba(255, 240, 160, .95)', .6 + .4 * Math.sin(T * 5 + i));
       k.restore();
@@ -1916,9 +2014,15 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       soft(-6.4, .4, 2.4, 'rgba(255, 90, 160, .35)'); soft(6.4, .4, 2.4, 'rgba(255, 90, 160, .35)');
     } else if (id === 'hop') {
       const SNOW = (cx, cy, r) => rg(cx - r * .35, cy - r * .45, 0, r * 1.35, [[0, '#ffffff'], [.5, '#efebfb'], [.85, '#b8b0dc'], [1, '#8a80b8']]);
+      lidCol = '#efebfb';
+      // la tête se penche ; les oreilles suivent la tête
+      const hHead = P.n(.5, 7) * .05 + P.is('penche') * .28 * P.side, twitch = P.is('nez');
+      const headT = fn => grp(0, 6, hHead, fn);
       // les grandes oreilles, traversées par la lumière, avec leurs veines et leur duvet
-      for (const sx of [-1, 1]) {
-        k.save(); k.translate(sx * 3.6, -8); k.rotate(sx * (.18 + Math.sin(T * 2.4 + sx) * .06));
+      headT(() => { for (const sx of [-1, 1]) {
+        // une oreille se plie et retombe, l'autre reste dressée ; elles traînent un peu derrière les sauts
+        const flop = P.g === 'oreille' && sx === P.side ? P.env * .9 : 0;
+        k.save(); k.translate(sx * 3.6, -8); k.rotate(sx * (.18 + P.n(.9, 8 + sx) * .05 + flop) + (sx < 0 ? P.earL : P.earR) + hopUp * sx * -.15);
         el(0, -8.4, 3.6, 9.8, lg(-3.6, 0, 3.6, 0, [[0, '#d8d0f0'], [.4, '#ffffff'], [1, '#c8bfe8']]));
         el(0, -7.8, 2, 7.4, lg(0, -16, 0, 0, [[0, '#ffe4ec'], [.55, '#f6a8c0'], [1, '#c87090']]));
         soft(0, -9, 2.6, 'rgba(255, 220, 230, .5)');
@@ -1927,7 +2031,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         for (let j = 0; j < 10; j++) { const yy = -2 - j * 1.3; for (const e of [-1, 1]) { k.strokeStyle = 'rgba(255, 255, 255, .85)'; k.beginPath(); k.moveTo(e * 2, yy); k.lineTo(e * (1.2 + rnd(j + e) * .3), yy - .9); k.stroke(); } }
         k.strokeStyle = 'rgba(200, 232, 255, .55)'; k.lineWidth = .8; k.beginPath(); k.ellipse(.2, -8.4, 3.4, 9.6, 0, -2.2, .6); k.stroke();
         k.restore();
-      }
+      } });
       // le corps duveteux, la poitrine, les grandes pattes arrière et les petites pattes avant
       for (const sx of [-1, 1]) { fluff(sx * 4.6, 13.4, 3.4, 1.9, SNOW(sx * 4.4, 13, 3.6), 10, .7, 401 + sx); for (let j = -1; j <= 1; j++) line('rgba(150, 140, 190, .5)', .28, [[sx * 4.6 + sx * 1.6 + j * .8, 12.8], [sx * 4.6 + sx * 1.8 + j * .8, 14.6]]); }
       fluff(0, 8, 8, 6.4, SNOW(0, 8, 8.5), 30, 1.5, 411);
@@ -1935,6 +2039,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       fluff(0, 7, 3.6, 3, rg(-.6, 6, 0, 4, [[0, '#ffffff'], [1, '#f0ecfa']]), 12, 1.4, 431);
       for (const sx of [-1, 1]) { el(sx * 2.2, 11.8, 1.6, 1.4, SNOW(sx * 2, 11.4, 2)); line('rgba(150, 140, 190, .5)', .25, [[sx * 2.2 - .5, 12.2], [sx * 2.2 - .5, 13]]); line('rgba(150, 140, 190, .5)', .25, [[sx * 2.2 + .5, 12.2], [sx * 2.2 + .5, 13]]); }
       // la tête ronde et ses joues gonflées, avec une petite houppette sur le dessus
+      k.save(); k.translate(0, 6); k.rotate(hHead); k.translate(0, -6);
       fluff(0, -2, 9, 8.1, SNOW(0, -2, 9.5), 36, 1.4, 441);
       for (const sx of [-1, 1]) fluff(sx * 5, 1.6, 4.6, 3.6, SNOW(sx * 4.4, .6, 5), 14, 1.5, 451 + sx, sx > 0 ? -1.4 : Math.PI - 1.8, sx > 0 ? 1.8 : Math.PI + 1.4);
       clumps(0, -3.6, 7, 5.4, 'rgba(255, 255, 255, .7)', 'rgba(150, 140, 200, .25)', 22, 1.4, 461);
@@ -1949,14 +2054,18 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (const sx of [-1, 1]) soft(sx * 6.4, 1.8, 3.2, 'rgba(255, 110, 150, .4)');
       // le museau : coussinets, petit nez rose en cœur, bouche et deux petites dents
       for (const sx of [-1, 1]) { el(sx * 1.6, 2.6, 2, 1.6, rg(sx * 1.4, 2, 0, 2.2, [[0, '#ffffff'], [1, '#ece6f8']])); for (const [dx, dy] of [[.9, -.2], [1.5, .4]]) el(sx * dx, 2.5 + dy, .15, .15, 'rgba(120, 100, 150, .55)'); }
-      nose(0, 1.3, 1.2, '#ff8aa8');
+      // le petit nez frétille
+      nose(0, 1.3 + Math.sin(T * 34) * twitch * .28 + P.n(2.2, 11) * .06, 1.2 * (1 + Math.abs(Math.sin(T * 34)) * twitch * .14), '#ff8aa8');
       el(-.42, 4.6, .4, .6, '#ffffff'); el(.42, 4.6, .4, .6, '#ffffff'); line('rgba(150, 140, 180, .6)', .15, [[0, 4.1], [0, 5.1]]);
       k.strokeStyle = 'rgba(120, 90, 130, .7)'; k.lineWidth = .4; k.beginPath(); k.moveTo(0, 2.1); k.lineTo(0, 3.6); k.moveTo(-1.5, 4); k.quadraticCurveTo(-.7, 4.6, 0, 3.6); k.quadraticCurveTo(.7, 4.6, 1.5, 4); k.stroke();
       k.strokeStyle = 'rgba(255, 255, 255, .8)'; k.lineWidth = .25;
-      for (const sx of [-1, 1]) for (const dy of [-.6, .4, 1.4]) { k.beginPath(); k.moveTo(sx * 2.6, 2.6 + dy * .3); k.quadraticCurveTo(sx * 7, 2 + dy, sx * 11.5, 2.8 + dy * 1.8); k.stroke(); }
+      for (const sx of [-1, 1]) for (const dy of [-.6, .4, 1.4]) { const wh = twitch * Math.sin(T * 30 + sx) * .5; k.beginPath(); k.moveTo(sx * 2.6, 2.6 + dy * .3); k.quadraticCurveTo(sx * 7, 2 + dy + wh * .5, sx * 11.5, 2.8 + dy * 1.8 + wh); k.stroke(); }
+      k.restore();
     } else if (id === 'caillou') {
       // vue de dessus : quatre nageoires écaillées qui pagaient, une petite queue, une tête de tortue et une carapace qui est un morceau de lune
-      const pad = Math.sin(T * 3);
+      lidCol = '#86c494';
+      // elle pagaie lentement, parfois plus vite ; elle peut rentrer la tête dans sa carapace
+      const pad = Math.sin(T * (1.6 + P.is('pagaie') * 3.4) + P.n(.3, 6)) * (.7 + P.is('pagaie') * .5), tuck = P.is('rentre');
       const FLIP = rg(0, -1, 0, 7, [[0, '#d4f6d8'], [.5, '#7aba88'], [1, '#2e6040']]);
       for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
         k.save(); k.translate(sx * 8.6, sy * 5.6); k.rotate(sx * (sy < 0 ? -.55 : .55) + pad * .25 * sx * sy); k.scale(sx * (sy < 0 ? 1 : .78), sy < 0 ? 1 : .78);
@@ -1972,6 +2081,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       }
       k.fillStyle = FLIP; k.beginPath(); k.moveTo(-1.6, 10.4); k.quadraticCurveTo(0, 15, 1.6, 10.4); k.closePath(); k.fill();
       // la tête : un peu allongée, écaillée, avec son bec, ses narines et ses joues
+      k.save(); k.translate(0, -9.6 + tuck * 4.2); k.rotate(P.n(.25, 7) * .1 + (P.g === 'regard' ? Math.sin(P.gp * Math.PI * 2) * .35 * P.side : 0)); k.scale(1 - tuck * .2, 1 - tuck * .25); k.translate(0, 9.6);
       soft(0, -11, 6, 'rgba(0, 0, 20, .3)');
       const head = () => { k.beginPath(); k.moveTo(-3.8, -9.6); k.bezierCurveTo(-4.6, -13.6, -2.6, -16.6, 0, -16.8); k.bezierCurveTo(2.6, -16.6, 4.6, -13.6, 3.8, -9.6); k.closePath(); };
       k.fillStyle = rg(-1.2, -14.4, 0, 6, [[0, '#e2fae4'], [.55, '#86c494'], [1, '#3a7050']]); head(); k.fill();
@@ -1984,6 +2094,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       el(-.5, -16.2, .2, .15, 'rgba(30, 50, 40, .8)'); el(.5, -16.2, .2, .15, 'rgba(30, 50, 40, .8)');
       eye(-2.1, -13.2, 1.4, '#a86a2a'); eye(2.1, -13.2, 1.4, '#a86a2a');
       soft(-3, -11.8, 1.4, 'rgba(255, 150, 150, .35)'); soft(3, -11.8, 1.4, 'rgba(255, 150, 150, .35)');
+      k.restore();
       // la carapace : un bord de petites plaques, puis la poudre de lune et ses cratères éclairés par le côté
       for (let i = 0; i < 18; i++) {
         const a = i / 18 * Math.PI * 2, a2 = (i + 1) / 18 * Math.PI * 2, am = (a + a2) / 2;
@@ -2010,10 +2121,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       for (let i = 0; i < 5; i++) { const a = T * .8 + i * 1.26; glow(Math.cos(a) * 15, Math.sin(a) * 15.5, 1.8, 'rgba(230, 235, 255, .8)', .4 + .4 * Math.sin(T * 4 + i)); }
     } else if (id === 'nuage') {
       // un jet d'étoiles au-dessus de la tête
-      for (let i = 0; i < 6; i++) { const q = (T * .8 + i / 6) % 1, sx = 5 + Math.sin(i * 2.3) * q * 6; glow(sx, -8 - q * 12, 2.8 * (1 - q) + .7, 'rgba(255, 240, 180, .95)', 1 - q); }
+      lidCol = '#2a5aa8';
+      // son jet d'étoiles : discret, puis un grand souffle de temps en temps
+      const spout = .35 + P.is('souffle') * 1.1 + Math.max(0, P.n(.4, 6)) * .25, sing = P.is('chante');
+      for (let i = 0; i < 6; i++) { const q = (T * (.8 + P.is('souffle') * .9) + i / 6) % 1, sx = 5 + Math.sin(i * 2.3) * q * 6; glow(sx, -8 - q * 12 * (.6 + spout * .5), 2.8 * (1 - q) + .7, 'rgba(255, 240, 180, .95)', (1 - q) * Math.min(1, spout)); }
       line('rgba(200, 235, 255, .35)', 1.2, [[5, -7], [5, -12]]);
       // la queue, qui bat doucement
-      k.save(); k.translate(-12.5, .5); k.rotate(Math.sin(T * 2.5) * .25);
+      // la queue bat lentement, en retard sur le corps, et donne parfois un grand coup
+      k.save(); k.translate(-12.5, .5); k.rotate(P.n(.9, 7) * .2 + P.tail + (P.g === 'queue' ? Math.sin(P.gp * Math.PI * 4) * .5 * P.env : 0));
       k.fillStyle = lg(-10, -6, 0, 2, [[0, '#14305e'], [.6, '#2a5aa8'], [1, '#3a7ac8']]); k.beginPath(); k.moveTo(0, -1.2); k.quadraticCurveTo(-5, -2, -10, -7.4); k.quadraticCurveTo(-8.6, -3, -7.4, -.2); k.quadraticCurveTo(-8.6, 2.6, -10, 6.4); k.quadraticCurveTo(-5, 1.6, 0, 2.2); k.closePath(); k.fill();
       k.strokeStyle = 'rgba(170, 220, 255, .5)'; k.lineWidth = .5; k.beginPath(); k.moveTo(-1, -1); k.quadraticCurveTo(-5, -2.2, -9.6, -7); k.stroke();
       k.restore();
@@ -2028,11 +2143,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       k.restore();
       const stars = [[-9.5, -1.8], [-6, -4.6], [-2, -6.4], [2.6, -6.8], [6.4, -5.4]];
       k.strokeStyle = 'rgba(220, 240, 255, .35)'; k.lineWidth = .35; k.beginPath(); stars.forEach(([sx, sy], i) => i ? k.lineTo(sx, sy) : k.moveTo(sx, sy)); k.stroke();
-      stars.forEach(([sx, sy], i) => { glow(sx, sy, 2.4, 'rgba(255, 255, 255, .9)', .5 + .5 * Math.sin(T * 3 + i * 1.7)); el(sx, sy, .45, .45, '#ffffff'); });
+      stars.forEach(([sx, sy], i) => { glow(sx, sy, 2.4 + sing * 1.6, 'rgba(255, 255, 255, .9)', .5 + .5 * Math.sin(T * 3 + i * 1.7) + sing * .5); el(sx, sy, .45, .45, '#ffffff'); });
       // la nageoire, l'œil et le sourire
-      k.fillStyle = lg(-5, 4, 1, 10, [[0, '#1a3c7a'], [1, '#3a72c0']]); k.beginPath(); k.moveTo(1.4, 4.6); k.quadraticCurveTo(-1.6, 10.4, -5.6, 10.6); k.quadraticCurveTo(-3.2, 6.6, -2.2, 4.4); k.closePath(); k.fill();
+      // la nageoire rame doucement
+      grp(1.4, 4.6, P.n(1, 8) * .18 + P.tail * .5, () => { k.fillStyle = lg(-5, 4, 1, 10, [[0, '#1a3c7a'], [1, '#3a72c0']]); k.beginPath(); k.moveTo(1.4, 4.6); k.quadraticCurveTo(-1.6, 10.4, -5.6, 10.6); k.quadraticCurveTo(-3.2, 6.6, -2.2, 4.4); k.closePath(); k.fill(); });
       eye(8.2, -1.4, 1.8, '#4a8ad8');
-      k.strokeStyle = 'rgba(15, 35, 75, .75)'; k.lineWidth = .6; k.beginPath(); k.moveTo(8.6, 2.8); k.quadraticCurveTo(11.8, 3.4, 14, 1.4); k.stroke();
+      // le sourire s'ouvre quand elle chante
+      k.strokeStyle = 'rgba(15, 35, 75, .75)'; k.lineWidth = .6; k.beginPath(); k.moveTo(8.6, 2.8); k.quadraticCurveTo(11.8, 3.4 + sing * 1.6, 14, 1.4); k.stroke();
       soft(10.4, 3, 1.8, 'rgba(255, 130, 180, .35)');
     }
     // bulle de protection prête (Bulle) : un anneau irisé qui respire
