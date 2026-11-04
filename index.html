@@ -9116,7 +9116,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       pl: [player.x, player.y, player.tilt, player.hurt, player.chill || 0, player.vx], l2: p2 ? p2.lives : 0, ko: [player.ko ? 1 : 0, p2 && p2.ko ? 1 : 0],
       p2: p2 && [p2.x, p2.y, p2.tilt, p2.hurt, p2.chill || 0, p2.vx, p2.ammo, p2.reload, (p2.gun || gun).mag, (p2.gun || gun).reload],
       pet: [pet.x, pet.y, pet.guardT], tm: time,
-      sc: (netScN = (netScN + 1) % 4) === 0 ? scenery.filter(o => o.type !== 'drift' && o.type !== 'bolt') : undefined,
+      sc: (netScN = (netScN + 1) % 4) === 0 ? scenery.filter(o => o.type !== 'drift' && o.type !== 'bolt' && o.type !== 'spark') : undefined,
       it: items, sh: shots.slice(-160), eb: ebullets.slice(-260), zp: zaps, sm: smokes, fx: netFx.splice(0) };
     let txt = JSON.stringify(m, netRep);
     // un message trop gros ne passe pas partout : on garde l'essentiel
@@ -9285,7 +9285,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // le décor de l'hôte : on garde ses propres particules (neige, braises…) et on refait les images des planètes une seule fois
   const netPlanetImg = new Map();
   function netScenery(list) {
-    const keep = scenery.filter(o => o.type === 'drift' || o.type === 'bolt');
+    const keep = scenery.filter(o => o.type === 'drift' || o.type === 'bolt' || o.type === 'spark');
     for (const o of list) {
       if (!o || typeof o !== 'object') continue;
       if (o.type === 'planet') {
@@ -10763,8 +10763,33 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     { planets: [{ c: ['#c86bff', '#140a24'], bands: true }, { c: ['#4a2a6a', '#05020c'], craters: true }, { c: ['#2a1a40', '#000000'], ring: '#c86bff' }],
       bolt: ['#ffffff', '#c86bff'], swarm: '#c86bff', meteor: '#c86bff', drift: 'glitch' },
   ];
+  // en plus, dans chaque monde : d'autres planètes, leurs lunes, des astres (étoiles doubles, géantes, amas, naines)
+  // et les couleurs des conteneurs des cargos
+  const SCENE_EXTRA = [
+    { planets: [{ c: ['#e8c9a0', '#6a4a30'], bands: true, ring: '#d8c0a0' }, { c: ['#a8d8ff', '#2a4a8a'], bands: true }, { c: ['#c8c0b8', '#5a5450'], craters: true }],
+      moon: { c: ['#d8d4cc', '#5e5a54'], craters: true },
+      astres: [['binaire', '#fff4c0', '#9bc0ff'], ['amas', '#cad7ff', '#fff4ea'], ['geante', '#ffb36b', '#ff7b2a'], ['naine', '#ffffff', '#9bc0ff']],
+      cargo: ['#a8553a', '#3a7a8a', '#b89a4a', '#6a6a7a', '#8a3a4a'] },
+    { planets: [{ c: ['#f0fbff', '#8fb8d8'], craters: true, ring: '#cfefff' }, { c: ['#d8f0ff', '#5a7aa8'], bands: true, ring: '#ffffff' }],
+      moon: { c: ['#ffffff', '#8fb8d8'], craters: true },
+      astres: [['naine', '#ffffff', '#7ad8ff'], ['amas', '#e6f9ff', '#9fe8ff'], ['binaire', '#ffffff', '#7ad8ff']],
+      cargo: ['#cfefff', '#9fd8f0', '#7ab8e0', '#e6f9ff', '#5a8ab8'] },
+    { planets: [{ c: ['#ffe0a0', '#a83a0a'], craters: true }, { c: ['#4a1a0a', '#120402'], land: '#ff6a1a' }, { c: ['#ffb36b', '#5a1a08'], bands: true, ring: '#ffd86b' }],
+      moon: { c: ['#8a5a4a', '#2a1008'], craters: true },
+      astres: [['geante', '#ff6b3a', '#ff2a0a'], ['binaire', '#ffd86b', '#ff4f1a'], ['naine', '#ffe9b0', '#ff9a3c']],
+      cargo: ['#5a2a18', '#8a3a10', '#3a1a10', '#a8642a', '#6a4a3a'] },
+    { planets: [{ c: ['#b0ffd8', '#1a5a4a'], bands: true, ring: '#d8ff6b' }, { c: ['#6bd8ff', '#0a3a5a'], land: '#3ac85a' }],
+      moon: { c: ['#b6d88a', '#2f4a2a'], craters: true },
+      astres: [['amas', '#d8ff6b', '#7dffb0'], ['binaire', '#b6ff6b', '#4fe0c8'], ['geante', '#d8ff6b', '#3ab84a']],
+      cargo: ['#3a8a3a', '#6ab84a', '#2a5a2a', '#8ad86b', '#1f6a4a'] },
+    { planets: [{ c: ['#ff6bd8', '#2a0420'], craters: true }, { c: ['#6b8aff', '#05081a'], bands: true, ring: '#4fe0f0' }],
+      moon: { c: ['#6a4a8a', '#0a0414'], craters: true },
+      astres: [['naine', '#ffffff', '#c86bff'], ['amas', '#c86bff', '#4fe0f0'], ['geante', '#8a3aff', '#3a0a6a']],
+      cargo: ['#2a1a40', '#3a1a5a', '#4a2a6a', '#1a0f2e', '#5a3a7a'] },
+  ];
+  SCENE_SETS.forEach((st, i) => Object.assign(st, SCENE_EXTRA[i], { planets: st.planets.concat(SCENE_EXTRA[i].planets) }));
   const sceneSet = () => SCENE_SETS[world] || SCENE_SETS[0];
-  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3, cometT = 3, swarmT = 9, driftT = 0;
+  let scenery = [], planetT = 0, fightT = 4, cruiserT = 12, meteorT = 3, cometT = 3, swarmT = 9, driftT = 0, bigT = 20, astreT = 3;
 
   // une planète est dessinée une seule fois dans une image, puis réutilisée
 
@@ -10914,8 +10939,34 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function randomPlanet(y) {
     const big = Math.random() < .25;
     const r = big ? 70 + Math.random() * 60 : 18 + Math.random() * 40;
-    const pool = sceneSet().planets;
-    addPlanet(pool[Math.floor(Math.random() * pool.length)], r, planetX(), y ?? -r * 2, 5 + r * .1);
+    const pool = sceneSet().planets, st = pool[Math.floor(Math.random() * pool.length)];
+    addPlanet(st, r, planetX(), y ?? -r * 2, 5 + r * .1);
+    // souvent, une petite lune tourne autour (elle passe derrière puis devant la planète)
+    if (r > 26 && Math.random() < .5) {
+      const mr = Math.round(4 + r * .14);
+      scenery[scenery.length - 1].moon = { st: sceneSet().moon, r: mr, d: r * (st.ring ? 1.95 : 1.45) + mr, a: Math.random() * 6.28, sp: (.18 + Math.random() * .2) * (Math.random() < .5 ? 1 : -1) };
+    }
+  }
+  // les lunes et autres petits astres : une image par style et par taille, gardée de côté
+  const smallPlanets = new Map();
+  function cachedPlanet(st, r) {
+    const key = JSON.stringify(st) + '|' + r;
+    let img = smallPlanets.get(key);
+    if (!img) { if (smallPlanets.size > 30) smallPlanets.clear(); img = makePlanet(st, r); smallPlanets.set(key, img); }
+    return img;
+  }
+  // astre lointain : étoile double, géante rouge, amas d'étoiles ou naine qui scintille
+  function addAstre() {
+    const pool = sceneSet().astres, [k, c0, c1] = pool[Math.floor(Math.random() * pool.length)];
+    const sz = k === 'amas' ? 40 + Math.random() * 25 : k === 'geante' ? 13 + Math.random() * 9 : k === 'binaire' ? 16 + Math.random() * 8 : 3 + Math.random() * 1.5;
+    scenery.push({ type: 'astre', k, c0, c1, sz, x: W * (.06 + Math.random() * .88), y: -sz * 2, vy: 6 + Math.random() * 5, ph: Math.random() * 6.28, seed: Math.floor(Math.random() * 1e6), glint: 0 });
+  }
+  // gros vaisseau lointain : cargo à conteneurs, porte-vaisseaux qui lance ses chasseurs, ou vaisseau-mère alien
+  function addBigShip() {
+    const R = Math.random, fromLeft = R() < .5, dir = fromLeft ? 1 : -1, m = ['cargo', 'porte', 'mere'][Math.floor(R() * 3)];
+    const len = (m === 'mere' ? Math.min(230, W * .5) : Math.min(m === 'porte' ? 360 : 330, W * .74)) * (.85 + R() * .3);
+    scenery.push({ type: 'bigship', m, w: world, dir, len, x: fromLeft ? -len * .6 : W + len * .6, y: H * (.12 + R() * .38), vx: dir * (m === 'mere' ? 14 + R() * 8 : 16 + R() * 10),
+      hitT: 0, hits: 0, lost: [], launchT: 2 + R() * 3, beamT: 0, ph: R() * 6.28 });
   }
   function addFight() {
     const fromLeft = Math.random() < .5, dir = fromLeft ? 1 : -1;
@@ -10937,7 +10988,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     scenery = [];
     if (withEarth) addPlanet(HOME_PLANETS[startWorld] || EARTH, W * .65, W * .5, H + W * .2, 14);
     else randomPlanet(H * (.2 + Math.random() * .4));
-    planetT = withEarth ? 14 : 8; fightT = 3 + Math.random() * 3; cruiserT = withEarth ? 10 : 4; meteorT = 2;
+    planetT = withEarth ? 14 : 8; fightT = 3 + Math.random() * 3; cruiserT = withEarth ? 10 : 4; meteorT = 2; bigT = withEarth ? 22 : 9; astreT = withEarth ? 6 : 1;
   }
 
   // hors partie, le fond montre le monde choisi sur la carte
@@ -10949,7 +11000,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function updateScenery(dt) {
     const k = state === 'play' ? speed : .6, m = reduce ? .3 : 1;
     // partie en équipe, chez le pote : le décor (planètes, vaisseaux, comètes…) vient de l'hôte, on ne l'invente pas ici
-    if (netRole === 'guest' && GAME_ST.includes(state) && state !== 'film') { planetT = fightT = cruiserT = meteorT = cometT = swarmT = 99; }
+    if (netRole === 'guest' && GAME_ST.includes(state) && state !== 'film') { planetT = fightT = cruiserT = meteorT = cometT = swarmT = bigT = astreT = 99; }
     planetT -= dt; fightT -= dt; cruiserT -= dt; meteorT -= dt;
     if (planetT <= 0) { if (scenery.filter(o => o.type === 'planet').length < 2) randomPlanet(); planetT = 10 + Math.random() * 14; }
     if (!reduce && fightT <= 0) { addFight(); fightT = 4 + Math.random() * 5; }
@@ -10966,6 +11017,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       swarmT = 12 + Math.random() * 10;
     }
     if (cruiserT <= 0) { if (!scenery.some(o => o.type === 'cruiser')) addCruiser(); cruiserT = 22 + Math.random() * 18; }
+    // un gros vaisseau à la fois, et pas en même temps qu'un croiseur bien visible (le fond reste lisible)
+    bigT -= dt; astreT -= dt;
+    if (bigT <= 0) {
+      const busy = scenery.some(o => o.type === 'bigship' || (o.type === 'cruiser' && o.x > 0 && o.x < W));
+      if (!busy) addBigShip();
+      bigT = busy ? 6 : 24 + Math.random() * 14;
+    }
+    if (astreT <= 0) { if (scenery.filter(o => o.type === 'astre').length < 2) addAstre(); astreT = 12 + Math.random() * 12; }
     // particules du monde : neige, braises, feuilles ou pixels qui bugguent
     driftT -= dt;
     const dk = sceneSet().drift;
@@ -10980,9 +11039,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       }
     }
     if (!reduce && meteorT <= 0) { scenery.push({ type: 'meteor', col: sceneSet().meteor, x: Math.random() * W, y: -10, vx: -120 - Math.random() * 120, vy: 260 + Math.random() * 120, life: 1.4 }); meteorT = 1.2 + Math.random() * 3; }
+    sceneryReact(dt);
     for (const o of scenery) {
-      if (o.type === 'planet') o.y += o.vy * k * m * dt;
+      if (o.type === 'planet' || o.type === 'astre') { o.y += o.vy * k * m * dt; if (o.moon) o.moon.a += o.moon.sp * dt; if (o.glint > 0) o.glint = Math.max(0, o.glint - dt * 1.2); }
       else if (o.type === 'cruiser') { o.x += o.vx * m * dt; o.y += 4 * k * dt; }
+      else if (o.type === 'bigship') { o.x += o.vx * m * dt; o.y += 3 * k * dt; o.hitT = Math.max(0, o.hitT - dt); o.beamT = Math.max(0, o.beamT - dt); bigShipTick(o, dt); }
       else {
         o.x += o.vx * m * dt; o.y += o.vy * m * dt;
         if (o.type === 'fighter') {
@@ -10995,6 +11056,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           }
         }
         if (o.type === 'drift' && o.dk !== 'glitch') { o.ph += dt * 1.6; o.x += Math.sin(o.ph) * (o.dk === 'feuilles' ? 30 : 12) * dt; }
+        // ce que le vaisseau ou un tir a poussé glisse encore un peu, puis reprend sa route
+        if (o.px || o.py) { o.x += o.px * dt; o.y += o.py * dt; const f = Math.pow(.05, dt); o.px *= f; o.py *= f; if (Math.abs(o.px) + Math.abs(o.py) < 2) o.px = o.py = 0; }
+        if (o.type === 'fighter' && o.roll > 0) o.roll = Math.max(0, o.roll - dt * 1.4);
+        if (o.type === 'swarm' && o.scat > 0) o.scat = Math.max(0, o.scat - dt * .5);
+        if (o.type === 'debris') o.rot += o.vr * dt;
         if (o.life !== undefined) o.life -= dt;
       }
     }
@@ -11002,6 +11068,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (o.type === 'drift' && o.dk === 'braises') return o.life > 0 && o.y > -20;
       if (o.life !== undefined && o.life <= 0) return false;
       if (o.type === 'planet') return o.y - o.r * 2 < H + 20;
+      if (o.type === 'astre') return o.y - o.sz * 2 < H + 20;
+      if (o.type === 'bigship') return o.dir > 0 ? o.x - o.len * .6 < W + 40 : o.x + o.len * .6 > -40;
       if (o.type === 'cruiser') return o.dir > 0 ? o.x - o.len < W + 40 : o.x + o.len > -40;
       return o.x > -100 && o.x < W + 100 && o.y < H + 60;
     });
@@ -11173,6 +11241,263 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
 
   const jetHex = P => '#' + P.jet.split(',').map(v => (+v).toString(16).padStart(2, '0')).join('');
+
+  // ===== Le fond réagit : aux tirs et au passage du vaisseau (rien ne donne de points, c'est pour le plaisir) =====
+  // un tir ne touche chaque objet du fond qu'une fois (gardé à part, pour ne pas l'envoyer au pote)
+  const shotHit = new WeakMap();
+  function bgSparks(x, y, col, n = 6, sp = 90) {
+    if (reduce) n = Math.min(n, 2);
+    let c = 0; for (const o of scenery) if (o.type === 'spark') c++;
+    for (let i = 0; i < n && c + i < 90; i++) {
+      const a = Math.random() * 6.28, v = sp * (.3 + Math.random());
+      scenery.push({ type: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, col, life: .3 + Math.random() * .4 });
+    }
+  }
+  // places des conteneurs d'un cargo, dans sa propre maquette (longueur L)
+  const cargoSlot = (i, L) => { const h = L * .2, ch = h * .34; return [-L * .36 + (i % 5) * L * .13, i < 5 ? -h * .08 - ch / 2 : h * .08 + ch / 2, L * .115, ch]; };
+  function bgHitTest(o, s) {
+    const dx = s.x - o.x, dy = s.y - o.y;
+    switch (o.type) {
+      case 'fighter': return dx * dx + dy * dy < 170;
+      case 'cruiser': return Math.abs(dx) < o.len * .46 && Math.abs(dy) < o.len * .1;
+      case 'bigship':
+        if (o.m === 'mere') { const ex = dx / (o.len * .5), ey = (dy + o.len * .03) / (o.len * .13); return ex * ex + ey * ey < 1; }
+        return Math.abs(dx) < o.len * .47 && Math.abs(dy) < o.len * (o.m === 'porte' ? .08 : .075);
+      case 'meteor': case 'debris': return dx * dx + dy * dy < 200;
+      case 'comet': return dx * dx + dy * dy < 260;
+      case 'astre': { const r = Math.max(13, o.k === 'amas' ? o.sz * .7 : o.sz * 1.1); return dx * dx + dy * dy < r * r; }
+    }
+    return false;
+  }
+  function bgOnHit(o, s, host) {
+    const w = (o.w | 0) % 5;
+    if (o.type === 'fighter') { o.roll = 1; if (host) o.vy += (Math.random() < .5 ? -1 : 1) * 90; bgSparks(s.x, s.y, '#ffd86b', 5); }
+    else if (o.type === 'cruiser') { o.hitT = .35; bgSparks(s.x, s.y, JET_OF[w], 6); }
+    else if (o.type === 'bigship') {
+      o.hitT = .35; o.hits++; bgSparks(s.x, s.y, JET_OF[w], 7);
+      if (!host) return;
+      if (o.m === 'cargo' && o.hits % 4 === 0 && o.lost.length < 6) {
+        // un conteneur se détache et part en tournoyant
+        const free = [...Array(10).keys()].filter(i => !o.lost.includes(i)), i = free[Math.floor(Math.random() * free.length)];
+        const Lq = Math.max(60, Math.round(o.len / 20) * 20), sc = o.len / Lq, [sx, sy, cw, ch] = cargoSlot(i, Lq);
+        o.lost.push(i);
+        scenery.push({ type: 'debris', w, col: SCENE_SETS[w].cargo[(i * 3 + 1) % 5], cw, ch, sc, x: o.x + sx * sc * o.dir, y: o.y + sy * sc,
+          vx: o.vx * .4 + (Math.random() - .5) * 30, vy: sy < 0 ? -12 - Math.random() * 14 : 16 + Math.random() * 18, rot: 0, vr: (Math.random() - .5) * 1.6, life: 14 });
+        beep(150, .18, 'triangle', .035, -60);
+      } else if (o.m === 'porte' && !(o.scramble > 0)) { o.scramble = 2; o.launchT = Math.min(o.launchT, .2); }
+      else if (o.m === 'mere' && o.hits % 5 === 0) { o.beamT = 1.8; beep(320, .5, 'sine', .03, -200); }
+    }
+    else if (o.type === 'meteor') { o.life = 0; bgSparks(o.x, o.y, o.col || '#ffffff', 10, 120); }
+    else if (o.type === 'comet') bgSparks(o.x, o.y, '#bfe4ff', 8, 110);
+    else if (o.type === 'astre') { o.glint = 1; bgSparks(s.x, s.y, o.c0, 4, 60); }
+    else if (o.type === 'debris') { o.vr += (Math.random() - .5) * 5; bgSparks(s.x, s.y, '#ffd86b', 4); }
+  }
+  function sceneryReact(dt) {
+    if (state !== 'play') return;
+    const ships = [player, duo ? p2 : null].filter(p => p && !p.ko && Number.isFinite(p.x)), host = netRole !== 'guest';
+    const live = (shots || []).filter(s => !s.dead && s.y > -30 && s.y < H + 30);
+    for (const o of scenery) {
+      const t = o.type;
+      if (t === 'spark' || t === 'bolt' || t === 'planet') continue;
+      if (t === 'drift') {
+        // neige, braises, feuilles et pixels s'écartent sur le passage du vaisseau et des tirs
+        for (const p of ships) {
+          const dx = o.x - p.x, dy = o.y - p.y, d2 = dx * dx + dy * dy;
+          if (d2 < 4900 && d2 > 1) { const d = Math.sqrt(d2), f = (1 - d / 70) * 1100 * dt; o.px = (o.px || 0) + dx / d * f; o.py = (o.py || 0) + dy / d * f; if (o.dk === 'glitch') o.life = Math.min(o.life, .06); }
+        }
+        for (const s of live) {
+          const dx = o.x - s.x, dy = o.y - s.y;
+          if (dx * dx + dy * dy < 420) { o.px = (o.px || 0) + (dx >= 0 ? 1 : -1) * 150; o.py = (o.py || 0) + (s.vy || 0) * .12; }
+        }
+        continue;
+      }
+      if (t === 'swarm') {
+        // lucioles, yeux et petites escadrilles s'éparpillent quand on fonce dans le groupe
+        const cx = o.x - (Math.sign(o.vx) || 1) * Math.ceil(o.n / 2) * 7;
+        let near = ships.some(p => Math.abs(p.x - cx) < 90 && Math.abs(p.y - o.y) < 70);
+        if (!near) near = live.some(s => Math.abs(s.x - cx) < 60 && Math.abs(s.y - o.y) < 40);
+        if (near) o.scat = Math.min(1, (o.scat || 0) + dt * 5);
+        continue;
+      }
+      if (t === 'astre') for (const p of ships) if (Math.abs(p.x - o.x) < o.sz + 40 && Math.abs(p.y - o.y) < o.sz + 40) o.glint = Math.max(o.glint || 0, .7);
+      // les chasseurs alliés font un tonneau pour te saluer quand tu passes tout près
+      if (t === 'fighter' && o.kind === 'ally' && !o.waved && ships.some(p => Math.abs(p.x - o.x) < 45 && Math.abs(p.y - o.y) < 45)) { o.waved = 1; o.roll = 1; }
+      for (const s of live) {
+        if (shotHit.get(s) === o || !bgHitTest(o, s)) continue;
+        shotHit.set(s, o); bgOnHit(o, s, host);
+      }
+    }
+  }
+  // ce que font les gros vaisseaux pendant qu'ils passent (chez l'hôte seulement : le pote reçoit le résultat)
+  function bigShipTick(o, dt) {
+    if (netRole === 'guest' || o.m !== 'porte' || o.x < 0 || o.x > W) return;
+    o.launchT -= dt;
+    if (o.launchT > 0) return;
+    o.launchT = o.scramble > 0 ? .35 : 4 + Math.random() * 4;
+    if (o.scramble > 0) o.scramble--;
+    if (scenery.filter(f => f.type === 'fighter').length >= 9) return;
+    // un chasseur sort du hangar à l'avant et file devant le porte-vaisseaux
+    const h = o.len * .22;
+    scenery.push({ type: 'fighter', kind: 'ally', w: o.w, x: o.x + o.dir * o.len * .4, y: o.y - h * .02, vx: o.dir * (190 + Math.random() * 70), vy: -50 + Math.random() * 100, fireT: 1 + Math.random() });
+  }
+
+  // cargo : cabine à l'avant, longue poutre, deux rangées de conteneurs (dessinés à part : ils peuvent se détacher), gros moteurs
+  function paintCargo(k, R, L, h, P) {
+    for (const yy of [-h * .2, h * .2]) {
+      k.fillStyle = metal(k, yy - h * .14, yy + h * .14, ['#a8a4b4', '#4a4658', '#16141f']);
+      k.beginPath(); k.moveTo(-L * .44, yy - h * .1); k.lineTo(-L * .52, yy - h * .15); k.lineTo(-L * .52, yy + h * .15); k.lineTo(-L * .44, yy + h * .1); k.closePath(); k.fill();
+      k.fillStyle = '#0a0812'; k.fillRect(-L * .525, yy - h * .12, L * .01, h * .24);
+    }
+    // bloc moteur
+    k.fillStyle = metal(k, -h * .36, h * .36, P.hull); k.fillRect(-L * .45, -h * .36, L * .07, h * .72);
+    // poutre centrale en treillis
+    k.fillStyle = metal(k, -h * .08, h * .08, [P.hull[0], P.hull[2], P.hull[2]]); k.fillRect(-L * .39, -h * .08, L * .72, h * .16);
+    k.strokeStyle = 'rgba(0, 0, 0, .35)'; k.lineWidth = .5; k.beginPath();
+    for (let x = -L * .39; x < L * .33; x += L * .03) { k.moveTo(x, -h * .08); k.lineTo(x + L * .03, h * .08); k.moveTo(x, h * .08); k.lineTo(x + L * .03, -h * .08); }
+    k.stroke();
+    // cabine
+    const cab = () => { k.beginPath(); k.moveTo(L * .32, -h * .3); k.lineTo(L * .44, -h * .26); k.quadraticCurveTo(L * .52, -h * .08, L * .5, h * .12); k.lineTo(L * .44, h * .3); k.lineTo(L * .32, h * .3); k.closePath(); };
+    k.fillStyle = metal(k, -h * .3, h * .3, P.hull); cab(); k.fill();
+    k.save(); cab(); k.clip(); plates(k, R, L * .32, -h * .3, L * .2, h * .6, 14, L * .02); k.restore();
+    k.fillStyle = P.win; k.globalAlpha = .9; k.beginPath(); k.moveTo(L * .44, -h * .22); k.quadraticCurveTo(L * .49, -h * .1, L * .495, -h * .02); k.lineTo(L * .45, -h * .04); k.closePath(); k.fill(); k.globalAlpha = 1;
+    for (let i = 0; i < 5; i++) { k.fillStyle = P.win; k.globalAlpha = .5 + R() * .5; k.fillRect(L * .34 + i * L * .02, h * .06, L * .008, h * .05); }
+    k.globalAlpha = 1;
+    lightOn(k, 0, -h * .36, 0, h * .36, .35, .6);
+    // antenne sur la cabine
+    k.fillStyle = P.tower; k.fillRect(L * .36, -h * .5, L * .006, h * .2);
+  }
+  function containerSprite(col, cw, ch) {
+    return shipSprite('box' + col + Math.round(cw * 10), cw, ch, (k, R) => {
+      k.fillStyle = col; k.fillRect(-cw / 2, -ch / 2, cw, ch);
+      // tôle ondulée, cadre et une marque peinte
+      k.fillStyle = 'rgba(0, 0, 0, .18)'; for (let x = -cw / 2 + 1; x < cw / 2; x += 1.6) k.fillRect(x, -ch / 2, .5, ch);
+      k.strokeStyle = 'rgba(0, 0, 0, .45)'; k.lineWidth = .6; k.strokeRect(-cw / 2 + .3, -ch / 2 + .3, cw - .6, ch - .6);
+      k.fillStyle = 'rgba(255, 255, 255, .28)'; k.fillRect(-cw * .3, -ch * .12, cw * (.2 + R() * .3), ch * .2);
+      lightOn(k, 0, -ch / 2, 0, ch / 2, .3, .55);
+    });
+  }
+  // porte-vaisseaux : longue coque plate, pont d'envol, îlot de commandement, hangar ouvert à l'avant
+  function paintCarrier(k, R, L, h, P) {
+    for (const yy of [-h * .1, 0, h * .1, h * .2]) {
+      k.fillStyle = metal(k, yy - h * .06, yy + h * .06, ['#9a96a8', '#4a4658', '#16141f']);
+      k.fillRect(-L * .53, yy - h * .045, L * .05, h * .09);
+    }
+    const hull = () => { k.beginPath(); k.moveTo(-L * .49, -h * .2); k.lineTo(L * .5, -h * .2); k.lineTo(L * .5, -h * .12); k.lineTo(L * .38, h * .3); k.lineTo(-L * .42, h * .32); k.lineTo(-L * .49, h * .22); k.closePath(); };
+    k.fillStyle = metal(k, -h * .2, h * .32, P.hull); hull(); k.fill();
+    k.save(); hull(); k.clip();
+    plates(k, R, -L * .49, -h * .2, L, h * .52, 50, L * .04);
+    for (const yy of [-.04, .1, .22]) { k.fillStyle = 'rgba(0, 0, 0, .22)'; k.fillRect(-L * .5, h * yy, L, .4); k.fillStyle = 'rgba(255, 255, 255, .08)'; k.fillRect(-L * .5, h * yy + .4, L, .3); }
+    for (let i = 0; i < 40; i++) { if (R() < .4) continue; k.fillStyle = R() < .85 ? P.win : '#ffffff'; k.globalAlpha = .5 + R() * .5; k.fillRect(-L * .42 + i * L * .019, h * .03, L * .007, h * .025); }
+    k.globalAlpha = 1;
+    // bouche du hangar à l'avant
+    k.fillStyle = '#05040a'; k.fillRect(L * .3, -h * .12, L * .17, h * .16);
+    k.restore();
+    // pont d'envol : bande claire avec ses marquages
+    k.fillStyle = metal(k, -h * .26, -h * .19, [P.hull[0], P.hull[1], P.hull[2]]); k.fillRect(-L * .49, -h * .25, L * .99, h * .06);
+    k.fillStyle = 'rgba(255, 255, 255, .35)'; for (let x = -L * .4; x < L * .45; x += L * .06) k.fillRect(x, -h * .225, L * .025, h * .012);
+    lightOn(k, 0, -h * .26, 0, h * .32, .35, .65);
+    // îlot de commandement, passerelle vitrée et mâts
+    const isl = () => { k.beginPath(); k.moveTo(-L * .2, -h * .25); k.lineTo(-L * .18, -h * .6); k.lineTo(-L * .04, -h * .62); k.lineTo(-L * .02, -h * .25); k.closePath(); };
+    k.fillStyle = metal(k, -h * .62, -h * .25, [P.hull[0], P.tower, P.hull[2]]); isl(); k.fill();
+    k.save(); isl(); k.clip(); plates(k, R, -L * .2, -h * .62, L * .2, h * .4, 10, L * .02); k.restore();
+    lightOn(k, -L * .2, 0, -L * .02, 0, .3, .5);
+    k.fillStyle = P.win; k.globalAlpha = .85; k.fillRect(-L * .175, -h * .56, L * .14, h * .05); k.globalAlpha = 1;
+    k.fillStyle = P.tower; k.fillRect(-L * .12, -h * .85, L * .005, h * .24); k.fillRect(-L * .15, -h * .76, L * .06, h * .012);
+  }
+  // vaisseau-mère alien : grand disque, dôme de verre, cœur lumineux dessous
+  function paintMother(k, R, D, P) {
+    const g = k.createRadialGradient(-D * .1, -D * .1, D * .02, 0, 0, D * .55);
+    g.addColorStop(0, P.hull[0]); g.addColorStop(.55, P.hull[1]); g.addColorStop(1, P.hull[2]);
+    // dessous
+    k.fillStyle = metal(k, 0, D * .12, [P.hull[1], P.hull[2], '#05040a']); k.beginPath(); k.ellipse(0, D * .03, D * .3, D * .08, 0, 0, Math.PI); k.fill();
+    // bosse supérieure
+    k.fillStyle = g; k.beginPath(); k.ellipse(0, -D * .02, D * .33, D * .12, 0, Math.PI, 0); k.fill();
+    // le grand disque
+    const disc = () => { k.beginPath(); k.ellipse(0, 0, D * .5, D * .075, 0, 0, 7); };
+    k.fillStyle = metal(k, -D * .075, D * .075, P.hull); disc(); k.fill();
+    k.save(); disc(); k.clip();
+    for (let i = 0; i < 26; i++) { const x = -D * .5 + i * D * .04 + R() * D * .01; k.fillStyle = 'rgba(0, 0, 0, .25)'; k.fillRect(x, -D * .08, .5, D * .16); }
+    plates(k, R, -D * .5, -D * .075, D, D * .15, 30, D * .03);
+    k.fillStyle = 'rgba(255, 255, 255, .25)'; k.fillRect(-D * .5, -D * .012, D, .6);
+    k.restore();
+    lightOn(k, 0, -D * .14, 0, D * .1, .35, .6);
+    // dôme de verre
+    const dg = k.createRadialGradient(-D * .04, -D * .17, 0, 0, -D * .12, D * .13);
+    dg.addColorStop(0, '#ffffffcc'); dg.addColorStop(.3, P.win + '99'); dg.addColorStop(1, P.hull[2] + 'cc');
+    k.fillStyle = dg; k.beginPath(); k.ellipse(0, -D * .12, D * .11, D * .085, 0, Math.PI, 0); k.fill();
+    k.strokeStyle = 'rgba(255, 255, 255, .4)'; k.lineWidth = .6; k.beginPath(); k.ellipse(0, -D * .12, D * .11, D * .085, 0, Math.PI, 0); k.stroke();
+  }
+  // bouclier qui s'allume là où le tir a touché
+  function shieldFx(rx, ry, col, a) {
+    if (a <= 0) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = Math.min(1, a * 2.4) * .55; ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, 7); ctx.stroke();
+    ctx.globalAlpha = Math.min(1, a * 2.4) * .22; ctx.drawImage(softSprite(col), -rx, -ry, rx * 2, ry * 2);
+    ctx.restore();
+  }
+  function drawBigShip(o) {
+    const P = CRUISERS[o.w] || CRUISERS[0], w = (o.w | 0) % 5, T = performance.now(), L = o.len, ga = ctx.globalAlpha;
+    const Lq = Math.max(60, Math.round(L / 20) * 20), sc = L / Lq, jc = jetHex(P), fl = .85 + .15 * Math.sin(T / 70) * Math.sin(T / 37);
+    ctx.save(); ctx.translate(o.x, o.y + (o.m === 'mere' ? Math.sin(T / 1300 + o.ph) * 5 : 0)); ctx.scale(o.dir, 1);
+    if (w === 4) {
+      // dans le Néant, une lueur violette qui respire autour de la coque sombre (sinon on ne le verrait pas)
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.4 + .15 * Math.sin(T / 900 + o.ph));
+      ctx.drawImage(softSprite('#c86bff'), -L * .62, -L * .2, L * 1.24, L * .4); ctx.restore();
+    }
+    if (o.m === 'mere') {
+      const sp = shipSprite(`mere${w}-${Lq}`, Lq * 1.05, Lq * .5, (k, R) => paintMother(k, R, Lq, P)), D = L;
+      if (o.beamT > 0) {
+        // rayon tracteur : un cône de lumière qui descend sous le cœur
+        const a = Math.min(1, o.beamT * 2) * Math.min(1, (1.8 - o.beamT) * 4);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * a * .5;
+        const bg = ctx.createLinearGradient(0, D * .1, 0, D * 1.1); bg.addColorStop(0, P.win); bg.addColorStop(1, P.win + '00');
+        ctx.fillStyle = bg; ctx.beginPath(); ctx.moveTo(-D * .05, D * .1); ctx.lineTo(D * .05, D * .1); ctx.lineTo(D * .2, D * 1.1); ctx.lineTo(-D * .2, D * 1.1); ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+      ctx.save(); ctx.scale(sc, sc); blit(sp); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      // feux qui tournent autour du disque (seuls ceux de devant se voient)
+      for (let i = 0; i < 16; i++) {
+        const a = T / 1600 + i / 16 * 6.28, z = Math.sin(a);
+        if (z < 0) continue;
+        ctx.globalAlpha = ga * (.35 + .65 * z); ctx.drawImage(softSprite(i % 2 ? P.win : jc), Math.cos(a) * D * .47 - 4, z * D * .05 - 4, 8, 8);
+      }
+      const pu = .6 + .4 * Math.sin(T / 400) + (o.hitT || 0);
+      ctx.globalAlpha = ga * Math.min(1, pu); ctx.drawImage(softSprite(P.win), -D * .09, D * .03, D * .18, D * .12); ctx.drawImage(softSprite('#ffffff'), -D * .03, D * .06, D * .06, D * .05);
+      ctx.globalAlpha = ga * .35; ctx.drawImage(softSprite(P.win), -D * .1, -D * .2, D * .2, D * .13);
+      ctx.restore();
+      shieldFx(D * .56, D * .2, jc, o.hitT);
+      ctx.restore(); return;
+    }
+    const h = Lq * (o.m === 'porte' ? .22 : .2);
+    const sp = o.m === 'porte' ? shipSprite(`porte${w}-${Lq}`, Lq * 1.08, h * 1.9, (k, R) => paintCarrier(k, R, Lq, h, P))
+      : shipSprite(`cargo${w}-${Lq}`, Lq * 1.08, h * 1.4, (k, R) => paintCargo(k, R, Lq, h, P));
+    ctx.save(); ctx.scale(sc, sc); blit(sp);
+    if (o.m === 'cargo') for (let i = 0; i < 10; i++) {
+      if (o.lost.includes(i)) continue;
+      const [x, y, cw, ch] = cargoSlot(i, Lq); blit(containerSprite(SCENE_SETS[w].cargo[(i * 3 + 1) % 5], cw, ch), x, y);
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    // réacteurs
+    const ys = o.m === 'porte' ? [-h * .1, 0, h * .1, h * .2] : [-h * .2, h * .2];
+    for (const yy of ys) {
+      ctx.globalAlpha = ga * .85 * fl; ctx.drawImage(softSprite(jc), -Lq * .62, yy - h * .12, h * .5, h * .24);
+      ctx.globalAlpha = ga * fl; ctx.drawImage(softSprite('#ffffff'), -Lq * .56, yy - h * .05, h * .14, h * .1);
+    }
+    if (o.m === 'porte') {
+      // feux de piste qui courent vers l'avant, et lueur du hangar
+      const n = 14, lit = Math.floor(T / 110) % n;
+      for (let i = 0; i < n; i++) { ctx.globalAlpha = ga * (i === lit || i === (lit + 7) % n ? 1 : .25); ctx.drawImage(softSprite(i % 3 ? '#ffd86b' : '#ffffff'), -Lq * .42 + i * Lq * .065 - 2.5, -h * .27 - 2.5, 5, 5); }
+      ctx.globalAlpha = ga * (.5 + .2 * Math.sin(T / 500)); ctx.drawImage(softSprite(P.win), Lq * .3, -h * .16, Lq * .17, h * .24);
+    } else {
+      ctx.globalAlpha = ga * (.6 + .4 * Math.sin(T / 260)); ctx.drawImage(softSprite(P.win), Lq * .43, -h * .26, Lq * .06, h * .26);
+    }
+    // gyrophare et feux de position
+    if (Math.floor(T / 700) % 2 === 0) { ctx.globalAlpha = ga; ctx.drawImage(softSprite('#ff4f6d'), Lq * .1 - 4, -h * .3 - 4, 8, 8); ctx.drawImage(softSprite('#7dff8a'), Lq * .1 - 4, h * .26 - 4, 8, 8); }
+    if (Math.floor(T / 140) % 10 === 0) { ctx.globalAlpha = ga; ctx.drawImage(softSprite('#ffffff'), (o.m === 'porte' ? -Lq * .12 : Lq * .36) - 5, -h * (o.m === 'porte' ? .86 : .52) - 5, 10, 10); }
+    ctx.restore();
+    shieldFx(L * .55, L * .14, jc, o.hitT);
+    ctx.restore();
+  }
   function drawCruiser(o) {
     const L = o.len, h = L * .28, P = CRUISERS[o.w] || CRUISERS[0], w = o.w || 0, T = performance.now();
     const Lq = Math.max(60, Math.round(L / 20) * 20);
@@ -11299,6 +11624,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function drawFighter(o) {
     const w = (o.w | 0) % 5, T = performance.now(), ga = ctx.globalAlpha;
     ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(Math.atan2(o.vy, o.vx));
+    // tonneau : quand il est touché (ou quand il te salue), le chasseur tourne sur lui-même
+    if (o.roll > 0) ctx.scale(1, Math.cos((1 - o.roll) * Math.PI * 2));
     const fl = .8 + .2 * Math.sin(T / 45 + o.x);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
     if (o.kind === 'ally') {
@@ -11336,6 +11663,50 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     ctx.restore();
   }
 
+  // astres lointains : chacun scintille ; il brille plus fort quand on passe devant ou qu'un tir le traverse
+  function drawAstre(o, t) {
+    const T = performance.now(), g = o.glint || 0, tw = .75 + .25 * Math.sin(T / 600 + o.ph), dim = world === WORLDS.length - 1 ? .7 : 1;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const star = (x, y, r, c, a) => {
+      ctx.globalAlpha = a * .45; ctx.drawImage(softSprite(c), x - r * 4, y - r * 4, r * 8, r * 8);
+      ctx.globalAlpha = a; ctx.drawImage(softSprite(c), x - r * 1.6, y - r * 1.6, r * 3.2, r * 3.2);
+      ctx.drawImage(softSprite('#ffffff'), x - r * .6, y - r * .6, r * 1.2, r * 1.2);
+    };
+    const spikes = (x, y, L, c, a) => {
+      ctx.globalAlpha = a; ctx.fillStyle = c;
+      for (const [ax, ay] of [[1, 0], [0, 1]]) { const gr = ctx.createLinearGradient(x - ax * L, y - ay * L, x + ax * L, y + ay * L); gr.addColorStop(0, c + '00'); gr.addColorStop(.5, c); gr.addColorStop(1, c + '00'); ctx.fillStyle = gr; ctx.fillRect(x - ax * L - ay * .7, y - ay * L - ax * .7, ax * L * 2 + ay * 1.4, ay * L * 2 + ax * 1.4); }
+    };
+    if (o.k === 'binaire') {
+      // deux soleils qui tournent l'un autour de l'autre
+      const a = T / 2600 + o.ph, d = o.sz * .5, x1 = o.x + Math.cos(a) * d, y1 = o.y + Math.sin(a) * d * .45;
+      star(x1, y1, 3.2 + g * 2, o.c0, (.8 + g * .2) * tw * dim); star(2 * o.x - x1, 2 * o.y - y1, 2.4 + g * 2, o.c1, (.75 + g * .25) * dim);
+      if (g > 0) spikes(o.x, o.y, 20 + g * 30, o.c0, g * .7);
+    } else if (o.k === 'geante') {
+      // géante : une grosse boule qui respire, avec sa couronne
+      const r = o.sz * (1 + .05 * Math.sin(T / 1500 + o.ph)) * (1 + g * .15);
+      ctx.globalAlpha = (.25 + g * .3) * dim; ctx.drawImage(softSprite(o.c1), o.x - r * 3, o.y - r * 3, r * 6, r * 6);
+      const gr = ctx.createRadialGradient(o.x - r * .3, o.y - r * .3, 0, o.x, o.y, r);
+      gr.addColorStop(0, '#fff6e0'); gr.addColorStop(.35, o.c0); gr.addColorStop(1, o.c1 + '00');
+      ctx.globalAlpha = (.75 + g * .25) * dim; ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, 7); ctx.fill();
+    } else if (o.k === 'amas') {
+      // amas d'étoiles : beaucoup d'étoiles serrées autour d'un cœur plus dense
+      let sd = o.seed;
+      const rnd = () => ((sd = (sd * 1664525 + 1013904223) >>> 0) / 4294967296);
+      ctx.globalAlpha = (.18 + g * .2) * dim; ctx.drawImage(softSprite(o.c0), o.x - o.sz, o.y - o.sz, o.sz * 2, o.sz * 2);
+      for (let i = 0; i < 34; i++) {
+        const a = rnd() * 6.28, rr = Math.pow(rnd(), 1.8) * o.sz * (1 + g * .25), x = o.x + Math.cos(a) * rr, y = o.y + Math.sin(a) * rr * .8, c = rnd() < .5 ? o.c0 : o.c1;
+        const f = .5 + .5 * Math.sin(T / (300 + i * 40) + i);
+        ctx.globalAlpha = (.35 + .5 * f + g * .3) * dim; ctx.fillStyle = c; const z = rnd() < .15 ? 1.8 : 1; ctx.fillRect(x - z / 2, y - z / 2, z, z);
+        if (z > 1) { ctx.globalAlpha *= .6; ctx.drawImage(softSprite(c), x - 4, y - 4, 8, 8); }
+      }
+    } else {
+      // naine : un point très vif, avec ses rayons en croix qui palpitent
+      const p = .6 + .4 * Math.abs(Math.sin(T / 450 + o.ph));
+      star(o.x, o.y, o.sz * (1 + g), o.c1, (.7 + .3 * p) * dim);
+      spikes(o.x, o.y, (14 + 16 * p) * (1 + g * 1.5), o.c0, (.45 + g * .4) * dim);
+    }
+    ctx.restore();
+  }
   function drawScenery(t, neb) {
     // nébuleuses du niveau
     const [n1, n2] = neb, R = Math.max(W, H) * .55;
@@ -11347,8 +11718,31 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     for (const o of scenery) {
       // dans le Néant, les planètes restent presque invisibles
-      if (o.type === 'planet') { ctx.globalAlpha = world === WORLDS.length - 1 ? .18 : 1; ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2); }
-      else if (o.type === 'cruiser') { ctx.globalAlpha = .8; drawCruiser(o); }
+      if (o.type === 'planet') {
+        const pa = world === WORLDS.length - 1 ? .18 : 1, mo = o.moon;
+        // la lune passe derrière la planète, puis devant
+        let mi = null, mx = 0, my = 0;
+        if (mo && mo.st) { mi = cachedPlanet(mo.st, mo.r); mx = o.x + Math.cos(mo.a) * mo.d - mi.width / 2; my = o.y + Math.sin(mo.a) * mo.d * .3 - mo.d * .08 - mi.height / 2; }
+        ctx.globalAlpha = pa;
+        if (mi && Math.sin(mo.a) < 0) ctx.drawImage(mi, mx, my);
+        ctx.drawImage(o.img, o.x - o.img.width / 2, o.y - o.img.height / 2);
+        if (mi && Math.sin(mo.a) >= 0) ctx.drawImage(mi, mx, my);
+      }
+      else if (o.type === 'astre') drawAstre(o, t);
+      else if (o.type === 'bigship') { ctx.globalAlpha = .82; drawBigShip(o); }
+      else if (o.type === 'spark') {
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.min(1, o.life * 2.5);
+        const z = 2 + o.life * 6; ctx.drawImage(softSprite(o.col), o.x - z, o.y - z, z * 2, z * 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(o.x - .7, o.y - .7, 1.4, 1.4);
+        ctx.restore();
+      }
+      else if (o.type === 'debris') {
+        ctx.globalAlpha = .8 * Math.min(1, o.life / 2); ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.rot); ctx.scale(o.sc || 1, o.sc || 1);
+        if (o.col && o.cw > 0) blit(containerSprite(o.col, o.cw, o.ch)); ctx.restore();
+      }
+      else if (o.type === 'cruiser') {
+        ctx.globalAlpha = .8; drawCruiser(o);
+        if (o.hitT > 0) { ctx.save(); ctx.translate(o.x, o.y); shieldFx(o.len * .55, o.len * .16, JET_OF[(o.w | 0) % 5], o.hitT); ctx.restore(); }
+      }
       else if (o.type === 'fighter') { ctx.globalAlpha = .85; drawFighter(o); }
       else if (o.type === 'bolt') {
         // tir laser : une lueur colorée autour d'un trait blanc très chaud
@@ -11383,7 +11777,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         const d = Math.sign(o.vx) || 1, sc = (SCENE_SETS[o.w] || SCENE_SETS[0]).swarm, glow = o.w === 3 || o.w === 4;
         const spr = glow ? null : fighterSprite('ally', 0), ga = ctx.globalAlpha;
         for (let i = 0; i < o.n; i++) {
-          const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, x = o.x - d * row * 14, y = o.y + side * row * 9 + Math.sin(o.life * 3 + i + o.ph) * 2;
+          const row = Math.ceil(i / 2), side = i % 2 ? 1 : -1, sct = o.scat || 0;
+          const x = o.x - d * row * 14 + Math.cos(i * 2.4 + o.ph) * sct * 34, y = o.y + side * row * 9 + Math.sin(o.life * 3 + i + o.ph) * 2 + Math.sin(i * 2.4 + o.ph) * sct * 26;
           // lucioles dans la jungle, yeux dans le Néant : une lueur douce et un point vif au centre
           if (glow) {
             ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * (.6 + .4 * Math.sin(o.life * 5 + i));
