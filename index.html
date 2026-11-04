@@ -2057,14 +2057,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 
   // --- atelier : améliorations permanentes ---
   const UPGRADES = [
-    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 8, base: 2400, now: L => `+${20 * L} % de balles`, look: 'Des capsules de munitions sur les flancs' },
-    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 6, base: 2400, now: L => `−${12 * L} % de temps`, look: 'Des ailettes de refroidissement en bas' },
-    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 6, base: 2000, now: L => `+${25 * L} % de zone`, look: 'Un anneau doré autour du nez' },
-    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 8, base: 2700, now: L => `+${8 * L} % de cadence`, look: 'Des petits canons de chaque côté du nez' },
-    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 7, base: 3500, now: L => `+${25 * L} % de dégâts`, look: 'Une pointe de nez qui rougeoie' },
-    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 3, base: 7000, now: L => `${3 + L} vies`, look: 'Des plaques de blindage sur la coque' },
-    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 6, base: 3000, now: L => `−${10 * L} % de recharge`, look: 'Des cellules d\'énergie bleues qui brillent' },
-    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 5, base: 3000, now: L => `${30 + 5 * L} s illimités`, look: 'Une antenne avec une étoile d\'or' },
+    { id: 'chargeur', name: 'Gros chargeur', desc: '+20 % de balles par chargeur.', max: 8, base: 2400, now: L => `+${20 * L} % de balles`, look: 'Une réserve de munitions intégrée au bas des flancs' },
+    { id: 'recharge', name: 'Recharge rapide', desc: 'Recharge 12 % plus vite.', max: 6, base: 2400, now: L => `−${12 * L} % de temps`, look: 'Le réacteur se renforce' },
+    { id: 'zone', name: 'Zone dorée large', desc: 'La zone de recharge parfaite grandit de 25 %.', max: 6, base: 2000, now: L => `+${25 * L} % de zone`, look: 'Un liseré de ta couleur secondaire sur la coque' },
+    { id: 'cadence', name: 'Gâchette rapide', desc: 'Tire 8 % plus vite.', max: 8, base: 2700, now: L => `+${8 * L} % de cadence`, look: 'De petits canons à l\'avant, dans le style du vaisseau' },
+    { id: 'puissance', name: 'Balles lourdes', desc: '+25 % de dégâts par balle.', max: 7, base: 3500, now: L => `+${25 * L} % de dégâts`, look: 'La pointe avant se charge d\'énergie' },
+    { id: 'blindage', name: 'Blindage', desc: '+1 vie au départ de chaque partie.', max: 3, base: 7000, now: L => `${3 + L} vies`, look: 'Un renfort de coque sur les flancs' },
+    { id: 'pouvoir', name: 'Super-batterie', desc: 'Ton super-pouvoir se recharge 10 % plus vite.', max: 6, base: 3000, now: L => `−${10 * L} % de recharge`, look: 'Le tour du hublot s\'illumine' },
+    { id: 'infini', name: 'Caisse ∞ longue', desc: '+5 secondes de tirs illimités.', max: 5, base: 3000, now: L => `${30 + 5 * L} s illimités`, look: 'Les bouts des ailes s\'illuminent' },
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
@@ -2949,57 +2949,240 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       c.beginPath(); c.arc(0, -3, 4, 0, 7); c.fill(); c.stroke();
     }
     drawMotif(c, conf, t, motifCol(body, acc, conf.model));
-    if (conf.evo || conf === cfg) drawEvo(c, conf.evo || shop.up, t, dark);
+    if (conf.evo || conf === cfg) drawEvo(c, conf.evo || shop.up, t, conf, body, dark, light);
     c.restore();
   }
-  // chaque compétence achetée se voit un peu sur la fusée : elle évolue au fil des améliorations
-  function drawEvo(c, U, t, dark) {
-    const L = id => Math.min(U[id] || 0, (UPGRADES.find(u => u.id === id) || { max: 0 }).max);
-    const metal = '#c9d2e0', gold = '#ffd86b';
-    c.save(); c.shadowBlur = 0;
-    // blindage : plaques sur les flancs, puis sur le torse
-    const bl = L('blindage');
-    if (bl) {
-      c.fillStyle = '#5a6278'; c.strokeStyle = metal; c.lineWidth = .8;
-      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 6.5, -6); c.lineTo(sd * 9.5, -4); c.lineTo(sd * 9.5, 6); c.lineTo(sd * 6.5, 8); c.closePath(); c.fill(); c.stroke(); }
-      if (bl >= 2) { c.beginPath(); c.moveTo(-4, 5); c.lineTo(4, 5); c.lineTo(3, 9); c.lineTo(-3, 9); c.closePath(); c.fill(); c.stroke(); }
-      if (bl >= 3) { c.fillStyle = metal; for (const sd of [-1, 1]) { c.beginPath(); c.arc(sd * 8, -1, .9, 0, 7); c.arc(sd * 8, 4, .9, 0, 7); c.fill(); } }
-    }
-    // gros chargeur : capsules de munitions, une bande de plus tous les 2 niveaux
-    const ch = L('chargeur');
-    if (ch) {
-      const h = 5 + Math.min(ch, 8) * .6;
-      for (const sd of [-1, 1]) {
-        c.fillStyle = dark; c.beginPath(); c.ellipse(sd * 12.5, 4, 2.2, h / 2, 0, 0, 7); c.fill();
-        c.fillStyle = gold; for (let i = 0; i < Math.ceil(ch / 2); i++) c.fillRect(sd * 12.5 - 1.6, 4 - h / 2 + 1.5 + i * 2, 3.2, .9);
+  // ===== Améliorations visibles : chaque compétence devient une pièce d'origine du vaisseau =====
+  // Un emplacement fixe par compétence (jamais deux au même endroit) :
+  //   Balles lourdes → pointe avant · Gâchette rapide → de chaque côté de l'avant · Gros chargeur → bas des flancs
+  //   Blindage → coque et flancs · Zone dorée → un liseré sur la coque · Super-batterie → autour du hublot
+  //   Recharge rapide → réacteur · Caisse ∞ → bouts des ailes
+  // Chaque pièce est dessinée dans la matière du vaisseau, avec sa couleur principale et sa couleur secondaire.
+  // En montant de niveau, la pièce ne se multiplie pas : elle gagne un détail (mi-parcours), puis une lueur animée (niveau max).
+  // Coordonnées dans le repère du vaisseau (le nez vers le haut, x symétrique).
+  const EVO_ANCH = {
+    classique: { mat: 'metal', nose: [0, -21], muz: [6.2, -13.4], hull: [8.3, -12, -3], pod: [10.4, 6, 5], band: { y: -11.4, w: 6.6 }, core: [0, -3, 5.6], eng: [[0, 14.5, 9]], tips: [[14.2, 14.4]] },
+    navette: { mat: 'metal', nose: [0, -18.6], muz: [3.4, -12], hull: [6.2, -3, 6], pod: [11.5, 9.6, 4], band: { y: 3, w: 3.4 }, core: [0, -6, 6], eng: [[0, 14.2, 7]], tips: [[16.5, 11.6]] },
+    eclair: { mat: 'metal', nose: [0, -24.4], muz: [3.3, -17], hull: [4.3, -6, 3], pod: [8.6, 12.5, 3.6], band: { y: 4.5, w: 3.6 }, core: [0, -11, 4.4], eng: [[0, 16.8, 5]], tips: [[11.2, 16.4]] },
+    aile: { mat: 'metal', nose: [0, -29], muz: [3.4, -20], hull: [10.6, -4, 6], pod: [15.5, 11, 3.6], band: { y: 5, w: 3.4 }, core: [0, -8, 6.2], eng: [[0, 14, 8]], tips: [[20.4, 12.6]] },
+    ovni: { mat: 'metal', nose: [0, -11.4], muz: [6, -9.6], hull: [21.5, 1, 8], pod: [13, 9.4, 3], band: { y: 3, w: 23, ring: [24, 7] }, core: [0, -6, 10.5], eng: [[0, 12, 8]], tips: [[24, 3]] },
+    tie: { mat: 'metal', nose: [0, -6.6], muz: [4.4, -5], hull: [16.4, -9, 15], pod: [11, 3, 2.6], band: { y: 3, w: 14.6, from: 10 }, core: [0, 3, 6.6], eng: [[0, 12.6, 6]], tips: [[18, -13.6], [18, 20.4]] },
+    faucon: { mat: 'metal', nose: [0, -15], muz: [7, -24.6], hull: [17.3, -2, 11], pod: [12.5, 16.5, 3], band: { y: 4, w: 0, ring: [11.6, 11.6], arc: [3.5, 5.9] }, core: [16, -6, 4.2], eng: [[0, 17.5, 6]], tips: [[-17.5, 4]] },
+    requin: { mat: 'metal', nose: [0, -25.6], muz: [6.4, -11], hull: [8.4, -8, 2], pod: [14, 7.4, 3], band: { y: 6.5, w: 7 }, core: [0, -1, 4.4], eng: [[0, 16, 6]], tips: [[18.4, 9.5]] },
+    abeille: { mat: 'organic', nose: [8.7, -23.2], muz: [2.6, -12.8], hull: [10.2, -4, 12], pod: [9.6, 14.6, 2.6], band: { y: 1.2, w: 9.4 }, core: [4.2, -8, 5.2, true], eng: [[0, 18, 4]], tips: [[13, -5]] },
+    chevalier: { mat: 'royal', nose: [0, -30], muz: [15.5, -13.6], hull: [10.6, -14, 13], pod: [16, -1.6, 2.6], band: { y: -11, w: 7 }, core: [0, 3, 5.8], eng: [[0, 19.6, 6]], tips: [[19.6, -3]] },
+    galion: { mat: 'wood', nose: [0, -29.6], muz: [16.2, 10.4], hull: [14, 8, 12.5], pod: [11, 4.6, 2.6], band: { y: -12, w: 9.5 }, core: [0, -15, 3.6], eng: [[0, 17.6, 5]], tips: [[16.4, 7.4]] },
+    mecha: { mat: 'metal', nose: [0, -29], muz: [14, -17.6], hull: [10.3, -8, 7], pod: [14, 1.6, 2.4], band: { y: -21, w: 5.6 }, core: [0, -1, 5.4], eng: [[6.4, 13.8, 4]], tips: [[14.2, 7.2]] },
+    cristal: { mat: 'crystal', nose: [0, -30.6], muz: [7.6, -16], hull: [9.1, -8, 4], pod: [6.4, 11.4, 2.4], band: { y: 3, w: 8.2, facet: true }, core: [0, -12, 4.2], eng: [[0, 18, 4]], tips: [[10, -12]] },
+    pixel: { mat: 'pixel', px: 2.2, nose: [0, -26], muz: [4.4, -19.8], hull: [6.6, -10, 2], pod: [8.8, 4.4, 2.2], band: { y: -12.2, w: 4.4 }, core: [0, -7, 4.4], eng: [[0, 17.6, 4.4], [11, 17.6, 4.4]], tips: [[13.2, 6.6]] },
+    arcade: { mat: 'pixel', px: 3, nose: [0, -21], muz: [15, -21], hull: [8.4, -12, -4], pod: [21, 3, 3], band: { y: -8.4, w: 6 }, core: [0, -14, 4], eng: [[0, 14.6, 3], [12, 14.6, 3]], tips: [[22.4, -6]] },
+    coeur: { mat: 'heart', nose: [0, -20.6], muz: [10.6, -24.6], hull: [17.4, -11, 1], pod: [10, 10, 2.6], band: { y: 9, w: 8.4 }, core: [0, -6, 9], eng: [[0, 16.2, 6]], tips: [[25, -2]] },
+    predateur: { mat: 'metal', nose: [0, -28.4], muz: [13.5, -7.6], hull: [12.6, 0, 8.6], pod: [18.6, 13, 2.6], band: { y: 7.1, w: 10.6, from: 6.8 }, core: [0, -11, 5.6], eng: [[5, 18.6, 4]], tips: [[21.6, 16.8]] },
+    legende: { mat: 'divine', nose: [0, -30.6], muz: [5.4, -19], hull: [16.6, 7.6, 12.6], pod: [19.4, 15, 2.6], band: { y: -2.2, w: 6 }, core: [0, -11, 5.8], eng: [[0, 20.4, 5]], tips: [[26.6, 17.8]] },
+  };
+  function drawEvo(c, U, t, conf, body, dark, light) {
+    const A = EVO_ANCH[conf.model] || EVO_ANCH.classique, mat = A.mat;
+    const lv = id => { const u = UPGRADES.find(x => x.id === id); return u ? Math.min(U[id] || 0, u.max) / u.max : 0; };
+    const acc = dark, hi = light, deep = shade(dark, -.35);
+    const sides = x => x ? [-1, 1] : [1];
+    const P = A.px || 2;
+    const snap = v => Math.round(v / P) * P;
+    const pulse = k => reduce ? 1 : .65 + .35 * Math.sin(t / 240 + k);
+    // lueur animée au niveau max, seulement là
+    const glow = (q, col, b = 6) => { if (q >= 1) { c.shadowColor = col; c.shadowBlur = b * pulse(b); } else c.shadowBlur = 0; };
+    const line = (w, col) => { c.lineWidth = w; c.strokeStyle = col; };
+    const fillGrad = (y1, y2) => { const g = c.createLinearGradient(0, y1, 0, y2); g.addColorStop(0, hi); g.addColorStop(1, body); return g; };
+    const heart = (x, y, z) => { c.beginPath(); c.moveTo(x, y + z * .9); c.bezierCurveTo(x - z * 1.5, y - z * .1, x - z * .8, y - z * 1.3, x, y - z * .45); c.bezierCurveTo(x + z * .8, y - z * 1.3, x + z * 1.5, y - z * .1, x, y + z * .9); c.fill(); };
+    const shard = (x, y, w, h) => { c.beginPath(); c.moveTo(x, y - h); c.lineTo(x + w, y); c.lineTo(x, y + h * .5); c.lineTo(x - w, y); c.closePath(); };
+    c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+
+    // --- Recharge rapide : le réacteur (collier, dard, lanterne…) ---
+    let q = lv('recharge');
+    if (q) for (const [ex, ey, ew] of A.eng) for (const sd of sides(ex)) {
+      const x = ex * sd;
+      glow(q, acc, 7);
+      if (mat === 'organic') {
+        // l'abeille : un dard qui pousse et brille
+        const h = 2.4 + q * 2.6;
+        c.fillStyle = acc; c.beginPath(); c.moveTo(x - 1.6, ey - 1); c.lineTo(x + 1.6, ey - 1); c.lineTo(x, ey + h); c.closePath(); c.fill();
+        if (q >= .5) { line(.5, hi); c.beginPath(); c.moveTo(x, ey - .4); c.lineTo(x, ey + h - 1); c.stroke(); }
+      } else if (mat === 'pixel') {
+        c.fillStyle = acc; c.fillRect(snap(x - ew / 2), snap(ey - P), snap(ew), P);
+        if (q >= .5) { c.fillStyle = hi; c.fillRect(snap(x - ew / 2), snap(ey - P), P, P); c.fillRect(snap(x + ew / 2) - P, snap(ey - P), P, P); }
+      } else if (mat === 'wood') {
+        // le galion : une lanterne de poupe
+        c.fillStyle = deep; c.fillRect(x - 1.4, ey - 2.6, 2.8, 3.4);
+        c.fillStyle = q >= .5 ? hi : acc; c.globalAlpha = q >= .5 ? pulse(1) : 1; c.fillRect(x - .9, ey - 2, 1.8, 2.2); c.globalAlpha = 1;
+      } else if (mat === 'heart') {
+        // un petit nœud de ruban sous le cœur
+        c.fillStyle = acc; for (const s2 of [-1, 1]) { c.beginPath(); c.ellipse(x + s2 * 2.2, ey, 2.2, 1.3, s2 * .5, 0, 7); c.fill(); }
+        c.fillStyle = q >= .5 ? hi : acc; c.beginPath(); c.arc(x, ey, 1.1, 0, 7); c.fill();
+      } else if (mat === 'crystal') {
+        c.fillStyle = hi; c.globalAlpha = .85; for (const s2 of [-1, 0, 1]) { shard(x + s2 * 2.4, ey + 1, .9, 2.2 + (s2 ? 0 : 1)); c.fill(); } c.globalAlpha = 1;
+      } else {
+        // métal, royal, divin : un collier de tuyère aux couleurs du vaisseau
+        c.fillStyle = mat === 'divine' || mat === 'royal' ? acc : fillGrad(ey - 1.3, ey + 1.3);
+        c.beginPath(); c.roundRect ? c.roundRect(x - ew / 2, ey - 1.3, ew, 2.6, 1.2) : c.rect(x - ew / 2, ey - 1.3, ew, 2.6); c.fill();
+        c.shadowBlur = 0; line(.6, acc); c.stroke();
+        if (q >= .5) { line(.5, hi); c.beginPath(); c.moveTo(x - ew / 2 + 1, ey); c.lineTo(x + ew / 2 - 1, ey); c.stroke(); }
       }
     }
-    // gâchette rapide : petits canons de chaque côté du nez, plus longs à chaque niveau
-    const ca = L('cadence');
-    if (ca) { c.fillStyle = '#3a3a52'; const len = 3 + ca * .7; for (const sd of [-1, 1]) { c.fillRect(sd * 4.5 - .8, -15 - len, 1.6, len); c.fillStyle = gold; c.fillRect(sd * 4.5 - .9, -15 - len, 1.8, 1); c.fillStyle = '#3a3a52'; } }
-    // zone dorée : anneau doré autour du nez, de plus en plus épais
-    const zo = L('zone');
-    if (zo) { c.strokeStyle = gold; c.lineWidth = .6 + zo * .25; c.beginPath(); c.moveTo(-6.6, -11.5); c.quadraticCurveTo(0, -9.5, 6.6, -11.5); c.stroke(); }
-    // recharge rapide : ailettes de refroidissement
-    const re = L('recharge');
-    if (re) { c.strokeStyle = 'rgba(122, 216, 255, .85)'; c.lineWidth = .7; for (let i = 0; i < re; i++) { const x = -5 + i * (10 / Math.max(1, re - 1 || 1)); c.beginPath(); c.moveTo(x, 9); c.lineTo(x, 12.5); c.stroke(); } }
-    // super-batterie : cellules d'énergie qui pulsent
-    const po = L('pouvoir');
-    if (po) for (let i = 0; i < po; i++) {
-      const x = (i - (po - 1) / 2) * 2.6, a = .55 + .45 * Math.sin(t / 220 + i);
-      c.globalAlpha = a; c.fillStyle = '#7ad8ff'; c.shadowColor = '#7ad8ff'; c.shadowBlur = 4; c.beginPath(); c.arc(x, 2.5, .95, 0, 7); c.fill();
+    c.shadowBlur = 0;
+
+    // --- Blindage : renfort de la coque, sur les flancs ---
+    q = lv('blindage');
+    if (q) {
+      const [hx, y1, y2] = A.hull;
+      for (const sd of [-1, 1]) {
+        const x = hx * sd;
+        glow(q, hi, 5);
+        if (mat === 'organic') {
+          // carapace en segments arrondis
+          const n = 3, seg = (y2 - y1) / n;
+          for (let i = 0; i < n; i++) { const yy = y1 + seg * (i + .5); c.fillStyle = i % 2 ? acc : deep; c.beginPath(); c.ellipse(x, yy, 1.6, seg * .55, 0, sd > 0 ? -Math.PI / 2 : Math.PI / 2, sd > 0 ? Math.PI / 2 : Math.PI * 1.5); c.fill(); }
+          if (q >= .5) { line(.5, hi); c.beginPath(); c.moveTo(x + sd * .6, y1 + 1); c.lineTo(x + sd * .6, y2 - 1); c.stroke(); }
+        } else if (mat === 'crystal') {
+          c.fillStyle = hi; c.globalAlpha = .55; c.beginPath(); c.moveTo(x, y1); c.lineTo(x + sd * 1.8, (y1 + y2) / 2); c.lineTo(x, y2); c.closePath(); c.fill(); c.globalAlpha = 1;
+          line(.5, '#ffffff'); c.stroke();
+          if (q >= .5) { c.beginPath(); c.moveTo(x, (y1 + y2) / 2); c.lineTo(x + sd * 1.8, (y1 + y2) / 2); c.stroke(); }
+        } else if (mat === 'pixel') {
+          c.fillStyle = acc; c.fillRect(snap(x) - (sd < 0 ? P : 0), snap(y1), P, Math.max(P, snap(y2 - y1)));
+          if (q >= .5) { c.fillStyle = hi; c.fillRect(snap(x) - (sd < 0 ? P : 0), snap(y1), P, P); }
+        } else if (mat === 'heart') {
+          // un bord festonné, comme une couture de peluche
+          c.fillStyle = hi; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(x, y1 + (y2 - y1) * (i + .5) / 3, 1.3, 0, 7); c.fill(); }
+          if (q >= .5) { c.fillStyle = acc; c.beginPath(); c.arc(x, (y1 + y2) / 2, .6, 0, 7); c.fill(); }
+        } else if (mat === 'wood') {
+          // bordé en planches avec une bande de couleur
+          c.fillStyle = shade(body, -.3); c.fillRect(x - (sd < 0 ? 0 : 2.4), y1, 2.4, y2 - y1);
+          c.shadowBlur = 0; line(.4, deep); c.beginPath(); c.moveTo(x - sd * 1.2, y1); c.lineTo(x - sd * 1.2, y2); c.stroke();
+          if (q >= .5) { c.fillStyle = acc; c.fillRect(x - (sd < 0 ? 0 : 2.4), (y1 + y2) / 2 - .5, 2.4, 1); }
+        } else if (mat === 'divine' || mat === 'royal') {
+          // filet d'or (couleur secondaire) qui suit le bord
+          line(1.1, acc); c.beginPath(); c.moveTo(x, y1); c.quadraticCurveTo(x + sd * 1.6, (y1 + y2) / 2, x, y2); c.stroke();
+          if (q >= .5) { c.fillStyle = hi; c.beginPath(); c.arc(x + sd * .8, (y1 + y2) / 2, .9, 0, 7); c.fill(); }
+        } else {
+          // métal : un renfort fuselé dans la couleur du vaisseau, bordé de la couleur secondaire
+          c.fillStyle = fillGrad(y1, y2);
+          c.beginPath(); c.moveTo(x, y1); c.quadraticCurveTo(x + sd * 2.2, (y1 + y2) / 2, x, y2); c.quadraticCurveTo(x + sd * .6, (y1 + y2) / 2, x, y1); c.fill();
+          c.shadowBlur = 0; line(.6, acc); c.stroke();
+          if (q >= .5) { line(.45, hi); c.beginPath(); c.moveTo(x + sd * .9, y1 + 1.5); c.lineTo(x + sd * .9, y2 - 1.5); c.stroke(); }
+        }
+      }
     }
-    c.globalAlpha = 1; c.shadowBlur = 0;
-    // balles lourdes : la pointe du nez rougeoie de plus en plus
-    const pu = L('puissance');
-    if (pu) { const a = .35 + pu * .09 + .1 * Math.sin(t / 160); c.globalAlpha = Math.min(1, a); c.fillStyle = '#ff7b2a'; c.shadowColor = '#ff4f1a'; c.shadowBlur = 3 + pu * 1.2; c.beginPath(); c.arc(0, -20.5, .9 + pu * .2, 0, 7); c.fill(); }
-    c.globalAlpha = 1; c.shadowBlur = 0;
-    // caisse ∞ longue : antenne avec une étoile d'or qui grandit
-    const inf = L('infini');
-    if (inf) { c.strokeStyle = metal; c.lineWidth = .8; c.beginPath(); c.moveTo(0, -22); c.lineTo(0, -26 - inf * .6); c.stroke(); c.fillStyle = gold; c.shadowColor = gold; c.shadowBlur = 4; drawStarPath(c, 0, -26.5 - inf * .6, 1.4 + inf * .25); c.fill(); }
+    c.shadowBlur = 0;
+
+    // --- Gros chargeur : réserve de munitions intégrée en bas des flancs ---
+    q = lv('chargeur');
+    if (q) {
+      const [px, py, ph] = A.pod;
+      for (const sd of [-1, 1]) {
+        const x = px * sd;
+        glow(q, acc, 5);
+        if (mat === 'organic') { c.fillStyle = acc; c.beginPath(); c.arc(x, py, ph * .55, 0, 7); c.fill(); if (q >= .5) { c.fillStyle = hi; c.beginPath(); c.arc(x - sd * .5, py - .5, ph * .22, 0, 7); c.fill(); } }
+        else if (mat === 'crystal') { c.fillStyle = acc; shard(x, py, ph * .4, ph * .7); c.fill(); if (q >= .5) { line(.4, '#ffffff'); c.stroke(); } }
+        else if (mat === 'pixel') { c.fillStyle = acc; c.fillRect(snap(x) - P / 2, snap(py), P, P * 2); if (q >= .5) { c.fillStyle = hi; c.fillRect(snap(x) - P / 2, snap(py), P, P); } }
+        else if (mat === 'heart') { c.fillStyle = acc; heart(x, py, ph * .55); if (q >= .5) { c.fillStyle = hi; heart(x, py, ph * .25); } }
+        else if (mat === 'wood') { c.fillStyle = shade(body, -.25); c.beginPath(); c.ellipse(x, py, ph * .45, ph * .6, 0, 0, 7); c.fill(); c.shadowBlur = 0; line(.5, acc); c.beginPath(); c.moveTo(x - ph * .45, py); c.lineTo(x + ph * .45, py); c.stroke(); if (q >= .5) { c.beginPath(); c.moveTo(x - ph * .4, py - ph * .3); c.lineTo(x + ph * .4, py - ph * .3); c.stroke(); } }
+        else if (mat === 'divine' || mat === 'royal') { c.fillStyle = acc; shard(x, py, ph * .45, ph * .6); c.fill(); if (q >= .5) { c.fillStyle = hi; c.beginPath(); c.arc(x, py - ph * .1, ph * .18, 0, 7); c.fill(); } }
+        else {
+          // métal : un réservoir profilé, couleur du vaisseau, avec une fenêtre de munitions
+          c.fillStyle = fillGrad(py - ph / 2, py + ph / 2); c.beginPath(); c.ellipse(x, py, 1.3, ph / 2, 0, 0, 7); c.fill();
+          c.shadowBlur = 0; line(.5, acc); c.stroke();
+          if (q >= .5) { c.fillStyle = acc; c.fillRect(x - .6, py - ph * .25, 1.2, ph * .5); }
+        }
+      }
+    }
+    c.shadowBlur = 0;
+
+    // --- Zone dorée : un liseré fin sur la coque ---
+    q = lv('zone');
+    if (q) {
+      const B = A.band;
+      glow(q, acc, 5);
+      line(.5 + q * .5, acc);
+      if (mat === 'pixel') { c.fillStyle = acc; c.fillRect(snap(-B.w), snap(B.y), snap(B.w * 2), P / 2 + (q >= .5 ? P / 2 : 0)); }
+      else if (B.ring) { c.beginPath(); if (B.arc) c.arc(0, B.y, B.ring[0], B.arc[0], B.arc[1]); else c.ellipse(0, B.y, B.ring[0], B.ring[1], 0, .15, Math.PI - .15); c.stroke(); }
+      else if (B.from) { for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * B.from, B.y - 1.6); c.lineTo(sd * B.w, B.y - 1.6); c.stroke(); } }
+      else { c.beginPath(); c.moveTo(-B.w, B.y); c.quadraticCurveTo(0, B.y + (B.facet ? 0 : 1.4), B.w, B.y); c.stroke(); }
+      if (q >= .5 && mat !== 'pixel' && !B.from) { c.shadowBlur = 0; c.fillStyle = hi; c.beginPath(); c.arc(0, B.y + (B.ring || B.facet ? 0 : .7) + (B.ring && !B.arc ? B.ring[1] : 0), .8, 0, 7); c.fill(); }
+    }
+    c.shadowBlur = 0;
+
+    // --- Super-batterie : l'énergie fait briller le tour du hublot (sans le cacher) ---
+    q = lv('pouvoir');
+    if (q) {
+      const [cx, cy, cr, pair] = A.core;
+      for (const sd of pair ? [-1, 1] : [1]) {
+        const x = cx * (pair ? sd : 1);
+        glow(q, acc, 8);
+        c.globalAlpha = .55 + .45 * (q >= 1 ? pulse(2) : .6);
+        if (mat === 'pixel') { c.fillStyle = acc; for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) c.fillRect(snap(x + dx * cr) - P / 2, snap(cy + dy * cr) - P / 2, P, P); }
+        else {
+          line(.7, acc); c.setLineDash(q >= .5 ? [] : [1.4, 1.6]);
+          c.beginPath(); if (pair) c.arc(x, cy, cr, sd > 0 ? -Math.PI * .6 : Math.PI * .4, sd > 0 ? Math.PI * .6 : Math.PI * 1.6); else c.arc(x, cy, cr, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+          if (q >= .5) { c.fillStyle = hi; const a = pair ? (sd > 0 ? 0 : Math.PI) + Math.sin(t / 700) * .5 : reduce ? 0 : t / 700; c.beginPath(); c.arc(x + Math.cos(a) * cr, cy + Math.sin(a) * cr, .8, 0, 7); c.fill(); }
+        }
+        c.globalAlpha = 1;
+      }
+    }
+    c.shadowBlur = 0;
+
+    // --- Gâchette rapide : à l'avant, de chaque côté (canons fuselés, mandibules, éclats…) ---
+    q = lv('cadence');
+    if (q) {
+      const [mx, my] = A.muz;
+      for (const sd of [-1, 1]) {
+        const x = mx * sd;
+        glow(q, acc, 5);
+        if (mat === 'organic') { line(1, acc); c.beginPath(); c.moveTo(x, my + 1.4); c.quadraticCurveTo(x + sd * 1.6, my - .4, x - sd * .4, my - 1.6); c.stroke(); }
+        else if (mat === 'crystal') { c.fillStyle = hi; c.globalAlpha = .9; shard(x, my, .8, 2.4); c.fill(); c.globalAlpha = 1; }
+        else if (mat === 'pixel') { c.fillStyle = acc; c.fillRect(snap(x) - P / 2, snap(my), P, P * 1.5); }
+        else if (mat === 'heart') { c.fillStyle = hi; const z = 1.2; c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, rr = i % 2 ? z * .4 : z; c.lineTo(x + Math.cos(a) * rr, my + Math.sin(a) * rr); } c.closePath(); c.fill(); }
+        else if (mat === 'wood') { c.fillStyle = deep; c.fillRect(x - (sd < 0 ? 2.6 : 0), my - .7, 2.6, 1.4); c.fillStyle = acc; c.fillRect(x + (sd < 0 ? -2.9 : 2.3), my - .8, .6, 1.6); }
+        else {
+          // métal / royal / divin : un petit canon profilé, couleur du vaisseau, bouche de la couleur secondaire
+          c.fillStyle = mat === 'divine' || mat === 'royal' ? acc : fillGrad(my - 2.6, my + 1.6);
+          c.beginPath(); c.moveTo(x - .8, my + 1.6); c.lineTo(x - .6, my - 2.4); c.lineTo(x + .6, my - 2.4); c.lineTo(x + .8, my + 1.6); c.closePath(); c.fill();
+          c.shadowBlur = 0; c.fillStyle = acc; c.fillRect(x - .7, my - 2.8, 1.4, .8);
+        }
+        if (q >= .5 && mat !== 'pixel') { c.shadowBlur = 0; c.fillStyle = hi; c.beginPath(); c.arc(x, my - 2.4, .45, 0, 7); c.fill(); }
+      }
+    }
+    c.shadowBlur = 0;
+
+    // --- Balles lourdes : la pointe avant se charge d'énergie ---
+    q = lv('puissance');
+    if (q) {
+      const [nx, ny] = A.nose;
+      for (const sd of sides(nx)) {
+        const x = nx * sd, r = .9 + q * .7;
+        glow(q, acc, 8);
+        if (mat === 'pixel') { c.fillStyle = q >= 1 && pulse(3) > .8 ? hi : acc; c.fillRect(snap(x) - P / 2, snap(ny), P, P); }
+        else if (mat === 'crystal' || mat === 'divine') { c.fillStyle = hi; c.globalAlpha = .9; shard(x, ny, r * .7, r * 1.6); c.fill(); c.globalAlpha = 1; if (q >= .5) { c.shadowBlur = 0; c.fillStyle = acc; shard(x, ny, r * .3, r * .8); c.fill(); } }
+        else if (mat === 'heart') { c.fillStyle = acc; heart(x, ny, r); if (q >= .5) { c.fillStyle = hi; c.beginPath(); c.arc(x - r * .3, ny - r * .3, r * .25, 0, 7); c.fill(); } }
+        else { c.fillStyle = acc; c.beginPath(); c.arc(x, ny, r, 0, 7); c.fill(); if (q >= .5) { c.shadowBlur = 0; c.fillStyle = hi; c.beginPath(); c.arc(x - r * .3, ny - r * .3, r * .38, 0, 7); c.fill(); } }
+      }
+    }
+    c.shadowBlur = 0;
+
+    // --- Caisse ∞ : les bouts des ailes s'illuminent (l'abeille : ses ailes grandissent et brillent) ---
+    q = lv('infini');
+    if (q) for (const [tx, ty] of A.tips) for (const sd of sides(tx)) {
+      const x = tx * sd;
+      if (mat === 'organic') {
+        // de plus grandes ailes lumineuses, dessinées comme un halo autour des siennes
+        c.globalAlpha = (.25 + q * .3) * (q >= 1 ? pulse(4) : 1); c.fillStyle = hi; glow(q, hi, 8);
+        c.beginPath(); c.ellipse(x + sd * .6, ty, 7 + q * 1.4, 4.6 + q * 1, sd * .5, 0, 7); c.fill(); c.globalAlpha = 1;
+        continue;
+      }
+      glow(q, acc, 7);
+      if (mat === 'pixel') { c.fillStyle = acc; c.fillRect(snap(x) - P / 2, snap(ty) - P / 2, P, P); }
+      else if (mat === 'heart') { c.globalAlpha = .5 + q * .4; c.fillStyle = hi; c.beginPath(); c.ellipse(x, ty, 3.4, 1.6, sd * .4, 0, 7); c.fill(); c.globalAlpha = 1; }
+      else { c.fillStyle = acc; c.beginPath(); c.arc(x, ty, .9 + q * .5, 0, 7); c.fill(); if (q >= .5) { c.shadowBlur = 0; c.fillStyle = hi; c.beginPath(); c.arc(x, ty, .45, 0, 7); c.fill(); } }
+    }
     c.restore();
   }
-  function drawStarPath(c, x, y, r) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } c.closePath(); }
 
   // motif peint sur la coque : chaque vaisseau a sa zone, pour que le motif suive sa forme
   // hull : la surface peinte ; holes : ce qu'on ne recouvre pas (hublots, emblèmes) ; area : [x0, y0, x1, y1] ;
