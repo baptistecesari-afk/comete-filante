@@ -1462,7 +1462,27 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // partie en équipe : un seul terrain (W × H) pour les deux écrans, affiché en entier et sans bouger, comme en solo.
   // Il est réduit pour tenir dans l'écran et centré (offX, offY) ; s'il reste de la place sur les côtés, le fond flou la remplit.
   let camS = 1, offX = 0, offY = 0, netHW = 0, netHH = 0;
-  function baseT() { ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
+  function baseT() { if (ctx === bgK) { bgK.setTransform(bgS, 0, 0, bgS, 20 * bgS, 20 * bgS); return; } ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
+  // lisibilité en partie : le fond est peint dans une image à part, un peu plus petite que l'écran (il devient légèrement flou),
+  // puis il est désaturé et assombri ; la fusée, les ennemis, les tirs et les bonus se dessinent ensuite par-dessus, nets et vifs.
+  // Une seule image, réutilisée à chaque fois (on ne change sa taille que si l'écran change).
+  let bgCv = null, bgK = null, bgS = 1, bgDim = 0, bgDimT = 0;
+  function bgLayer() {
+    const s = Math.max(.6, Math.min(1, DPR * .5)), w = Math.ceil((W + 40) * s), h = Math.ceil((H + 40) * s);
+    if (!bgCv) { bgCv = document.createElement('canvas'); bgK = bgCv.getContext('2d'); }
+    if (bgCv.width !== w || bgCv.height !== h) { bgCv.width = w; bgCv.height = h; }
+    bgS = s;
+    bgK.setTransform(s, 0, 0, s, 20 * s, 20 * s); bgK.globalAlpha = 1; bgK.globalCompositeOperation = 'source-over'; bgK.shadowBlur = 0;
+    return bgK;
+  }
+  // le fond perd une partie de ses couleurs et de sa lumière (encore un peu plus pendant un boss) : plus aucune zone très claire
+  function bgTone(dim) {
+    const k = bgK;
+    k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
+    k.globalCompositeOperation = 'saturation'; k.globalAlpha = .3 + dim * .1; k.fillStyle = '#808080'; k.fillRect(0, 0, bgCv.width, bgCv.height);
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .4 + dim * .16; k.fillStyle = '#060510'; k.fillRect(0, 0, bgCv.width, bgCv.height);
+    k.globalAlpha = 1;
+  }
   function resize() {
     const ow = W, oh = H;
     DPR = Math.min(window.devicePixelRatio || 1, dprCap);
@@ -8153,6 +8173,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const sp = it.sp, col = sp ? sp.col : { chaser: '#7dff8a', saucer: '#7dff8a', kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
     const warn = it.type === 'kamikaze' && !it.dash && it.y >= it.hoverY;
     const m = it.r * (it.type === 'vortex' ? 3.3 : 2.1) + 8;
+    shadeAt(it.x, it.y, it.r * 1.9 + 6, .6);
     drawLit(() => drawAlienFlat(it, t), it.x, it.y, it.r * (sp && sp.body === 'saucer' ? 1.3 : 1), warn ? '#ff4f6d' : col, warn ? 26 : sp && sp.pattern === 'glow' ? 20 : 12, [it.x - m, it.y - m, it.x + m, it.y + m]);
     drawAim(it);
   }
@@ -10385,6 +10406,20 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
 
   // halo de lumière qui s'ajoute au décor comme une vraie lumière (marche avec n'importe quelle couleur)
+  // ombre douce posée sous un élément du jeu : elle le détache du fond, quel que soit le monde (une seule petite image, faite une fois)
+  let shadeImg = null;
+  function shadeAt(x, y, r, a = .55) {
+    if (!shadeImg) {
+      shadeImg = document.createElement('canvas'); shadeImg.width = shadeImg.height = 64;
+      const g = shadeImg.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(2, 1, 8, 1)'); gr.addColorStop(.5, 'rgba(2, 1, 8, .75)'); gr.addColorStop(1, 'rgba(2, 1, 8, 0)');
+      g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    }
+    const ga = ctx.globalAlpha, op = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = ga * a;
+    ctx.drawImage(shadeImg, x - r, y - r, r * 2, r * 2);
+    ctx.globalAlpha = ga; ctx.globalCompositeOperation = op;
+  }
   function glowAt(x, y, r, col, a = 1) {
     const op = ctx.globalCompositeOperation, ga = ctx.globalAlpha;
     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = ga * a;
@@ -10429,6 +10464,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const alive = state !== 'over' && state !== 'dying';
     if (alive && !p2.ko && !(p2.hurt > 0 && Math.floor(p2.hurt * 12) % 2)) {
       if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(flameColsOf(p2Conf().flame, t)[1]), p2.x - 22, p2.y + 6, 44, 60); ctx.restore(); }
+      shadeAt(p2.x, p2.y + 4, 40, .55);
       drawRocket(ctx, p2.x, p2.y, 1, p2Conf(), t, p2.tilt, hyper ? 1 : 0);
       if (shield > 0 || hyper) {
         ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
@@ -10530,7 +10566,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // tirs ennemis : des boules de plasma au cœur blanc, entourées de leur lumière
   function drawEBullet(b, t) {
     const c = b.c || '#7dff8a', sz = b.s || 5;
-    glowAt(b.x, b.y, sz * 3, c, .6);
+    // lisibilité : une ombre sombre autour, puis une lueur franche, pour voir le danger d'un coup d'œil dans tous les mondes
+    shadeAt(b.x, b.y, sz * 2.8, .7);
+    glowAt(b.x, b.y, sz * 3.2, c, .85);
     ctx.fillStyle = c; ctx.strokeStyle = c;
     if (b.flake) {
       ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.beginPath();
@@ -10541,6 +10579,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, sz);
     g.addColorStop(0, '#ffffff'); g.addColorStop(.35, '#ffffff'); g.addColorStop(.7, c); g.addColorStop(1, c);
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, 7); ctx.fill();
+    ctx.strokeStyle = c; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(b.x, b.y, sz + 1.2, 0, 7); ctx.stroke();
     if (b.fuse !== undefined && b.fuse < .6 && Math.floor(b.fuse * 10) % 2) {
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(b.x, b.y, sz + 4, 0, 7); ctx.stroke();
     }
@@ -10562,6 +10601,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   const facet = (dark, light, ang, bias = 0) => mixHex(dark, light, Math.max(0, Math.min(1, .5 + .5 * Math.cos(ang + 2.36) + bias)));
   function drawPickup(it, t) {
     const x = it.x, y = it.y, r = it.r;
+    shadeAt(x, y, (it.kind === 'infini' ? 22 : r) * 2.1, .6);
     if (it.kind === 'star') {
       glowAt(x, y, r * 2.6, '#ffb830', .55);
       const P = i => { const a = it.rot + i * Math.PI / 5 - Math.PI / 2, rr = i % 2 ? r * .45 : r; return [x + Math.cos(a) * rr, y + Math.sin(a) * rr]; };
@@ -13358,10 +13398,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
 
   function draw(t) {
+    if (ctx === bgK) ctx = cv.getContext('2d');
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
-    const g = ctx.createLinearGradient(0, 0, 0, H);
     const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'talk' || state === 'dying';
+    // en partie, le fond se peint dans son image à part, plus douce et plus sombre (voir bgLayer) ; au menu il reste tel quel
+    const mainK = ctx, toned = inGame;
+    if (toned) ctx = bgLayer();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
     const th = bgNow(t);
     g.addColorStop(0, th.top); g.addColorStop(1, th.bottom);
     ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
@@ -13380,7 +13424,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // étoiles très lointaines (elles bougent à peine), puis la nébuleuse en nuages de gaz, avec un fondu entre deux décors
     {
       const tile = starField(), S = 512, oy = ((drift * .06) % S + S) % S, ox = ((par * .1) % S + S) % S;
-      ctx.globalAlpha = .9;
+      ctx.globalAlpha = toned ? .6 : .9;
       for (let y = oy - S; y < H; y += S) for (let x = ox - S; x < W; x += S) ctx.drawImage(tile, x, y);
       const NS = Math.max(W, H) * 1.25, ny = ((drift * .14) % NS + NS) % NS, nx = (W - NS) / 2 + par * .3;
       for (const [ti, al] of [[bgPrev, 1 - th.k], [bgIdx, th.k]]) {
@@ -13394,11 +13438,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     for (const s of bg) {
       const y = ((s.y * H + drift * s.z) % H + H) % H, x = ((s.x * W + par * s.z) % W + W) % W;
       const tw = reduce ? 1 : .65 + .35 * Math.sin(t / (300 + s.z * 500) + s.x * 40);
-      ctx.globalAlpha = (.25 + s.z * .6) * tw;
+      // en partie, les étoiles restent de petits points pâles : rien qui ressemble à un tir ou à un bonus
+      ctx.globalAlpha = (.25 + s.z * .6) * tw * (toned ? .6 : 1);
       const col = s.col || (s.col = STAR_TINTS[Math.floor(Math.random() * STAR_TINTS.length)]);
       ctx.fillStyle = col;
       if (((on && pid === 'hyper') || (on2 && pid2 === 'hyper')) && !reduce) ctx.fillRect(x, y, s.z * 1.5, s.z * 18);
-      else if (s.z > .85) {
+      else if (s.z > .85 && !toned) {
         // étoile brillante : halo doux et fines aigrettes qui s'estompent
         ctx.drawImage(softSprite(col), x - 7, y - 7, 15, 15);
         const L = 6 + s.z * 8 * tw, gx = ctx.createLinearGradient(x - L, 0, x + L, 0);
@@ -13409,7 +13454,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         ctx.fillStyle = gy; ctx.fillRect(x - .4, y - L, .8, L * 2);
         ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.fillRect(x - .8, y - .8, 1.6, 1.6);
       }
-      else ctx.fillRect(x, y, s.z * 1.6, s.z * 1.6);
+      else { const z = toned ? Math.min(1.3, s.z * 1.4) : s.z * 1.6; ctx.fillRect(x, y, z, z); }
     }
     ctx.globalAlpha = 1;
     drawWorldDecor(t, inGame, true);
@@ -13421,6 +13466,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // planètes et vaisseaux lointains, puis devant eux le décor propre au monde en cours : glace, volcans, lianes, vide…
     drawScenery(t, th.neb);
     drawWorldDecor(t, inGame);
+    if (toned) {
+      // le fond est prêt : on le désature, on l'assombrit (un peu plus pendant un boss, en douceur), puis on le pose sous le jeu
+      ctx = mainK;
+      const dd = Math.min(.1, Math.max(0, (t - bgDimT) / 1000)); bgDimT = t;
+      bgDim += ((boss && cineT <= 0 ? 1 : 0) - bgDim) * Math.min(1, dd * 1.5);
+      bgTone(bgDim);
+      ctx.drawImage(bgCv, -20, -20, bgCv.width / bgS, bgCv.height / bgS);
+    }
     if (state === 'launch') drawLaunch(t);
     if (state === 'menu' && !$('menu').hidden) drawMenuSky(t);
     if (state === 'menu' && W > 900 && !reduce) {
@@ -13573,6 +13626,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
             if (on2 && P.kind === 'ghost') ctx.globalAlpha = .1 + .08 * Math.sin(t / 80);
             if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
             if (on2 && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
+            shadeAt(it.x, it.y, it.r * 1.7 + 10, .55);
             drawBoss(it, t);
             ctx.restore();
             if (on2 && (P.kind === 'bubble' || P.kind === 'mirror' || P.kind === 'heal')) {
@@ -13586,6 +13640,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           } else drawAlien(it, t);
         } else {
           ctx.shadowBlur = 0;
+          shadeAt(it.x, it.y, it.r * 1.7 + 4, .5);
           drawAsteroid(it);
         }
         ctx.globalAlpha = 1;
@@ -13617,6 +13672,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         drawPowAura(t);
         // halo de lumière du réacteur
         if (!reduce) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .35 + Math.random() * .1; ctx.drawImage(softSprite(fl[1]), player.x - 22, player.y + 6, 44, 60); ctx.restore(); }
+        shadeAt(player.x, player.y + 4, 40, .55);
         drawRocket(ctx, player.x, player.y, 1, cfg, t, player.tilt, hyper || (on && pid === 'supernova') ? 1 : 0);
         if (shield > 0 || hyper) {
           ctx.strokeStyle = hyper ? '#ffd86b' : '#7ad8ff'; ctx.lineWidth = 3;
