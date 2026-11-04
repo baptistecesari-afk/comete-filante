@@ -234,6 +234,11 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
   padding: 10px 12px; border-radius: 14px; border: 2px dashed var(--star); background: var(--night); text-align: center;
 }
 .buybar span { font-size: 14px; }
+/* aperçu du vaisseau avec l'objet regardé, juste à côté du bouton Acheter */
+.buybar.withpv { flex-direction: row; align-items: center; text-align: left; }
+.buybar .buyinfo { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+.buybar canvas { width: 104px; height: 104px; flex: none; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--star) 40%, transparent); }
+.buybar canvas[hidden] { display: none; }
 .buybar .buy { margin-top: 0; }
 .subhead { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--star); }
 .ucard .sw { width: 100%; height: 14px; border-radius: 7px; }
@@ -1197,9 +1202,12 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       </div>
     </div>
     <div class="buybar" id="buybar" hidden>
-      <span id="buyText"></span>
-      <button type="button" class="buy" id="buyBtn">Acheter</button>
-      <button type="button" class="toggle" id="buyCancel">Annuler</button>
+      <canvas id="buyPv" width="208" height="208" aria-label="Aperçu de ta fusée avec cet objet" hidden></canvas>
+      <div class="buyinfo">
+        <span id="buyText"></span>
+        <button type="button" class="buy" id="buyBtn">Acheter</button>
+        <button type="button" class="toggle" id="buyCancel">Annuler</button>
+      </div>
     </div>
     <div class="row">
       <button class="ghost" id="backBtn">Retour</button>
@@ -3600,7 +3608,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       const x = Wc / 2 + d * 165, sc = Math.max(1.4, 4.6 - ad * 1.7), bob = reduce ? 0 : Math.sin(t / 600 + i) * 5;
       k.save();
       k.globalAlpha = Math.max(.15, 1 - ad * .4);
-      drawRocket(k, x, Hc * .5 + bob, sc, { ...cfg, model: m.id }, t, reduce ? 0 : d * -.12, ad < .5 ? .3 : 0);
+      const look = preview && preview.key !== 'model' ? { [preview.key]: preview.id } : null;
+      drawRocket(k, x, Hc * .5 + bob, sc, { ...cfg, ...look, model: m.id }, t, reduce ? 0 : d * -.12, ad < .5 ? .3 : 0);
       k.restore();
       if (!owns('model', m.id)) {
         // petit cadenas sur les vaisseaux pas encore débloqués
@@ -3636,6 +3645,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('pvTitle').textContent = cfg.title;
     const bar = $('buybar');
     bar.hidden = !preview || preview.key === 'model';
+    const look = !!preview && PV_KEYS.includes(preview.key);
+    $('buyPv').hidden = !look; bar.classList.toggle('withpv', look);
     if (preview) {
       const c = preview.key === 'pet' ? { label: 'Animal', list: PETS } : CATS.find(x => x.key === preview.key), it = byId(c.list, preview.id), p = price(preview.key, preview.id);
       const tro = trophyOf(preview.key, preview.id);
@@ -12850,6 +12861,16 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (!reduce) { const sy = ((t / 2200) % 1) * fyy; const sg = k.createLinearGradient(0, sy - 14, 0, sy + 2); sg.addColorStop(0, 'rgba(122, 216, 255, 0)'); sg.addColorStop(1, 'rgba(122, 216, 255, .22)'); k.fillStyle = sg; k.fillRect(w * .2, sy - 14, w * .6, 16); }
   }
 
+  // les objets qui changent l'allure de la fusée : on les montre dans la barre d'achat
+  const PV_KEYS = ['color', 'accent', 'motif', 'glass', 'flame', 'trail'];
+  function drawBuyPreview(t) {
+    const cv = $('buyPv');
+    if (cv.hidden || !preview) return;
+    const k = cv.getContext('2d'), w = cv.width, h = cv.height;
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
+    drawBay(k, w, h, t, .84);
+    drawRocket(k, w / 2, h * .44 + (reduce ? 0 : Math.sin(t / 500) * 4), 2.6, { ...cfg, [preview.key]: preview.id }, t, reduce ? 0 : Math.sin(t / 900) * .1, .3);
+  }
   function drawPreview(t) {
     pctx.setTransform(1, 0, 0, 1, 0, 0);
     pctx.clearRect(0, 0, pv.width, pv.height);
@@ -12913,7 +12934,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (!$('team').hidden) drawTeam(t);
     drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
-    if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); } catch (e) { console.error(e); }
+    if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); drawBuyPreview(t); } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
   }
   reset();
