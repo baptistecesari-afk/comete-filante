@@ -2836,8 +2836,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         c.fillStyle = i % 2 ? 'rgba(255, 255, 255, .28)' : 'rgba(0, 0, 0, .18)';
         c.beginPath(); f.forEach(([x, y], j) => j ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.fill();
       });
-      c.strokeStyle = 'rgba(255, 255, 255, .7)'; c.lineWidth = .8;
+      c.strokeStyle = acc.hex || 'rgba(255, 255, 255, .7)'; c.lineWidth = acc.hex ? 1.4 : .8;
       c.beginPath(); pts.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.stroke();
+      if (acc.hex) { c.strokeStyle = acc.hex; c.globalAlpha = .6; c.lineWidth = .8; c.beginPath(); c.moveTo(10, -12); c.lineTo(0, -6); c.lineTo(-10, -12); c.moveTo(0, -6); c.lineTo(0, 18); c.stroke(); c.globalAlpha = 1; }
       c.fillStyle = glass; c.beginPath(); c.moveTo(0, -18); c.lineTo(3, -10); c.lineTo(0, -6); c.lineTo(-3, -10); c.closePath(); c.fill();
       const sh = (t / 400) % 1;
       c.fillStyle = `rgba(255, 255, 255, ${(.6 * (1 - sh)).toFixed(2)})`; c.beginPath(); c.arc(-4 + sh * 8, -20 + sh * 30, 1.6, 0, 7); c.fill();
@@ -2890,13 +2891,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       c.beginPath(); c.moveTo(0, -22); c.lineTo(0, 14); c.moveTo(-6, -4); c.lineTo(-14, 10); c.moveTo(6, -4); c.lineTo(14, 10); c.moveTo(-4, 4); c.lineTo(4, 4); c.stroke();
       c.globalAlpha = 1;
       // trois griffes de chasseur sur l'aile gauche
-      c.strokeStyle = bodyFill; c.lineWidth = 1.2;
+      // la couleur secondaire colore les griffes, les canons et le bout des ailes
+      const pa = acc.hex || bodyFill;
+      c.strokeStyle = pa; c.lineWidth = 1.2;
       c.beginPath(); for (let i = 0; i < 3; i++) { c.moveTo(-17 + i * 3, 9); c.lineTo(-13 + i * 3, 14); } c.stroke();
+      if (acc.hex) { c.fillStyle = acc.hex; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 19, 6); c.lineTo(sd * 22, 17); c.lineTo(sd * 16.5, 15.3); c.closePath(); c.fill(); } }
       // canons latéraux
-      c.fillStyle = '#100c1c'; c.fillRect(-15, -4, 3, 12); c.fillRect(12, -4, 3, 12);
-      c.fillStyle = bodyFill; c.fillRect(-15, -6, 3, 2); c.fillRect(12, -6, 3, 2);
-      // visière rouge
-      c.shadowColor = '#ff2d55'; c.shadowBlur = 10; c.fillStyle = '#ff2d55';
+      c.fillStyle = acc.hex ? shade(acc.hex, -.5) : '#100c1c'; c.fillRect(-15, -4, 3, 12); c.fillRect(12, -4, 3, 12);
+      c.fillStyle = pa; c.fillRect(-15, -6, 3, 2); c.fillRect(12, -6, 3, 2);
+      // visière : rouge, ou la couleur du hublot choisi
+      const vis = conf.glass && conf.glass !== 'nuit' ? glass : '#ff2d55';
+      c.shadowColor = gl.hex || '#ff2d55'; c.shadowBlur = 10; c.fillStyle = vis;
       c.beginPath(); c.moveTo(0, -17); c.lineTo(3.2, -9); c.lineTo(0, -7); c.lineTo(-3.2, -9); c.closePath(); c.fill();
       c.shadowBlur = 0;
     } else if (conf.model === 'legende') {
@@ -2911,14 +2916,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       c.moveTo(0, -31); c.lineTo(5, -17); c.lineTo(7, -2); c.lineTo(21, 6); c.lineTo(27, 18); c.lineTo(10, 13); c.lineTo(6, 20);
       c.lineTo(-6, 20); c.lineTo(-10, 13); c.lineTo(-27, 18); c.lineTo(-21, 6); c.lineTo(-7, -2); c.lineTo(-5, -17);
       c.closePath(); c.fill();
-      c.shadowBlur = 0; c.strokeStyle = '#c4902a'; c.lineWidth = 1.2; c.stroke();
+      c.shadowBlur = 0; c.strokeStyle = acc.hex || '#c4902a'; c.lineWidth = 1.2; c.stroke();
       c.strokeStyle = bodyFill; c.lineWidth = 1.8;
       c.beginPath(); c.moveTo(-21, 7); c.lineTo(-8, 3); c.moveTo(21, 7); c.lineTo(8, 3); c.moveTo(-24, 14); c.lineTo(-11, 11); c.moveTo(24, 14); c.lineTo(11, 11); c.stroke();
-      // ailerons en couronne
-      c.fillStyle = '#ffd86b';
+      // ailerons en couronne (couleur secondaire si on en a choisi une)
+      c.fillStyle = acc.hex || '#ffd86b';
       for (const x of [-5, 0, 5]) { c.beginPath(); c.moveTo(x - 2, 17); c.lineTo(x, x === 0 ? 27 : 23); c.lineTo(x + 2, 17); c.closePath(); c.fill(); }
-      // cockpit en diamant
-      c.fillStyle = '#7ae8ff'; c.shadowColor = '#7ae8ff'; c.shadowBlur = 10;
+      // cockpit en diamant (couleur du hublot si on en a choisi un)
+      c.fillStyle = conf.glass && conf.glass !== 'nuit' ? glass : '#7ae8ff'; c.shadowColor = gl.hex || '#7ae8ff'; c.shadowBlur = 10;
       c.beginPath(); c.moveTo(0, -18); c.lineTo(3.5, -11); c.lineTo(0, -5); c.lineTo(-3.5, -11); c.closePath(); c.fill();
       c.shadowBlur = 0; c.fillStyle = '#ffffff'; c.fillRect(-1, -15, 1.5, 3);
       // étincelles autour du vaisseau
