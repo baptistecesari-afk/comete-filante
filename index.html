@@ -1472,11 +1472,11 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // Les couleurs restent profondes (jamais claires) et ne reprennent pas celles des tirs, des bonus et des Astros.
   // Deux images seulement, réutilisées à chaque fois (leur taille ne change que si l'écran change).
   const DEPTH = [
-    { name: 'Voie lactée', haze: '#0a0720', wash: ['#3b2a86', '#6a2462'], mist: '#2a2060', dust: '#a9a3d6' },
-    { name: 'Royaume de Givre', haze: '#05121f', wash: ['#174a72', '#2c3a86'], mist: '#1c4660', dust: '#cfe2f0' },
-    { name: 'Forge Volcanique', haze: '#130504', wash: ['#6e1a12', '#4c1c3a'], mist: '#4a160c', dust: '#8c7c76' },
-    { name: 'Jungle Cosmique', haze: '#03100a', wash: ['#0f4a30', '#16404a'], mist: '#103a24', dust: '#93ae9c' },
-    { name: 'Le Néant', haze: '#040208', wash: ['#3c1666', '#16205a'], mist: '#1a0c2c', dust: '#7a6c96' },
+    { name: 'Voie lactée', haze: '#0a0720', tint: '#1c1244', wash: ['#4a2fa8', '#8a2a7a', '#1f3a8a'], mist: '#2a2060', dust: '#a9a3d6' },
+    { name: 'Royaume de Givre', haze: '#05121f', tint: '#0c2a44', wash: ['#1d5a90', '#3a3fa0', '#1a6a7a'], mist: '#1c4660', dust: '#cfe2f0' },
+    { name: 'Forge Volcanique', haze: '#130504', tint: '#2c0a08', wash: ['#8c2216', '#7a1f4e', '#5a1a0e'], mist: '#4a160c', dust: '#8c7c76' },
+    { name: 'Jungle Cosmique', haze: '#03100a', tint: '#0a2c1a', wash: ['#11663e', '#1a5a66', '#3a2a6a'], mist: '#103a24', dust: '#93ae9c' },
+    { name: 'Le Néant', haze: '#040208', tint: '#120822', wash: ['#4a1a80', '#1c2a78', '#5a1050'], mist: '#1a0c2c', dust: '#7a6c96' },
   ];
   const depthOf = () => DEPTH[Math.max(0, Math.min(DEPTH.length - 1, world))];
   const farL = { cv: null, k: null, s: 1 }, midL = { cv: null, k: null, s: 1 };
@@ -1495,14 +1495,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function farTone(t, dim, par) {
     const k = farL.k, D = depthOf(), w = farL.cv.width, h = farL.cv.height, sc = farL.s;
     k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
-    k.globalCompositeOperation = 'saturation'; k.globalAlpha = .18; k.fillStyle = '#808080'; k.fillRect(0, 0, w, h);
-    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .46 + dim * .12; k.fillStyle = D.haze; k.fillRect(0, 0, w, h);
-    // deux grandes nappes de couleur qui respirent très lentement : la couleur du monde passe par de grandes zones douces
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .36 + dim * .14; k.fillStyle = D.haze; k.fillRect(0, 0, w, h);
+    // trois grandes nappes de couleur qui respirent très lentement : la couleur du monde passe par de grandes zones douces
     k.globalCompositeOperation = 'screen';
-    const R = Math.max(w, h) * .75, q = reduce ? 0 : t / 9000;
-    for (let i = 0; i < 2; i++) {
-      const x = w * (i ? .78 : .22) + Math.sin(q + i * 2) * w * .06 + par * sc * .15, y = h * (i ? .7 : .28) + Math.cos(q * .8 + i) * h * .05;
-      k.globalAlpha = (.55 - dim * .2) * (.85 + .15 * Math.sin(q * 1.7 + i));
+    const R = Math.max(w, h) * .8, q = reduce ? 0 : t / 9000, AT = [[.2, .25], [.8, .62], [.45, .95]];
+    for (let i = 0; i < 3; i++) {
+      const x = w * AT[i][0] + Math.sin(q + i * 2) * w * .06 + par * sc * .15, y = h * AT[i][1] + Math.cos(q * .8 + i) * h * .05;
+      k.globalAlpha = (.85 - dim * .3) * (.85 + .15 * Math.sin(q * 1.7 + i));
       k.drawImage(softSprite(D.wash[i]), x - R, y - R, R * 2, R * 2);
     }
     k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
@@ -1511,13 +1510,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   function midTone(dim) {
     const k = midL.k, D = depthOf();
     k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
-    k.globalCompositeOperation = 'source-atop'; k.globalAlpha = .5 + dim * .1; k.fillStyle = D.haze; k.fillRect(0, 0, midL.cv.width, midL.cv.height);
+    k.globalCompositeOperation = 'source-atop'; k.globalAlpha = .5 + dim * .1; k.fillStyle = D.tint; k.fillRect(0, 0, midL.cv.width, midL.cv.height);
     k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
   }
   // couche 3 : brume basse entre le décor et le jeu
   function drawMist(t) {
     const D = depthOf(), y0 = H * .45, g = ctx.createLinearGradient(0, y0, 0, H);
-    g.addColorStop(0, D.mist + '00'); g.addColorStop(1, D.mist + '55');
+    g.addColorStop(0, D.mist + '00'); g.addColorStop(1, D.mist + '77');
     ctx.fillStyle = g; ctx.fillRect(-20, y0, W + 40, H - y0 + 20);
   }
   // couche 4 : particules proches, douces et pâles (jamais la forme ni la couleur d'un tir), qui défilent plus vite que le décor
