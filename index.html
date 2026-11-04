@@ -1462,26 +1462,77 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // partie en équipe : un seul terrain (W × H) pour les deux écrans, affiché en entier et sans bouger, comme en solo.
   // Il est réduit pour tenir dans l'écran et centré (offX, offY) ; s'il reste de la place sur les côtés, le fond flou la remplit.
   let camS = 1, offX = 0, offY = 0, netHW = 0, netHH = 0;
-  function baseT() { if (ctx === bgK) { bgK.setTransform(bgS, 0, 0, bgS, 20 * bgS, 20 * bgS); return; } ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
-  // lisibilité en partie : le fond est peint dans une image à part, un peu plus petite que l'écran (il devient légèrement flou),
-  // puis il est désaturé et assombri ; la fusée, les ennemis, les tirs et les bonus se dessinent ensuite par-dessus, nets et vifs.
-  // Une seule image, réutilisée à chaque fois (on ne change sa taille que si l'écran change).
-  let bgCv = null, bgK = null, bgS = 1, bgDim = 0, bgDimT = 0;
-  function bgLayer() {
-    const s = Math.max(.6, Math.min(1, DPR * .5)), w = Math.ceil((W + 40) * s), h = Math.ceil((H + 40) * s);
-    if (!bgCv) { bgCv = document.createElement('canvas'); bgK = bgCv.getContext('2d'); }
-    if (bgCv.width !== w || bgCv.height !== h) { bgCv.width = w; bgCv.height = h; }
-    bgS = s;
-    bgK.setTransform(s, 0, 0, s, 20 * s, 20 * s); bgK.globalAlpha = 1; bgK.globalCompositeOperation = 'source-over'; bgK.shadowBlur = 0;
-    return bgK;
+  function baseT() { if (bgL && ctx === bgL.k) { ctx.setTransform(bgL.s, 0, 0, bgL.s, 20 * bgL.s, 20 * bgL.s); return; } ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
+  // ===== Fond en profondeur (en partie seulement) =====
+  // 4 couches, de la plus lointaine à la plus proche :
+  //  1. le ciel du monde (dégradé, étoiles, nébuleuses, grandes lueurs colorées) : presque immobile, peint très petit donc très flou ;
+  //  2. les éléments du thème (planètes, vaisseaux, glace, volcans, lianes…) : peints un peu plus grands, donc moins flous, et voilés de brume ;
+  //  3. une brume basse, de la couleur du monde ;
+  //  4. quelques particules légères qui passent plus vite (poussière d'étoiles, flocons, cendres, spores, poussière du Néant).
+  // Les couleurs restent profondes (jamais claires) et ne reprennent pas celles des tirs, des bonus et des Astros.
+  // Deux images seulement, réutilisées à chaque fois (leur taille ne change que si l'écran change).
+  const DEPTH = [
+    { name: 'Voie lactée', haze: '#0a0720', wash: ['#3b2a86', '#6a2462'], mist: '#2a2060', dust: '#a9a3d6' },
+    { name: 'Royaume de Givre', haze: '#05121f', wash: ['#174a72', '#2c3a86'], mist: '#1c4660', dust: '#cfe2f0' },
+    { name: 'Forge Volcanique', haze: '#130504', wash: ['#6e1a12', '#4c1c3a'], mist: '#4a160c', dust: '#8c7c76' },
+    { name: 'Jungle Cosmique', haze: '#03100a', wash: ['#0f4a30', '#16404a'], mist: '#103a24', dust: '#93ae9c' },
+    { name: 'Le Néant', haze: '#040208', wash: ['#3c1666', '#16205a'], mist: '#1a0c2c', dust: '#7a6c96' },
+  ];
+  const depthOf = () => DEPTH[Math.max(0, Math.min(DEPTH.length - 1, world))];
+  const farL = { cv: null, k: null, s: 1 }, midL = { cv: null, k: null, s: 1 };
+  let bgL = null, bgDim = 0, bgDimT = 0, farSkip = false;
+  function layerStart(L, s, clear) {
+    const w = Math.ceil((W + 40) * s), h = Math.ceil((H + 40) * s);
+    if (!L.cv) { L.cv = document.createElement('canvas'); L.k = L.cv.getContext('2d'); }
+    if (L.cv.width !== w || L.cv.height !== h) { L.cv.width = w; L.cv.height = h; }
+    L.s = s; bgL = L;
+    const k = L.k; k.setTransform(1, 0, 0, 1, 0, 0); k.globalAlpha = 1; k.globalCompositeOperation = 'source-over'; k.shadowBlur = 0;
+    if (clear) k.clearRect(0, 0, w, h);
+    k.setTransform(s, 0, 0, s, 20 * s, 20 * s);
+    return k;
   }
-  // le fond perd une partie de ses couleurs et de sa lumière (encore un peu plus pendant un boss) : plus aucune zone très claire
-  function bgTone(dim) {
-    const k = bgK;
+  // couche 1 terminée : grandes lueurs colorées du monde, puis on l'assombrit dans la couleur profonde du monde (un peu plus pendant un boss)
+  function farTone(t, dim, par) {
+    const k = farL.k, D = depthOf(), w = farL.cv.width, h = farL.cv.height, sc = farL.s;
     k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
-    k.globalCompositeOperation = 'saturation'; k.globalAlpha = .3 + dim * .1; k.fillStyle = '#808080'; k.fillRect(0, 0, bgCv.width, bgCv.height);
-    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .4 + dim * .16; k.fillStyle = '#060510'; k.fillRect(0, 0, bgCv.width, bgCv.height);
-    k.globalAlpha = 1;
+    k.globalCompositeOperation = 'saturation'; k.globalAlpha = .18; k.fillStyle = '#808080'; k.fillRect(0, 0, w, h);
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = .46 + dim * .12; k.fillStyle = D.haze; k.fillRect(0, 0, w, h);
+    // deux grandes nappes de couleur qui respirent très lentement : la couleur du monde passe par de grandes zones douces
+    k.globalCompositeOperation = 'screen';
+    const R = Math.max(w, h) * .75, q = reduce ? 0 : t / 9000;
+    for (let i = 0; i < 2; i++) {
+      const x = w * (i ? .78 : .22) + Math.sin(q + i * 2) * w * .06 + par * sc * .15, y = h * (i ? .7 : .28) + Math.cos(q * .8 + i) * h * .05;
+      k.globalAlpha = (.55 - dim * .2) * (.85 + .15 * Math.sin(q * 1.7 + i));
+      k.drawImage(softSprite(D.wash[i]), x - R, y - R, R * 2, R * 2);
+    }
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
+  }
+  // couche 2 terminée : la brume du monde voile les éléments du thème (seulement là où il y a quelque chose de dessiné)
+  function midTone(dim) {
+    const k = midL.k, D = depthOf();
+    k.setTransform(1, 0, 0, 1, 0, 0); k.shadowBlur = 0;
+    k.globalCompositeOperation = 'source-atop'; k.globalAlpha = .5 + dim * .1; k.fillStyle = D.haze; k.fillRect(0, 0, midL.cv.width, midL.cv.height);
+    k.globalCompositeOperation = 'source-over'; k.globalAlpha = 1;
+  }
+  // couche 3 : brume basse entre le décor et le jeu
+  function drawMist(t) {
+    const D = depthOf(), y0 = H * .45, g = ctx.createLinearGradient(0, y0, 0, H);
+    g.addColorStop(0, D.mist + '00'); g.addColorStop(1, D.mist + '55');
+    ctx.fillStyle = g; ctx.fillRect(-20, y0, W + 40, H - y0 + 20);
+  }
+  // couche 4 : particules proches, douces et pâles (jamais la forme ni la couleur d'un tir), qui défilent plus vite que le décor
+  const NEAR = Array.from({ length: 26 }, () => ({ u: Math.random(), v: Math.random(), z: .4 + Math.random() * .6, p: Math.random() * 6.28 }));
+  function drawNear(t, drift, par) {
+    if (reduce) return;
+    const D = depthOf(), img = softSprite(D.dust), n = W < 600 ? 16 : NEAR.length, fall = world === 4 ? .25 : world === 2 ? -.4 : 1;
+    for (let i = 0; i < n; i++) {
+      const o = NEAR[i], sz = 3 + o.z * 5;
+      const y = ((o.v * (H + 40) + drift * (1.4 + o.z) * fall) % (H + 40) + H + 40) % (H + 40) - 20;
+      const x = ((o.u * (W + 40) + par * (1 + o.z) + Math.sin(t / 1800 + o.p) * 18) % (W + 40) + W + 40) % (W + 40) - 20;
+      ctx.globalAlpha = (.1 + o.z * .14) * (.7 + .3 * Math.sin(t / 900 + o.p));
+      ctx.drawImage(img, x - sz, y - sz, sz * 2, sz * 2);
+    }
+    ctx.globalAlpha = 1;
   }
   function resize() {
     const ow = W, oh = H;
@@ -13398,17 +13449,24 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
 
   function draw(t) {
-    if (ctx === bgK) ctx = cv.getContext('2d');
+    if (bgL && ctx === bgL.k) ctx = cv.getContext('2d');
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
     const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'talk' || state === 'dying';
-    // en partie, le fond se peint dans son image à part, plus douce et plus sombre (voir bgLayer) ; au menu il reste tel quel
+    // en partie, le fond se peint en couches à part, floues et profondes (voir DEPTH) ; au menu il reste tel quel
     const mainK = ctx, toned = inGame;
-    if (toned) ctx = bgLayer();
+    if (toned) {
+      const dd = Math.min(.1, Math.max(0, (t - bgDimT) / 1000)); bgDimT = t;
+      bgDim += ((boss && cineT <= 0 ? 1 : 0) - bgDim) * Math.min(1, dd * 1.5);
+      // le ciel lointain bouge à peine : on ne le repeint qu'une image sur deux (le jeu, lui, reste à pleine vitesse)
+      farSkip = !!farL.cv && t - farL.t < 28 && farL.w === world && farL.W === W && farL.H === H;
+      if (farSkip) ctx = mainK;
+      else { farL.t = t; farL.w = world; farL.W = W; farL.H = H; ctx = layerStart(farL, Math.max(.35, Math.min(.6, DPR * .27))); }
+    } else farSkip = false;
     const g = ctx.createLinearGradient(0, 0, 0, H);
     const th = bgNow(t);
     g.addColorStop(0, th.top); g.addColorStop(1, th.bottom);
-    ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40);
+    if (!farSkip) { ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40); }
 
     const playing = inGame;
     const on = playing && power.active > 0;
@@ -13421,6 +13479,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const drift = playing ? time * 40 * speed : t * .01;
     // le décor se décale un peu quand la fusée bouge (effet de profondeur)
     const par = playing && player && !reduce ? (W / 2 - player.x) * .05 : 0;
+    if (!farSkip) {
     // étoiles très lointaines (elles bougent à peine), puis la nébuleuse en nuages de gaz, avec un fondu entre deux décors
     {
       const tile = starField(), S = 512, oy = ((drift * .06) % S + S) % S, ox = ((par * .1) % S + S) % S;
@@ -13436,7 +13495,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     }
     // étoiles de fond : 3 profondeurs, scintillement et grandes étoiles en croix
     for (const s of bg) {
-      const y = ((s.y * H + drift * s.z) % H + H) % H, x = ((s.x * W + par * s.z) % W + W) % W;
+      const sd = toned ? drift * .35 : drift, y = ((s.y * H + sd * s.z) % H + H) % H, x = ((s.x * W + par * s.z) % W + W) % W;
       const tw = reduce ? 1 : .65 + .35 * Math.sin(t / (300 + s.z * 500) + s.x * 40);
       // en partie, les étoiles restent de petits points pâles : rien qui ressemble à un tir ou à un bonus
       ctx.globalAlpha = (.25 + s.z * .6) * tw * (toned ? .6 : 1);
@@ -13463,16 +13522,25 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     // animation d'ambiance du décor (change à chaque niveau, avec un fondu)
     drawAmbient(AMBIENTS[bgPrev % AMBIENTS.length], t, 1 - th.k, th.a.neb);
     drawAmbient(AMBIENTS[bgIdx % AMBIENTS.length], t, th.k, th.b.neb);
+    }
+    if (toned) {
+      // couche 1 prête : on la pose, puis on peint la couche 2 à part
+      if (!farSkip) farTone(t, bgDim, par);
+      ctx = mainK; ctx.drawImage(farL.cv, -20, -20, farL.cv.width / farL.s, farL.cv.height / farL.s);
+      ctx = layerStart(midL, Math.max(.6, Math.min(1, DPR * .5)), true);
+    }
     // planètes et vaisseaux lointains, puis devant eux le décor propre au monde en cours : glace, volcans, lianes, vide…
     drawScenery(t, th.neb);
     drawWorldDecor(t, inGame);
     if (toned) {
-      // le fond est prêt : on le désature, on l'assombrit (un peu plus pendant un boss, en douceur), puis on le pose sous le jeu
-      ctx = mainK;
-      const dd = Math.min(.1, Math.max(0, (t - bgDimT) / 1000)); bgDimT = t;
-      bgDim += ((boss && cineT <= 0 ? 1 : 0) - bgDim) * Math.min(1, dd * 1.5);
-      bgTone(bgDim);
-      ctx.drawImage(bgCv, -20, -20, bgCv.width / bgS, bgCv.height / bgS);
+      // couche 2 prête : voilée de brume, posée sur le ciel ; puis la brume basse et les particules proches
+      midTone(bgDim);
+      ctx = mainK; ctx.drawImage(midL.cv, -20, -20, midL.cv.width / midL.s, midL.cv.height / midL.s);
+      bgL = null;
+      drawMist(t);
+      drawNear(t, drift, par);
+      // pendant un boss, tout le fond s'assombrit encore un peu, en douceur
+      if (bgDim > .01) { ctx.globalAlpha = bgDim * .22; ctx.fillStyle = '#000000'; ctx.fillRect(-20, -20, W + 40, H + 40); ctx.globalAlpha = 1; }
     }
     if (state === 'launch') drawLaunch(t);
     if (state === 'menu' && !$('menu').hidden) drawMenuSky(t);
