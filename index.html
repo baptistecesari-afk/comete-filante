@@ -8237,7 +8237,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const sp = it.sp, col = sp ? sp.col : { chaser: '#7dff8a', saucer: '#7dff8a', kamikaze: '#ff4f6d', splitter: '#c86bff', ghost: '#d9d0ff', sniper: '#4fe0c8', bomber: '#ff9a3c' }[it.type] || '#7dff8a';
     const warn = it.type === 'kamikaze' && !it.dash && it.y >= it.hoverY;
     const m = it.r * (it.type === 'vortex' ? 3.3 : 2.1) + 8;
-    shadeAt(it.x, it.y, it.r * 1.9 + 6, .6);
+    shadeAt(it.x, it.y, it.r * 1.45 + 4, .28);
     drawLit(() => drawAlienFlat(it, t), it.x, it.y, it.r * (sp && sp.body === 'saucer' ? 1.3 : 1), warn ? '#ff4f6d' : col, warn ? 26 : sp && sp.pattern === 'glow' ? 20 : 12, [it.x - m, it.y - m, it.x + m, it.y + m]);
     drawAim(it);
   }
@@ -13748,7 +13748,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
             if (on2 && P.kind === 'ghost') ctx.globalAlpha = .1 + .08 * Math.sin(t / 80);
             if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
             if (on2 && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
-            shadeAt(it.x, it.y, it.r * 1.7 + 10, .55);
+            shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
             drawBoss(it, t);
             ctx.restore();
             if (on2 && (P.kind === 'bubble' || P.kind === 'mirror' || P.kind === 'heal')) {
@@ -13762,7 +13762,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
           } else drawAlien(it, t);
         } else {
           ctx.shadowBlur = 0;
-          shadeAt(it.x, it.y, it.r * 1.7 + 4, .5);
+          shadeAt(it.x, it.y, it.r * 1.35 + 2, .22);
           drawAsteroid(it);
         }
         ctx.globalAlpha = 1;
