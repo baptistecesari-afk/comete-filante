@@ -552,6 +552,12 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 }
 .hangar h2 { grid-column: 1 / -1; margin: 0; font-family: var(--display); font-weight: 400; font-size: 30px; color: var(--star); }
 .preview { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+/* objet regardé mais pas encore acheté : on le dit clairement sur l'aperçu */
+.pvwrap { position: relative; display: flex; }
+.pvlock { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(5, 3, 15, .82); border: 1.5px dashed var(--star);
+  color: var(--star); font-size: 12px; line-height: 1.3; text-align: center; pointer-events: none; }
+.pvlock[hidden] { display: none; }
+.pvlock b { display: block; font-family: var(--display); font-weight: 400; font-size: 13px; letter-spacing: .04em; }
 .preview canvas { width: 200px; height: 240px; max-width: 100%; border-radius: 16px; background: radial-gradient(circle at 50% 40%, var(--deep), var(--night)); }
 .preview .shipname { font-family: var(--display); font-size: 18px; text-align: center; overflow-wrap: anywhere; }
 /* Monnaie du Hangar : les Astros */
@@ -1157,7 +1163,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     <button class="xclose" data-back="backBtn" aria-label="Fermer" title="Fermer">✕</button>
     <h2>Hangar <small class="bay">BAIE 07 · <i class="led"></i> PRÊT AU DÉCOLLAGE</small></h2>
     <div class="preview" id="persoPreview">
-      <canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas>
+      <div class="pvwrap"><canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas><span class="pvlock" id="pvLock" hidden></span></div>
       <div class="shipname" id="pvName"></div>
       <div class="shiptitle" id="pvTitle"></div>
       <div class="powername" id="pvPower"></div>
@@ -3833,7 +3839,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const id = shown('model');
     carIdx = Math.max(0, MODELS.findIndex(m => m.id === id));
     const m = MODELS[carIdx], tro = trophyOf('model', m.id), got = owns('model', m.id), p = price('model', m.id);
-    $('carCount').textContent = `${carIdx + 1} / ${carCount()} · ${MODELS.filter(x => owns('model', x.id)).length} débloqués`;
+    const nOwn = MODELS.filter(x => owns('model', x.id)).length;
+    $('carCount').textContent = `${carIdx + 1} / ${carCount()} · ${nOwn} débloqué${nOwn > 1 ? 's' : ''}`;
     $('carName').textContent = m.name;
     $('carDesc').textContent = m.desc || SHIP_TAGS[m.id] || '';
     const btn = $('carAction');
@@ -3910,19 +3917,21 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       const m = MODELS[i], ad = Math.abs(d);
       const x = Wc / 2 + d * 165, sc = Math.max(1.4, 4.6 - ad * 1.7), bob = reduce ? 0 : Math.sin(t / 600 + i) * 5;
       k.save();
-      k.globalAlpha = Math.max(.15, 1 - ad * .4);
+      k.globalAlpha = Math.max(.15, 1 - ad * .4) * (owns('model', m.id) ? 1 : .55);
       const look = preview && preview.key !== 'model' ? { [preview.key]: preview.id } : null;
       drawRocket(k, x, Hc * .5 + bob, sc, { ...cfg, ...look, model: m.id, evo: shop.up }, t, reduce ? 0 : d * -.12, ad < .5 ? .3 : 0);
       k.restore();
       if (!owns('model', m.id)) {
-        // petit cadenas sur les vaisseaux pas encore débloqués
-        const lx = x + 18 * sc * .5, ly = Hc * .5 + 30 * sc * .35;
+        // cadenas sur les vaisseaux pas encore débloqués (grand et au centre pour celui qu'on regarde)
+        const big = ad < .5, lx = big ? x : x + 18 * sc * .5, ly = big ? Hc * .5 : Hc * .5 + 30 * sc * .35;
+        if (big) { k.save(); k.translate(lx, ly); k.scale(1.9, 1.9); k.translate(-lx, -ly); }
         k.save(); k.globalAlpha = Math.max(.3, 1 - ad * .4);
         k.fillStyle = '#0b0820'; k.beginPath(); k.arc(lx, ly, 15, 0, 7); k.fill();
         k.strokeStyle = trophyOf('model', m.id) ? '#7ae8ff' : '#ffd86b'; k.lineWidth = 2.5;
         k.beginPath(); k.arc(lx, ly - 3, 5, Math.PI, 0); k.stroke();
         k.fillStyle = k.strokeStyle; k.fillRect(lx - 7, ly - 3, 14, 10);
         k.restore();
+        if (big) k.restore();
       }
     }
   }
@@ -3948,6 +3957,14 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     $('pvTitle').textContent = cfg.title;
     const bar = $('buybar');
     bar.hidden = !preview || preview.key === 'model';
+    // un objet pas encore acheté n'est qu'un aperçu : on le dit sur l'image et sur le bouton Décoller
+    const lockPv = preview && !owns(preview.key, preview.id) ? preview : null, lk = $('pvLock');
+    lk.hidden = !lockPv;
+    if (lockPv) {
+      const c = lockPv.key === 'pet' ? { list: PETS } : CATS.find(x => x.key === lockPv.key), it = byId(c.list, lockPv.id), tro = trophyOf(lockPv.key, lockPv.id);
+      lk.innerHTML = `<b>🔒 Aperçu · pas encore à toi</b>${it.name} · ${tro ? 'trophée ' + trophyName(tro) : astros(price(lockPv.key, lockPv.id))}`;
+    }
+    if (!teamDetour) $('goBtn').textContent = lockPv ? `Décoller avec ${byId(MODELS, cfg.model).name}` : 'Décoller';
     const look = !!preview && PV_KEYS.includes(preview.key);
     $('buyPv').hidden = !look; bar.classList.toggle('withpv', look);
     if (preview) {
@@ -8625,6 +8642,10 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     initAudio();
     if (netRole === 'host' && netPeer) netField(); else if (netHW) netUnfit();
     if (netRole === 'host') netSend({ t: 'go', W, H, cfg: cfg, name: rocketName() });
+    // sécurité : au décollage, on ne vole qu'avec des objets achetés (ou gagnés) ; un simple aperçu ne compte jamais
+    preview = null;
+    for (const c of CATS) if (!owns(c.key, cfg[c.key])) cfg[c.key] = DEFAULT[c.key];
+    if (cfg.pet && !petOwned(cfg.pet)) cfg.pet = '';
     reset(); state = 'play'; bump('parties');
     for (const id of ['menu', 'over', 'paused', 'hangar', 'story', 'help']) $(id).hidden = true;
     $('cine').hidden = true;
