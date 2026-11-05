@@ -1022,6 +1022,48 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
 @media (hover: hover) { .xclose:hover:not(:active) { transform: rotate(90deg); color: #fff; border-color: var(--star); box-shadow: 0 0 0 1px rgba(255, 216, 107, .3), 0 0 20px rgba(255, 216, 107, .35), 0 8px 18px rgba(0, 0, 0, .45); } }
 @media (max-width: 620px) { .xclose { top: 14px; right: 12px; width: 36px; height: 36px; font-size: 16px; } }
 @media (prefers-reduced-motion: reduce) { .xclose { transition: none; } }
+
+/* ===== Partie sur téléphone : tout est plus petit et plus serré, pour laisser le ciel au jeu ===== */
+@media (max-width: 560px), (max-height: 520px) {
+  .hud { padding-top: calc(8px + env(safe-area-inset-top, 0px)); gap: 8px; }
+  .stat { gap: 1px; }
+  .stat small { font-size: 9px; letter-spacing: .12em; }
+  .stat b { font-size: 20px; }
+  .combo { font-size: 12px; min-height: 14px; }
+  .lives { gap: 4px; margin-top: 3px; }
+  .lives i { width: 9px; height: 9px; box-shadow: 0 0 6px var(--tail); }
+  .lives i.extra { box-shadow: 0 0 6px var(--star); }
+  .lives .lv b { font-size: 9px; }
+  .btn-pause { width: 32px; height: 32px; font-size: 11px; margin-top: 4px; border-width: 1.5px;
+    background: color-mix(in srgb, var(--night) 45%, transparent); }
+  /* les boutons du bas : plus petits, un peu transparents, toujours faciles à toucher (au moins 44 px) */
+  .weapons { left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+  body.gaucher .weapons { right: calc(12px + env(safe-area-inset-right, 0px)); }
+  .fire { width: 58px; height: 58px; font-size: 13px; background: color-mix(in srgb, var(--tail) 22%, color-mix(in srgb, var(--night) 75%, transparent));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--tail) 35%, transparent); }
+  .fire.on { background: var(--tail); }
+  .ammo { width: 128px; padding: 6px 9px; gap: 4px; border-radius: 12px; border-width: 1.5px; background: color-mix(in srgb, var(--night) 55%, transparent); }
+  .ammo-top b { font-size: 11px; }
+  .ammo-top small { font-size: 8.5px; }
+  .ticks i { height: 10px; }
+  .rbar { height: 10px; }
+  .power, body.gaucher .power { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); padding: 5px 12px; font-size: 12px; border-radius: 14px; border-width: 1.5px; }
+  .power { left: calc(12px + env(safe-area-inset-left, 0px)); }
+  body.gaucher .power { left: auto; right: calc(12px + env(safe-area-inset-right, 0px)); }
+  .power small { font-size: 8.5px; }
+  .banner { font-size: clamp(24px, 7vw, 40px); }
+  .banner small { font-size: 14px; }
+}
+/* téléphone couché : le haut de l'écran est très précieux, le score tient sur une ligne */
+@media (max-height: 520px) {
+  .stat small { font-size: 8px; }
+  .stat b { font-size: 17px; }
+  .stat.right { display: grid; grid-template-areas: ". . s ." "l b b p"; grid-template-columns: auto auto auto auto; justify-content: end; align-items: center; column-gap: 8px; row-gap: 1px; }
+  .stat.right small { grid-area: s; grid-column: 1 / 4; text-align: right; }
+  .stat.right b { grid-area: b; }
+  .stat.right .lives { grid-area: l; margin-top: 0; }
+  .stat.right .btn-pause { grid-area: p; grid-row: 1 / 3; margin-top: 0; }
+}
 </style>
 </head>
 <body>
@@ -1462,6 +1504,16 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // partie en équipe : un seul terrain (W × H) pour les deux écrans, affiché en entier et sans bouger, comme en solo.
   // Il est réduit pour tenir dans l'écran et centré (offX, offY) ; s'il reste de la place sur les côtés, le fond flou la remplit.
   let camS = 1, offX = 0, offY = 0, netHW = 0, netHH = 0;
+  // sur téléphone, on recule un peu la caméra : la fusée, les aliens et les tirs paraissent plus petits
+  // et on voit plus de ciel autour (le jeu en ligne garde la taille normale, les deux écrans doivent voir le même terrain)
+  let netOn = () => false;
+  function phoneZoom(vw, vh) {
+    const s = Math.min(vw, vh);
+    if (netOn() || s >= 600) return 1;
+    return Math.max(.72, Math.min(1, s / 500));
+  }
+  // un point de l'écran (doigt, souris) -> le même point dans le terrain de jeu
+  const toField = (x, y) => ({ x: (x - offX) / camS, y: (y - offY) / camS });
   function baseT() { if (bgL && ctx === bgL.k) { ctx.setTransform(bgL.s, 0, 0, bgL.s, 20 * bgL.s, 20 * bgL.s); return; } ctx.setTransform(DPR * camS, 0, 0, DPR * camS, offX * DPR, offY * DPR); }
   // ===== Fond en profondeur (en partie seulement) =====
   // 4 couches, de la plus lointaine à la plus proche :
@@ -1552,7 +1604,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     DPR = Math.min(window.devicePixelRatio || 1, dprCap);
     const vw = cv.clientWidth, vh = cv.clientHeight;
     if (netHW) { W = netHW; H = netHH; camS = Math.min(vw / W, vh / H); offX = (vw - W * camS) / 2; offY = (vh - H * camS) / 2; }
-    else { W = vw; H = vh; camS = 1; offX = offY = 0; }
+    else { camS = phoneZoom(vw, vh); W = vw / camS; H = vh / camS; offX = offY = 0; }
     cv.width = vw * DPR; cv.height = vh * DPR;
     baseT();
     if (ow && oh && (ow !== W || oh !== H)) {
@@ -9174,12 +9226,13 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // la bulle se place en bas, juste au-dessus des boutons Tir et super-pouvoir (loin du combat au milieu)
   function placeSay() {
     const b = $('sayBubble');
-    let floor = H - 24;
+    let floor = cv.clientHeight - 24;
     for (const id of ['powerBtn', 'weapons']) { const el = $(id); if (!el.hidden) floor = Math.min(floor, el.getBoundingClientRect().top); }
     const top = Math.max(96, floor - 10 - b.offsetHeight);
     b.style.top = top.toFixed(0) + 'px';
     // si la fusée passe dessous, la bulle s'efface un peu pour la laisser voir
-    const r = player && b.getBoundingClientRect(), under = r && player.x > r.left - 30 && player.x < r.right + 30 && player.y > r.top - 40 && player.y < r.bottom + 40;
+    const r = player && b.getBoundingClientRect(), px = player && player.x * camS + offX, py = player && player.y * camS + offY,
+      under = r && px > r.left - 30 && px < r.right + 30 && py > r.top - 40 && py < r.bottom + 40;
     b.classList.toggle('faded', !!under);
   }
   // dialogue après la défaite : le jeu s'arrête, une ligne à la fois, on touche pour passer
@@ -9247,6 +9300,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // le pote envoie ses commandes et voit la même partie, réduite à la taille de l'écran de l'hôte.
   const TEAM_API = /\.vercel\.app$|^localhost$|^127\./.test(location.hostname) ? '/api/equipe' : 'https://comete-filante.vercel.app/api/equipe';
   const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:stun.cloudflare.com:3478' }];
+  netOn = () => !!netRole;
   let netRole = null, netPeer = null, netMine = cfg, netIn = { k: [0, 0], tg: null, f: false, at: 0 }, netFx = [];
   let netPc = null, netR = null, netU = null, netCode = '', netStatus = 'idle', netMsg = '', netSent = 0, netInT = 0, netLastSt = '', netAsk = 0;
   const STYLE_LISTS = { model: MODELS, color: COLORS, accent: ACCENTS, motif: MOTIFS, glass: GLASSES, flame: FLAMES, trail: TRAILS, shot: SHOTS };
@@ -10087,7 +10141,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
   // au doigt, la fusée se place un peu au-dessus pour rester visible
   const pt = (x, y, kind) => {
-    if (netHW) { x = (x - offX) / camS; y = (y - offY) / camS; }
+    ({ x, y } = toField(x, y));
     // si on a attrapé la fusée, elle garde sa place sous le doigt (ou le stylet)
     if (grab && kind !== 'mouse') target = { x: x + grab.dx, y: y + grab.dy };
     else target = { x, y: y - (kind === 'touch' ? 70 : 0) };
@@ -10095,7 +10149,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   // toucher la fusée : on l'attrape et elle tire une fois (on peut taper plusieurs fois de suite)
   const grabAt = (x, y) => {
     grab = null;
-    if (netHW) { x = (x - offX) / camS; y = (y - offY) / camS; }
+    ({ x, y } = toField(x, y));
     const me = netRole === 'guest' && p2 ? p2 : player;
     if (state === 'play' && Math.hypot(x - me.x, y - me.y) < 70) {
       grab = { dx: me.x - x, dy: me.y - y };
@@ -10116,8 +10170,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       if (p2Id !== null && !stillDown(p2Id, e.touches)) p2Id = null;
       for (const t of e.changedTouches) {
         if (!isFinger(t)) continue;
-        if (t.clientX < W / 2 && moveId === null) { moveId = t.identifier; grab = null; pt(t.clientX, t.clientY, 'touch'); }
-        else if (t.clientX >= W / 2 && p2Id === null) { p2Id = t.identifier; target2 = { x: t.clientX, y: t.clientY - 70 }; }
+        if (t.clientX < cv.clientWidth / 2 && moveId === null) { moveId = t.identifier; grab = null; pt(t.clientX, t.clientY, 'touch'); }
+        else if (t.clientX >= cv.clientWidth / 2 && p2Id === null) { p2Id = t.identifier; const f = toField(t.clientX, t.clientY); target2 = { x: f.x, y: f.y - 70 }; }
       }
       return;
     }
@@ -10139,7 +10193,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     if (duo && p2 && !netRole) {
       for (const c of e.changedTouches) {
         if (c.identifier === moveId) pt(c.clientX, c.clientY, 'touch');
-        else if (c.identifier === p2Id) target2 = { x: c.clientX, y: c.clientY - 70 };
+        else if (c.identifier === p2Id) { const f = toField(c.clientX, c.clientY); target2 = { x: f.x, y: f.y - 70 }; }
       }
       return;
     }
@@ -14473,6 +14527,8 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   }
   function loop(t) {
     dprCheck(t, t - last);
+    // on passe en ligne (ou on en revient) : la caméra du téléphone reprend sa bonne taille
+    if (!netHW && Math.abs(phoneZoom(cv.clientWidth, cv.clientHeight) - camS) > .001) resize();
     litCheck(t, (t - last) / 1000);
     const dt = Math.min(.033, (t - last) / 1000); last = t;
     if (netRole === 'guest' && ['play', 'pause', 'dying', 'talk', 'choice', 'over'].includes(state)) netGuestTick(dt);
