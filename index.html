@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Comète Filante</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Bungee+Inline&family=Outfit:wght@400;600&display=swap">
@@ -1165,6 +1165,15 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   #hangar .hangar > .row .play { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; min-width: 0; }
   #hangar .hangar > .row .ghost { flex: 0 0 auto; }
 }
+
+/* ===== Téléphone : l'écran reste immobile (pas de zoom, pas de page qui glisse ou rebondit) ===== */
+html { height: 100%; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+body { position: fixed; inset: 0; overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+.panel { overscroll-behavior: contain; }
+button, a, label, [role="tab"] { touch-action: manipulation; }
+.opt.shelf:not(.open) > .powers, .opt.shelf:not(.open) > .upgrades { touch-action: pan-x pan-y; }
+/* Safari zoome tout seul sur une case à écrire si son texte est plus petit que 16 px */
+@media (pointer: coarse) { input.tname, #savePanel textarea { font-size: 16px; } }
 </style>
 </head>
 <body>
@@ -10338,7 +10347,9 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   };
   cv.addEventListener('touchend', touchEnd);
   cv.addEventListener('touchcancel', touchEnd);
-  addEventListener('gesturestart', e => e.preventDefault());
+  // téléphone : l'écran reste immobile, partout (pas de zoom en pinçant ou en tapant deux fois, pas de page qui glisse)
+  for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
+  document.addEventListener('touchmove', e => { if (e.touches.length > 1 || (e.scale !== undefined && e.scale !== 1)) e.preventDefault(); }, { passive: false });
   cv.addEventListener('dblclick', e => e.preventDefault());
   // --- souris et stylet (événements « pointer ») ---
   // sur iPad, le stylet et les doigts ne marchent pas en même temps : avec le stylet, la fusée tire toute seule tant qu'il est posé
