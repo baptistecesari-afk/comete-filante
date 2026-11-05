@@ -1617,8 +1617,6 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   // finesse maximale de l'image : baisse toute seule si l'appareil n'arrive pas à suivre (voir dprCheck)
   let dprCap = 2;
 
-  // partie en équipe sur deux écrans de forme différente : le terrain (W × H) est plus large que l'écran le plus étroit.
-  // Chaque écran le montre sur toute sa hauteur et en plein écran ; une caméra suit sa propre fusée de gauche à droite.
   // partie en équipe : un seul terrain (W × H) pour les deux écrans, affiché en entier et sans bouger, comme en solo.
   // Il est réduit pour tenir dans l'écran et centré (offX, offY) ; s'il reste de la place sur les côtés, le fond flou la remplit.
   let camS = 1, offX = 0, offY = 0, netHW = 0, netHH = 0;
@@ -9603,13 +9601,33 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     try { fillCtx.drawImage(cv, offX * DPR, offY * DPR, W * camS * DPR, H * camS * DPR, 0, 0, w, h); } catch (e) {}
   }
   addEventListener('resize', () => { if (netRole === 'guest' && netHW) netFit(netHW, netHH); else if (netRole === 'host' && netHW) netField(); });
-  // le terrain prend la forme de l'écran le plus étroit des deux (un téléphone en hauteur) : ce téléphone joue en plein écran
-  // comme en solo, et l'ordinateur montre le même terrain en entier au milieu, sans rien qui bouge
+  // le terrain commun de l'équipe : une forme « entre les deux » écrans (ni aussi étroite qu'un téléphone en hauteur,
+  // ni aussi large qu'un ordinateur), un peu plus proche de l'écran le plus étroit pour qu'il reste confortable.
+  // Chaque écran montre ce même terrain en entier, centré, avec le fond flou dans la place qui reste :
+  // les aliens, les tirs et les fusées sont exactement au même endroit chez les deux joueurs.
+  // La taille est choisie pour que, sur l'écran le plus petit, tout ait la même taille qu'en solo (caméra un peu reculée sur téléphone).
+  function teamField(a1, a2) {
+    const lo = Math.min(a1[0] / a1[1], a2[0] / a2[1]), hi = Math.max(a1[0] / a1[1], a2[0] / a2[1]);
+    const a = Math.exp(.6 * Math.log(lo) + .4 * Math.log(hi));
+    let fh = Infinity;
+    for (const [vw, vh] of [a1, a2]) {
+      const k = Math.max(.72, Math.min(1, Math.min(vw, vh) / 500)); // le même recul qu'en solo sur cet écran
+      fh = Math.min(fh, Math.min(vh, vw / a) / k);
+    }
+    return [Math.round(fh * a), Math.round(fh)];
+  }
   function netField() {
     if (!netPeer || !(netPeer.vw > 100 && netPeer.vh > 100)) return;
-    const a = Math.min(innerWidth / innerHeight, netPeer.vw / netPeer.vh), fh = innerHeight, fw = Math.round(fh * a);
-    if (fw < innerWidth - 4) netFit(fw, fh); else if (netHW) netUnfit();
+    const [fw, fh] = teamField([innerWidth, innerHeight], [netPeer.vw, netPeer.vh]);
+    netFit(fw, fh);
   }
+  // chez le pote : si son écran change (téléphone tourné, fenêtre agrandie), il le dit à l'hôte, qui refait le terrain commun
+  let netSizeT = 0;
+  addEventListener('resize', () => {
+    if (netRole !== 'guest' || !netPeer) return;
+    clearTimeout(netSizeT);
+    netSizeT = setTimeout(() => netSend({ t: 'size', vw: innerWidth, vh: innerHeight }), 250);
+  });
 
   // --- ce que l'hôte envoie ---
   // les objets du jeu partent tels quels, sauf les liens entre eux ; un boss ou une espèce d'alien part sous son numéro
@@ -9663,6 +9681,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       return;
     }
     if (m.t === 'ready') { peerReady = !!m.r; renderTeam(); return; }
+    if (m.t === 'size') { if (netPeer && +m.vw > 100 && +m.vh > 100) { netPeer.vw = +m.vw; netPeer.vh = +m.vh; if (netRole === 'host' && netHW) netField(); } return; }
     if (m.t === 'count' && netRole === 'guest') { if (!$('team').hidden) runCount(); return; }
     if (m.t === 'team') { if (GAME_ST.includes(state) || !$('over').hidden) { creditRun(); netBackToTeam(); } return; }
     if (netRole === 'host') {
