@@ -272,7 +272,7 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
     linear-gradient(90deg, #5b3a9e55, #1d4f7a55 28%, #6a1a0855 50%, #0f4a2455 72%, #2a0f4a66);
   border: 1px solid #ffffff14;
 }
-.wmap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.wmap svg:not(.ic) { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .wmap .seg { fill: none; stroke-width: 4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .wmap .seg.locked { stroke: #ffffff2e; stroke-dasharray: 2 9; }
 .wmap .seg.done { stroke-dasharray: 10 8; filter: drop-shadow(0 0 4px var(--star)); animation: wpath 1.2s linear infinite; }
@@ -315,7 +315,7 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 /* le monde choisi : anneau doré, drapeau « Départ » et la fusée posée dessus */
 .wstop.on .wnode { box-shadow: 0 0 0 3px var(--star), 0 0 26px color-mix(in srgb, var(--w2) 80%, transparent); transform: scale(1.1); }
 .wstop.on .wname { color: var(--star); }
-.wstop .wship { position: absolute; left: calc(var(--nd) * -.72); top: calc(var(--nd) * -.5); font-size: 20px; transform: rotate(45deg); pointer-events: none; animation: wship 1.6s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--star)); }
+.wstop .wship { position: absolute; left: calc(var(--nd) * -.72); top: calc(var(--nd) * -.5); font-size: 20px; transform: rotate(90deg); pointer-events: none; animation: wship 1.6s ease-in-out infinite; filter: drop-shadow(0 0 6px var(--star)); }
 @keyframes wship { 50% { translate: 0 -4px; } }
 .wnode:not(:disabled):hover { transform: scale(1.08); }
 .wstop.on .wnode:not(:disabled):hover { transform: scale(1.14); }
@@ -794,7 +794,7 @@ body:not(.jeu) .hud { opacity: 0; }
   display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 16px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
   background: #0b0820b3; border: 1px solid color-mix(in srgb, var(--w2) 22%, transparent);
 }
-.wdinfo > div::before { content: attr(data-i); font-size: 22px; letter-spacing: 0; }
+.wdinfo > div > .wdi { font-size: 22px; line-height: 1; letter-spacing: 0; }
 .wdinfo > div b { font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 600; line-height: 1.25; }
 .wdinfo > div.ok { border-color: color-mix(in srgb, var(--star) 45%, transparent); }
 .wdinfo > div.ok b { color: var(--star); }
@@ -1154,7 +1154,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   .htabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 2px 5px; border-radius: 12px; cursor: var(--cur-clic);
     font: 600 10px var(--body); letter-spacing: .01em; color: var(--muted); background: rgba(11, 8, 32, .7); border: 1.5px solid color-mix(in srgb, var(--muted) 30%, transparent);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .htabs button i { font-style: normal; font-size: 17px; line-height: 1; }
+  .htabs button i { font-style: normal; font-size: 20px; line-height: 1; }
   .htabs button[aria-selected="true"] { color: #1a1030; background: var(--star); border-color: var(--star); box-shadow: 0 0 14px color-mix(in srgb, var(--star) 45%, transparent); }
   /* une seule partie à la fois */
   #persoOpts > .opt:not(.tabon) { display: none; }
@@ -1174,9 +1174,134 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 .opt.shelf:not(.open) > .powers, .opt.shelf:not(.open) > .upgrades { touch-action: pan-x pan-y; }
 /* Safari zoome tout seul sur une case à écrire si son texte est plus petit que 16 px */
 @media (pointer: coarse) { input.tname, #savePanel textarea { font-size: 16px; } }
+/* icônes dessinées (planche SVG en haut de <body>) : remplacent tous les emoji */
+.icsprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.ic { display: inline-block; width: 1.35em; height: 1.35em; vertical-align: -.3em; flex: none; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .45)); }
+.ic.flat { filter: none; width: 1em; height: 1em; vertical-align: -.14em; }
+:is(button, .wdi, .wicon, .wbmap, .dfico) > .ic:first-child:not(:only-child) { margin-right: .28em; }
+.wbmap > .ic, .dfico > .ic, .wicon > .ic, .wdi > .ic, .htabs button i > .ic, .wship > .ic, .wplanet .ic { margin-right: 0; width: 1.3em; height: 1.3em; vertical-align: top; }
+.htabs button i > .ic { width: 1.25em; height: 1.25em; }
+.pcard .prole .stars5, .opt.shelf:not(.open) .pcard .prole .stars5 { display: inline-flex; gap: 0; margin-left: 4px; font-size: 10px; line-height: 1; vertical-align: -.1em; overflow: visible; }
+.opt.shelf:not(.open) .pcard .prole { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 4px; }
+.pcard .prole i { flex: none; }
+.stars5 .ic { width: 1.05em; height: 1.05em; filter: none; vertical-align: top; }
+.legicon .ic { width: 1.8em; height: 1.8em; }
+.btn-pause .ic { width: 1.15em; height: 1.15em; }
 </style>
-</head>
+
 <body>
+<svg class="icsprite" width="0" height="0" aria-hidden="true" focusable="false"><defs><linearGradient id="icg-gold" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#fff6cf"/><stop offset="0.45" stop-color="#ffd86b"/><stop offset="1" stop-color="#d98a12"/></linearGradient><linearGradient id="icg-pink" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffd6e5"/><stop offset="0.5" stop-color="#ff7aa8"/><stop offset="1" stop-color="#b8325f"/></linearGradient><linearGradient id="icg-cyan" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#dafff9"/><stop offset="0.5" stop-color="#4fe0c8"/><stop offset="1" stop-color="#127a6c"/></linearGradient><linearGradient id="icg-steel" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#cfc9ea"/><stop offset="1" stop-color="#6a6294"/></linearGradient><linearGradient id="icg-fire" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#fff3a0"/><stop offset="0.45" stop-color="#ff9a3c"/><stop offset="1" stop-color="#d8381a"/></linearGradient><linearGradient id="icg-violet" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ead2ff"/><stop offset="0.5" stop-color="#a26bff"/><stop offset="1" stop-color="#46278f"/></linearGradient><linearGradient id="icg-red" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffc0b0"/><stop offset="0.5" stop-color="#ff5252"/><stop offset="1" stop-color="#9c1626"/></linearGradient><linearGradient id="icg-green" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#d8ffdc"/><stop offset="0.5" stop-color="#57e07a"/><stop offset="1" stop-color="#16773a"/></linearGradient><linearGradient id="icg-ice" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#9fe8ff"/><stop offset="1" stop-color="#2b78b5"/></linearGradient><linearGradient id="icg-wood" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffe6bb"/><stop offset="0.5" stop-color="#d9a066"/><stop offset="1" stop-color="#8a5530"/></linearGradient><linearGradient id="icg-parch" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#fff3d6"/><stop offset="0.5" stop-color="#e9c98f"/><stop offset="1" stop-color="#b3834a"/></linearGradient><linearGradient id="icg-slate" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#6c6196"/><stop offset="1" stop-color="#251d44"/></linearGradient><linearGradient id="icg-rock" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#c9c0e6"/><stop offset="0.55" stop-color="#8f86b8"/><stop offset="1" stop-color="#463e6c"/></linearGradient><linearGradient id="icg-basalt" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#8a5a4a"/><stop offset="1" stop-color="#2c1714"/></linearGradient><linearGradient id="icg-leaf" gradientUnits="userSpaceOnUse" x1="0" y1="-9.6" x2="0" y2="0"><stop offset="0" stop-color="#7fe08f"/><stop offset="0.5" stop-color="#2ea852"/><stop offset="1" stop-color="#0c5226"/></linearGradient><linearGradient id="icg-bronze" gradientUnits="userSpaceOnUse" x1="12" y1="2" x2="12" y2="22"><stop offset="0" stop-color="#ffd2b0"/><stop offset="0.5" stop-color="#e0905a"/><stop offset="1" stop-color="#8e4a22"/></linearGradient><radialGradient id="icg-glass" gradientUnits="userSpaceOnUse" cx="11.3" cy="9.3" r="3"><stop offset="0" stop-color="#f0ffff"/><stop offset="0.55" stop-color="#5ad1ff"/><stop offset="1" stop-color="#1a4a8a"/></radialGradient><radialGradient id="icg-nebula" gradientUnits="userSpaceOnUse" cx="12" cy="12" r="10.5"><stop offset="0" stop-color="#ff7aa8" stop-opacity=0.55/><stop offset="0.5" stop-color="#6a3ac0" stop-opacity=0.4/><stop offset="1" stop-color="#2a1660" stop-opacity=0/></radialGradient><radialGradient id="icg-portal" gradientUnits="userSpaceOnUse" cx="12" cy="15" r="6"><stop offset="0" stop-color="#ffffff"/><stop offset="0.45" stop-color="#9ffcf0"/><stop offset="1" stop-color="#4b2a9e"/></radialGradient><radialGradient id="icg-void" gradientUnits="userSpaceOnUse" cx="12" cy="12" r="11"><stop offset="0" stop-color="#c86bff" stop-opacity=0.65/><stop offset="0.6" stop-color="#5b1f9e" stop-opacity=0.3/><stop offset="1" stop-color="#140a24" stop-opacity=0/></radialGradient></defs>
+<symbol id="ic-rocket" viewBox="0 0 24 24"><path d="M10.2 18.2h3.6c0 1.6-.7 2.9-1.8 4.1-1.1-1.2-1.8-2.5-1.8-4.1z" fill="url(#icg-fire)"/>
+<path d="M8.7 12.8 5.4 16.2v2.6l3.8-1.7zM15.3 12.8l3.3 3.4v2.6l-3.8-1.7z" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12 2c2.7 2.1 4 5.4 4 9.3 0 2.5-.5 4.8-1.3 6.6H9.3C8.5 16.1 8 13.8 8 11.3 8 7.4 9.3 4.1 12 2z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12 2c1.3 1 2.3 2.3 3 3.9H9c.7-1.6 1.7-2.9 3-3.9z" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="12" cy="10.2" r="2.2" fill="url(#icg-glass)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="11.3" cy="9.5" r=".6" fill="#fff"/>
+<path d="M12 14.8v3.4" stroke="#b8325f" stroke-width="1.5" stroke-linecap="round"/></symbol>
+<symbol id="ic-palette" viewBox="0 0 24 24"><path d="M12 3C6.8 3 3 6.6 3 11.2 3 15.5 6.6 19 11 19c1.4 0 2-.7 2-1.6 0-1.3-1-1.6-1-2.7 0-.9.8-1.5 1.8-1.5h2.4c2.6 0 4.8-1.8 4.8-4.6C21 5.8 17 3 12 3z" fill="url(#icg-wood)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="7.3" cy="11.3" r="1.7" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="8.6" cy="7" r="1.7" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="13" cy="5.6" r="1.7" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="17.2" cy="7.9" r="1.7" fill="url(#icg-violet)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-sparkle" viewBox="0 0 24 24"><path d="M10 4.8Q11.64 11.36 18.2 13Q11.64 14.64 10 21.2Q8.36 14.64 1.8 13Q8.36 11.36 10 4.8z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M18.3 1.6Q19.02 4.48 21.9 5.2Q19.02 5.92 18.3 8.8Q17.58 5.92 14.7 5.2Q17.58 4.48 18.3 1.6z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M19 15.0Q19.52 17.08 21.6 17.6Q19.52 18.12 19 20.2Q18.48 18.12 16.4 17.6Q18.48 17.08 19 15.0z" fill="#fff6cf" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-blaster" viewBox="0 0 24 24"><path d="M2.8 8.4h13.6l1.6 1.6H21v3.2h-3l-1.6 1H11.2l-1.3 5.4c-.1.5-.5.8-1 .8H6.4c-.6 0-1.1-.6-.9-1.2L7 13.6H4.4l-1.6-1.7z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="4.8" y="10" width="9.4" height="1.7" rx=".85" fill="url(#icg-cyan)"/>
+<path d="M11.2 14.6c0 1.5.9 2.1 2.3 2.1" fill="none" stroke="#1a1030" stroke-width=".9" stroke-linecap="round"/>
+<circle cx="21.4" cy="11.6" r="1.4" fill="#4fe0c8"/><circle cx="21.4" cy="11.6" r=".6" fill="#fff"/></symbol>
+<symbol id="ic-paw" viewBox="0 0 24 24"><path d="M12 12.4c-2.7 0-5.1 2.7-5.1 4.9 0 1.7 1.3 2.5 2.8 2.2.9-.2 1.5-.5 2.3-.5s1.4.3 2.3.5c1.5.3 2.8-.5 2.8-2.2 0-2.2-2.4-4.9-5.1-4.9z" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="5.8" cy="10.6" rx="1.8" ry="2.3" transform="rotate(-22 5.8 10.6)" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="9.4" cy="6.4" rx="1.9" ry="2.5" transform="rotate(-6 9.4 6.4)" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="14.6" cy="6.4" rx="1.9" ry="2.5" transform="rotate(6 14.6 6.4)" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="18.2" cy="10.6" rx="1.8" ry="2.3" transform="rotate(22 18.2 10.6)" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-bolt" viewBox="0 0 24 24"><path d="M13.6 1.8 4.8 13.6h5.6L8.8 22.2l9.8-12.8h-5.5z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12.4 4.6 7.6 11.2h2" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"/></symbol>
+<symbol id="ic-duo" viewBox="0 0 24 24"><path d="M10.2 20.4c0-3.4 2.4-5.7 5.4-5.7s5.4 2.3 5.4 5.7z" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="15.6" cy="8.6" r="3.4" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M13.6 8.4a2 1.5 0 0 1 4 0z" fill="url(#icg-glass)"/>
+<path d="M2.6 21.2c0-3.7 2.9-6.2 6.5-6.2s6.5 2.5 6.5 6.2z" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="9.1" cy="9.5" r="3.9" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M6.7 9.3a2.4 1.8 0 0 1 4.8 0z" fill="url(#icg-glass)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-map" viewBox="0 0 24 24"><path d="M2.8 6.2 8.5 4l7 2.2L21.2 4v14L15.5 20.2l-7-2.2-5.7 2.2z" fill="url(#icg-parch)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M8.5 4v14M15.5 6.2v14" stroke="#1a1030" stroke-opacity=".35" stroke-width=".8"/>
+<path d="M5.4 16.4c2-1 2.9-4.2 6-4.2s3.6-2.8 5.8-4.6" fill="none" stroke="#e0457e" stroke-width="1.3" stroke-dasharray="1.6 1.4" stroke-linecap="round"/>
+<circle cx="5.4" cy="16.4" r="1.1" fill="#e0457e"/><path d="M18 4.4Q18.52 6.48 20.6 7Q18.52 7.52 18 9.6Q17.48 7.52 15.4 7Q17.48 6.48 18 4.4z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-target" viewBox="0 0 24 24"><circle cx="11" cy="13" r="8.6" fill="url(#icg-red)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="11" cy="13" r="6.1" fill="#f6f1ff"/>
+<circle cx="11" cy="13" r="3.7" fill="url(#icg-red)"/><circle cx="11" cy="13" r="1.5" fill="url(#icg-gold)"/>
+<path d="M11 13 19.6 4.4" stroke="#1a1030" stroke-width="2.2" stroke-linecap="round"/><path d="M11 13 19.6 4.4" stroke="url(#icg-steel)" stroke-width="1.1" stroke-linecap="round"/>
+<path d="M18.2 3.2l1.5 1.1 1.1 1.5 1.6-.4-1.6-1.6-1.6-1.6z" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.4" fill="url(#icg-green)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M7.2 12.4l3.2 3.2 6.4-6.8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M7.2 5.6H4.3c0 3 1.3 5.1 3.8 5.6M16.8 5.6h2.9c0 3-1.3 5.1-3.8 5.6" fill="none" stroke="#1a1030" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M7.2 5.6H4.3c0 3 1.3 5.1 3.8 5.6M16.8 5.6h2.9c0 3-1.3 5.1-3.8 5.6" fill="none" stroke="url(#icg-gold)" stroke-width="1.3" stroke-linecap="round"/>
+<path d="M10.8 12.6h2.4l.7 3.9h-3.8z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M6.8 3.2h10.4v4.6c0 3.1-2.3 5.6-5.2 5.6S6.8 10.9 6.8 7.8z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="7.4" y="16.5" width="9.2" height="3.7" rx="1" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="9.6" y="17.6" width="4.8" height="1.4" rx=".4" fill="#8a5a08" opacity=".55"/><path d="M12 5.2Q12.48 7.12 14.4 7.6Q12.48 8.08 12 10.0Q11.52 8.08 9.6 7.6Q11.52 7.12 12 5.2z" fill="#fff"/></symbol>
+<symbol id="ic-podium" viewBox="0 0 24 24"><rect x="8.6" y="8.6" width="6.8" height="12.4" rx=".8" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="2.6" y="12.6" width="6" height="8.4" rx=".8" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="15.4" y="14.6" width="6" height="6.4" rx=".8" fill="url(#icg-bronze)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12 11.2v4.4M11 12l1-.8" fill="none" stroke="#8a5a08" stroke-width="1.1" stroke-linecap="round"/><path d="M12 1.2Q12.64 3.76 15.2 4.4Q12.64 5.04 12 7.6Q11.36 5.04 8.8 4.4Q11.36 3.76 12 1.2z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-clap" viewBox="0 0 24 24"><rect x="3" y="9.6" width="18" height="11" rx="1.6" fill="url(#icg-slate)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M6 13.4h12M6 16.6h8" stroke="#f3eefe" stroke-opacity=".75" stroke-width="1.1" stroke-linecap="round"/>
+<g transform="rotate(-14 3 9)"><rect x="3" y="5.6" width="18" height="3.4" rx=".6" fill="#f6f1ff" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M5.4 5.6h2.4L6.6 9H4.2zM10.2 5.6h2.4L11.4 9H9zM15 5.6h2.4L16.2 9h-2.4z" fill="#1a1030"/></g>
+<path d="M3.4 9.6h17.2" stroke="#1a1030" stroke-width=".8"/></symbol>
+<symbol id="ic-crown" viewBox="0 0 24 24"><path d="M3 8.2l4.2 3.6L12 4.4l4.8 7.4L21 8.2l-1.9 9.9H4.9z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="4.6" y="17.8" width="14.8" height="2.6" rx=".8" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="12" cy="13.6" r="1.6" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="7.6" cy="14.8" r="1.1" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="16.4" cy="14.8" r="1.1" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="3" cy="8.2" r="1.3" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="12" cy="4.2" r="1.3" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="21" cy="8.2" r="1.3" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-join" viewBox="0 0 24 24"><ellipse cx="15.6" cy="12" rx="5.2" ry="8.4" fill="url(#icg-portal)" stroke="#1a1030" stroke-width="2.6"/>
+<ellipse cx="15.6" cy="12" rx="5.2" ry="8.4" fill="none" stroke="url(#icg-cyan)" stroke-width="1.4"/>
+<path d="M2.6 12h9.6M8.6 8.2 12.4 12l-3.8 3.8" fill="none" stroke="#1a1030" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2.6 12h9.6M8.6 8.2 12.4 12l-3.8 3.8" fill="none" stroke="url(#icg-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-share" viewBox="0 0 24 24"><path d="M6.2 12 17.6 5.6M6.2 12l11.4 6.4" stroke="#1a1030" stroke-width="2.6"/><path d="M6.2 12 17.6 5.6M6.2 12l11.4 6.4" stroke="url(#icg-steel)" stroke-width="1.2"/>
+<circle cx="6" cy="12" r="3.1" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="17.8" cy="5.4" r="3.1" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="17.8" cy="18.6" r="3.1" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-lock" viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#1a1030" stroke-width="3.4"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="url(#icg-steel)" stroke-width="1.8"/>
+<rect x="5" y="10.4" width="14" height="10.8" rx="2.2" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12 13.9a1.5 1.5 0 0 0-.85 2.75l-.45 2.2h2.6l-.45-2.2A1.5 1.5 0 0 0 12 13.9z" fill="#5a3a08"/>
+<path d="M6.6 12.2h10.8" stroke="#fff" stroke-opacity=".5" stroke-width=".8" stroke-linecap="round"/></symbol>
+<symbol id="ic-play" viewBox="0 0 24 24"><path d="M7.5 4.6v14.8L19.4 12z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+<symbol id="ic-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" rx="1.4" fill="currentColor"/></symbol>
+<symbol id="ic-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+<symbol id="ic-check" viewBox="0 0 24 24"><path d="M4.6 12.6l4.8 4.8L19.4 7" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-star" viewBox="0 0 24 24"><path d="M12 2.6l2.75 5.9 6.45.75-4.8 4.4 1.3 6.35L12 16.8 6.3 20l1.3-6.35-4.8-4.4 6.45-.75z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M12 5.2l1.8 3.9" stroke="#fff" stroke-opacity=".8" stroke-width="1" stroke-linecap="round"/></symbol>
+<symbol id="ic-star-off" viewBox="0 0 24 24"><path d="M12 2.6l2.75 5.9 6.45.75-4.8 4.4 1.3 6.35L12 16.8 6.3 20l1.3-6.35-4.8-4.4 6.45-.75z" fill="#ffffff" fill-opacity=".06" stroke="currentColor" stroke-opacity=".55" stroke-width="1.3" stroke-linejoin="round"/></symbol>
+<symbol id="ic-shield" viewBox="0 0 24 24"><path d="M12 2.4 20 5.4v6.2c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V5.4z" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M12 5.2 17.4 7.2v4.4c0 3.4-2.2 6-5.4 7.2z" fill="#fff" fill-opacity=".35"/></symbol>
+<symbol id="ic-heart" viewBox="0 0 24 24"><path d="M12 20.6S3 15.1 3 8.9C3 6.1 5.1 4 7.6 4c1.9 0 3.4 1.1 4.4 2.6C13 5.1 14.5 4 16.4 4 18.9 4 21 6.1 21 8.9c0 6.2-9 11.7-9 11.7z" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<ellipse cx="7.6" cy="8.4" rx="1.7" ry="2.3" transform="rotate(-30 7.6 8.4)" fill="#fff" fill-opacity=".6"/></symbol>
+<symbol id="ic-rock" viewBox="0 0 24 24"><path d="M8.2 4.2 14.4 3l5 3.6 1.6 6.2-3.1 6.4-6.6 1.6-5.6-3L3.4 12z" fill="url(#icg-rock)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<circle cx="9.4" cy="9" r="1.9" fill="#463e6c" opacity=".55"/><circle cx="15" cy="13.6" r="2.5" fill="#463e6c" opacity=".55"/><circle cx="9.6" cy="15.6" r="1.2" fill="#463e6c" opacity=".55"/>
+<path d="M8.6 5.6l5.4-1" stroke="#fff" stroke-opacity=".55" stroke-width=".9" stroke-linecap="round"/></symbol>
+<symbol id="ic-bulb" viewBox="0 0 24 24"><path d="M12 2.4a6.6 6.6 0 0 0-3.9 11.9c.6.5 1 1.2 1 2v.8h5.8v-.8c0-.8.4-1.5 1-2A6.6 6.6 0 0 0 12 2.4z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M10.4 14.6c-.6-2.2-.4-4 1.6-5 2 1 2.2 2.8 1.6 5" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width=".9"/>
+<rect x="9.1" y="17.1" width="5.8" height="3.6" rx="1" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M9.4 18.9h5.2" stroke="#1a1030" stroke-width=".6"/></symbol>
+<symbol id="ic-portal" viewBox="0 0 24 24"><path d="M4.6 21.2V10a7.4 7.4 0 0 1 14.8 0v11.2z" fill="url(#icg-violet)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M7.8 21.2V10.6a4.2 4.2 0 0 1 8.4 0v10.6z" fill="url(#icg-portal)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M3.4 21.2h17.2" stroke="#1a1030" stroke-width="1.2" stroke-linecap="round"/><path d="M12 12.2Q12.44 13.96 14.2 14.4Q12.44 14.84 12 16.6Q11.56 14.84 9.8 14.4Q11.56 13.96 12 12.2z" fill="#fff"/></symbol>
+<symbol id="ic-swords" viewBox="0 0 24 24"><g transform=""><path d="M3 3l3 .5 10.3 10.3-2.5 2.5L3.5 6z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M4.2 4.2 15 15" stroke="#fff" stroke-opacity=".8" stroke-width=".6"/>
+<path d="M12.4 17.4 17.4 12.4" stroke="#1a1030" stroke-width="3.2" stroke-linecap="round"/><path d="M12.4 17.4 17.4 12.4" stroke="url(#icg-gold)" stroke-width="1.7" stroke-linecap="round"/>
+<path d="M16 16 19.4 19.4" stroke="#1a1030" stroke-width="3" stroke-linecap="round"/><path d="M16 16 19.4 19.4" stroke="url(#icg-wood)" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="20.2" cy="20.2" r="1.5" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></g><g transform="matrix(-1 0 0 1 24 0)"><path d="M3 3l3 .5 10.3 10.3-2.5 2.5L3.5 6z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M4.2 4.2 15 15" stroke="#fff" stroke-opacity=".8" stroke-width=".6"/>
+<path d="M12.4 17.4 17.4 12.4" stroke="#1a1030" stroke-width="3.2" stroke-linecap="round"/><path d="M12.4 17.4 17.4 12.4" stroke="url(#icg-gold)" stroke-width="1.7" stroke-linecap="round"/>
+<path d="M16 16 19.4 19.4" stroke="#1a1030" stroke-width="3" stroke-linecap="round"/><path d="M16 16 19.4 19.4" stroke="url(#icg-wood)" stroke-width="1.5" stroke-linecap="round"/>
+<circle cx="20.2" cy="20.2" r="1.5" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></g></symbol>
+<symbol id="ic-hangar" viewBox="0 0 24 24"><path d="M2.4 20.6V10.8L12 4l9.6 6.8v9.8z" fill="url(#icg-slate)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M5.4 20.6v-8h13.2v8z" fill="#0f0a24" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M5.4 12.6h13.2v2.2H5.4z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M7 12.6 6 14.8M10 12.6 9 14.8M13 12.6l-1 2.2M16 12.6l-1 2.2" stroke="#1a1030" stroke-width="1.1"/>
+<path d="M12 15.6c1 .9 1.4 2.2 1.4 3.4V20.6h-2.8V19c0-1.2.4-2.5 1.4-3.4z" fill="url(#icg-steel)"/><circle cx="12" cy="7.6" r="1" fill="#ffd86b"/></symbol>
+<symbol id="ic-galaxy" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="url(#icg-nebula)"/>
+<path d="M12 12c0-2 2.5-3 4.3-1.6 2.3 1.8 1.4 6-2.3 7.2C9.6 19 5.4 15.6 6 11.2 6.6 6.8 11 4.6 15 5.6" fill="none" stroke="#ffd6e5" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M12 12c0 2-2.5 3-4.3 1.6-2.3-1.8-1.4-6 2.3-7.2C14.4 5 18.6 8.4 18 12.8 17.4 17.2 13 19.4 9 18.4" fill="none" stroke="#c9a8ff" stroke-width="1.6" stroke-linecap="round"/>
+<circle cx="12" cy="12" r="2.3" fill="#fff6cf"/><circle cx="19.4" cy="5" r=".7" fill="#fff"/><circle cx="4.6" cy="18.8" r=".6" fill="#fff"/></symbol>
+<symbol id="ic-snow" viewBox="0 0 24 24"><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(0 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(60 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(120 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(180 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(240 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(300 12 12)" stroke="#1a1030" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(0 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(60 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(120 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(180 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(240 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><path d="M12 12V2.8M12 6.2 9.6 4M12 6.2 14.4 4M12 9.4 10.2 7.8M12 9.4 13.8 7.8" transform="rotate(300 12 12)" stroke="url(#icg-ice)" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="12" cy="12" r="1.6" fill="#fff"/></symbol>
+<symbol id="ic-volcano" viewBox="0 0 24 24"><circle cx="10.4" cy="5.2" r="1.5" fill="url(#icg-fire)"/><circle cx="13.8" cy="3.6" r="1.9" fill="url(#icg-fire)"/><circle cx="12.2" cy="7.2" r="1.3" fill="#ffd86b"/>
+<path d="M2.4 20.8 8.4 9.2h7.2l6 11.6z" fill="url(#icg-basalt)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M8.4 9.2h7.2l-1 2.2c-.8-.6-1.6.4-2.5-.2s-1.7.5-2.6 0z" fill="url(#icg-fire)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M10.6 11.2c-.5 2.2-1.6 3.6-1.3 6.4M13.6 11.2c.4 1.8 1.7 3.2 1.5 5.4" fill="none" stroke="#ff9a3c" stroke-width="1.3" stroke-linecap="round"/></symbol>
+<symbol id="ic-leaf" viewBox="0 0 24 24"><path d="M7 21.4C9.4 16 13 10.4 19 4.6" fill="none" stroke="#1a1030" stroke-width="2.6" stroke-linecap="round"/><path d="M7 21.4C9.4 16 13 10.4 19 4.6" fill="none" stroke="#3aa857" stroke-width="1.2" stroke-linecap="round"/><path d="M0 0C2.6-2.4 2.8-6.6 0-9.6-2.8-6.6-2.6-2.4 0 0z" transform="translate(9.2 17) rotate(-70) scale(1)" fill="url(#icg-leaf)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M0 0C2.6-2.4 2.8-6.6 0-9.6-2.8-6.6-2.6-2.4 0 0z" transform="translate(10.6 14.6) rotate(35) scale(1)" fill="url(#icg-leaf)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M0 0C2.6-2.4 2.8-6.6 0-9.6-2.8-6.6-2.6-2.4 0 0z" transform="translate(13 11.2) rotate(-62) scale(0.95)" fill="url(#icg-leaf)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M0 0C2.6-2.4 2.8-6.6 0-9.6-2.8-6.6-2.6-2.4 0 0z" transform="translate(14.4 9.4) rotate(45) scale(0.9)" fill="url(#icg-leaf)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M0 0C2.6-2.4 2.8-6.6 0-9.6-2.8-6.6-2.6-2.4 0 0z" transform="translate(19 4.6) rotate(45) scale(0.8)" fill="url(#icg-leaf)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
+<symbol id="ic-void" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="url(#icg-void)"/>
+<ellipse cx="12" cy="12" rx="10.4" ry="3.6" transform="rotate(-18 12 12)" fill="none" stroke="#1a1030" stroke-width="3"/>
+<ellipse cx="12" cy="12" rx="10.4" ry="3.6" transform="rotate(-18 12 12)" fill="none" stroke="url(#icg-violet)" stroke-width="1.5"/>
+<circle cx="12" cy="12" r="4.6" fill="#05020c" stroke="#e7b8ff" stroke-width="1"/>
+<path d="M2.4 14.6A10.4 3.6 -18 0 0 21.6 9.4" fill="none" stroke="#f3dcff" stroke-width="1.5" stroke-linecap="round"/></symbol>
+</svg>
 
 <canvas id="gameFill" aria-hidden="true"></canvas>
 <canvas id="game" aria-label="Ciel de jeu"></canvas>
@@ -1195,7 +1320,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     <small>Record</small>
     <b id="best">0</b>
     <div class="lives" id="lives"></div>
-    <button class="btn-pause" id="pauseBtn" aria-label="Pause" hidden>❚❚</button>
+    <button class="btn-pause" id="pauseBtn" aria-label="Pause" hidden><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-pause"/></svg></button>
   </div>
 </div>
 
@@ -1217,10 +1342,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     <div class="logo"><h1>Comète<br>Filante</h1></div>
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
-    <button type="button" class="ghost duobtn" id="duoBtn"><span aria-hidden="true">👥</span> Partie à deux</button>
-    <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
+    <button type="button" class="ghost duobtn" id="duoBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>Partie à deux</button>
+    <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-map"/></svg></span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
     <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
-      <span class="dfico" id="defiIco" aria-hidden="true">🎯</span>
+      <span class="dfico" id="defiIco" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg></span>
       <span class="dftxt">
         <span class="dfhead"><small>Défi du jour</small><b id="defiTitle"></b><em id="defiGain"></em></span>
         <span class="dfgoal" id="defiText"></span>
@@ -1229,10 +1354,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       </span>
     </div>
     <div class="menugrid">
-      <button class="ghost" id="hangarBtn">Hangar</button>
-      <button class="ghost" id="trophyBtn">Trophées</button>
-      <button class="ghost" id="rankBtn">🏆 Classement</button>
-      <button class="ghost" id="cinemaBtn">🎬 Cinématiques</button>
+      <button class="ghost" id="hangarBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-hangar"/></svg>Hangar</button>
+      <button class="ghost" id="trophyBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg>Trophées</button>
+      <button class="ghost" id="rankBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button>
+      <button class="ghost" id="cinemaBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
     </div>
     <div class="row menulinks">
       <button class="toggle" id="storyBtn">Histoire</button>
@@ -1277,18 +1402,18 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <button class="play" type="submit">Rejoindre</button>
     </form>
     <div class="teambtns" id="teamBtns">
-      <button type="button" class="ghost" id="teamCreate"><span aria-hidden="true">👑</span> Créer</button>
-      <button type="button" class="ghost" id="teamJoin"><span aria-hidden="true">🤝</span> Rejoindre</button>
-      <button type="button" class="ghost" id="teamShare" disabled><span aria-hidden="true">📤</span> Partager</button>
+      <button type="button" class="ghost" id="teamCreate"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-crown"/></svg>Créer</button>
+      <button type="button" class="ghost" id="teamJoin"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-join"/></svg>Rejoindre</button>
+      <button type="button" class="ghost" id="teamShare" disabled><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-share"/></svg>Partager</button>
     </div>
     <div class="teamlinked" id="teamLinked" hidden>
       <button type="button" class="play" id="teamReady">Jouer</button>
-      <button type="button" class="worldbtn" id="teamWorld"><span class="wbmap" aria-hidden="true">🗺️</span><span class="wbtxt"><b>Choisis ton monde</b><small id="teamWorldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
+      <button type="button" class="worldbtn" id="teamWorld"><span class="wbmap" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-map"/></svg></span><span class="wbtxt"><b>Choisis ton monde</b><small id="teamWorldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
       <div class="menugrid">
         <button type="button" class="ghost" id="teamHangar">Hangar</button>
         <button type="button" class="ghost" id="teamTrophies">Trophées</button>
-        <button type="button" class="ghost" id="teamRank">🏆 Classement</button>
-        <button type="button" class="ghost" id="teamCinema">🎬 Cinématiques</button>
+        <button type="button" class="ghost" id="teamRank"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button>
+        <button type="button" class="ghost" id="teamCinema"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
       </div>
     </div>
     <div class="row menulinks">
@@ -1312,7 +1437,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="hangar" hidden>
   <div class="hangar">
-    <button class="xclose" data-back="backBtn" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="backBtn" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Hangar <small class="bay">BAIE 07 · <i class="led"></i> PRÊT AU DÉCOLLAGE</small></h2>
     <div class="preview" id="persoPreview">
       <div class="pvwrap"><canvas id="preview" width="400" height="480" aria-label="Aperçu de ta fusée"></canvas><span class="pvlock" id="pvLock" hidden></span></div>
@@ -1322,12 +1447,12 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <div class="walletbig" id="pvPoints"></div>
     </div>
     <nav class="htabs" id="hTabs" role="tablist" aria-label="Parties du Hangar">
-      <button type="button" role="tab" data-tab="fusee" aria-selected="true"><i aria-hidden="true">🚀</i>Fusée</button>
-      <button type="button" role="tab" data-tab="couleurs" aria-selected="false"><i aria-hidden="true">🎨</i>Couleurs</button>
-      <button type="button" role="tab" data-tab="effets" aria-selected="false"><i aria-hidden="true">✨</i>Effets</button>
-      <button type="button" role="tab" data-tab="armes" aria-selected="false"><i aria-hidden="true">🔫</i>Armes</button>
-      <button type="button" role="tab" data-tab="animaux" aria-selected="false"><i aria-hidden="true">🐾</i>Animaux</button>
-      <button type="button" role="tab" data-tab="competences" aria-selected="false"><i aria-hidden="true">⚡</i>Talents</button>
+      <button type="button" role="tab" data-tab="fusee" aria-selected="true"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg></i>Fusée</button>
+      <button type="button" role="tab" data-tab="couleurs" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-palette"/></svg></i>Couleurs</button>
+      <button type="button" role="tab" data-tab="effets" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-sparkle"/></svg></i>Effets</button>
+      <button type="button" role="tab" data-tab="armes" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-blaster"/></svg></i>Armes</button>
+      <button type="button" role="tab" data-tab="animaux" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-paw"/></svg></i>Animaux</button>
+      <button type="button" role="tab" data-tab="competences" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></i>Talents</button>
     </nav>
     <div class="opts" id="persoOpts">
       <div class="opt" data-tab="fusee">
@@ -1447,7 +1572,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="mapPanel" data-w="0" hidden>
   <div class="mappage">
-    <button class="xclose" data-back="mapBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="mapBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <header class="mphead"><small>Carte des mondes</small><h2>Choisis ton monde</h2><p class="mpcount" id="mapCount"></p></header>
     <div class="wmap" id="worldChips"></div>
     <div class="wdetail" id="worldDetail"></div>
@@ -1460,11 +1585,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="cinema" hidden>
   <div class="hangar atelier">
-    <button class="xclose" data-back="cinemaBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="cinemaBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Cinématiques</h2>
     <div class="cinetabs" id="cinemaTabs" role="tablist">
-      <button type="button" role="tab" data-tab="solo">🚀 En solo</button>
-      <button type="button" role="tab" data-tab="duo">👥 À deux</button>
+      <button type="button" role="tab" data-tab="solo"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg>En solo</button>
+      <button type="button" role="tab" data-tab="duo"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>À deux</button>
     </div>
     <p class="wallet" id="cinemaCount"></p>
     <div class="cinelist" id="cinemaList"></div>
@@ -1476,7 +1601,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="trophies" hidden>
   <div class="hangar atelier">
-    <button class="xclose" data-back="trophyBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="trophyBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Trophées</h2>
     <p class="wallet" id="trophyCount"></p>
     <div class="opt" id="titleOpt">
@@ -1492,7 +1617,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="rankPanel" hidden>
   <div class="hangar atelier">
-    <button class="xclose" data-back="rankBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="rankBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Classement mondial</h2>
     <p class="wallet">Tous les joueurs du monde, classés par leur meilleur score. Pas besoin d'e-mail : choisis juste ton nom de joueur.</p>
     <div class="opt" id="rankJoinBox">
@@ -1512,7 +1637,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="savePanel" hidden>
   <div class="hangar atelier">
-    <button class="xclose" data-back="saveBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="saveBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Sauvegarde</h2>
     <p class="wallet">Ta partie est enregistrée <strong>automatiquement</strong> sur cet appareil, même si tu fermes le jeu en pleine partie : tes points, vaisseaux, couleurs, compétences, trophées et mondes sont gardés.</p>
     <div class="savesum" id="saveSum"></div>
@@ -1536,7 +1661,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
 <div class="panel" id="help" hidden>
   <div class="hangar atelier">
-    <button class="xclose" data-back="helpBack" aria-label="Fermer" title="Fermer">✕</button>
+    <button class="xclose" data-back="helpBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Comment jouer</h2>
     <div class="rules">
       <span>Bouger</span><span>Souris, doigt, ou flèches / ZQSD</span>
@@ -1551,16 +1676,16 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <span>Boss</span><span>Tous les 3 niveaux, un boss arrive, chacun avec ses propres attaques. Détruis-le pour gagner une vie.</span>
       <span>Mondes</span><span>5 mondes de 10 boss : Voie lactée, Royaume de Givre, Forge Volcanique, Jungle Cosmique et Néant. Bats le 10e boss d'un monde pour passer au suivant et le débloquer : tu pourras ensuite le choisir comme départ dans le menu.</span>
       <span>Pouvoir</span><span>Espace, ou son bouton (sur écran tactile : juste au-dessus du bouton Tir). Il se recharge tout seul.</span>
-      <span>★</span><span>+10 points, multiplié par ton combo</span>
-      <span>◆</span><span>Bouclier pendant 5 secondes</span>
-      <span>⚡</span><span>Recharge ton super-pouvoir tout de suite</span>
-      <span>♥</span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
+      <span class="legicon" aria-label="Étoile"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg></span><span>+10 points, multiplié par ton combo</span>
+      <span class="legicon" aria-label="Bouclier"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-shield"/></svg></span><span>Bouclier pendant 5 secondes</span>
+      <span class="legicon" aria-label="Éclair"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></span><span>Recharge ton super-pouvoir tout de suite</span>
+      <span class="legicon" aria-label="Cœur"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-heart"/></svg></span><span>Cœur (rare) : +1 vie. Tu peux avoir jusqu'à 2 vies de plus qu'au départ (en jaune).</span>
       <span>Sauvegarde</span><span>Tout est enregistré automatiquement, même si tu fermes le jeu en pleine partie. Le menu « Sauvegarde » donne un code pour retrouver ta partie ailleurs.</span>
       <span>Classement</span><span>Dans le menu, « Classement mondial » : choisis un nom de joueur (sans e-mail) et ton meilleur score est comparé à celui de tous les joueurs.</span>
       <span>Nouveau monde</span><span>À chaque monde terminé, nouveau départ : compétences, pistolets, super-pouvoirs et points repartent à zéro (tes vaisseaux et couleurs sont gardés). Chaque monde est plus dur et ses niveaux durent plus longtemps.</span>
       <span>1UP</span><span>Tous les 2 500 points, tu gagnes une vie bonus.</span>
       <span>∞</span><span>Caisse orange : tirs illimités et plus rapides pendant 30 secondes. Elle tombe une fois tous les 2 niveaux (niveaux 1, 3, 5…).</span>
-      <span>●</span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
+      <span class="legicon" aria-label="Astéroïde"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rock"/></svg></span><span>Astéroïde ou tir ennemi : tu perds une vie et ton combo. Tu as 3 vies. Les gros astéroïdes encaissent plusieurs tirs.</span>
       <span>Niv.</span><span>Toutes les 20 secondes, le niveau monte et le jeu accélère. Quand un boss arrive, tu restes au même niveau tant que tu ne l'as pas battu.</span>
     </div>
     <h3 class="subhead">Les boss des 5 mondes</h3>
@@ -1612,6 +1737,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const pv = document.getElementById('preview');
   const pctx = pv.getContext('2d');
   const $ = id => document.getElementById(id);
+  // icône dessinée de la planche SVG (aucun emoji dans le jeu)
+  const ICO = (n, c = '') => `<svg class="ic${c ? ' ' + c : ''}" aria-hidden="true" focusable="false"><use href="#ic-${n}"/></svg>`;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = 0, H = 0, DPR = 1;
   // finesse maximale de l'image : baisse toute seule si l'appareil n'arrive pas à suivre (voir dprCheck)
@@ -2632,7 +2759,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const titles = () => TROPHIES.filter(t => t.title && stats.won.includes(t.id)).map(t => t.title);
   function updateTrophyBtn() {
     const txt = `Trophées · ${stats.won.length}/${TROPHIES.length}`;
-    $('trophyBtn').textContent = txt; $('overTrophyBtn').textContent = txt;
+    $('trophyBtn').innerHTML = ICO('trophy') + txt; $('overTrophyBtn').textContent = txt;
   }
   const toastQ = [];
   let toastBusy = false;
@@ -2763,7 +2890,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (!el) return;
     const done = defiSave.done, p = done ? c.g : Math.min(defiSave.p, c.g);
     el.classList.toggle('done', done);
-    $('defiIco').textContent = done ? '✅' : '🎯';
+    $('defiIco').innerHTML = ICO(done ? 'done' : 'target');
     $('defiTitle').textContent = c.title;
     $('defiGain').textContent = `+${astros(c.r)}`;
     $('defiText').textContent = c.text;
@@ -2825,7 +2952,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
   function renderAtelier() {
     $('credits').textContent = shop.credits;
-    $('hangarBtn').textContent = `Hangar · ${shop.credits} ✦`;
+    $('hangarBtn').innerHTML = ICO('hangar') + `Hangar · ${shop.credits} ✦`;
     $('overHangarBtn').textContent = `Hangar · ${shop.credits} ✦`;
     showWallet();
     const el = $('upgrades'), x0 = el.scrollLeft; el.innerHTML = '';
@@ -4092,7 +4219,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       b.setAttribute('aria-pressed', shown(key) === p.id);
       b.title = p.desc;
       // super-pouvoir : sa fiche complète (rôle, puissance, ce qu'il fait et un conseil)
-      const sheet = key === 'power' && p.role ? `<span class="prole" style="--pc:${p.col}">${p.role}<i>${'★'.repeat(p.force)}${'☆'.repeat(5 - p.force)}</i></span><span>${p.desc}</span><span class="ptip">💡 ${p.tip}</span>` : `<span class="vh">${p.desc}</span>`;
+      const sheet = key === 'power' && p.role ? `<span class="prole" style="--pc:${p.col}">${p.role}<i><span class="stars5">${ICO('star').repeat(p.force)}${ICO('star-off').repeat(5 - p.force)}</span></i></span><span>${p.desc}</span><span class="ptip">${ICO('bulb')} ${p.tip}</span>` : `<span class="vh">${p.desc}</span>`;
       b.innerHTML = `<b>${p.name}</b><canvas width="480" height="260" data-act="${key}:${p.id}" aria-hidden="true"></canvas>${sheet}<em>${locked ? (trophyOf(key, p.id) ? lockLabel(key, p.id) : 'À débloquer · ' + astros(price(key, p.id))) : info(p)}</em>`;
       b.onclick = () => pick(key, p.id);
       el.appendChild(b);
@@ -4109,7 +4236,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       b.type = 'button'; b.className = 'pcard' + (mine ? '' : ' locked'); b.id = 'opt-pet-' + p.id;
       b.setAttribute('aria-pressed', on);
       b.disabled = !free;
-      const st = !free ? '🔒 Prisonnier' : mine ? (cfg.pet === p.id ? 'Vole avec toi · touche pour le laisser au Hangar' : 'Adopté · touche pour l\'emmener') : 'À adopter · ' + astros(price('pet', p.id));
+      const st = !free ? ICO('lock') + ' Prisonnier' : mine ? (cfg.pet === p.id ? 'Vole avec toi · touche pour le laisser au Hangar' : 'Adopté · touche pour l\'emmener') : 'À adopter · ' + astros(price('pet', p.id));
       b.innerHTML = `<b>${free ? p.name : '???'} <small>${free ? p.kind : ''}</small></b><canvas width="480" height="260" data-act="pet:${p.id}" aria-hidden="true"></canvas>`
         + `<span>${free ? p.desc : 'Il attend derrière les barreaux de glace.'}</span><em>${free ? p.info + ' · ' : ''}${st}</em>`;
       // toucher l'animal qui vole déjà avec toi le laisse au Hangar
@@ -4587,7 +4714,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     lk.hidden = !lockPv;
     if (lockPv) {
       const c = lockPv.key === 'pet' ? { list: PETS } : CATS.find(x => x.key === lockPv.key), it = byId(c.list, lockPv.id), tro = trophyOf(lockPv.key, lockPv.id);
-      lk.innerHTML = `<b>🔒 Aperçu · pas encore à toi</b>${it.name} · ${tro ? 'trophée ' + trophyName(tro) : astros(price(lockPv.key, lockPv.id))}`;
+      lk.innerHTML = `<b>${ICO('lock')} Aperçu · pas encore à toi</b>${it.name} · ${tro ? 'trophée ' + trophyName(tro) : astros(price(lockPv.key, lockPv.id))}`;
     }
     if (!teamDetour) $('goBtn').textContent = lockPv ? `Décoller avec ${byId(MODELS, cfg.model).name}` : 'Décoller';
     const look = !!preview && PV_KEYS.includes(preview.key);
@@ -4869,7 +4996,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     else if (kind === 'crossfire') d.ys = Array.from({ length: n(2, 1) }, (_, i) => i ? H * (.35 + Math.random() * .55) : player.y);
     else if (kind === 'sweep') { d.a0 = Math.PI * (.15 + Math.random() * .1); d.dir = Math.random() < .5 ? 1 : -1; }
     it.pw = { kind, name, col, t: 0, warn: .9, tier, d, done: 0 };
-    pop(it.x, it.y - it.r - 18, '⚡ ' + name, col);
+    pop(it.x, it.y - it.r - 18, name, col);
     beep(500, .25, 'triangle', .08, 300);
   }
   const SIG_DUR = { laser: .7, storm: .35, pillars: .6, dash: .8, teleport: .2, gravity: 2.2, freeze: 2.4, fog: 3, ghost: 3, bubble: 2.4, mirror: 2, heal: 2.5, shrink: 3, timestop: 1.3, spiral: 1.6, snake: 1.4, sweep: 1.5, vortex: 1.3, firewall: .7, wall: .1, summon: .1, mines: .1, meteor: .1, sniper: .5, crossfire: .1, wave: .5, homing: .1, bouncers: .1, splitter: .1 };
@@ -6052,11 +6179,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   ];
 
   const WORLDS = [
-    { name: 'Voie lactée', icon: '🌌', col: ['#5b3a9e', '#ff7aa8'], bosses: BOSSES },
-    { name: 'Royaume de Givre', icon: '❄️', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 28, 13, 29, 14, 30, 15, 31, 32, 33, 34, 35] },
-    { name: 'Forge Volcanique', icon: '🌋', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 36, 17, 37, 18, 38, 19, 39, 40, 41, 42, 43] },
-    { name: 'Jungle Cosmique', icon: '🌿', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 44, 21, 45, 22, 46, 23, 47, 48, 49, 50, 51] },
-    { name: 'Le Néant', icon: '🕳️', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 52, 25, 53, 26, 54, 27, 55, 56, 57, 58, 59] },
+    { name: 'Voie lactée', icon: 'galaxy', col: ['#5b3a9e', '#ff7aa8'], bosses: BOSSES },
+    { name: 'Royaume de Givre', icon: 'snow', col: ['#1d4f7a', '#9fe8ff'], bosses: WORLD2, themes: [12, 28, 13, 29, 14, 30, 15, 31, 32, 33, 34, 35] },
+    { name: 'Forge Volcanique', icon: 'volcano', col: ['#6a1a08', '#ff7b2a'], bosses: WORLD3, themes: [16, 36, 17, 37, 18, 38, 19, 39, 40, 41, 42, 43] },
+    { name: 'Jungle Cosmique', icon: 'leaf', col: ['#0f4a24', '#7dff8a'], bosses: WORLD4, themes: [20, 44, 21, 45, 22, 46, 23, 47, 48, 49, 50, 51] },
+    { name: 'Le Néant', icon: 'void', col: ['#140a24', '#c86bff'], bosses: WORLD5, themes: [24, 52, 25, 53, 26, 54, 27, 55, 56, 57, 58, 59] },
   ];
   const ALL_BOSSES = WORLDS.flatMap(w => w.bosses);
 
@@ -6100,21 +6227,21 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'wnode'; b.disabled = !open;
       const img = worldPortrait(i);
-      b.innerHTML = `<span class="wplanet${img ? ' real' : ''}"${img ? ` style="--img:url(${img})"` : ''}>${open ? '' : '<span>🔒</span>'}</span>`;
+      b.innerHTML = `<span class="wplanet${img ? ' real' : ''}"${img ? ` style="--img:url(${img})"` : ''}>${open ? '' : `<span>${ICO('lock')}</span>`}</span>`;
       b.setAttribute('aria-pressed', i === startWorld);
       b.setAttribute('aria-label', open ? `Monde ${i + 1}, ${w.name}, ${won} boss sur 10 battus` : `Monde ${i + 1} fermé : bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`);
       // clic sur un monde : on le choisit (ses 10 boss s'ouvrent avec le bouton « Boss du monde » en dessous)
       b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) { popDetail(); menuWorld(); } beep(500 + i * 120, .08, 'triangle', .08); };
       stop.innerHTML = `<span class="wlabel"><span class="wnum">Monde ${i + 1}</span><span class="wname">${open ? w.name : '???'}</span>`
-        + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? '★ 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
-        + (i === startWorld ? '<span class="wship" aria-hidden="true">🚀</span>' : '');
+        + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? ICO('star', 'flat') + ' 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
+        + (i === startWorld ? `<span class="wship" aria-hidden="true">${ICO('rocket')}</span>` : '');
       stop.prepend(b);
       el.appendChild(stop);
     });
     $('startBtn').textContent = startWorld ? `Jouer · Monde ${startWorld + 1}` : 'Jouer';
     $('mapGo').textContent = teamDetour ? 'Retour à l\'équipe' : `Jouer · Monde ${startWorld + 1}`;
     const w = WORLDS[startWorld], won = w.bosses.filter(d => beaten.includes(d.id)).length;
-    $('worldNow').textContent = `${w.icon} Monde ${startWorld + 1} · ${w.name} · ${won}/10 boss`;
+    $('worldNow').innerHTML = `${ICO(w.icon, 'flat')} Monde ${startWorld + 1} · ${w.name} · ${won}/10 boss`;
     $('worldBtn').style.setProperty('--w1', w.col[0]); $('worldBtn').style.setProperty('--w2', w.col[1]);
     if (!$('mapPanel').hidden) renderWorldDetail();
   }
@@ -6138,10 +6265,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       + (intro ? `<p class="wdline">« ${intro} »</p>` : '')
       + `<div class="wdbar"><span>Gardiens vaincus <b>${won}/10</b></span><div class="wdpips">${w.bosses.map(d => `<i${beaten.includes(d.id) ? ' class="on"' : ''}></i>`).join('')}</div></div>`
       + '<div class="wdinfo">'
-      + `<div data-i="🎯"${next < 0 ? ' class="ok"' : ''}>Prochain gardien<b>${next < 0 ? '★ Tous vaincus !' : `Gardien ${next + 1} sur 10`}</b></div>`
-      + (nextWorld ? `<div data-i="🚪"${startWorld + 1 < worldsOpen ? ' class="ok"' : ''}>Monde suivant<b>${startWorld + 1 < worldsOpen ? `${nextWorld.icon} ${nextWorld.name} ouvert` : `Bats ${w.bosses[9].name.split(' ').pop()} pour l'ouvrir`}</b></div>`
-        : `<div data-i="⚔️">Dernier monde<b>Le combat final</b></div>`)
-      + (tro ? `<div data-i="🏆"${stats.feats.includes(tro.feat) ? ' class="ok"' : ''}>Trophée « ${tro.name} »<b>${stats.feats.includes(tro.feat) ? 'Gagné : ' : ''}${rewardText(tro)}</b></div>` : '')
+      + `<div${next < 0 ? ' class="ok"' : ''}><span class="wdi">${ICO('target')}</span>Prochain gardien<b>${next < 0 ? ICO('star', 'flat') + ' Tous vaincus !' : `Gardien ${next + 1} sur 10`}</b></div>`
+      + (nextWorld ? `<div${startWorld + 1 < worldsOpen ? ' class="ok"' : ''}><span class="wdi">${ICO('portal')}</span>Monde suivant<b>${startWorld + 1 < worldsOpen ? `${ICO(nextWorld.icon, 'flat')} ${nextWorld.name} ouvert` : `Bats ${w.bosses[9].name.split(' ').pop()} pour l'ouvrir`}</b></div>`
+        : `<div><span class="wdi">${ICO('swords')}</span>Dernier monde<b>Le combat final</b></div>`)
+      + (tro ? `<div${stats.feats.includes(tro.feat) ? ' class="ok"' : ''}><span class="wdi">${ICO('trophy')}</span>Trophée « ${tro.name} »<b>${stats.feats.includes(tro.feat) ? 'Gagné : ' : ''}${rewardText(tro)}</b></div>` : '')
       + '</div>'
       + `<p class="wdsec">Les 10 gardiens</p><div class="bgrid">` + w.bosses.map((d, i) => {
         const ok = beaten.includes(d.id);
@@ -6810,18 +6937,18 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     let ends = 0;
     for (const b of $('cinemaTabs').children) { const on = b.dataset.tab === cineTab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); }
     // à deux : d'abord l'entrée (J1 devient Nina, J2 devient Malo), toujours ouverte
-    const entree = two ? `<div class="cinerow duo" style="--w1:#2a2140;--w2:#4fe0c8"><span class="wicon">👥</span><div><small>Partie à deux</small><b>J1 Nina · J2 Malo</b></div>`
-      + `<div class="cinebtns"><button class="play" type="button" data-c="dentree" data-w="0">▶ L'entrée à deux</button></div>`
+    const entree = two ? `<div class="cinerow duo" style="--w1:#2a2140;--w2:#4fe0c8"><span class="wicon">${ICO('duo')}</span><div><small>Partie à deux</small><b>J1 Nina · J2 Malo</b></div>`
+      + `<div class="cinebtns"><button class="play" type="button" data-c="dentree" data-w="0">${ICO('play', 'flat')}L'entrée à deux</button></div>`
       + `<p class="cinehint">Le Joueur 1 devient Nina, le Joueur 2 devient Malo. Ensuite, chaque monde a son début et sa fin à deux.</p></div>` : '';
     $('cinemaList').innerHTML = entree + WORLDS.map((w, i) => {
       const open = i < worldsOpen || prologueSeen(i) || two && duoProSeen(i), done = beaten.includes(w.bosses[9].id);
       if (done) ends++;
       const fin = (i === last ? 'Le choix et la fin' : two ? 'Fin' : 'Fin du monde') + (two ? ' à deux' : '');
       return `<div class="cinerow${open ? '' : ' locked'}${two ? ' duo' : ''}" style="--w1:${w.col[0]};--w2:${w.col[1]}">`
-        + `<span class="wicon">${open ? w.icon : '🔒'}</span><div><small>Monde ${i + 1}${two ? ' · à deux' : ''}</small><b>${open ? w.name : '???'}</b></div>`
-        + `<div class="cinebtns"><button class="ghost" type="button" data-c="${two ? 'dpro' : 'pro'}" data-w="${i}"${open ? '' : ' disabled'}>${open ? '▶' : '🔒'} ${two ? 'Début à deux' : 'Prologue'}</button>`
-        + `<button class="play" type="button" data-c="${two ? 'dfin' : 'fin'}" data-w="${i}"${done ? '' : ' disabled'}>${done ? '▶' : '🔒'} ${fin}</button>`
-        + (!two && i === 1 && petsFreed() ? `<button class="ghost" type="button" data-c="zoo" data-w="1">▶ Les animaux</button>` : '') + '</div>'
+        + `<span class="wicon">${ICO(open ? w.icon : 'lock')}</span><div><small>Monde ${i + 1}${two ? ' · à deux' : ''}</small><b>${open ? w.name : '???'}</b></div>`
+        + `<div class="cinebtns"><button class="ghost" type="button" data-c="${two ? 'dpro' : 'pro'}" data-w="${i}"${open ? '' : ' disabled'}>${open ? ICO('play', 'flat') : ICO('lock')}${two ? 'Début à deux' : 'Prologue'}</button>`
+        + `<button class="play" type="button" data-c="${two ? 'dfin' : 'fin'}" data-w="${i}"${done ? '' : ' disabled'}>${done ? ICO('play', 'flat') : ICO('lock')}${fin}</button>`
+        + (!two && i === 1 && petsFreed() ? `<button class="ghost" type="button" data-c="zoo" data-w="1">${ICO('play', 'flat')}Les animaux</button>` : '') + '</div>'
         + (done ? '' : `<p class="cinehint">${open ? `Bats ${w.bosses[9].name} pour débloquer ${i === last ? 'le choix et la fin' : 'la cinématique de fin'}.` : 'Termine le monde précédent pour l\'ouvrir.'}</p>`)
         + '</div>';
     }).join('');
@@ -7945,7 +8072,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 
   function renderBossList() {
     $('bossList').innerHTML = WORLDS.map((w, wi) => {
-      if (wi >= worldsOpen) return `<h4 class="worldhead">Monde ${wi + 1} · 🔒</h4><p class="worldlock">Bats le dernier boss du monde ${wi} pour l'ouvrir.</p>`;
+      if (wi >= worldsOpen) return `<h4 class="worldhead">Monde ${wi + 1} · ${ICO('lock')}</h4><p class="worldlock">Bats le dernier boss du monde ${wi} pour l'ouvrir.</p>`;
       return `<h4 class="worldhead">Monde ${wi + 1} · ${w.name}</h4>` + w.bosses.map((d, i) => {
         const ok = beaten.includes(d.id);
         return `<div class="bossitem${ok ? ' won' : ''}"><b>${i + 1}. ${ok ? d.name : '???'}</b><span>${ok ? d.desc + ' · Vaincu' : 'Pas encore vaincu'}</span></div>`;
@@ -9106,7 +9233,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     pl.x = W * (pl === p2 ? .62 : .38); pl.y = H * .78; pl.vx = pl.vy = 0; pl.tilt = 0;
     if (pl === p2) { p2.lives = 1; p2.reload = 0; p2.ammo = (p2.gun || gun).mag; } else { lives = 1; reload = null; ammo = gun.mag; target = null; }
     burst(pl.x, pl.y, '#ff7aa8', 30, 240); burst(pl.x, pl.y, '#ffd86b', 20, 180);
-    pop(pl.x, pl.y - 40, `${duoName(pl)} revient · 1 ❤`, '#ff7aa8');
+    pop(pl.x, pl.y - 40, `${duoName(pl)} revient · 1 vie`, '#ff7aa8');
     beep(523, .12, 'triangle', .1); setTimeout(() => beep(784, .12, 'triangle', .1), 100); setTimeout(() => beep(1046, .3, 'triangle', .1, 200), 200);
     updateHud();
   }
@@ -9314,15 +9441,15 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       $('finalInfo').innerHTML += `<br>${n} trophée${n > 1 ? 's' : ''} gagné${n > 1 ? 's' : ''}` + (pts ? ` · +${astros(pts)} Astros bonus` : '');
     }
     defi('scoreParties', score); saveDefi(); renderDefi();
-    if (defiRunWon) $('finalInfo').innerHTML += `<br>🎯 Défi du jour réussi · +${astros(defiRunWon.r)} Astros bonus`;
-    else if (!defiSave.done) $('finalInfo').innerHTML += `<br>🎯 Défi du jour : ${defiToday().text} (${defiShow(defiToday(), defiSave.p)})`;
+    if (defiRunWon) $('finalInfo').innerHTML += `<br>${ICO('target')} Défi du jour réussi · +${astros(defiRunWon.r)} Astros bonus`;
+    else if (!defiSave.done) $('finalInfo').innerHTML += `<br>${ICO('target')} Défi du jour : ${defiToday().text} (${defiShow(defiToday(), defiSave.p)})`;
     // en équipe, on revient au Hangar d'équipe (sans se quitter) plutôt qu'au Hangar tout seul
     $('overHangarBtn').textContent = netRole && netOpen() ? 'Hangar d\'équipe' : 'Hangar';
     $('over').hidden = false;
     beep(300, .5, 'sawtooth', .12, -220);
     if (duo) {}
     else if (joueur) sendRecord().then(j => {
-      if (j && j.me && state === 'over') $('finalInfo').innerHTML += `<br>🏆 Classement mondial : <span class="best">${j.me.rank}e</span> sur ${j.total}`;
+      if (j && j.me && state === 'over') $('finalInfo').innerHTML += `<br>${ICO('podium')} Classement mondial : <span class="best">${j.me.rank}e</span> sur ${j.total}`;
     });
     else $('finalInfo').innerHTML += '<br>Entre dans le <b>classement mondial</b> pour comparer ton score !';
   }
@@ -9335,7 +9462,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       return `<tr><td>${lab}</td><td class="${top === 0 ? 'top' : ''}">${a}</td><td class="${top === 1 ? 'top' : ''}">${b}</td></tr>`;
     };
     const p0 = num(d.pts[0]), p1 = num(d.pts[1]), team = Math.max(0, score - p0 - p1);
-    const best = p0 === p1 ? 'Égalité parfaite !' : `🏆 ${esc(nm[p0 > p1 ? 0 : 1])} a fait le plus de points (${Math.abs(p0 - p1)} de plus)`;
+    const best = p0 === p1 ? 'Égalité parfaite !' : `${ICO('trophy')} ${esc(nm[p0 > p1 ? 0 : 1])} a fait le plus de points (${Math.abs(p0 - p1)} de plus)`;
     return `<table class="duoTable"><tr><th></th><th class="j1">${esc(nm[0])}</th><th class="j2">${esc(nm[1])}</th></tr>`
       + row('Points', 'pts') + row('Ennemis abattus', 'kills') + row('Boss achevés', 'bosses') + row('Étoiles', 'stars') + row('Coups reçus', 'hits', true)
       + `</table><div class="duoBest">${best}</div>` + (team ? `<div>+${team} points d'équipe (passages de niveau et bonus)</div>` : '');
@@ -9958,14 +10085,14 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   function renderTeam() {
     const on = netOpen() && !!netPeer, host = netRole === 'host';
     $('team').classList.toggle('linked', on);
-    $('teamKicker').textContent = '👥 Partie à deux';
+    $('teamKicker').innerHTML = ICO('duo') + ' Partie à deux';
     $('teamChip').hidden = !netCode || !netRole; $('teamChip').textContent = netCode;
     const inp = $('teamMeName');
     if (document.activeElement !== inp) inp.value = rocketName();
     inp.classList.toggle('todo', on && rocketName() === DEFAULT.name);
     $('teamMeKit').textContent = kitOf(cfg);
-    $('tagMe').textContent = on ? (host ? 'J1 👑' : 'J2') : 'Toi';
-    $('tagFriend').textContent = on ? (host ? 'J2' : 'J1 👑') : 'Ton pote';
+    $('tagMe').innerHTML = on ? (host ? 'J1 ' + ICO('crown') : 'J2') : 'Toi';
+    $('tagFriend').innerHTML = on ? (host ? 'J2' : 'J1 ' + ICO('crown')) : 'Ton pote';
     // J1 toujours en or, J2 toujours en turquoise, comme dans la partie
     $('tagMe').classList.toggle('j2', on && !host); $('tagFriend').classList.toggle('j1', on && !host);
     $('teamFriendSlot').classList.toggle('on', on);
@@ -9975,17 +10102,17 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     // le chef d'équipe (J1) annonce le décollage ; J2 dit qu'il est prêt
     $('padMe').classList.toggle('isready', on && !host && myReady);
     $('teamFriendSlot').classList.toggle('isready', on && host && peerReady);
-    $('readyMe').textContent = on ? (host ? '👑 Chef d\'équipe' : myReady ? '✓ Prêt' : 'Pas prêt') : '';
-    $('readyFriend').textContent = on ? (host ? (peerReady ? '✓ Prêt' : 'Pas prêt') : '👑 Chef d\'équipe') : '';
+    $('readyMe').innerHTML = on ? (host ? ICO('crown') + ' Chef d\'équipe' : myReady ? ICO('check', 'flat') + ' Prêt' : 'Pas prêt') : '';
+    $('readyFriend').innerHTML = on ? (host ? (peerReady ? ICO('check', 'flat') + ' Prêt' : 'Pas prêt') : ICO('crown') + ' Chef d\'équipe') : '';
     $('teamLinked').hidden = !on;
     const wi = on ? (host ? startWorld : netPeer.w || 0) : startWorld, wd = WORLDS[wi], won = wd.bosses.filter(d => beaten.includes(d.id)).length;
     if (on) {
       // comme sur l'accueil : le monde choisi, et les 4 boutons (Hangar, Trophées, Classement, Cinématiques)
-      $('teamWorldNow').textContent = `${wd.icon} Monde ${wi + 1} · ${wd.name} · ${won}/10 boss`;
+      $('teamWorldNow').innerHTML = `${ICO(wd.icon, 'flat')} Monde ${wi + 1} · ${wd.name} · ${won}/10 boss`;
       $('teamWorld').disabled = !host;
       $('teamWorld').style.setProperty('--w1', wd.col[0]); $('teamWorld').style.setProperty('--w2', wd.col[1]);
-      $('teamHangar').textContent = `Hangar · ${shop.credits} ✦`;
-      $('teamTrophies').textContent = $('trophyBtn').textContent;
+      $('teamHangar').innerHTML = ICO('hangar') + `Hangar · ${shop.credits} ✦`;
+      $('teamTrophies').innerHTML = ICO('trophy') + $('trophyBtn').textContent;
     }
     const txt = on ? (countT > 0 ? 'Décollage imminent !' : rocketName() === DEFAULT.name ? 'Donne un nom à ta fusée : touche son nom pour l\'écrire.'
         : host ? (peerReady ? `${netPeer.name} est prêt. À toi de lancer la partie !` : `On attend que ${netPeer.name} appuie sur « Prêt ! ».`)
@@ -10004,7 +10131,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     $('teamShare').disabled = !showCode;
     $('teamBtns').hidden = on;
     if (on) $('teamJoinForm').hidden = true;
-    $('teamReady').textContent = host ? `Jouer · Monde ${wi + 1}` : myReady ? '✓ Prêt !' : 'Prêt !';
+    $('teamReady').innerHTML = host ? `Jouer · Monde ${wi + 1}` : myReady ? ICO('check', 'flat') + ' Prêt !' : 'Prêt !';
     $('teamReady').classList.toggle('on', host ? peerReady : myReady);
     $('teamReady').disabled = countT > 0 || (host && !peerReady);
     $('teamStory').hidden = !(on && host);
@@ -10231,7 +10358,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   $('saveBack').onclick = () => { $('savePanel').hidden = true; closeHangar(); };
   $('copySave').onclick = () => {
     const ta = $('saveCode');
-    const done = () => { $('copySave').textContent = 'Code copié ✓'; setTimeout(() => { $('copySave').textContent = 'Copier le code'; }, 2000); };
+    const done = () => { $('copySave').innerHTML = 'Code copié ' + ICO('check', 'flat'); setTimeout(() => { $('copySave').textContent = 'Copier le code'; }, 2000); };
     try { navigator.clipboard.writeText(ta.value).then(done, () => { ta.focus(); ta.select(); $('copySave').textContent = 'Code sélectionné : fais Copier'; }); }
     catch (e) { ta.focus(); ta.select(); }
   };
