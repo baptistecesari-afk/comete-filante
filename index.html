@@ -1132,6 +1132,39 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   .rules span:first-child { padding-top: 0; }
   .final { font-size: 48px; }
 }
+
+/* ===== Hangar sur téléphone : la fusée reste en haut, les onglets juste dessous, une seule partie à la fois ===== */
+.htabs { display: none; }
+@media (max-width: 560px) {
+  #hangar { padding-top: 10px; }
+  #hangar .hangar { gap: 10px; padding-top: 14px; grid-template-columns: minmax(0, 1fr); }
+  /* l'aperçu reste collé en haut : on voit tout de suite ce que change chaque couleur */
+  #hangar .preview { position: sticky; top: -10px; z-index: 4; margin: 0 -14px; padding: 8px 14px; grid-template-columns: 74px minmax(0, 1fr); column-gap: 12px; row-gap: 2px;
+    background: #1b1542; }
+  #hangar .preview canvas { width: 74px; height: 89px; border-radius: 12px; box-shadow: 0 0 0 3px #120d2c, 0 0 0 4px #3d3570; }
+  #hangar .preview .pvlock { left: 3px; right: 3px; bottom: 3px; padding: 3px; font-size: 9px; }
+  #hangar .preview .pvlock b { font-size: 10px; }
+  #hangar .preview .shipname { font-size: 15px; }
+  #hangar .preview .powername { font-size: 12px; }
+  #hangar .walletbig { font-size: 15px; padding: 3px 10px 3px 5px; }
+  #hangar .walletbig .coin { width: 18px; height: 18px; }
+  #hangar .walletbig small { font-size: 10px; }
+  .htabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; position: sticky; top: 97px; z-index: 4; margin: -6px -14px 0; padding: 4px 10px 8px;
+    background: linear-gradient(180deg, #1b1542 80%, rgba(27, 21, 66, 0)); }
+  .htabs button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 2px 5px; border-radius: 12px; cursor: var(--cur-clic);
+    font: 600 10px var(--body); letter-spacing: .01em; color: var(--muted); background: rgba(11, 8, 32, .7); border: 1.5px solid color-mix(in srgb, var(--muted) 30%, transparent);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .htabs button i { font-style: normal; font-size: 17px; line-height: 1; }
+  .htabs button[aria-selected="true"] { color: #1a1030; background: var(--star); border-color: var(--star); box-shadow: 0 0 14px color-mix(in srgb, var(--star) 45%, transparent); }
+  /* une seule partie à la fois */
+  #persoOpts > .opt:not(.tabon) { display: none; }
+  #persoOpts { min-height: 46vh; }
+  /* le bandeau Acheter : plus besoin de sa propre image, la fusée en haut montre déjà l'objet */
+  #hangar .buybar canvas { display: none; }
+  #hangar .buybar { padding: 8px 10px; gap: 6px; }
+  #hangar .hangar > .row .play { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; min-width: 0; }
+  #hangar .hangar > .row .ghost { flex: 0 0 auto; }
+}
 </style>
 </head>
 <body>
@@ -1279,17 +1312,25 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       <div class="powername" id="pvPower"></div>
       <div class="walletbig" id="pvPoints"></div>
     </div>
+    <nav class="htabs" id="hTabs" role="tablist" aria-label="Parties du Hangar">
+      <button type="button" role="tab" data-tab="fusee" aria-selected="true"><i aria-hidden="true">🚀</i>Fusée</button>
+      <button type="button" role="tab" data-tab="couleurs" aria-selected="false"><i aria-hidden="true">🎨</i>Couleurs</button>
+      <button type="button" role="tab" data-tab="effets" aria-selected="false"><i aria-hidden="true">✨</i>Effets</button>
+      <button type="button" role="tab" data-tab="armes" aria-selected="false"><i aria-hidden="true">🔫</i>Armes</button>
+      <button type="button" role="tab" data-tab="animaux" aria-selected="false"><i aria-hidden="true">🐾</i>Animaux</button>
+      <button type="button" role="tab" data-tab="competences" aria-selected="false"><i aria-hidden="true">⚡</i>Talents</button>
+    </nav>
     <div class="opts" id="persoOpts">
-      <div class="opt">
+      <div class="opt" data-tab="fusee">
         <label for="shipName">Nom de la fusée</label>
         <input id="shipName" maxlength="16" autocomplete="off" spellcheck="false">
       </div>
-      <div class="opt">
+      <div class="opt" data-tab="fusee">
         <span>Mes styles</span>
         <div class="slots" id="optSlots"></div>
         <button type="button" class="ghost small" id="randomBtn">Style au hasard</button>
       </div>
-      <div class="opt">
+      <div class="opt" data-tab="fusee">
         <span>Vaisseaux</span>
         <div class="carousel">
           <button type="button" class="carr-arrow" id="carPrev" aria-label="Vaisseau précédent">‹</button>
@@ -1305,17 +1346,17 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
         </div>
         <div class="cardots" id="carDots"></div>
       </div>
-      <div class="opt"><span>Couleur</span><div class="chips" id="optColor"></div></div>
-      <div class="opt"><span>Couleur secondaire</span><div class="chips" id="optAccent"></div></div>
-      <div class="opt"><span>Motif</span><div class="chips" id="optMotif"></div></div>
-      <div class="opt"><span>Hublot</span><div class="chips" id="optGlass"></div></div>
-      <div class="opt"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
-      <div class="opt"><span>Traînée</span><div class="chips" id="optTrail"></div></div>
-      <div class="opt"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
-      <div class="opt"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
-      <div class="opt"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
-      <div class="opt" id="petOpt"><span>Animaux de l'espace</span><p class="wallet" id="petInfo"></p><div class="powers" id="optPet"></div></div>
-      <div class="opt" id="skills">
+      <div class="opt" data-tab="couleurs"><span>Couleur</span><div class="chips" id="optColor"></div></div>
+      <div class="opt" data-tab="couleurs"><span>Couleur secondaire</span><div class="chips" id="optAccent"></div></div>
+      <div class="opt" data-tab="couleurs"><span>Motif</span><div class="chips" id="optMotif"></div></div>
+      <div class="opt" data-tab="couleurs"><span>Hublot</span><div class="chips" id="optGlass"></div></div>
+      <div class="opt" data-tab="effets"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
+      <div class="opt" data-tab="effets"><span>Traînée</span><div class="chips" id="optTrail"></div></div>
+      <div class="opt" data-tab="effets"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
+      <div class="opt" data-tab="armes"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
+      <div class="opt" data-tab="armes"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
+      <div class="opt" id="petOpt" data-tab="animaux"><span>Animaux de l'espace</span><p class="wallet" id="petInfo"></p><div class="powers" id="optPet"></div></div>
+      <div class="opt" id="skills" data-tab="competences">
         <span>Compétences</span>
         <p class="wallet">Tu as <i class="coin"></i><b id="credits">0</b> Astros. Chaque compétence améliore ta fusée pour toutes tes parties.</p>
         <div class="upgrades" id="upgrades"></div>
@@ -4654,6 +4695,21 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const c = list.querySelector('[aria-pressed="true"]');
     list.scrollLeft = c ? Math.max(0, c.offsetLeft - list.offsetLeft - 8) : 0;
   }
+  // Hangar sur téléphone : une partie à la fois (onglets), au lieu d'une très longue page à faire défiler
+  let hTab = 'fusee';
+  function setHTab(t) {
+    hTab = t;
+    for (const o of $('persoOpts').children) o.classList.toggle('tabon', o.dataset.tab === t);
+    for (const b of $('hTabs').children) b.setAttribute('aria-selected', b.dataset.tab === t);
+    for (const id of ['optGun', 'optPower', 'optPet']) showPicked($(id));
+  }
+  $('hTabs').onclick = e => {
+    const b = e.target.closest('button[data-tab]');
+    if (!b || b.dataset.tab === hTab) return;
+    setHTab(b.dataset.tab); beep(620, .06, 'triangle', .05);
+    $('hangar').scrollTop = 0;
+  };
+  setHTab(hTab);
   $('hangarBtn').onclick = openHangar;
   $('overHangarBtn').onclick = () => { if (netRole && netOpen()) teamHome(); else openHangar(); };
   $('backBtn').onclick = closeHangar;
