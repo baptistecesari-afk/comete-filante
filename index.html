@@ -1181,6 +1181,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 :is(button, .wdi, .wicon, .wbmap, .dfico) > .ic:first-child:not(:only-child) { margin-right: .28em; }
 .wbmap > .ic, .dfico > .ic, .wicon > .ic, .wdi > .ic, .htabs button i > .ic, .wship > .ic, .wplanet .ic { margin-right: 0; width: 1.3em; height: 1.3em; vertical-align: top; }
 .htabs button i > .ic { width: 1.25em; height: 1.25em; }
+.ic.shipico { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .55)); transform: scale(1.15); }
+.shipslot { display: inline-flex; margin-right: .28em; vertical-align: -.3em; }
+.shipslot > .ic { margin: 0; }
 .pcard .prole .stars5, .opt.shelf:not(.open) .pcard .prole .stars5 { display: inline-flex; gap: 0; margin-left: 4px; font-size: 10px; line-height: 1; vertical-align: -.1em; overflow: visible; }
 .opt.shelf:not(.open) .pcard .prole { display: flex; flex-wrap: nowrap; justify-content: space-between; align-items: center; gap: 4px; }
 .pcard .prole i { flex: none; }
@@ -1447,7 +1450,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <div class="walletbig" id="pvPoints"></div>
     </div>
     <nav class="htabs" id="hTabs" role="tablist" aria-label="Parties du Hangar">
-      <button type="button" role="tab" data-tab="fusee" aria-selected="true"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg></i>Fusée</button>
+      <button type="button" role="tab" data-tab="fusee" aria-selected="true"><i aria-hidden="true" data-shipico><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg></i>Fusée</button>
       <button type="button" role="tab" data-tab="couleurs" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-palette"/></svg></i>Couleurs</button>
       <button type="button" role="tab" data-tab="effets" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-sparkle"/></svg></i>Effets</button>
       <button type="button" role="tab" data-tab="armes" aria-selected="false"><i aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-blaster"/></svg></i>Armes</button>
@@ -1588,7 +1591,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     <button class="xclose" data-back="cinemaBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Cinématiques</h2>
     <div class="cinetabs" id="cinemaTabs" role="tablist">
-      <button type="button" role="tab" data-tab="solo"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg>En solo</button>
+      <button type="button" role="tab" data-tab="solo"><span class="shipslot" aria-hidden="true" data-shipico><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-rocket"/></svg></span>En solo</button>
       <button type="button" role="tab" data-tab="duo"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>À deux</button>
     </div>
     <p class="wallet" id="cinemaCount"></p>
@@ -2555,7 +2558,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (PETS.some(m => m.id === saved.pet)) cfg.pet = saved.pet;
     for (const [k, list] of [['accent', ACCENTS], ['motif', MOTIFS], ['glass', GLASSES], ['trail', TRAILS]]) if (list.some(m => m.id === saved[k])) cfg[k] = saved[k];
   } catch (e) {}
-  function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} }
+  function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} refreshShipIcons(); }
 
   // --- atelier : améliorations permanentes ---
   const UPGRADES = [
@@ -2969,7 +2972,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       b.disabled = maxed || shop.credits < c;
       b.onclick = () => {
         if (up(u.id) >= u.max || shop.credits < cost(u)) return;
-        shop.credits -= cost(u); shop.up[u.id] = up(u.id) + 1; saveShop(); renderAtelier();
+        shop.credits -= cost(u); shop.up[u.id] = up(u.id) + 1; saveShop(); renderAtelier(); refreshShipIcons();
         beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .15, 'triangle', .1), 70);
       };
       card.appendChild(b);
@@ -3057,6 +3060,21 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     '....NNSNN....',
     '.....MMM.....',
   ];
+  // icône « ta fusée » : le vaisseau choisi au Hangar (modèle, couleurs, flamme), dessiné une fois puis gardé en image
+  let shipIcoKey = '', shipIcoUrl = '';
+  function shipIco() {
+    try {
+      const key = JSON.stringify([cfg.model, cfg.color, cfg.accent, cfg.motif, cfg.glass, cfg.flame, shop.up]);
+      if (key !== shipIcoKey) {
+        const c = document.createElement('canvas'); c.width = c.height = 128;
+        drawRocket(c.getContext('2d'), 64, 56, 2.1, { ...cfg, evo: shop.up }, 0, 0, .3);
+        shipIcoUrl = c.toDataURL(); shipIcoKey = key;
+      }
+      return `<img class="ic shipico" src="${shipIcoUrl}" alt="" aria-hidden="true">`;
+    } catch (e) { return ICO('rocket'); }
+  }
+  function refreshShipIcons() { const h = shipIco(); document.querySelectorAll('[data-shipico]').forEach(e => { e.innerHTML = h; }); if (document.querySelector('.wship')) document.querySelectorAll('.wship').forEach(e => { e.innerHTML = h; }); }
+  requestAnimationFrame(() => refreshShipIcons());
   // la fusée réaliste : la flamme d'abord (elle brille, on ne l'éclaire pas), puis la coque éclairée comme du métal
   let rocketPart = 'all';
   function drawRocket(c, x, y, s, conf, t, tilt = 0, boost = 0) {
@@ -6234,7 +6252,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       b.onclick = () => { const was = startWorld; startWorld = i; saveWorlds(); renderWorldPick(); if (was !== i) { popDetail(); menuWorld(); } beep(500 + i * 120, .08, 'triangle', .08); };
       stop.innerHTML = `<span class="wlabel"><span class="wnum">Monde ${i + 1}</span><span class="wname">${open ? w.name : '???'}</span>`
         + `<span class="wprog${won === 10 ? ' full' : ''}">${open ? (won === 10 ? ICO('star', 'flat') + ' 10/10 boss' : `${won}/10 boss`) : `Bats ${WORLDS[i - 1].bosses[9].name.split(' ').pop()}`}</span></span>`
-        + (i === startWorld ? `<span class="wship" aria-hidden="true">${ICO('rocket')}</span>` : '');
+        + (i === startWorld ? `<span class="wship" aria-hidden="true">${shipIco()}</span>` : '');
       stop.prepend(b);
       el.appendChild(stop);
     });
@@ -6666,7 +6684,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (!['n', '???', 'Nina', 'Malo', 'Inès', 'Elio', 'Le Dévoreur'].includes(b)) return '';
     const rc = netRole === 'guest' && netPeer ? netPeer.cfg : cfg, key = b === 'n' || b === '???' ? 'n' + JSON.stringify(rc) : b;
     if (avaCache[key]) return avaCache[key];
-    const c = document.createElement('canvas'); c.width = c.height = 96; const k = c.getContext('2d');
+    const c = document.createElement('canvas'); c.width = c.height = 128; const k = c.getContext('2d');
     if (b === 'Nina' || b === 'Malo' || b === 'Inès') kidFace(k, b);
     else if (b === 'Elio') { k.fillStyle = '#2a2216'; k.fillRect(0, 0, 96, 96); drawElio(k, 48, 50, 1.6, 0, 1); }
     else if (b === 'Le Dévoreur') { k.fillStyle = '#000'; k.fillRect(0, 0, 96, 96); shadowEyes(k, 48, 50, 30, '#ff4f6d', 1); }
