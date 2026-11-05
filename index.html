@@ -3154,7 +3154,263 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
       c.beginPath(); c.arc(0, -3, 4, 0, 7); c.fill(); c.stroke();
     }
     drawMotif(c, conf, t, motifCol(body, acc, conf.model));
+    drawShipDetail(c, conf, t, body, dark, light);
     if (conf.evo || conf === cfg) drawEvo(c, conf.evo || shop.up, t, conf, body, dark, light);
+    c.restore();
+  }
+  // ===== Détails des vaisseaux : jointures de tôle, rivets, tuyères, reflets des vitres et feux de position =====
+  // Dessinés par-dessus la coque (et éclairés avec elle). Que des traits fins et sans flou : ça ne coûte presque rien.
+  // Coordonnées dans le repère du vaisseau (le nez vers le haut). Les vaisseaux en pixels gardent leur style.
+  function drawShipDetail(c, conf, t, body, dark, light) {
+    const m = conf.model;
+    if (m === 'pixel' || m === 'arcade') return;
+    c.save();
+    c.shadowBlur = 0; c.lineCap = 'round'; c.lineJoin = 'round';
+    const P = (...pts) => { c.beginPath(); for (let i = 0; i < pts.length; i += 2) i ? c.lineTo(pts[i], pts[i + 1]) : c.moveTo(pts[i], pts[i + 1]); };
+    // jointure gravée : un trait sombre et, juste à côté, un fil de lumière
+    const seam = (draw, a = 1) => {
+      c.lineWidth = .55; c.strokeStyle = `rgba(10, 6, 30, ${.42 * a})`; draw(); c.stroke();
+      c.save(); c.translate(.45, .45); c.lineWidth = .4; c.strokeStyle = `rgba(255, 255, 255, ${.26 * a})`; draw(); c.stroke(); c.restore();
+    };
+    const rivets = (pts, r = .42) => {
+      c.fillStyle = 'rgba(10, 6, 30, .45)'; c.beginPath(); for (const [x, y] of pts) { c.moveTo(x + r, y); c.arc(x, y, r, 0, 7); } c.fill();
+      c.fillStyle = 'rgba(255, 255, 255, .55)'; c.beginPath(); for (const [x, y] of pts) { c.moveTo(x - r * .2, y - r * .35); c.arc(x - r * .35, y - r * .35, r * .4, 0, 7); } c.fill();
+    };
+    const row = (x0, y0, x1, y1, n) => Array.from({ length: n }, (_, i) => [x0 + (x1 - x0) * i / (n - 1), y0 + (y1 - y0) * i / (n - 1)]);
+    // tuyère en métal : une cloche avec ses cerclages, le fond rougeoie
+    const nozzle = (x, y, w, h = 3.2) => {
+      const g = c.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+      g.addColorStop(0, '#2a2638'); g.addColorStop(.3, '#c9cbd8'); g.addColorStop(.45, '#f4f5fb'); g.addColorStop(.7, '#6c6a80'); g.addColorStop(1, '#1d1a2a');
+      c.fillStyle = g; P(x - w * .34, y - h, x + w * .34, y - h, x + w / 2, y, x - w / 2, y); c.closePath(); c.fill();
+      c.lineWidth = .35; c.strokeStyle = 'rgba(10, 6, 30, .55)'; c.stroke();
+      c.beginPath(); c.moveTo(x - w * .42, y - h * .45); c.lineTo(x + w * .42, y - h * .45); c.stroke();
+      c.fillStyle = '#1a1020'; c.beginPath(); c.ellipse(x, y, w / 2 - .3, .9, 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255, 170, 80, .75)'; c.beginPath(); c.ellipse(x, y + .1, w / 2 - 1, .5, 0, 0, 7); c.fill();
+    };
+    // vitre : ombre du fond, reflet courbe du ciel, petit éclat
+    const gloss = (x, y, rx, ry, rot = 0) => {
+      c.save(); c.translate(x, y); c.rotate(rot);
+      c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, 7); c.save(); c.clip();
+      const g = c.createLinearGradient(0, -ry, 0, ry); g.addColorStop(0, 'rgba(255, 255, 255, .0)'); g.addColorStop(.55, 'rgba(10, 6, 30, 0)'); g.addColorStop(1, 'rgba(10, 6, 30, .45)');
+      c.fillStyle = g; c.fillRect(-rx, -ry, rx * 2, ry * 2);
+      c.fillStyle = 'rgba(255, 255, 255, .5)'; c.beginPath(); c.ellipse(-rx * .25, -ry * .35, rx * .62, ry * .3, -.5, 0, 7); c.fill();
+      c.fillStyle = 'rgba(160, 220, 255, .35)'; c.beginPath(); c.ellipse(rx * .35, ry * .5, rx * .35, ry * .14, -.4, 0, 7); c.fill();
+      c.restore();
+      c.fillStyle = '#ffffff'; c.beginPath(); c.arc(-rx * .45, -ry * .45, Math.min(rx, ry) * .16, 0, 7); c.fill();
+      c.restore();
+    };
+    // feux de position : rouge à gauche, vert à droite, qui clignotent doucement
+    const navs = (x, y, k = 1) => {
+      const on = reduce ? 1 : .55 + .45 * Math.max(0, Math.sin(t / 260));
+      for (const [sd, col] of [[-1, '255, 70, 90'], [1, '90, 255, 140']]) {
+        const g = c.createRadialGradient(sd * x, y, 0, sd * x, y, 2.6 * k);
+        g.addColorStop(0, `rgba(${col}, ${(.9 * on).toFixed(2)})`); g.addColorStop(1, `rgba(${col}, 0)`);
+        c.fillStyle = g; c.fillRect(sd * x - 2.6 * k, y - 2.6 * k, 5.2 * k, 5.2 * k);
+        c.fillStyle = '#fff'; c.beginPath(); c.arc(sd * x, y, .55 * k, 0, 7); c.fill();
+      }
+    };
+    // aération : de petites fentes sombres
+    const vents = (x, y, n, sym = true) => {
+      c.lineWidth = .6; c.strokeStyle = 'rgba(10, 6, 30, .55)'; c.beginPath();
+      for (const sd of sym ? [-1, 1] : [1]) for (let i = 0; i < n; i++) { c.moveTo(sd * x - .9, y + i * 1.4); c.lineTo(sd * x + .9, y + i * 1.4); }
+      c.stroke();
+    };
+    // bord d'attaque d'une aile : une arête qui accroche la lumière
+    const edge = (draw, a = .5) => { c.lineWidth = .6; c.strokeStyle = `rgba(255, 255, 255, ${a})`; draw(); c.stroke(); };
+
+    if (m === 'classique') {
+      nozzle(0, 16.6, 11, 3);
+      seam(() => P(-8.6, -5, 8.6, -5)); seam(() => P(-7.7, 6, 7.7, 6)); seam(() => P(0, -10.6, 0, -7.4)); seam(() => P(0, 1.4, 0, 9.6), .7);
+      rivets(row(-6, -6.6, 6, -6.6, 5)); rivets(row(-6, 7.6, 6, 7.6, 5));
+      seam(() => P(-9, 7, -13, 13.3)); seam(() => P(9, 7, 13, 13.3));
+      edge(() => P(-7.6, 3.4, -13.8, 13.6), .35); edge(() => P(7.6, 3.4, 13.8, 13.6), .18);
+      vents(6.3, -9.6, 3);
+      gloss(0, -3, 4, 4); navs(14.2, 14.4);
+    } else if (m === 'navette') {
+      nozzle(0, 16.4, 8, 2.8);
+      seam(() => P(5, -8, 5, 9)); seam(() => P(-5, -8, -5, 9));
+      seam(() => P(5.6, 3, 13.2, 7.6)); seam(() => P(-5.6, 3, -13.2, 7.6));
+      seam(() => P(-3.6, 0, 3.6, 0), .8); seam(() => P(-3.8, 6, 3.8, 6), .8);
+      // tuiles de protection thermique sur le nez
+      c.fillStyle = 'rgba(10, 6, 30, .32)'; P(0, -20, 3.3, -13.6, 0, -12.4, -3.3, -13.6); c.closePath(); c.fill();
+      rivets(row(-3.4, 11.6, 3.4, 11.6, 3));
+      edge(() => P(-5, -8, -17, 11)); edge(() => P(5, -8, 17, 11), .25);
+      gloss(0, -7, 3, 4.5); navs(16, 10.6);
+    } else if (m === 'eclair') {
+      nozzle(0, 16.2, 8, 2.8);
+      seam(() => P(-4.3, -14, 4.3, -14)); seam(() => P(-4.7, 1.5, 4.7, 1.5));
+      rivets(row(-3, 3, 3, 3, 3)); rivets(row(-2.6, -15.5, 2.6, -15.5, 3), .36);
+      seam(() => P(-6, 7, -10, 14)); seam(() => P(6, 7, 10, 14));
+      edge(() => P(-4, 4, -11, 11)); edge(() => P(4, 4, 11, 11), .25);
+      edge(() => P(-.6, -24, -3.6, -9), .45);
+      gloss(0, -12, 2.6, 2.6); navs(11, 16.4, .9);
+    } else if (m === 'aile') {
+      nozzle(0, 15.6, 8, 2.8);
+      seam(() => P(-3, -18, -12.5, 6.6)); seam(() => P(3, -18, 12.5, 6.6));
+      seam(() => P(-5, 3, -15, 9.6), .8); seam(() => P(5, 3, 15, 9.6), .8);
+      seam(() => P(-3.6, 5.6, 3.6, 5.6), .8);
+      // prises d'air à la racine des ailes
+      c.fillStyle = 'rgba(10, 6, 30, .55)'; for (const sd of [-1, 1]) { P(sd * 3.6, -1, sd * 6.4, 3.4, sd * 3.6, 3.4); c.closePath(); c.fill(); }
+      rivets(row(-4, 8, 4, 8, 3));
+      edge(() => P(0, -27, -21, 14)); edge(() => P(0, -27, 21, 14), .25);
+      gloss(0, -7, 3, 6); navs(20.2, 13.2);
+    } else if (m === 'ovni') {
+      nozzle(0, 12.4, 7, 2.4);
+      c.lineWidth = .55; c.strokeStyle = 'rgba(10, 6, 30, .4)'; c.beginPath(); c.ellipse(0, 1, 17, 5.2, 0, 0, 7); c.stroke();
+      c.strokeStyle = 'rgba(255, 255, 255, .3)'; c.beginPath(); c.ellipse(0, .2, 21, 6.6, 0, Math.PI * 1.08, Math.PI * 1.92); c.stroke();
+      for (const sd of [-1, 1]) for (const k of [.55, .85]) seam(() => P(sd * 17 * k, 1 + 5.2 * Math.sqrt(1 - k * k), sd * 23 * k, 1 + 8 * Math.sqrt(1 - k * k)), .7);
+      // reflet du dôme
+      c.save(); c.beginPath(); c.ellipse(0, -5, 10, 11, 0, Math.PI, Math.PI * 2); c.clip();
+      c.fillStyle = 'rgba(255, 255, 255, .45)'; c.beginPath(); c.ellipse(-4.5, -11, 3, 5, .5, 0, 7); c.fill();
+      c.fillStyle = 'rgba(255, 255, 255, .9)'; c.beginPath(); c.arc(-5.5, -12.5, .8, 0, 7); c.fill();
+      c.restore();
+      c.lineWidth = .7; c.strokeStyle = 'rgba(255, 255, 255, .5)'; c.beginPath(); c.ellipse(0, -5, 10, 11, 0, Math.PI * 1.15, Math.PI * 1.5); c.stroke();
+      navs(22.4, 2.4);
+    } else if (m === 'tie') {
+      nozzle(0, 11.6, 6, 2.6);
+      for (const sd of [-1, 1]) {
+        // panneaux solaires : reflet qui court sur la longueur
+        c.fillStyle = 'rgba(255, 255, 255, .16)'; P(sd * 15.6, -14, sd * 17, -12.6, sd * 17, 12.6, sd * 15.6, 14); c.closePath(); c.fill();
+        seam(() => P(sd * 15, 0, sd * 19, 0), .8);
+        rivets([[sd * 13.6, -19.4], [sd * 13.6, 19.4]], .36);
+        // bras qui tient l'aile
+        c.fillStyle = 'rgba(10, 6, 30, .35)'; c.fillRect(sd > 0 ? 9.4 : -12.4, -3, 3, 6);
+        rivets([[sd * 10.9, -1.6], [sd * 10.9, 1.6]], .34);
+      }
+      seam(() => { c.beginPath(); c.arc(0, 0, 7.2, 0, 7); }, .7);
+      rivets(row(-6.4, 4.4, 6.4, 4.4, 2).concat([[0, 7.4], [-6.6, -3.4], [6.6, -3.4]]), .36);
+      gloss(0, -1, 5, 5); navs(19, -12.6, .9);
+    } else if (m === 'faucon') {
+      // plaques de coque, radar et bouches de réacteur
+      c.fillStyle = 'rgba(10, 6, 30, .2)'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 16.6, Math.PI * .1, Math.PI * .4); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 16.6, Math.PI * 1.1, Math.PI * 1.35); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255, 255, 255, .14)'; c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 16.6, Math.PI * .6, Math.PI * .85); c.closePath(); c.fill();
+      seam(() => { c.beginPath(); for (const a of [.35, 1.2, 2.1, 2.9, 3.9, 4.8, 5.6]) { c.moveTo(Math.cos(a) * 10.6, Math.sin(a) * 10.6); c.lineTo(Math.cos(a) * 16.4, Math.sin(a) * 16.4); } }, .8);
+      seam(() => { c.beginPath(); c.arc(0, 0, 14, 0, 7); }, .6);
+      rivets(Array.from({ length: 12 }, (_, i) => [Math.cos(i * .5236 + .26) * 15.2, Math.sin(i * .5236 + .26) * 15.2]), .36);
+      // le radar
+      c.fillStyle = light; c.beginPath(); c.ellipse(-7, 6.4, 3.4, 2.4, -.3, 0, 7); c.fill();
+      c.lineWidth = .5; c.strokeStyle = 'rgba(10, 6, 30, .5)'; c.stroke();
+      c.fillStyle = 'rgba(10, 6, 30, .5)'; c.beginPath(); c.arc(-7, 6.4, .7, 0, 7); c.fill();
+      // les pinces
+      for (const x of [-7, 7]) { seam(() => P(x, -24, x, -12), .8); rivets(row(x, -22, x, -14, 3), .34); }
+      // bouches de réacteur
+      c.fillStyle = 'rgba(200, 240, 255, .9)'; for (let i = 0; i < 5; i++) c.fillRect(-9 + i * 4, 13.6, 2.2, 1.6);
+      gloss(16, -10, 3, 3);
+    } else if (m === 'requin') {
+      nozzle(0, 16.8, 7, 2.6);
+      // ventre plus clair, comme un vrai requin
+      c.save(); c.beginPath(); c.moveTo(0, -29); c.bezierCurveTo(10, -20, 9, 4, 4, 15); c.lineTo(-4, 15); c.bezierCurveTo(-9, 4, -10, -20, 0, -29); c.clip();
+      const g = c.createLinearGradient(-8, 0, 8, 0); g.addColorStop(0, 'rgba(255, 255, 255, 0)'); g.addColorStop(.5, 'rgba(255, 255, 255, .2)'); g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      c.fillStyle = g; c.fillRect(-9, -8, 18, 24); c.restore();
+      seam(() => P(0, -11, 0, -6.2), .7); seam(() => P(0, 2.4, 0, 13), .7); seam(() => P(-5.7, 7, 5.7, 7), .8);
+      edge(() => P(-6, -2, -19, 9)); edge(() => P(6, -2, 19, 9), .25);
+      c.fillStyle = 'rgba(255, 255, 255, .85)'; c.beginPath(); c.arc(-4.9, -20.4, .45, 0, 7); c.arc(4.1, -20.4, .45, 0, 7); c.fill();
+      gloss(0, -2, 2.5, 4); navs(18, 8.8, .9);
+    } else if (m === 'abeille') {
+      // nervures des ailes
+      const flap = reduce ? 1 : .55 + Math.abs(Math.sin(t / 40)) * .45;
+      c.strokeStyle = 'rgba(255, 255, 255, .55)'; c.lineWidth = .4;
+      for (const sd of [-1, 1]) { c.save(); c.translate(sd * 8, -6); c.scale(flap, 1); c.beginPath(); c.moveTo(0, 0); c.lineTo(sd * 15, -5); c.moveTo(sd * 4, -1); c.lineTo(sd * 10, 2.4); c.moveTo(sd * 8, -2.6); c.lineTo(sd * 13, .6); c.stroke(); c.restore(); }
+      // duvet sur le bord du corps
+      c.strokeStyle = 'rgba(255, 255, 255, .35)'; c.lineWidth = .45; c.beginPath();
+      for (let i = 0; i < 18; i++) { const a = -1.3 + i * .15, sd = i % 2 ? 1 : -1, x = sd * Math.cos(a) * 10.4, y = 1 + Math.sin(a) * 15; c.moveTo(x, y); c.lineTo(x * 1.08, y * 1.04 + .3); }
+      c.stroke();
+      // reflet bombé du ventre et des rayures
+      c.fillStyle = 'rgba(255, 255, 255, .22)'; c.beginPath(); c.ellipse(-3.6, -2, 2.6, 8, -.12, 0, 7); c.fill();
+      for (const sd of [-1, 1]) gloss(sd * 4, -9, 3.2, 4, sd * .3);
+      c.fillStyle = 'rgba(255, 255, 255, .8)'; c.beginPath(); c.arc(-9.5, -23.6, .6, 0, 7); c.arc(8.5, -23.6, .6, 0, 7); c.fill();
+    } else if (m === 'chevalier') {
+      nozzle(0, 20.8, 6.6, 2.6);
+      // bord du bouclier en relief, rivets et rainure de la lance
+      c.save(); c.translate(0, -.6); c.scale(.84, .86);
+      seam(() => { P(-11, -19, 11, -19, 11, 2); c.quadraticCurveTo(10, 12, 0, 18); c.quadraticCurveTo(-10, 12, -11, 2); c.closePath(); }, .9);
+      c.restore();
+      rivets([[-9.4, -17.4], [9.4, -17.4], [-9.4, 0], [9.4, 0], [0, 15.4], [-6.6, 9.8], [6.6, 9.8]], .45);
+      c.lineWidth = .4; c.strokeStyle = 'rgba(255, 255, 255, .7)'; c.beginPath(); c.moveTo(-1.2, -4); c.lineTo(-1.2, 11.4); c.moveTo(-6, 1.4); c.lineTo(5.6, 1.4); c.stroke();
+      edge(() => P(-.5, -35, -1.4, -19), .7);
+      for (const sd of [-1, 1]) seam(() => { c.beginPath(); c.moveTo(sd * 11, -13); c.quadraticCurveTo(sd * 19, -11, sd * 18.5, -1); }, .7);
+      c.fillStyle = 'rgba(255, 255, 255, .45)'; c.fillRect(-7, -15, 14, 1);
+    } else if (m === 'galion') {
+      // planches de la coque avec leur grain, cordages et coutures des voiles
+      c.save(); c.beginPath(); c.moveTo(-17, 6); c.lineTo(17, 6); c.lineTo(11, 17); c.lineTo(-11, 17); c.closePath(); c.clip();
+      seam(() => P(-17, 7.8, 17, 7.8), .8); seam(() => P(-16, 12.6, 16, 12.6), .8); seam(() => P(-14, 15.6, 14, 15.6), .8);
+      c.strokeStyle = 'rgba(10, 6, 30, .25)'; c.lineWidth = .4; c.beginPath();
+      for (const [x, y] of [[-12, 8.6], [-3, 9], [7, 8.6], [-9, 11.6], [4, 11.4], [12, 11]]) { c.moveTo(x, y); c.lineTo(x + 3, y); }
+      for (const x of [-12, -4, 4, 12]) { c.moveTo(x, 6); c.lineTo(x, 7.8); }
+      c.stroke(); c.restore();
+      rivets([[-14, 10], [14, 10], [-11.6, 14], [11.6, 14]], .42);
+      c.strokeStyle = 'rgba(60, 40, 30, .6)'; c.lineWidth = .4; c.beginPath();
+      c.moveTo(0, -29); c.lineTo(-12, -22); c.moveTo(0, -29); c.lineTo(12, -22); c.moveTo(0, -8); c.lineTo(-15, -6); c.moveTo(0, -8); c.lineTo(15, -6);
+      c.moveTo(-13, 6); c.lineTo(-16, 6.2); c.moveTo(13, 6); c.lineTo(16, 6.2); c.stroke();
+      c.strokeStyle = 'rgba(10, 6, 30, .22)'; c.setLineDash([.8, .8]); c.beginPath();
+      for (const x of [-6, 6]) { c.moveTo(x, -20.6); c.lineTo(x * .85, -8.6); c.moveTo(x * 1.2, -4.2); c.lineTo(x * 1.1, 7.6); }
+      c.stroke(); c.setLineDash([]);
+      c.fillStyle = 'rgba(255, 255, 255, .3)'; c.beginPath(); c.ellipse(-6, -15.6, 2.4, 4, .2, 0, 7); c.ellipse(-7, .6, 2.6, 4, .2, 0, 7); c.fill();
+      for (const x of [-8, 0, 8]) { c.fillStyle = 'rgba(255, 255, 255, .85)'; c.beginPath(); c.arc(x - .6, 12.9, .5, 0, 7); c.fill(); }
+    } else if (m === 'mecha') {
+      for (const x of [-6, 6]) nozzle(x, 18.4, 5, 2.4);
+      seam(() => P(-10, -4, 10, -4), .8); seam(() => P(0, 1.6, 0, 10), .7); seam(() => P(-6.5, -16, 6.5, -16), .7);
+      rivets([[-8.4, -10.4], [8.4, -10.4], [-8.4, 8.4], [8.4, 8.4], [-5, -23.4], [5, -23.4]], .45);
+      // articulations des épaules et des genoux
+      for (const sd of [-1, 1]) {
+        c.fillStyle = shade(body, -.25); c.beginPath(); c.arc(sd * 11.6, -9.6, 2.6, 0, 7); c.fill();
+        c.lineWidth = .5; c.strokeStyle = 'rgba(10, 6, 30, .55)'; c.stroke();
+        c.fillStyle = 'rgba(255, 255, 255, .5)'; c.beginPath(); c.arc(sd * 11.6 - .8, -10.4, .7, 0, 7); c.fill();
+        seam(() => P(sd > 0 ? 3 : -9, 12.4, sd > 0 ? 9 : -3, 12.4), .9);
+        vents(sd * 13, -6, 3, false);
+        // bouche des bras-canons
+        c.fillStyle = '#1a1020'; c.beginPath(); c.ellipse(sd * 13, -18.2, 1.4, .6, 0, 0, 7); c.fill();
+      }
+      c.lineWidth = .7; c.strokeStyle = 'rgba(122, 216, 255, .55)'; c.beginPath(); c.arc(0, -2, 5.4, 0, 7); c.stroke();
+      c.fillStyle = 'rgba(255, 255, 255, .45)'; c.fillRect(-5, -21, 10, 1);
+    } else if (m === 'coeur') {
+      // couture dorée tout autour, et des paillettes qui scintillent
+      c.save(); c.translate(0, -.4); c.scale(.86, .86);
+      c.setLineDash([1, 1.2]); c.lineWidth = .55; c.strokeStyle = 'rgba(255, 216, 107, .8)';
+      c.beginPath(); c.moveTo(0, 16); c.bezierCurveTo(-20, 2, -22, -18, -11, -24); c.bezierCurveTo(-4, -28, 0, -22, 0, -17); c.bezierCurveTo(0, -22, 4, -28, 11, -24); c.bezierCurveTo(22, -18, 20, 2, 0, 16); c.stroke();
+      c.setLineDash([]); c.restore();
+      c.lineWidth = .7; c.strokeStyle = 'rgba(255, 255, 255, .7)'; c.beginPath(); c.ellipse(0, -7, 5.5, 7, 0, 0, 7); c.stroke();
+      for (let i = 0; i < 5; i++) {
+        const k = reduce ? .7 : (Math.sin(t / 180 + i * 1.7) + 1) / 2, [x, y] = [[-12, -10], [11, -15], [8, 2], [-6, 6], [14, -6]][i];
+        c.globalAlpha = k; c.fillStyle = '#fff'; c.beginPath(); c.moveTo(x, y - 1.6); c.lineTo(x + .4, y); c.lineTo(x, y + 1.6); c.lineTo(x - .4, y); c.closePath(); c.moveTo(x - 1.6, y); c.lineTo(x, y + .4); c.lineTo(x + 1.6, y); c.lineTo(x, y - .4); c.closePath(); c.fill();
+      }
+      c.globalAlpha = 1;
+      gloss(0, -7, 5.5, 7);
+    } else if (m === 'cristal') {
+      // facettes plus fines, à l'intérieur de la pierre
+      c.lineWidth = .4; c.strokeStyle = 'rgba(255, 255, 255, .45)'; c.beginPath();
+      c.moveTo(0, -31); c.lineTo(5, -9); c.lineTo(4, 13); c.moveTo(0, -31); c.lineTo(-5, -9); c.lineTo(-4, 13);
+      c.moveTo(-10, -12); c.lineTo(-5, -9); c.lineTo(5, -9); c.lineTo(10, -12); c.moveTo(-8, 8); c.lineTo(-4, 13); c.lineTo(4, 13); c.lineTo(8, 8); c.stroke();
+      c.fillStyle = 'rgba(255, 255, 255, .22)'; P(-10, -12, -5, -9, -4, 13, -8, 8); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(10, 6, 30, .16)'; P(10, -12, 5, -9, 4, 13, 8, 8); c.closePath(); c.fill();
+      // reflets arc-en-ciel au cœur de la pierre
+      const hu = reduce ? 0 : (t / 20) % 360;
+      c.globalAlpha = .35; c.fillStyle = `hsl(${hu}, 90%, 70%)`; P(0, -6, 3.6, 2, 0, 12, -2, 2); c.closePath(); c.fill();
+      c.fillStyle = `hsl(${(hu + 140) % 360}, 90%, 70%)`; P(0, -6, -3.6, 0, 0, 8, 1.4, 1); c.closePath(); c.fill();
+      c.globalAlpha = 1;
+      c.fillStyle = 'rgba(255, 255, 255, .7)'; c.beginPath(); c.arc(-1, -14, .7, 0, 7); c.fill();
+    } else if (m === 'predateur') {
+      for (const x of [-5, 5]) nozzle(x, 19.6, 4.6, 2.4);
+      seam(() => P(-3.6, -14, 3.6, -14), .8); seam(() => P(-5.6, -2, 5.6, -2), .8); seam(() => P(-5.6, 9, 5.6, 9), .8);
+      seam(() => P(-7, 1, -18, 9), .7); seam(() => P(7, 1, 18, 9), .7);
+      rivets([[-3, -16], [3, -16], [-4.6, -4], [4.6, -4], [-4.6, 11], [4.6, 11], [-16, 8.4], [16, 8.4]], .4);
+      // prises d'air
+      c.fillStyle = '#05030c'; for (const sd of [-1, 1]) { P(sd * 4.4, -12, sd * 6, -4, sd * 4.6, -4); c.closePath(); c.fill(); }
+      edge(() => P(0, -29, -4, -18, -6, -4, -19, 6), .35);
+      gloss(0, -11, 2.2, 4.4);
+      navs(21, 15.4, .9);
+    } else if (m === 'legende') {
+      for (const x of [-4, 4]) nozzle(x, 22, 4, 2.2);
+      // gravures dorées
+      c.lineWidth = .45; c.strokeStyle = 'rgba(196, 144, 42, .75)'; c.beginPath();
+      c.moveTo(0, -24); c.lineTo(0, 14); c.moveTo(-4.4, -12); c.lineTo(-6, 6); c.moveTo(4.4, -12); c.lineTo(6, 6);
+      c.moveTo(-6, 7); c.quadraticCurveTo(-14, 6, -20, 9); c.moveTo(6, 7); c.quadraticCurveTo(14, 6, 20, 9); c.stroke();
+      rivets([[-3, -4], [3, -4], [-3, 4], [3, 4], [-18, 11.4], [18, 11.4]], .4);
+      edge(() => P(0, -31, -5, -17, -7, -2, -21, 6, -27, 18), .55);
+      gloss(0, -11.4, 2.4, 4.6);
+      navs(26, 17.4, .9);
+    }
     c.restore();
   }
   // montage des pistolets sur chaque vaisseau (repère du vaisseau, nez vers le haut)
