@@ -1064,6 +1064,74 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
   .stat.right .lives { grid-area: l; margin-top: 0; }
   .stat.right .btn-pause { grid-area: p; grid-row: 1 / 3; margin-top: 0; }
 }
+
+/* ===== Tous les écrans sur téléphone : rien de trop gros, tout tient mieux dans l'écran ===== */
+@media (max-width: 560px) {
+  .panel { padding-block: 14px; }
+  /* accueil : tout tient sur un écran, sans faire défiler */
+  .card { gap: 11px; }
+  .card h1 { font-size: 40px; }
+  .logo { padding-top: 2px; }
+  .card p { font-size: 15px; line-height: 1.4; }
+  .play { font-size: 19px; padding: 13px 30px; box-shadow: 0 5px 0 #c9902a, 0 0 30px color-mix(in srgb, var(--star) 45%, transparent); }
+  .ghost { font-size: 15px; padding: 10px 20px; }
+  .worldbtn { padding: 8px 12px; gap: 10px; border-radius: 16px; }
+  .worldbtn .wbmap { font-size: 24px; }
+  .worldbtn b { font-size: 15px; }
+  .worldbtn small { font-size: 12px; }
+  .worldbtn .wbgo { font-size: 24px; }
+  .defi { padding: 8px 12px; gap: 10px; border-radius: 16px; }
+  .defi .dfico { font-size: 22px; }
+  .defi .dfhead b { font-size: 13px; }
+  .defi .dfhead em { font-size: 12px; padding: 1px 7px; }
+  .defi .dfgoal { font-size: 13px; }
+  .menugrid { gap: 8px; }
+  .menugrid .ghost { font-size: 13px; padding: 10px 8px; }
+  .menulinks { gap: 4px 14px; }
+
+  /* Hangar et pages (trophées, classement, sauvegarde, comment jouer…) */
+  .hangar { padding: 14px; gap: 14px; border-radius: 18px; }
+  .hangar h2 { font-size: 24px; }
+  .hangar h2 .bay { font-size: 10px; letter-spacing: .14em; }
+  .xclose + h2 { padding-right: 44px; }
+  .opts { gap: 12px; }
+  .opt { gap: 6px; }
+  .opt input { font-size: 16px; padding: 8px 10px; }
+  /* l'aperçu de la fusée passe à gauche, son nom et les Astros à droite : on gagne la moitié de la hauteur */
+  .preview { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: 14px; row-gap: 4px; align-items: center; justify-items: start; }
+  .preview .pvwrap { grid-row: 1 / span 5; }
+  .preview canvas { width: 104px; height: 125px; }
+  .preview .shipname, .preview .powername, .preview .shiptitle { text-align: left; }
+  .preview .shipname { font-size: 16px; }
+  .preview .powername { font-size: 13px; }
+  .walletbig { font-size: 18px; padding: 5px 12px 5px 7px; gap: 7px; }
+  .walletbig .coin { width: 22px; height: 22px; }
+  .walletbig small { font-size: 11px; }
+  .chips { gap: 6px; }
+  .chip { font-size: 13px; padding: 5px 11px; }
+  .swatch { width: 32px; height: 32px; }
+  .slot { padding: 6px; }
+  .slot canvas { width: 44px; height: 44px; }
+  /* Retour et Décoller restent toujours en bas de l'écran : plus besoin de descendre tout le Hangar pour partir */
+  .hangar:not(.atelier) > .row { position: sticky; bottom: 0; z-index: 3; margin: 0 -14px -14px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-radius: 0 0 16px 16px; background: linear-gradient(180deg, rgba(14, 10, 36, 0), rgba(14, 10, 36, .97) 28%); flex-wrap: nowrap; gap: 10px; }
+  .hangar:not(.atelier) > .row > button { flex: 1; }
+  .hangar:not(.atelier) > .row .play { font-size: 17px; padding: 12px 16px; }
+  .hangar:not(.atelier) > .row .ghost { padding: 10px 14px; }
+  /* carte des mondes et équipe */
+  .mphead h2 { font-size: 26px; }
+  .mphead small { font-size: 10px; }
+  .mpcount { gap: 6px; }
+  .mpcount span { padding: 3px 10px; font-size: 12px; }
+  .teambtns { gap: 8px; }
+  .teambtns .ghost { font-size: 13px; padding: 9px 4px; }
+  .buybar { bottom: 72px; }
+  /* Comment jouer : le titre de chaque règle au-dessus de son texte (deux colonnes, c'était trop serré) */
+  .rules { grid-template-columns: 1fr; gap: 3px; font-size: 14px; line-height: 1.45; }
+  .rules span:nth-child(odd) { padding-top: 10px; font-size: 12px; }
+  .rules span:first-child { padding-top: 0; }
+  .final { font-size: 48px; }
+}
 </style>
 </head>
 <body>
@@ -8949,6 +9017,7 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     const left = mine === 'p2' ? p2.lives : lives;
     combo = 0; comboT = 0; pl.hurt = 1.4; shake = .35; flash = .4; flashColor = '255, 60, 110';
     pop(pl.x, pl.y - 34, left > 0 ? (two ? `${duoName(pl)} : −1 vie` : '−1 vie') : 'Plus de vie !');
+    buzz(left > 0 ? 90 : [120, 60, 200]);
     burst(pl.x, pl.y, '#ff7aa8', 10); explode(pl.x, pl.y, '#ff7aa8', .7);
     beep(120, .35, 'sawtooth', .18, -60);
     updateHud();
@@ -14525,8 +14594,22 @@ body.fit #game { box-shadow: 0 0 0 1px rgba(255, 255, 255, .1), 0 0 50px rgba(0,
     slowMs = ms > 25 ? slowMs + ms : Math.max(0, slowMs - ms * 2);
     if (slowMs > 1500) { slowMs = 0; dprCap = Math.max(1, DPR - .5); resize(); }
   }
+  // téléphone : une petite vibration quand on perd une vie (là où le téléphone sait vibrer)
+  function buzz(ms) { try { if (matchMedia('(pointer: coarse)').matches && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+  // téléphone : l'écran ne s'éteint pas tout seul pendant une partie (il peut de nouveau s'éteindre dès qu'on la quitte)
+  let wakeLock = null, wakeAsk = false, wakeT = 0;
+  function keepAwake(t) {
+    if (t - wakeT < 1000 || !('wakeLock' in navigator)) return;
+    wakeT = t;
+    const want = ['play', 'launch', 'dying', 'talk', 'choice'].includes(state) && !document.hidden;
+    if (want && !wakeLock && !wakeAsk) {
+      wakeAsk = true;
+      navigator.wakeLock.request('screen').then(l => { wakeLock = l; wakeAsk = false; l.addEventListener('release', () => { if (wakeLock === l) wakeLock = null; }); }).catch(() => { wakeAsk = false; wakeT = t + 30000; });
+    } else if (!want && wakeLock) { const l = wakeLock; wakeLock = null; l.release().catch(() => {}); }
+  }
   function loop(t) {
     dprCheck(t, t - last);
+    keepAwake(t);
     // on passe en ligne (ou on en revient) : la caméra du téléphone reprend sa bonne taille
     if (!netHW && Math.abs(phoneZoom(cv.clientWidth, cv.clientHeight) - camS) > .001) resize();
     litCheck(t, (t - last) / 1000);
