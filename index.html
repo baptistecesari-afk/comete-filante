@@ -1253,6 +1253,111 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 .stars5 .ic { width: 1.05em; height: 1.05em; filter: none; vertical-align: top; }
 .legicon .ic { width: 1.8em; height: 1.8em; }
 .btn-pause .ic { width: 1.15em; height: 1.15em; }
+/* ===== Duel des Gardiens ===== */
+:is(#menu, #team) .duelbtn { border-color: #ff7aa8; color: #ffd6e4; }
+#duelPanel {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -5%, color-mix(in srgb, var(--w2) 30%, transparent), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 110%, color-mix(in srgb, var(--w1) 70%, transparent), transparent 70%),
+    color-mix(in srgb, var(--night) 82%, transparent);
+  transition: --w1 .6s ease, --w2 .6s ease;
+  align-items: start;
+}
+.duelpage { max-width: 50rem; }
+.duelpage .mphead { text-align: center; }
+.dmodes { margin: 0 auto; }
+.dmodes .ic { width: 1.05em; height: 1.05em; vertical-align: -.15em; margin-right: 6px; }
+.donline { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 12px; border-radius: 18px; background: #0b0820a8; border: 1.5px solid color-mix(in srgb, var(--w2) 35%, transparent); }
+.dnetstatus { margin: 0; color: var(--muted); font-size: 15px; }
+.dnetstatus.err { color: #ff9aa8; }
+.dnetbtns .ghost { font-size: 15px; padding: 10px 18px; }
+.dnetbtns .ic, .dvs .ic { width: 1em; height: 1em; vertical-align: -.12em; margin-right: 6px; }
+.dslots { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+.dslot { --pc: #ffd86b; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 18px; background: #0b0820b3; border: 2px solid color-mix(in srgb, var(--pc) 35%, transparent); color: var(--ink); text-align: left; cursor: var(--cur-clic); min-width: 0; font: inherit; transition: border-color .2s, box-shadow .2s, transform .15s; }
+.dslot img { width: 58px; height: 58px; flex: none; }
+.dslot span { display: flex; flex-direction: column; min-width: 0; }
+.dslot small { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--pc); font-weight: 700; }
+.dslot b { font-family: var(--display); font-weight: 400; font-size: 16px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; }
+.dslot.on { border-color: var(--pc); box-shadow: 0 0 22px color-mix(in srgb, var(--pc) 40%, transparent), inset 0 0 18px color-mix(in srgb, var(--pc) 14%, transparent); }
+.dslot.far { cursor: default; }
+.dslot:active:not(.far) { transform: scale(.98); }
+#dslot1 { flex-direction: row-reverse; text-align: right; }
+#dslot1 span { align-items: flex-end; }
+.dvs { font-family: var(--display); color: #ff7aa8; font-size: 22px; text-shadow: 0 0 16px #ff7aa880; }
+.dvs .ic { width: 30px; height: 30px; margin: 0; }
+.dhelp { margin: -4px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; font-size: 13px; color: var(--muted); text-align: center; }
+.dinfo { padding: 14px 16px; border-radius: 20px; background: #0b0820b3; border: 1.5px solid color-mix(in srgb, var(--w2) 40%, transparent); display: flex; flex-direction: column; gap: 12px; }
+.dempty { margin: 0; text-align: center; color: var(--muted); }
+.dempty .ic { width: 1em; height: 1em; vertical-align: -.12em; }
+.dihead { display: flex; gap: 14px; align-items: center; }
+.dihead img { width: 78px; height: 78px; flex: none; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--w2) 50%, transparent)); }
+.dihead small { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.dihead b { display: block; font-family: var(--display); font-weight: 400; font-size: 24px; line-height: 1.1; color: var(--ink); }
+.dihead em { display: block; font-size: 14px; color: var(--muted); margin-top: 2px; }
+.distats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.distats span { display: grid; grid-template-columns: 7.5em 1fr; align-items: center; gap: 8px; }
+.distats i { height: 8px; border-radius: 99px; background: #ffffff14; overflow: hidden; }
+.distats u { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--w1), var(--w2)); box-shadow: 0 0 8px color-mix(in srgb, var(--w2) 60%, transparent); }
+.diskills { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.diskills li { display: grid; grid-template-columns: 10.5em 1fr; gap: 10px; align-items: center; font-size: 14px; color: var(--ink); }
+.diskills li small { color: var(--muted); }
+.dk { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-weight: 400; font-size: 12px; }
+.dk b { font-weight: 400; }
+.dk-fire b { color: #ff7aa8; } .dk-s1 b { color: #ffd86b; } .dk-s2 b { color: #7ad8ff; }
+.dk kbd { font: 700 11px var(--body); min-width: 1.8em; padding: 3px 6px; text-align: center; border-radius: 7px; color: var(--ink); background: #ffffff14; border: 1px solid #ffffff38; border-bottom-width: 3px; }
+.dgrid { display: flex; flex-direction: column; gap: 8px; }
+.dgrid .wdsec { margin: 4px 0 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.dgrid .bgrid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+.dgrid .btile { cursor: var(--cur-clic); font: inherit; color: inherit; background: #0b0820b3; border-color: color-mix(in srgb, var(--w2) 35%, transparent); transition: transform .12s, border-color .2s, box-shadow .2s; }
+.dgrid .btile img { width: 44px; height: 44px; }
+.dgrid .btile i { font-size: 9.5px; }
+.dgrid .btile:not(.hide):hover { transform: translateY(-2px); border-color: var(--w2); }
+.dgrid .btile.sel { border-color: var(--star); box-shadow: 0 0 16px color-mix(in srgb, var(--star) 50%, transparent); background: color-mix(in srgb, var(--star) 14%, #0b0820); }
+.dgrid .btile.hide { cursor: default; }
+.dbtns { justify-content: center; }
+.dbtns .play:disabled { opacity: .45; filter: grayscale(.6); cursor: default; }
+.dpause { position: fixed; z-index: 4; top: calc(10px + env(safe-area-inset-top, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); margin: 0; }
+#duelMenu, #duelEnd { background: color-mix(in srgb, var(--night) 62%, transparent); }
+.dmhead, .dendcard h2 { font-family: var(--display); font-weight: 400; margin: 0; font-size: 30px; color: var(--star); }
+.dendcard { gap: 10px; }
+.dendcard h2 { font-size: clamp(20px, 5vw, 28px); text-wrap: balance; }
+.dendkick { font-family: var(--display); font-size: clamp(36px, 10vw, 56px); line-height: 1; background: linear-gradient(180deg, var(--star) 20%, var(--tail) 100%); -webkit-background-clip: text; background-clip: text; color: transparent; transform: rotate(-3deg); }
+#duelWinCv { width: 320px; height: 230px; max-width: 100%; }
+.dendscore { display: flex; gap: 14px; align-items: center; justify-content: center; font-family: var(--display); font-size: 18px; }
+.dendscore b { font-size: 34px; font-weight: 400; }
+.dendscore i { color: var(--muted); font-style: normal; }
+.dendstats { font-size: 14px !important; }
+.dendreward { font-weight: 600; color: var(--star) !important; }
+.dendreward small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+/* les boutons au doigt : en bas à droite pour le joueur du bas, à l'envers en haut à gauche pour celui du haut */
+#duelPads { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+.dpad { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: flex-end; pointer-events: none; }
+.dpad.top { right: auto; bottom: auto; left: calc(12px + env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px)); transform: rotate(180deg); }
+.dpad button { --p: 0; pointer-events: auto; touch-action: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 15px var(--display);
+  border: 2px solid #ffffff59; background: conic-gradient(rgba(8, 4, 24, .75) calc(var(--p) * 360deg), color-mix(in srgb, var(--star) 28%, rgba(20, 14, 48, .7)) 0); box-shadow: 0 6px 16px #0007; }
+.dpad button .ic { width: 22px; height: 22px; }
+.dpad button.wait { opacity: .7; }
+.dpad button.on { transform: scale(.92); border-color: var(--star); }
+.dpad .dfire { width: 74px; height: 74px; background: color-mix(in srgb, #ff7aa8 40%, rgba(20, 14, 48, .7)); }
+@media (max-width: 720px) {
+  .dgrid .bgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .dgrid .btile img { width: 40px; height: 40px; }
+}
+@media (max-width: 560px) {
+  .duelpage { padding: 18px 14px 16px; gap: 14px; }
+  .dmodes button { padding: 8px 10px; font-size: 13px; }
+  .dmodes .ic { margin-right: 4px; }
+  .dslots { gap: 6px; }
+  .dslot { padding: 8px; gap: 6px; }
+  .dslot img { width: 40px; height: 40px; }
+  .dslot b { font-size: 13px; }
+  .dslot small { font-size: 10px; }
+  .dvs .ic { width: 22px; height: 22px; }
+  .dihead img { width: 58px; height: 58px; }
+  .dihead b { font-size: 19px; }
+  .distats { grid-template-columns: 1fr; }
+  .diskills li { grid-template-columns: 1fr; gap: 2px; }
+}
 </style>
 
 <body>
@@ -1414,6 +1519,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
     <button class="play" id="startBtn">Jouer</button>
     <button type="button" class="ghost duobtn" id="duoBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>Partie à deux</button>
+    <button type="button" class="ghost duobtn duelbtn" id="duelBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-swords"/></svg>Duel des Gardiens</button>
     <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-map"/></svg></span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
     <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
       <span class="dfico" id="defiIco" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg></span>
@@ -1655,6 +1761,84 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <button class="play" id="mapGo">Jouer</button>
       <button class="ghost" id="mapBack">Retour</button>
     </div>
+  </div>
+</div>
+
+<div class="panel" id="duelPanel" hidden>
+  <div class="mappage duelpage">
+    <button class="xclose" data-back="duelBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
+    <header class="mphead"><small>Mode 1 contre 1</small><h2>Duel des Gardiens</h2><p class="mpcount" id="duelCount"></p></header>
+    <div class="cinetabs dmodes" id="duelModes" role="tablist">
+      <button type="button" role="tab" data-mode="local"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>À deux ici</button>
+      <button type="button" role="tab" data-mode="online"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-share"/></svg>En ligne</button>
+      <button type="button" role="tab" data-mode="bot"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg>Entraînement</button>
+    </div>
+    <div class="donline" id="duelOnline" hidden>
+      <p class="dnetstatus" id="duelNetStatus"></p>
+      <div class="teamcode" id="duelCodeBox" hidden><small>Code du salon</small><b id="duelCode" class="notypo"></b><span class="teamlink notypo" id="duelLink"></span></div>
+      <form class="teamjoin" id="duelJoinForm" hidden>
+        <input id="duelJoinInput" maxlength="5" autocomplete="off" spellcheck="false" placeholder="CODE" aria-label="Code du salon">
+        <button class="play" type="submit">Rejoindre</button>
+      </form>
+      <div class="row dnetbtns" id="duelNetBtns">
+        <button type="button" class="ghost" id="duelCreate"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-crown"/></svg>Créer un salon</button>
+        <button type="button" class="ghost" id="duelJoin"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-join"/></svg>Rejoindre</button>
+      </div>
+      <div class="row dnetbtns">
+        <button type="button" class="ghost" id="duelShare" hidden><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-share"/></svg>Partager le lien</button>
+        <button type="button" class="toggle" id="duelNetLeave" hidden>Quitter le salon</button>
+      </div>
+    </div>
+    <div class="dslots">
+      <button type="button" class="dslot" id="dslot0" data-side="0"><img alt=""><span><small></small><b></b></span></button>
+      <span class="dvs" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-swords"/></svg></span>
+      <button type="button" class="dslot" id="dslot1" data-side="1"><img alt=""><span><small></small><b></b></span></button>
+    </div>
+    <p class="dhelp" id="duelLocalHelp" hidden></p>
+    <div class="dinfo" id="duelInfo"></div>
+    <div class="dgrid" id="duelGrid"></div>
+    <div class="row mpbtns dbtns">
+      <button class="play" id="duelGo">Combat !</button>
+      <button class="ghost" id="duelBack">Retour</button>
+    </div>
+  </div>
+</div>
+
+<button class="btn-pause dpause" id="duelPause" aria-label="Pause" hidden><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-pause"/></svg></button>
+<div id="duelPads" hidden>
+  <div class="dpad" id="dpad0" data-side="0">
+    <button type="button" data-k="s2" aria-label="Compétence 2"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg></button>
+    <button type="button" data-k="s1" aria-label="Compétence 1"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></button>
+    <button type="button" data-k="fire" class="dfire" aria-label="Tir">Tir</button>
+  </div>
+  <div class="dpad top" id="dpad1" data-side="1">
+    <button type="button" data-k="s2" aria-label="Compétence 2"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg></button>
+    <button type="button" data-k="s1" aria-label="Compétence 1"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></button>
+    <button type="button" data-k="fire" class="dfire" aria-label="Tir">Tir</button>
+  </div>
+</div>
+<div class="panel" id="duelMenu" hidden>
+  <div class="card">
+    <h2 class="dmhead">Pause</h2>
+    <div class="row">
+      <button class="play" id="duelResume">Reprendre</button>
+      <button class="ghost" id="duelQuit">Abandonner</button>
+    </div>
+  </div>
+</div>
+<div class="panel" id="duelEnd" hidden>
+  <div class="card dendcard">
+    <small class="dendkick" id="duelEndKick">Victoire !</small>
+    <canvas id="duelWinCv" width="320" height="230" aria-hidden="true"></canvas>
+    <h2 id="duelEndTitle"></h2>
+    <p class="dendscore" id="duelEndScore"></p>
+    <p class="dendstats" id="duelEndStats"></p>
+    <p class="dendreward" id="duelEndReward"></p>
+    <div class="row">
+      <button class="play" id="duelRematch">Revanche</button>
+      <button class="ghost" id="duelChange">Changer de gardiens</button>
+    </div>
+    <button class="toggle" id="duelHome">Menu principal</button>
   </div>
 </div>
 
@@ -2778,7 +2962,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { name: 'Diamant', col: '#7ae8ff' },
   ];
   const STAT_UNITS = { gardiens: 'gardiens différents battus', aliens: 'aliens détruits', stars: 'étoiles attrapées', rochers: 'astéroïdes détruits', parfaites: 'recharges parfaites', parties: 'parties jouées', vies: 'vies gagnées', pouvoirs: 'super-pouvoirs utilisés',
-    boss: 'boss battus', vol: 'années-lumière parcourues', points: 'points marqués au total', propres: 'niveaux finis sans perdre de vie', serie: 'parties d\'affilée avec un boss battu', coffres: 'coffres ouverts', skins: 'skins des coffres dans ta collection' };
+    boss: 'boss battus', vol: 'années-lumière parcourues', points: 'points marqués au total', propres: 'niveaux finis sans perdre de vie', serie: 'parties d\'affilée avec un boss battu', coffres: 'coffres ouverts', skins: 'skins des coffres dans ta collection',
+    duels: 'duels gagnés', duelBoss: 'gardiens différents victorieux en duel' };
   // chaque trophée : un palier (tier), un objectif (stat + goal, ou un exploit), des points bonus,
   // des objets exclusifs (rewards) et parfois un titre à afficher sous le nom de la fusée
   const COLLECTIONS = [
@@ -2901,6 +3086,18 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       { tier: 3, name: 'Collection', stat: 'skins', goal: 20, pts: 2000 },
       { tier: 4, name: 'Collection', stat: 'skins', goal: 27, pts: 0, rewards: [['chest', 3]], title: 'Grande collectionneuse' },
     ] },
+    // Duel des Gardiens : les victoires en duel (à deux sur le même appareil, ou ta victoire en ligne)
+    { id: 'duel', name: 'Duel des Gardiens', desc: 'Gagne des duels de gardiens, à deux sur le même appareil ou en ligne. L\'entraînement contre l\'ordinateur ne compte pas.', items: [
+      { tier: 0, name: 'Duels gagnés', stat: 'duels', goal: 1, pts: 300 },
+      { tier: 1, name: 'Duels gagnés', stat: 'duels', goal: 10, pts: 800 },
+      { tier: 2, name: 'Duels gagnés', stat: 'duels', goal: 30, pts: 1500, rewards: [['chest', 1]] },
+      { tier: 3, name: 'Duels gagnés', stat: 'duels', goal: 75, pts: 0, rewards: [['chest', 2]] },
+      { tier: 1, name: 'Tous en piste', stat: 'duelBoss', goal: 5, pts: 1000 },
+      { tier: 3, name: 'Tous en piste', stat: 'duelBoss', goal: 15, pts: 0, rewards: [['chest', 2]] },
+      { tier: 4, name: 'Tous en piste', stat: 'duelBoss', goal: 50, pts: 5000, title: 'Maîtresse de l\'arène' },
+      { tier: 1, name: 'Sans appel', feat: 'duelNet', text: 'Gagne un duel 2 manches à 0', pts: 500 },
+      { tier: 2, name: 'Intouchable en duel', feat: 'duelIntact', text: 'Gagne la dernière manche d\'un duel sans être touché', pts: 1000 },
+    ] },
   ];
   // nouveaux paliers platine dans les anciennes collections (ajoutés à la fin pour garder les numéros des trophées déjà gagnés)
   const addTo = (id, it) => COLLECTIONS.find(c => c.id === id).items.push(it);
@@ -2969,11 +3166,12 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const petNow = () => cfg.pet && petOwned(cfg.pet) ? byId(PETS, cfg.pet) : null;
 
   // statistiques gardées d'une partie à l'autre
-  let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, parties: 0, vies: 0, pouvoirs: 0, boss: 0, vol: 0, points: 0, propres: 0, serie: 0, serieMax: 0, coffres: 0, boxPts: 0, feats: [], won: [] };
+  let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, parties: 0, vies: 0, pouvoirs: 0, boss: 0, vol: 0, points: 0, propres: 0, serie: 0, serieMax: 0, coffres: 0, boxPts: 0, duels: 0, duelWith: [], feats: [], won: [] };
   let firstCheck = false;
   try {
     const sv = JSON.parse(localStorage.getItem('comete-stats') || '{}');
-    for (const k of ['stars', 'aliens', 'rochers', 'parfaites', 'parties', 'vies', 'pouvoirs', 'boss', 'vol', 'points', 'propres', 'serie', 'serieMax', 'coffres', 'boxPts']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
+    for (const k of ['stars', 'aliens', 'rochers', 'parfaites', 'parties', 'vies', 'pouvoirs', 'boss', 'vol', 'points', 'propres', 'serie', 'serieMax', 'coffres', 'boxPts', 'duels']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
+    if (Array.isArray(sv.duelWith)) stats.duelWith = sv.duelWith.filter(x => typeof x === 'string').slice(0, 200);
     if (Array.isArray(sv.feats)) stats.feats = sv.feats.filter(x => typeof x === 'string');
     // les numéros de trophées ont changé avec la fusion : on recalcule sans redonner les points
     if (sv.v === 2 && Array.isArray(sv.won)) stats.won = sv.won.filter(id => TROPHIES.some(t => t.id === id));
@@ -2991,7 +3189,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   function saveStats() { statsDirty = false; try { localStorage.setItem('comete-stats', JSON.stringify(stats)); } catch (e) {} }
   setInterval(() => { if (statsDirty) saveStats(); }, 2000);
   const boxSkins = () => BOX_POOL.filter(b => shop.owned.includes(b.key + ':' + b.id)).length;
-  const statOf = k => k === 'gardiens' ? beaten.length : k === 'boss' ? Math.max(stats.boss, beaten.length) : k === 'vol' ? Math.floor(stats.vol / 60) : k === 'serie' ? stats.serieMax : k === 'skins' ? boxSkins() : stats[k] || 0;
+  const statOf = k => k === 'gardiens' ? beaten.length : k === 'boss' ? Math.max(stats.boss, beaten.length) : k === 'vol' ? Math.floor(stats.vol / 60) : k === 'serie' ? stats.serieMax : k === 'skins' ? boxSkins() : k === 'duelBoss' ? stats.duelWith.length : stats[k] || 0;
   // compter sans passer par bump (pas de défi du jour lié)
   function addStat(k, n = 1) { stats[k] += n; statsDirty = true; checkTrophies(); }
   // gagner des coffres (trophée, objectif de points)
@@ -5192,7 +5390,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   });
   function closePanels() {
     if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; renderWorldPick(); preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel', 'trophies', 'collection', 'cinema', 'rankPanel']) $(id).hidden = true; openTeam(); return; } }
-    if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('collection').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
+    if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('collection').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('duelPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -8984,7 +9182,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     const calm = Math.min(1, .6 + (it.idx || 0) * .045 + world * .15);
     it.fireT -= sp * calm; it.aimT -= sp * calm; it.altT -= sp * calm;
     if (d.move) { d.move(it, sp, bs, dt, sweep); return; }
-    switch (d.id) {
+    moveW1(it, sp, bs, dt, sweep);
+  }
+  // les attaques des boss du Monde 1 (le Duel des Gardiens s'en sert aussi)
+  function moveW1(it, sp, bs, dt, sweep) {
+    switch (it.def.id) {
       case 'mere':
         sweep(.7);
         if (it.fireT <= 0) { fan(it.x, it.y + 24, 5, 1, 185 * bs, '#7dff8a', 5, false); it.fireT = 2.2; beep(160, .2, 'square', .06, -60); }
@@ -15231,7 +15433,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (bgL && ctx === bgL.k) ctx = cv.getContext('2d');
     ctx.save();
     if (shake > 0 && !reduce) ctx.translate((Math.random() - .5) * 14 * shake, (Math.random() - .5) * 14 * shake);
-    const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'talk' || state === 'dying';
+    const inGame = state === 'play' || state === 'pause' || state === 'over' || state === 'story' || state === 'talk' || state === 'dying' || state === 'duel';
     // en partie, le fond se peint en couches à part, floues et profondes (voir DEPTH) ; au menu il reste tel quel
     const mainK = ctx, toned = inGame;
     if (toned) {
@@ -15247,7 +15449,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     g.addColorStop(0, th.top); g.addColorStop(1, th.bottom);
     if (!farSkip) { ctx.fillStyle = g; ctx.fillRect(-20, -20, W + 40, H + 40); }
 
-    const playing = inGame;
+    const playing = inGame && state !== 'duel';
     const on = playing && power.active > 0;
     const pid = power.def.id;
     // le pouvoir de la 2e fusée compte aussi pour le fond (traits d'hyperpropulsion)
@@ -15538,6 +15740,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       }
       ctx.globalAlpha = 1;
     }
+    if (state === 'duel') duelDraw(t);
     ctx.restore();
 
     // barre de vie du boss
@@ -15684,6 +15887,1106 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       navigator.wakeLock.request('screen').then(l => { wakeLock = l; wakeAsk = false; l.addEventListener('release', () => { if (wakeLock === l) wakeLock = null; }); }).catch(() => { wakeAsk = false; wakeT = t + 30000; });
     } else if (!want && wakeLock) { const l = wakeLock; wakeLock = null; l.release().catch(() => {}); }
   }
+  // =====================================================================================
+  // ===== Duel des Gardiens : 1 contre 1, chaque joueur aux commandes d'un boss vaincu =====
+  // =====================================================================================
+  // L'arène a la même taille sur tous les écrans (et chez les deux joueurs en ligne).
+  // Chaque boss vit dans « son » repère, exactement comme en mode histoire : lui en haut, l'adversaire en bas.
+  // Le repère du boss du bas (joueur 1) est simplement tourné d'un demi-tour. Ainsi chaque boss rejoue
+  // ses VRAIES attaques du mode histoire (mêmes fonctions), c'est le joueur qui décide quand il tire.
+  const DW = 600, DH = 880, D_BS = 1.12, D_CALM = .9;
+  const D_TARGET = 5.2;      // dégâts par seconde visés contre une cible qui bouge sans esquiver (sert à équilibrer les boss)
+  const D_SIG_DMG = 9;       // dégâts d'une attaque signature qui touche (laser, éclair, colonne…)
+  const D_ROUNDS = 2;        // manches gagnantes
+  const D_ZONE_AT = 18, D_ZONE_DUR = 40, D_SUDDEN = 80;
+  const D_COL = ['#ffd86b', '#4fe0c8'];
+  // les boss dont la compétence 1 les déplace (glissade, charge, plongée, bond…)
+  const D_MOVE_SKILL = new Set(['pingouin', 'mammouth', 'ver', 'mante', 'grenouille', 'spectre']);
+  // le nom de la compétence 1 (le « altT » du mode histoire, quand il est assez lent pour être une vraie compétence)
+  const D_ALT_NAMES = {
+    reine: 'Ponte', spectre: 'Disparition', pingouin: 'Glissade', morse: 'Stalactites', hibou: 'Cercle de givre', sorciere: 'Blizzard',
+    mammouth: 'Charge', magmagolem: 'Coup au sol', phenix: 'Anneau de feu', ver: 'Plongée', scorpion: 'Dard visé', chauvesouris: 'Appel de la nuée',
+    fleur: 'Pétales tournants', mante: 'Bond éclair', champignon: 'Anneau de spores', cameleon: 'Coup de langue', grenouille: 'Bond', essaim: 'Ouvrières',
+    ruche: 'Soldats de la ruche', miroir: 'Reflets', prisme: 'Rayon prisme', jumelles: 'Anneau d\'ombre', oeilneant: 'Balayage',
+  };
+  const D_W1_ALT = { reine: 3, spectre: 2.4 };
+  function dAltOf(def) {
+    if (D_W1_ALT[def.id]) return D_W1_ALT[def.id];
+    if (!def.move) return 0;
+    const m = /altT = (\d*\.?\d+)/.exec(def.move.toString());
+    return m && +m[1] >= 1.9 ? +m[1] : 0;
+  }
+  const dWorldOf = def => Math.max(0, WORLDS.findIndex(w => w.bosses.includes(def)));
+  const dBoss = id => ALL_BOSSES.find(d => d.id === id);
+  const dClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  // touches du clavier (par leur place, comme ça Z Q S D marche en AZERTY et W A S D en QWERTY)
+  const D_KEYS = [
+    { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], s1: ['KeyE'], s2: ['KeyR'] },
+    { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['KeyK', 'Numpad1', 'Numpad0'], s1: ['KeyL', 'Numpad2'], s2: ['Semicolon', 'Numpad3'] },
+  ];
+  let dKeyName = { KeyW: 'Z', KeyA: 'Q', KeyS: 'S', KeyD: 'D', Space: 'Espace', KeyE: 'E', KeyR: 'R', KeyK: 'K', KeyL: 'L', Semicolon: 'M' };
+  try { if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then(m => { for (const k of Object.keys(dKeyName)) { const v = m.get(k); if (v && k !== 'Space') dKeyName[k] = v.toUpperCase(); } }).catch(() => {}); } catch (e) {}
+  const dMoveKeys = s => s ? 'Flèches' : ['KeyW', 'KeyA', 'KeyS', 'KeyD'].map(k => dKeyName[k]).join(' ');
+  const dKeyOf = (s, k) => dKeyName[D_KEYS[s][k][0]] || D_KEYS[s][k][0];
+  const dTouch = () => matchMedia('(pointer: coarse)').matches;
+
+  // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
+  // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
+  const dStatCache = {}, D_TUNE = { mere: 2.44, reine: 1.52, oeil: 1.09, crabe: 1.76, meduse: 1.26, pieuvre: 0.6, spectre: 0.99, forteresse: 0.58, dragon: 0.78, zorg: 0.4, pingouin: 3, yeti: 1.2, flocon: 0.98, morse: 2.58, golemglace: 0.75, hibou: 1.26, serpent: 2.66, sorciere: 1.37, mammouth: 1.19, glacia: 0.65, salamandre: 1.19, magmagolem: 1.11, phenix: 1.91, ver: 0.89, cyclope: 1.09, scorpion: 0.81, chauvesouris: 3, volcan: 2.17, hydre: 0.45, magmor: 0.41, fleur: 1.02, mante: 2.54, champignon: 1.0, araignee: 0.63, cameleon: 2.72, scarabee: 1.17, liane: 0.57, grenouille: 3, essaim: 1.16, ruche: 1.3, sentinelle: 1.18, miroir: 1.43, horloge: 0.99, glitch: 0.88, prisme: 0.96, jumelles: 0.45, trounoirv: 5, architecte: 0.65, oeilneant: 1.34, devoreur: 0.56 };
+  function dStats(def) {
+    if (dStatCache[def.id]) return dStatCache[def.id];
+    const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
+    // un gros boss est plus facile à toucher : il a un peu plus de vie, mais il est un peu plus lent
+    const st = { hp: Math.round(100 * Math.pow(def.r / 44, 1.2) * (def.revive ? .75 : 1) * Math.pow(D_TUNE[def.id] || 1, .4)), spd: Math.round(250 * Math.sqrt(44 / def.r)),
+      alt, altName: alt ? (D_ALT_NAMES[def.id] || 'Attaque spéciale') : '', sigName: sig[1], sigCol: sig[2], hitR: Math.round(def.r * .62) };
+    const m = dMeasure(def, st);
+    st.rate = m.rate; st.out = m.out;
+    // un boss qui tire beaucoup fait moins de dégâts par tir : tous finissent à peu près aussi forts
+    st.dmg = Math.round(dClamp(D_TARGET / Math.max(.4, m.rate), 1.5, 12) * Math.pow(D_TUNE[def.id] || 1, .6) * 10) / 10;
+    return (dStatCache[def.id] = st);
+  }
+  // on fait jouer le boss une minute en secret contre une cible qui se balance, et on compte ce qui la touche
+  function dMeasure(def, st) {
+    const F = dNewFighter(def, 1, st);
+    let hits = 0, made = 0;
+    const p0 = parts.length, q0 = pops.length, dt = 1 / 30, N = 1800, hook = dHitHook, rnd = Math.random;
+    // hasard « fixe » : le même boss a toujours les mêmes chiffres, sur tous les appareils
+    let seed = 7;
+    for (const ch of def.id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+    Math.random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    dMute++; dHitHook = () => {};
+    try {
+      for (let i = 0; i < N; i++) {
+        const tt = i * dt;
+        // la moitié du temps elle se balance vite, l'autre moitié elle bouge à peine
+        const fast = i < N / 2 ? 1 : .2;
+        F.foe.x = DW / 2 + (Math.sin(tt * 1.3) * .7 + Math.sin(tt * .37) * .3) * DW * .34 * fast; F.foe.y = DH - 170 + Math.sin(tt * .7) * 60 * fast;
+        dTick(F, dt, { fire: true, s1: F.cd1 <= 0, s2: false });
+        for (const b of F.bul) {
+          if (!b._c) { b._c = 1; made++; }
+          if (!b.dead && Math.hypot(b.x - F.foe.x, b.y - F.foe.y) < 30 + (b.s || 5)) { b.dead = true; hits++; }
+        }
+        for (const mn of F.mins) if (!mn.dead && Math.hypot(mn.x - F.foe.x, mn.y - F.foe.y) < 30 + mn.r) { mn.dead = true; hits += 2; }
+      }
+    } catch (e) { console.error(e); }
+    finally { Math.random = rnd; dMute--; dHitHook = hook; parts.length = Math.min(parts.length, p0); pops.length = Math.min(pops.length, q0); }
+    return { rate: hits / (N * dt), out: made / (N * dt) };
+  }
+  function dNewFighter(def, side, st, name) {
+    const it = { kind: 'alien', type: 'boss', boss: true, def, idx: 4, x: DW / 2, y: 150, r: def.r, flat: !!def.flat, hp: st.hp, maxHp: st.hp, pts: 0,
+      t: 0, fireT: 1.2, aimT: 1.2, altT: st.alt ? 99 : 2.5, spT: 99, spin: 0, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: true, trail: [], breath: 0, burstT: 0, claw: 0, invuln: 0 };
+    return { side, def, st, it, name: name || '', hp: st.hp, bul: [], mins: [], foe: { x: DW / 2, y: DH - 150, r: 30, hurt: 0, chill: 0, lives: 9 },
+      cd1: 0, cd1Max: Math.max(3, st.alt * 1.25), cd2: 3, cd2Max: 9, win: 0, free: false, hurt: 0, sigHurt: 0, guard: 0, wins: 0, inp: dNoInput(), dealt: 0 };
+  }
+  const dNoInput = () => ({ mx: 0, my: 0, fire: false, s1: false, s2: false, tx: null, ty: null });
+  const dHitR = F => Math.round(F.it.r * .62);
+  // un point du repère d'un boss, dans le repère de l'arène (et l'inverse : c'est la même opération)
+  const dReal = (F, x, y) => F.side === 0 ? { x: DW - x, y: DH - y } : { x, y };
+  function dFlipObj(p) { p.x = DW - p.x; p.y = DH - p.y; if (p.vx) p.vx = -p.vx; if (p.vy) p.vy = -p.vy; if (p.g) p.g = -p.g; if (p.rot !== undefined) p.rot += Math.PI; }
+
+  // on prête au boss le monde du mode histoire : « player » devient son adversaire, les tirs vont dans sa liste…
+  let dMute = 0, dHitHook = null;
+  function dWith(F, fn) {
+    const sv = [player, ebullets, items, shots, world, duo, p2, boss, W, H, level, cycle, cineT, shield, hitPlayer, showBanner, beep];
+    const pn = parts.length, qn = pops.length;
+    player = F.foe; ebullets = F.bul; items = F.mins; shots = []; world = 0; duo = false; p2 = null; boss = F.it; W = DW; H = DH; level = 1; cycle = 0; cineT = 0; shield = 0;
+    hitPlayer = pl => { if (dHitHook) dHitHook(F, pl); };
+    showBanner = title => { if (!dMute) pop(F.it.x, F.it.y - F.it.r - 26, title, F.def.col); };
+    if (dMute) beep = () => {};
+    try { return fn(); }
+    finally {
+      F.bul = ebullets; F.mins = items;
+      [player, ebullets, items, shots, world, duo, p2, boss, W, H, level, cycle, cineT, shield, hitPlayer, showBanner, beep] = sv;
+      // les étincelles et les textes nés dans le repère tourné du boss du bas sont remis dans celui de l'arène
+      if (F.side === 0 && !dMute) {
+        for (let i = pn; i < parts.length; i++) dFlipObj(parts[i]);
+        for (let i = qn; i < pops.length; i++) { pops[i].x = DW - pops[i].x; pops[i].y = DH - pops[i].y; }
+      }
+    }
+  }
+  // une image de jeu pour un boss : ses minuteries, son attaque signature, ses attaques normales, ses tirs et ses bestioles
+  function dTick(F, dt, inp) {
+    const it = F.it, d = F.def;
+    it.t += dt; if (it.hitT > 0) it.hitT -= dt; if (it.contactT > 0) it.contactT -= dt;
+    F.cd1 = Math.max(0, F.cd1 - dt); F.cd2 = Math.max(0, F.cd2 - dt); F.win = Math.max(0, F.win - dt);
+    F.hurt = Math.max(0, F.hurt - dt); F.guard = Math.max(0, F.guard - dt);
+    it.hp = F.hp; it.maxHp = F.st.hp;
+    dWith(F, () => {
+      // compétence 2 : l'attaque signature (la même qu'en mode histoire)
+      // (un boss sans compétence 1 a son attaque signature sur les deux touches)
+      if ((F.st.alt ? inp.s2 : inp.s1 || inp.s2) && F.cd2 <= 0 && !it.pw) { it.spT = 0; F.cd2 = F.cd2Max; }
+      const lock = updateSig(it, dt, D_BS);
+      it.spT = 99;
+      F.free = lock;
+      if (!lock) {
+        // tir de base : les attaques habituelles du boss avancent seulement tant que le joueur tient la touche
+        const f = inp.fire ? dt * D_CALM : 0;
+        if (inp.fire && it.fireT > 50) it.fireT = 1.2;
+        it.fireT -= f; it.aimT -= f;
+        if (!F.st.alt) it.altT -= f;
+        else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) it.altT = 0;
+        const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y;
+        (d.move || moveW1)(it, dt, D_BS, dt, () => {});
+        if (pend && it.altT > 0) { F.cd1Max = Math.max(3, it.altT * 1.25); F.cd1 = F.cd1Max; it.altT = 99; F.win = 2.4; }
+        // le boss ne bouge que sous les doigts du joueur, sauf pendant une compétence qui le déplace
+        if (!(F.win > 0 && D_MOVE_SKILL.has(d.id))) { it.x = px; it.y = py; }
+        else if (it.x !== px || it.y !== py || it.burrow > 0) F.free = true;
+      }
+      dMoveBullets(dt);
+      for (const m of items) {
+        m.t = (m.t || 0) + dt; if (m.hitT > 0) m.hitT -= dt;
+        m.y += (m.vy || 110) * dt;
+        m.x += dClamp((player.x - m.x) * 1.5, -80, 80) * dt;
+        if (m.y > H + 40) m.dead = true;
+      }
+      items = items.filter(m => !m.dead);
+    });
+    F.hp = it.hp; // le Cœur de magma soigne
+  }
+  // les tirs bougent exactement comme en mode histoire (tête chercheuse, orbite, rebonds, pause, explosion en anneau)
+  function dMoveBullets(dt) {
+    for (const b of ebullets) {
+      if (b.dead) continue;
+      if (b.home > 0) {
+        b.home -= dt; const a = Math.atan2(player.y - b.y, player.x - b.x), sp2 = b.hsp || 150;
+        b.vx += (Math.cos(a) * sp2 - b.vx) * Math.min(1, dt * 1.8); b.vy += (Math.sin(a) * sp2 - b.vy) * Math.min(1, dt * 1.8);
+      }
+      if (b.orbit) {
+        const o = b.orbit; o.t -= dt; o.a += dt * 3;
+        if (o.t > 0) { b.x = o.boss.x + Math.cos(o.a) * o.r; b.y = o.boss.y + Math.sin(o.a) * o.r; continue; }
+        b.vx = Math.cos(o.a) * o.sp; b.vy = Math.sin(o.a) * o.sp; b.orbit = null;
+      }
+      if (b.bounce > 0 && (b.x < 6 || b.x > W - 6)) { b.vx = -b.vx; b.x = Math.max(6, Math.min(W - 6, b.x)); b.bounce--; }
+      if (b.pre > 0 || !(b.wait > 0)) {
+        if (b.ax) b.vx += b.ax * dt;
+        if (b.ay) b.vy += b.ay * dt;
+        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.pre > 0) b.pre -= dt;
+      } else b.wait -= dt;
+      if (b.fuse !== undefined) {
+        b.fuse -= dt;
+        if (b.fuse <= 0) { const fc = b.fc || '#ff9a3c'; b.dead = true; ring(b.x, b.y, b.fn || 8, b.fs || 170, Math.random(), fc, 5); if (!dMute) burst(b.x, b.y, fc, 10, 160, 3); beep(180, .15, 'square', .05, -80); continue; }
+      }
+      if (b.y > H + 20 || b.y < -40 || b.x < -20 || b.x > W + 20) b.dead = true;
+    }
+    ebullets = ebullets.filter(b => !b.dead);
+  }
+
+  // ----- le match -----
+  let duel = null;
+  const dOpp = F => duel.f[F.side ? 0 : 1];
+  // une attaque signature touche (laser, éclair, colonne, rayon…) : une seule fois par seconde
+  function dSigHit(F) {
+    const V = dOpp(F);
+    if (V.sigHurt > 0) return;
+    V.sigHurt = 1;
+    dHurt(V, D_SIG_DMG, F);
+  }
+  function dPopReal(x, y, text, col) { pops.push({ x, y, text, color: col, life: 1.1 }); }
+  function dHurt(F, dmg, by) {
+    const D = duel;
+    if (!D || D.phase !== 'fight' || F.hp <= 0 || D.guest) return false;
+    const it = F.it, P = it.pw, on = P && P.t >= P.warn, r = dReal(F, it.x, it.y);
+    if (it.invuln || (on && P.kind === 'bubble') || F.guard > 0) { burst(r.x, r.y, F.guard > 0 ? '#7ad8ff' : '#ffffff', 3, 100, 2); return false; }
+    if (on && P.kind === 'mirror') { dWith(F, () => aimed(it.x, it.y, 300, '#ffffff', 5)); return false; }
+    if (F.hurt > 0) return false;
+    F.hp = Math.max(0, F.hp - dmg); it.hp = F.hp; it.hitT = .08; F.hurt = .07;
+    if (by) by.dealt += dmg;
+    D.hitT[F.side] = .25;
+    burst(r.x, r.y, F.def.col, dmg >= 6 ? 8 : 4, 140, 3);
+    if (dmg >= 6) shake = Math.max(shake, .15);
+    beep(220 + Math.random() * 60, .05, 'square', .03);
+    if (F.hp <= 0) {
+      // le Phénix renaît une fois par manche
+      if (F.def.revive && !it.revived) {
+        it.revived = true; F.hp = it.hp = Math.round(F.st.hp * .5);
+        burst(r.x, r.y, '#ffb020', 40, 300, 5); dPopReal(r.x, r.y - 50, 'Renaissance !', '#ffb020'); beep(300, .8, 'sine', .12, 600);
+        return true;
+      }
+      dRoundOver(F.side ? 0 : 1);
+    }
+    return true;
+  }
+  // les tirs (et les bestioles) d'un boss contre l'autre
+  function dCollide(A, B) {
+    const bx = DW - B.it.x, by = DH - B.it.y, R = dHitR(B);
+    for (const b of A.bul) {
+      if (b.dead) continue;
+      if (Math.abs(b.x - bx) < R + 20 && Math.hypot(b.x - bx, b.y - by) < R + (b.s || 5) - 1) {
+        b.dead = true;
+        const r = dReal(A, b.x, b.y); burst(r.x, r.y, b.c || '#ffffff', 3, 90, 2);
+        dHurt(B, A.st.dmg, A);
+      }
+    }
+    for (const m of A.mins) if (!m.dead && Math.hypot(m.x - bx, m.y - by) < R + m.r) {
+      m.dead = true; const r = dReal(A, m.x, m.y); explode(r.x, r.y, '#7dff8a', .6);
+      dHurt(B, Math.max(4, A.st.dmg * 2), A);
+    }
+    // les tirs de B détruisent les bestioles de A
+    if (A.mins.length) for (const b of B.bul) {
+      if (b.dead) continue;
+      const x = DW - b.x, y = DH - b.y;
+      for (const m of A.mins) if (!m.dead && Math.hypot(m.x - x, m.y - y) < m.r + (b.s || 5)) {
+        b.dead = true; m.hp = (m.hp || 1) - 1;
+        if (m.hp <= 0) { m.dead = true; const r = dReal(A, m.x, m.y); explode(r.x, r.y, '#7dff8a', .5); }
+        break;
+      }
+    }
+    // une glissade, une charge ou un coup de pinces qui rentre dans l'autre boss
+    if (A.free && A.it.contactT <= 0 && Math.hypot(A.it.x - bx, A.it.y - by) < (A.it.r + B.it.r) * .75) { A.it.contactT = 1; dHurt(B, 8, A); }
+  }
+  // déplacement du boss : clavier, doigt ou ordinateur ; la zone le garde de son côté de l'arène
+  function dMove(F, O, dt) {
+    const it = F.it, inp = F.inp, P = O.it.pw, on = P && P.t >= P.warn;
+    if (!F.free && !(it.burrow > 0)) {
+      let vx = 0, vy = 0;
+      const sp = F.st.spd * (on && P.kind === 'freeze' ? .45 : 1);
+      if (inp.lx !== undefined) { vx = inp.lx; vy = inp.ly; }
+      else if (inp.tx != null) {
+        // le doigt : le boss file vers l'endroit visé
+        const tl = dReal(F, inp.tx, inp.ty), dx = tl.x - it.x, dy = tl.y - it.y, dd = Math.hypot(dx, dy), k = Math.min(1, dd / (sp * dt + .01));
+        if (dd > 1) { vx = dx / dd * k; vy = dy / dd * k; }
+      } else { vx = F.side === 0 ? -inp.mx : inp.mx; vy = F.side === 0 ? -inp.my : inp.my; }
+      const l = Math.hypot(vx, vy); if (l > 1) { vx /= l; vy /= l; }
+      it.x += vx * sp * dt; it.y += vy * sp * dt;
+    }
+    // rayon tracteur, attraction : l'autre boss nous tire vers lui
+    if (on && P.kind === 'gravity') {
+      const dx = DW - O.it.x - it.x, dy = DH - O.it.y - it.y, dd = Math.hypot(dx, dy) || 1, g = 90 + P.tier * 40;
+      it.x += dx / dd * g * dt; it.y += dy / dd * g * dt;
+    }
+    dKeepIn(F);
+  }
+  function dKeepIn(F) {
+    const it = F.it, z = duel.zone, m = it.r * 1.05;
+    if (F.free || it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, DH - 90); }
+    else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, DH / 2 - 26); }
+  }
+  // bonus qui apparaissent au milieu de l'arène : soin, bouclier, recharge instantanée
+  const D_PICKS = { vie: ['Soin', '#ff7aa8'], shield: ['Bouclier', '#7ad8ff'], charge: ['Recharge', '#ffd86b'] };
+  function dPicks(dt) {
+    const D = duel;
+    D.pickT -= dt;
+    if (D.pickT <= 0 && D.picks.length < 2) {
+      const kinds = Object.keys(D_PICKS), kind = kinds[Math.floor(Math.random() * kinds.length)];
+      D.picks.push({ kind, x: DW / 2 + (Math.random() - .5) * Math.max(80, DW - 2 * D.zone.x - 160), y: DH / 2 + (Math.random() - .5) * 60, r: 14, rot: 0, t: 0, life: 11 });
+      D.pickT = 6 + Math.random() * 4;
+      beep(900, .12, 'triangle', .05, 300);
+    }
+    for (const k of D.picks) {
+      k.t += dt; k.life -= dt; k.rot += dt;
+      for (const F of D.f) {
+        const r = dReal(F, F.it.x, F.it.y);
+        if (k.life > 0 && Math.hypot(r.x - k.x, r.y - k.y) < F.it.r * .8 + 18) {
+          k.life = 0;
+          if (k.kind === 'vie') F.hp = F.it.hp = Math.min(F.st.hp, F.hp + Math.round(F.st.hp * .25));
+          else if (k.kind === 'shield') F.guard = 4;
+          else { F.cd1 = F.cd2 = 0; F.it.fireT = Math.min(F.it.fireT, 0); }
+          dPopReal(k.x, k.y - 20, D_PICKS[k.kind][0] + ' !', D_PICKS[k.kind][1]);
+          burst(k.x, k.y, D_PICKS[k.kind][1], 16, 200, 3); beep(1200, .15, 'triangle', .08, 400);
+        }
+      }
+    }
+    D.picks = D.picks.filter(k => k.life > 0);
+  }
+  function dZone(dt) {
+    const D = duel, k = dClamp((D.rt - D_ZONE_AT) / D_ZONE_DUR, 0, 1);
+    if (k > 0 && !D.zoneSaid) { D.zoneSaid = true; D.zoneMsg = 2.4; beep(160, .6, 'sawtooth', .08, -60); }
+    D.zone.x = k * DW * .27; D.zone.y = k * DH * .2;
+    // mort subite : après 80 secondes, les deux boss s'usent jusqu'à ce que l'un tombe
+    if (D.rt > D_SUDDEN) {
+      if (!D.suddenSaid) { D.suddenSaid = true; D.zoneMsg = 2.4; beep(120, .8, 'sawtooth', .1, -40); }
+      for (const F of D.f) { F.hp = F.it.hp = Math.max(0, F.hp - F.st.hp * .03 * dt); }
+      const lo = D.f.find(F => F.hp <= 0);
+      if (lo && D.phase === 'fight') dRoundOver(lo.side ? 0 : 1);
+    }
+  }
+  function dPlace(F) {
+    const it = F.it;
+    Object.assign(it, { x: DW / 2, y: 150, fireT: 1.2, aimT: 1.2, altT: F.st.alt ? 99 : 2.5, spT: 99, pw: null, rage: false, alpha: 1, invuln: 0, hitT: 0, contactT: 0,
+      revived: false, slide: 0, charge: false, burrow: 0, jump: 0, burstT: 0, breath: 0, jet: 0, blizz: 0, trail: [], midSaid: false, r: F.def.r });
+    F.hp = it.hp = F.st.hp; F.bul = []; F.mins = []; F.cd1 = 0; F.cd2 = 3; F.win = 0; F.free = false; F.hurt = 0; F.sigHurt = 0; F.guard = 0;
+  }
+  function dRoundOver(winner) {
+    const D = duel, L = D.f[winner ? 0 : 1], W2 = D.f[winner];
+    D.phase = 'ko'; D.pt = 0; W2.wins++; D.lastWin = winner;
+    const r = dReal(L, L.it.x, L.it.y);
+    explode(r.x, r.y, L.def.col, 2.2); burst(r.x, r.y, '#ffd86b', 40, 320, 5); shake = .8; flash = .35; flashColor = '255, 220, 150';
+    beep(90, .9, 'sawtooth', .18, -40); buzz([80, 40, 160]);
+    if (W2.wins >= D_ROUNDS) D.matchWinner = winner;
+    if (D.mode === 'online' && dnet.role === 'host') dSend({ t: 'dko', w: winner, mw: D.matchWinner });
+  }
+  function dNextRound() {
+    const D = duel;
+    if (D.matchWinner !== undefined) { dEnd(); return; }
+    D.round++; D.phase = 'count'; D.pt = 0; D.rt = 0; D.zone = { x: 0, y: 0 }; D.zoneSaid = false; D.suddenSaid = false; D.picks = []; D.pickT = 7;
+    for (const F of D.f) dPlace(F);
+  }
+
+  // ----- lancer un duel -----
+  // mode : 'local' (même ordinateur), 'bot' (contre l'ordinateur), 'online' (hôte) ; view 1 : on regarde depuis le côté du joueur 2 (invité en ligne)
+  function dStart(ids, names, mode, opt = {}) {
+    initAudio();
+    const defs = ids.map(dBoss), sts = defs.map(dStats);
+    duel = { mode, view: opt.view || 0, guest: !!opt.guest, f: defs.map((d, i) => dNewFighter(d, i, sts[i], names[i])), round: 1, phase: 'count', pt: 0, rt: 0,
+      zone: { x: 0, y: 0 }, picks: [], pickT: 7, hitT: [0, 0], zoneMsg: 0, matchWinner: undefined, ids, names, arena: opt.arena ?? dWorldOf(defs[1]) };
+    for (const F of duel.f) dPlace(F);
+    world = duel.arena; setTheme(1 + Math.floor(Math.random() * 3), true); resetScenery(false);
+    parts = []; pops = []; flash = 0; shake = 0;
+    for (const id of ['menu', 'duelPanel', 'duelEnd', 'duelMenu', 'over', 'team']) $(id).hidden = true;
+    $('duelPause').hidden = false;
+    dShowPads();
+    state = 'duel';
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    for (let i = 0; i < 3; i++) setTimeout(() => { if (duel && duel.phase === 'count') beep(440, .18, 'square', .07); }, 200 + i * 1000);
+    setTimeout(() => { if (duel && duel.phase !== 'end') beep(880, .5, 'square', .09, 200); }, 3200);
+  }
+  function dExit(toPanel) {
+    const was = duel;
+    duel = null; dKeys.clear();
+    for (const id of ['duelPause', 'duelPads', 'duelEnd', 'duelMenu']) $(id).hidden = true;
+    world = startWorld; setTheme(1, true); resetScenery(false); parts = []; pops = [];
+    if (was && was.mode === 'online' && !toPanel) dLeave();
+    if (toPanel) openDuel(); else { state = 'menu'; $('menu').hidden = false; }
+  }
+
+  // ----- les commandes -----
+  const dKeys = new Set();
+  const dHeld = (s, k) => D_KEYS[s][k].some(c => dKeys.has(c));
+  const dEdge = [{ s1: false, s2: false }, { s1: false, s2: false }];
+  const dPad = [{ fire: false, s1: 0, s2: 0, tx: null, ty: null }, { fire: false, s1: 0, s2: 0, tx: null, ty: null }];
+  function dReadKeys(s, both) {
+    const ks = both ? [0, 1] : [s];
+    const any = k => ks.some(i => dHeld(i, k));
+    const inp = dNoInput();
+    inp.mx = (any('right') ? 1 : 0) - (any('left') ? 1 : 0);
+    inp.my = (any('down') ? 1 : 0) - (any('up') ? 1 : 0);
+    const P = dPad[s];
+    inp.fire = any('fire') || P.fire;
+    // compétences : on garde l'appui jusqu'à ce qu'il serve (un appui rapide n'est jamais perdu)
+    const s1 = any('s1'), s2 = any('s2');
+    inp.s1 = (s1 && !dEdge[s].s1) || P.s1 > 0; inp.s2 = (s2 && !dEdge[s].s2) || P.s2 > 0;
+    dEdge[s].s1 = s1; dEdge[s].s2 = s2;
+    if (P.s1 > 0) P.s1 -= 1 / 60; if (P.s2 > 0) P.s2 -= 1 / 60;
+    if (P.tx != null) { inp.tx = P.tx; inp.ty = P.ty; }
+    return inp;
+  }
+  // l'ordinateur d'entraînement : il esquive le tir le plus menaçant, sinon il se place face à l'adversaire
+  function dBot(F, O) {
+    const it = F.it, inp = { fire: true, s1: F.cd1 <= 0 && Math.random() < .02, s2: F.cd2 <= 0 && Math.random() < .01, lx: 0, ly: 0 };
+    let best = null, bd = 1e9;
+    for (const b of O.bul) {
+      const x = DW - b.x, y = DH - b.y, vy = -b.vy, vx = -b.vx;
+      if (vy > -20) continue;
+      const tt = (y - it.y) / -vy;
+      if (tt < 0 || tt > 1.1) continue;
+      const px = x + vx * tt, dx = px - it.x;
+      if (Math.abs(dx) > it.r * .9 + 10) continue;
+      if (tt < bd) { bd = tt; best = dx; }
+    }
+    if (best !== null) inp.lx = best > 0 ? -1 : 1;
+    else { const tx = DW - O.it.x + Math.sin(it.t * .9) * 90; inp.lx = dClamp((tx - it.x) / 60, -1, 1) * .8; }
+    inp.ly = dClamp((150 + Math.sin(it.t * .6) * 60 - it.y) / 60, -1, 1) * .6;
+    return inp;
+  }
+
+  // ----- une image de duel (ordinateur local, contre l'ordinateur, ou hôte en ligne) -----
+  function duelUpdate(dt) {
+    const D = duel;
+    if (!D) return;
+    if (D.guest) { dGuestTick(dt); updateFx(dt); return; }
+    if (D.paused) return;
+    D.pt += dt; D.zoneMsg = Math.max(0, D.zoneMsg - dt); D.hitT = D.hitT.map(v => Math.max(0, v - dt));
+    const [A, B] = D.f;
+    if (D.mode === 'local') { A.inp = dReadKeys(0); B.inp = dReadKeys(1); }
+    else if (D.mode === 'bot') { A.inp = dReadKeys(0, true); B.inp = dBot(B, A); }
+    else { A.inp = dReadKeys(0, true); B.inp = dnet.in; }
+    for (const [F, O] of [[A, B], [B, A]]) { F.foe.x = DW - O.it.x; F.foe.y = DH - O.it.y; F.foe.r = dHitR(O); F.foe.hurt = O.sigHurt; }
+    if (D.phase === 'count' && D.pt >= 3.4) { D.phase = 'fight'; D.pt = 0; }
+    if (D.phase === 'end') { updateFx(dt); return; }
+    const fight = D.phase === 'fight', ddt = D.phase === 'ko' ? dt * .3 : dt;
+    dHitHook = (F) => dSigHit(F);
+    for (const [F, O] of [[A, B], [B, A]]) {
+      F.sigHurt = Math.max(0, F.sigHurt - ddt);
+      if (fight) {
+        // en ligne, l'invité pilote son boss chez lui : l'hôte reprend sa position (sauf pendant une glissade, une charge…)
+        if (D.mode === 'online' && F === B && !F.free && dnet.in.x != null) { F.it.x = dnet.in.x; F.it.y = dnet.in.y; dKeepIn(F); }
+        else dMove(F, O, ddt);
+      }
+      dTick(F, ddt, fight ? F.inp : dNoInput());
+      // une glissade ou une charge ne fait jamais sortir le boss par les côtés
+      if (fight) dKeepIn(F);
+    }
+    if (fight) { dCollide(A, B); dCollide(B, A); dPicks(dt); dZone(dt); D.rt += dt; }
+    if (D.phase === 'ko' && D.pt > 2.4) dNextRound();
+    updateFx(dt);
+  }
+
+  // ----- dessin -----
+  // au doigt, sur un écran en hauteur, l'arène monte un peu pour laisser la place aux boutons en dessous
+  function dArena() {
+    const s = Math.min(W / DW, H / DH), spare = H - DH * s;
+    const y = duel && duel.mode !== 'local' && dTouch() ? Math.max(0, Math.min(spare / 2, spare - 104 / camS)) : spare / 2;
+    return { s, x: (W - DW * s) / 2, y };
+  }
+  // dessiner dans le repère d'un boss (tourné pour celui du bas)
+  function dInFrame(F, fn) {
+    const sv = [player, boss, W, H];
+    ctx.save();
+    if (F.side === 0) { ctx.translate(DW, DH); ctx.rotate(Math.PI); }
+    player = F.foe; boss = F.it; W = DW; H = DH;
+    try { fn(); } finally { [player, boss, W, H] = sv; ctx.restore(); }
+  }
+  function dDrawBoss(F, t) {
+    const it = F.it, P = it.pw, on = P && P.t >= P.warn;
+    ctx.save();
+    if (it.hitT > 0) ctx.globalAlpha = .55;
+    if (on && P.kind === 'ghost') ctx.globalAlpha = .12 + .08 * Math.sin(t / 80);
+    if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
+    if (on && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
+    shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
+    drawBoss(it, t);
+    ctx.restore();
+    if (on && (P.kind === 'bubble' || P.kind === 'mirror' || P.kind === 'heal')) {
+      ctx.save(); ctx.strokeStyle = P.col; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .3 * Math.sin(t / 90);
+      const rr = it.r * 1.35;
+      if (P.kind === 'mirror') { for (let i = 0; i < 8; i++) { const a = t / 500 + i * Math.PI / 4; ctx.beginPath(); ctx.arc(it.x, it.y, rr, a, a + .4); ctx.stroke(); } }
+      else { ctx.fillStyle = P.kind === 'heal' ? 'rgba(125, 255, 138, .18)' : 'rgba(191, 233, 255, .18)'; ctx.beginPath(); ctx.arc(it.x, it.y, rr, 0, 7); ctx.fill(); ctx.stroke(); }
+      ctx.restore();
+    }
+    // bouclier ramassé
+    if (F.guard > 0) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, F.guard * 2) * (.55 + .25 * Math.sin(t / 70));
+      const rr = it.r * 1.25, g = ctx.createRadialGradient(it.x, it.y, rr * .6, it.x, it.y, rr);
+      g.addColorStop(0, 'rgba(122, 216, 255, 0)'); g.addColorStop(1, 'rgba(122, 216, 255, .35)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(it.x, it.y, rr, 0, 7); ctx.fill();
+      ctx.strokeStyle = '#bfefff'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+    }
+  }
+  function duelDraw(t) {
+    const D = duel;
+    if (!D) return;
+    const A = dArena(), flip = D.view === 1;
+    ctx.save(); ctx.translate(A.x, A.y); ctx.scale(A.s, A.s);
+    // l'arène : un grand plateau sombre, la ligne du milieu, deux camps aux couleurs des joueurs
+    ctx.save(); ctx.shadowColor = 'rgba(0, 0, 0, .6)'; ctx.shadowBlur = 40;
+    ctx.fillStyle = 'rgba(8, 5, 22, .58)'; ctx.fillRect(0, 0, DW, DH); ctx.restore();
+    ctx.strokeStyle = 'rgba(200, 190, 255, .18)'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, DW - 2, DH - 2);
+    const sideCol = i => D_COL[flip ? 1 - i : i];
+    for (const [i, y0, y1] of [[0, DH / 2, DH], [1, 0, DH / 2]]) {
+      const g = ctx.createLinearGradient(0, y0, 0, y1);
+      const c = sideCol(i), a = i === 0 ? [0, .07] : [.07, 0];
+      g.addColorStop(0, c + Math.round(a[0] * 255).toString(16).padStart(2, '0')); g.addColorStop(1, c + Math.round(a[1] * 255).toString(16).padStart(2, '0'));
+      ctx.fillStyle = g; ctx.fillRect(0, y0, DW, y1 - y0);
+    }
+    ctx.save(); ctx.setLineDash([14, 12]); ctx.strokeStyle = 'rgba(255, 255, 255, .16)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, DH / 2); ctx.lineTo(DW, DH / 2); ctx.stroke(); ctx.restore();
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, 0, DW, DH); ctx.clip();
+    if (flip) { ctx.translate(DW, DH); ctx.rotate(Math.PI); }
+    // bonus
+    for (const k of D.picks) { ctx.save(); if (k.life < 2 && Math.floor(k.life * 8) % 2) ctx.globalAlpha = .4; drawPickup(k, t); ctx.restore(); }
+    // les bestioles, les boss, puis les attaques signature et tous les tirs (par-dessus, pour bien les voir)
+    for (const F of D.f) dInFrame(F, () => { for (const m of F.mins) drawAlien(m, t); dDrawBoss(F, t); });
+    for (const F of D.f) dInFrame(F, () => { drawSig(t); for (const b of F.bul) drawEBullet(b, t); });
+    for (const p of parts) drawPart(p);
+    ctx.globalAlpha = 1;
+    // la zone qui rétrécit : tout ce qui est dehors est pris dans une tempête violette
+    const z = D.zone;
+    if (z.x > .5) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(120, 30, 160, .28)';
+      ctx.beginPath(); ctx.rect(0, 0, DW, DH); ctx.rect(z.x, z.y, DW - 2 * z.x, DH - 2 * z.y); ctx.fill('evenodd');
+      ctx.strokeStyle = `rgba(214, 120, 255, ${.65 + .3 * Math.sin(t / 120)})`; ctx.lineWidth = 3; ctx.shadowColor = '#c86bff'; ctx.shadowBlur = 16;
+      ctx.strokeRect(z.x, z.y, DW - 2 * z.x, DH - 2 * z.y);
+      ctx.restore();
+    }
+    // nuage d'encre ou de spores lancé par l'autre boss : on ne voit plus qu'autour de son propre boss
+    for (const F of D.f) {
+      const O = D.f[F.side ? 0 : 1], P = O.it.pw;
+      if (!P || P.kind !== 'fog' || P.t < P.warn) continue;
+      const q = Math.min(1, (P.t - P.warn) * 3) * Math.min(1, (3 - (P.t - P.warn)) * 3), r = dReal(F, F.it.x, F.it.y);
+      const fg = ctx.createRadialGradient(r.x, r.y, 80, r.x, r.y, 170);
+      fg.addColorStop(0, 'rgba(10, 4, 24, 0)'); fg.addColorStop(1, P.col === '#b6ff6b' ? 'rgba(14, 30, 8, .9)' : 'rgba(10, 4, 24, .9)');
+      ctx.save(); ctx.globalAlpha = q; ctx.fillStyle = fg;
+      if (F.side === 0) ctx.fillRect(0, DH / 2, DW, DH / 2); else ctx.fillRect(0, 0, DW, DH / 2);
+      ctx.restore();
+    }
+    ctx.restore();
+    // textes flottants (toujours à l'endroit)
+    ctx.font = '18px Bungee, Impact, sans-serif'; ctx.textAlign = 'center';
+    for (const p of pops) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; ctx.fillText(p.text, flip ? DW - p.x : p.x, flip ? DH - p.y : p.y); }
+    ctx.globalAlpha = 1;
+    // bandeaux des deux joueurs
+    const me = flip ? 1 : 0;
+    dHud(D.f[me], true, t); dHud(D.f[1 - me], false, t);
+    // annonces : compte à rebours, zone, K.O.
+    ctx.textAlign = 'center';
+    if (D.phase === 'count') {
+      const n = 3 - Math.floor(D.pt), k = D.pt % 1;
+      dBig(D.round === 1 ? 'Duel !' : `Manche ${D.round}`, DH / 2 - 92, 26, '#ffffff', 1);
+      if (D.pt < 3) dBig(String(n), DH / 2 + 10, 96 * (1.35 - k * .35), '#ffd86b', 1 - Math.max(0, k - .7) * 3);
+      else dBig('Combat !', DH / 2 + 10, 64 * (1.2 - (D.pt - 3) * .4), '#ff7aa8', 1);
+    } else if (D.phase === 'fight' && D.pt < .7) dBig('Combat !', DH / 2 + 10, 64, '#ff7aa8', 1 - D.pt / .7);
+    if (D.zoneMsg > 0) dBig(D.suddenSaid ? 'Mort subite !' : 'La zone rétrécit !', DH / 2 + 4, 26, D.suddenSaid ? '#ff7aa8' : '#e0a0ff', Math.min(1, D.zoneMsg));
+    if (D.phase === 'ko') {
+      const w = D.f[D.lastWin], a = Math.min(1, D.pt * 3);
+      dBig('K.O. !', DH / 2 - 20, 72, '#ff4f6d', a);
+      dBig(D.matchWinner !== undefined ? `${w.name} gagne le duel !` : `Manche pour ${w.name}`, DH / 2 + 34, 22, D_COL[w.side], Math.min(1, Math.max(0, D.pt - .4) * 3));
+    }
+    ctx.restore();
+  }
+  function dBig(txt, y, size, col, a) {
+    if (a <= 0) return;
+    ctx.save(); ctx.globalAlpha = Math.min(1, a);
+    ctx.font = `${Math.round(size)}px Bungee, Impact, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = Math.max(3, size / 9); ctx.strokeStyle = 'rgba(8, 4, 24, .85)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, DW / 2, y);
+    ctx.shadowColor = col; ctx.shadowBlur = size / 3; ctx.fillStyle = col; ctx.fillText(txt, DW / 2, y);
+    ctx.restore();
+  }
+  // le bandeau d'un joueur : nom, boss, vie, manches gagnées, et ses 3 boutons avec leur temps de recharge
+  function dHud(F, bottom, t) {
+    const D = duel, col = D_COL[F.side], y0 = bottom ? DH - 78 : 0, h = 78;
+    ctx.save();
+    const g = ctx.createLinearGradient(0, y0, 0, y0 + h);
+    g.addColorStop(bottom ? 0 : 1, 'rgba(8, 5, 22, 0)'); g.addColorStop(bottom ? 1 : 0, 'rgba(8, 5, 22, .82)');
+    ctx.fillStyle = g; ctx.fillRect(0, y0, DW, h);
+    const rowName = bottom ? DH - 52 : 22, rowBar = bottom ? DH - 32 : 42;
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.font = '15px Bungee, Impact, sans-serif'; ctx.fillStyle = col; ctx.fillText(F.name, 16, rowName);
+    const nw = ctx.measureText(F.name).width;
+    ctx.font = '600 13px Outfit, system-ui, sans-serif'; ctx.fillStyle = 'rgba(239, 234, 255, .75)'; ctx.fillText(F.def.name, 24 + nw, rowName + 1);
+    // manches gagnées
+    for (let i = 0; i < D_ROUNDS; i++) {
+      const x = 16 + nw + 24 + ctx.measureText(F.def.name).width + 16 + i * 18;
+      ctx.beginPath(); ctx.arc(x, rowName, 6, 0, 7);
+      if (i < F.wins) { ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0; }
+      else { ctx.strokeStyle = 'rgba(239, 234, 255, .45)'; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    // au doigt, les boutons de ce boss sont sur l'écran (avec leur temps de recharge) : la barre prend toute la largeur
+    const padSide = dTouch() && (D.mode === 'local' || F.side === D.view);
+    // barre de vie (elle tremble un peu quand le boss est touché)
+    const bw = DW - 16 - (padSide ? 16 : 190), shk = D.hitT[F.side] > 0 ? (Math.random() - .5) * 4 : 0, k = Math.max(0, F.hp / F.st.hp);
+    ctx.fillStyle = 'rgba(20, 14, 48, .9)'; rrect(16 + shk, rowBar - 7, bw, 14, 7); ctx.fill();
+    const hg = ctx.createLinearGradient(16, 0, 16 + bw, 0);
+    hg.addColorStop(0, k < .3 ? '#ff4f6d' : F.def.col); hg.addColorStop(1, k < .3 ? '#ff9a3c' : '#ffffff');
+    if (k > 0) { ctx.fillStyle = hg; rrect(16 + shk, rowBar - 7, Math.max(10, bw * k), 14, 7); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(255, 255, 255, .35)'; ctx.lineWidth = 1.5; rrect(16 + shk, rowBar - 7, bw, 14, 7); ctx.stroke();
+    ctx.font = '700 11px Outfit, system-ui, sans-serif'; ctx.fillStyle = '#120a2a'; ctx.textAlign = 'left';
+    if (k > .12) ctx.fillText(`${Math.ceil(F.hp)} PV`, 24 + shk, rowBar + .5);
+    // les 3 boutons
+    // les touches s'affichent seulement pour les boss pilotés au clavier sur cet appareil
+    const keys = D.mode === 'local' ? F.side : F.side === D.view ? -1 : -2, touch = dTouch();
+    const btns = [['fire', 'Tir', 0, 0, F.def.col]].concat(F.st.alt ? [['s1', F.st.altName, F.cd1, F.cd1Max, '#ffd86b'], ['s2', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol]] : [['s1', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol, false, 's2']]);
+    if (!padSide) btns.forEach(([k2, label, cd, mx, c, off, glyph], i) => {
+      const x = DW - 150 + i * 52 + (F.st.alt ? 0 : 52), y = bottom ? DH - 40 : 40, R = 19;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
+      ctx.fillStyle = off ? 'rgba(20, 14, 48, .6)' : cd > 0 ? 'rgba(20, 14, 48, .92)' : `${c}33`; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = off ? 'rgba(255, 255, 255, .2)' : cd > 0 ? 'rgba(255, 255, 255, .3)' : c; ctx.stroke();
+      if (!off) dGlyph(glyph || k2, x, y, cd > 0 ? 'rgba(239, 234, 255, .45)' : c);
+      if (cd > 0 && mx > 0) {
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, R - 2, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (cd / mx)); ctx.closePath();
+        ctx.fillStyle = 'rgba(8, 4, 24, .55)'; ctx.fill();
+        ctx.font = '13px Bungee, Impact, sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.fillText(Math.ceil(cd), x, y + 1);
+      }
+      // la touche à utiliser (sur ordinateur), sinon le nom
+      ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(239, 234, 255, .8)';
+      const ky = bottom ? y - R - 7 : y + R + 9;
+      const kname = touch || keys === -2 ? '' : keys >= 0 ? dKeyOf(keys, k2) : `${dKeyOf(0, k2)} / ${dKeyOf(1, k2)}`;
+      if (kname && !off) ctx.fillText(kname, x, ky);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  // petits dessins des boutons : un jet de tirs, un éclair, une étoile
+  function dGlyph(k, x, y, c, on) {
+    ctx.fillStyle = c; ctx.strokeStyle = c;
+    if (k === 'fire') { for (const [dx, dy, r] of [[0, -6, 3.4], [-6, 3, 2.6], [6, 3, 2.6], [0, 8, 2]]) { ctx.beginPath(); ctx.arc(x + dx, y + dy, r, 0, 7); ctx.fill(); } }
+    else if (k === 's1') { ctx.beginPath(); ctx.moveTo(x + 2, y - 10); ctx.lineTo(x - 6, y + 2); ctx.lineTo(x, y + 2); ctx.lineTo(x - 2, y + 10); ctx.lineTo(x + 6, y - 2); ctx.lineTo(x, y - 2); ctx.closePath(); ctx.fill(); }
+    else { ctx.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4.5 : 10; ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } ctx.closePath(); ctx.fill(); }
+  }
+
+  // ----- fin du match : écran de victoire et récompenses -----
+  let dEndAt = 0;
+  function dEnd() {
+    const D = duel;
+    D.phase = 'end'; dEndAt = performance.now();
+    const w = D.matchWinner, W2 = D.f[w];
+    const mine = D.mode === 'online' ? (D.guest ? 1 : 0) : -1;
+    const reward = dReward(D, w, mine);
+    $('duelEndKick').textContent = D.mode === 'online' ? (w === mine ? 'Victoire !' : 'Défaite…') : 'Victoire !';
+    $('duelEndTitle').textContent = `${W2.name} gagne avec ${W2.def.name}`;
+    $('duelEndTitle').style.color = D_COL[w];
+    $('duelEndScore').innerHTML = `<span style="color:${D_COL[0]}">${D.f[0].name} <b>${D.f[0].wins}</b></span><i>–</i><span style="color:${D_COL[1]}"><b>${D.f[1].wins}</b> ${D.f[1].name}</span>`;
+    $('duelEndStats').textContent = `Dégâts infligés : ${D.f[0].name} ${Math.round(D.f[0].dealt)} · ${D.f[1].name} ${Math.round(D.f[1].dealt)}`;
+    $('duelEndReward').innerHTML = reward;
+    $('duelEndReward').hidden = !reward;
+    $('duelRematch').hidden = false;
+    $('duelEnd').hidden = false; $('duelPause').hidden = true; $('duelPads').hidden = true;
+    dWinnerDef = W2.def; dWinnerCol = D_COL[w];
+    for (let i = 0; i < 5; i++) setTimeout(() => beep([523, 659, 784, 1047, 1319][i], .2, 'triangle', .09), i * 130);
+  }
+  // une victoire rapporte des Astros (5 duels récompensés par jour, pour garder l'équilibre avec le Défi du jour)
+  const D_WIN_ASTROS = 150, D_LOSE_ASTROS = 50, D_DAY_MAX = 5;
+  let dDay = { d: '', n: 0 };
+  try { const v = JSON.parse(localStorage.getItem('comete-duel') || '{}'); if (v && typeof v.d === 'string') dDay = { d: v.d, n: v.n | 0 }; } catch (e) {}
+  function dReward(D, w, mine) {
+    if (D.mode === 'bot') return 'Entraînement : pas de récompense.';
+    const win = D.mode === 'local' || w === mine;
+    if (win) {
+      stats.duels = (stats.duels || 0) + 1;
+      if (!stats.duelWith.includes(D.f[w].def.id)) stats.duelWith.push(D.f[w].def.id);
+      if (D.f[1 - w].wins === 0) feat('duelNet');
+      if (D.f[w].hp >= D.f[w].st.hp) feat('duelIntact');
+      statsDirty = true;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    if (dDay.d !== today) dDay = { d: today, n: 0 };
+    let txt = '';
+    if (dDay.n < D_DAY_MAX) {
+      const gain = win ? D_WIN_ASTROS : D_LOSE_ASTROS;
+      dDay.n++; shop.credits += gain; saveShop();
+      txt = `<i class="coin"></i>+${gain} Astros <small>(duel récompensé ${dDay.n}/${D_DAY_MAX} aujourd'hui)</small>`;
+    } else txt = `<small>Tu as déjà eu les Astros de ${D_DAY_MAX} duels aujourd'hui. Reviens demain !</small>`;
+    try { localStorage.setItem('comete-duel', JSON.stringify(dDay)); } catch (e) {}
+    if (win) checkTrophies();
+    saveStats();
+    return txt;
+  }
+  // l'animation du boss gagnant
+  let dWinnerDef = null, dWinnerCol = '#ffd86b';
+  function drawDuelWinner(t) {
+    const c = $('duelWinCv');
+    if (!c || !dWinnerDef) return;
+    const k = c.getContext('2d'), w = c.width, h = c.height, main = ctx, p = player, sw = W, sh = H;
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
+    const age = (performance.now() - dEndAt) / 1000;
+    // rayons de lumière qui tournent derrière le boss
+    k.save(); k.translate(w / 2, h * .55); k.rotate(t / 3000);
+    for (let i = 0; i < 12; i++) { k.rotate(Math.PI / 6); const g = k.createLinearGradient(0, 0, 0, -h); g.addColorStop(0, dWinnerCol + '55'); g.addColorStop(1, dWinnerCol + '00'); k.fillStyle = g; k.beginPath(); k.moveTo(-10, 0); k.lineTo(-40, -h); k.lineTo(40, -h); k.lineTo(10, 0); k.closePath(); k.fill(); }
+    k.restore();
+    // étincelles
+    for (let i = 0; i < 24; i++) { const a = i * 2.4 + t / 900, r = 60 + (i * 37 % 70) + Math.sin(t / 400 + i) * 8; k.globalAlpha = .5 + .5 * Math.sin(t / 200 + i); k.fillStyle = i % 3 ? '#ffd86b' : dWinnerCol; k.beginPath(); k.arc(w / 2 + Math.cos(a) * r, h * .55 + Math.sin(a) * r * .7, 1.5 + (i % 3), 0, 7); k.fill(); }
+    k.globalAlpha = 1;
+    ctx = k; player = { x: w / 2 + Math.sin(t / 500) * 80, y: h * 2 };
+    try {
+      const pop2 = Math.min(1, age * 2.5), sc = (1.5 + Math.sin(t / 300) * .05) * (pop2 < 1 ? .4 + pop2 * .6 + Math.sin(pop2 * Math.PI) * .3 : 1);
+      k.translate(w / 2, h * .55 + Math.sin(t / 260) * 6); k.rotate(Math.sin(t / 700) * .08); k.scale(sc, sc);
+      drawBoss({ kind: 'alien', type: 'boss', boss: true, def: dWinnerDef, x: 0, y: 0, r: dWinnerDef.r, flat: !!dWinnerDef.flat, hp: 1, maxHp: 1,
+        t: t / 1000, spin: t / 600, hitT: 0, contactT: 0, rage: false, alpha: 1, entered: true, trail: [], breath: 0, burstT: 0, claw: Math.sin(t / 300) > 0 ? 1 : -1, invuln: 0, fireT: Math.sin(t / 400) > .3 ? .2 : 1 }, t);
+    } catch (e) {} finally { ctx = main; player = p; W = sw; H = sh; k.setTransform(1, 0, 0, 1, 0, 0); }
+  }
+
+  // ----- écran de sélection -----
+  let dMode = 'local', dActive = 0, dPick = [null, null];
+  try { const v = JSON.parse(localStorage.getItem('comete-duel-choix') || '{}'); if (Array.isArray(v.p)) dPick = v.p.slice(0, 2).map(x => typeof x === 'string' ? x : null); if (['local', 'online', 'bot'].includes(v.m)) dMode = v.m; } catch (e) {}
+  const dOpen = () => ALL_BOSSES.filter(d => beaten.includes(d.id));
+  function openDuel() {
+    initAudio();
+    for (const id of ['menu', 'over', 'hangar', 'trophies', 'collection', 'help', 'cinema', 'mapPanel', 'team', 'duelEnd', 'duelMenu']) $(id).hidden = true;
+    state = 'hangar'; $('duelPanel').hidden = false;
+    const open = dOpen();
+    for (let i = 0; i < 2; i++) if (!dPick[i] || !beaten.includes(dPick[i])) dPick[i] = open.length ? open[Math.min(i, open.length - 1)].id : null;
+    if (dMode === 'online' && !dnet.role) dActive = 0;
+    renderDuel();
+  }
+  function dSaveChoice() { try { localStorage.setItem('comete-duel-choix', JSON.stringify({ p: dPick, m: dMode })); } catch (e) {} }
+  function renderDuel() {
+    const open = dOpen(), online = dMode === 'online', linked = online && dnetOpen();
+    const pan = $('duelPanel'), cur = dBoss(dPick[dActive] || '') || null;
+    const wc = cur ? WORLDS[dWorldOf(cur)].col : ['#5b3a9e', '#ff7aa8'];
+    pan.style.setProperty('--w1', wc[0]); pan.style.setProperty('--w2', wc[1]);
+    $('duelCount').innerHTML = `<span><b>${open.length}</b>/${ALL_BOSSES.length} gardiens jouables</span><span>Duels gagnés <b>${stats.duels || 0}</b></span>`;
+    document.querySelectorAll('#duelModes button').forEach(b => b.classList.toggle('on', b.dataset.mode === dMode));
+    $('duelOnline').hidden = !online;
+    $('duelLocalHelp').hidden = dMode !== 'local' || dTouch();
+    if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> ${dMoveKeys(0)} · tir ${dKeyOf(0, 'fire')} · compétences ${dKeyOf(0, 's1')} et ${dKeyOf(0, 's2')}</span><span><b style="color:${D_COL[1]}">Joueur 2</b> ${dMoveKeys(1)} · tir ${dKeyOf(1, 'fire')} · compétences ${dKeyOf(1, 's1')} et ${dKeyOf(1, 's2')}</span>`;
+    // les deux places
+    const names = dNames();
+    for (let i = 0; i < 2; i++) {
+      const el = $('dslot' + i), d = i === 1 && online ? (dnet.peer && dnet.peer.boss ? dBoss(dnet.peer.boss) : null) : dBoss(dPick[i] || '');
+      const ready = online && (i === 0 ? dnet.ready : dnet.peer && dnet.peer.ready);
+      el.classList.toggle('on', dActive === i && !(online && i === 1));
+      el.classList.toggle('far', online && i === 1);
+      el.style.setProperty('--pc', D_COL[i]);
+      el.querySelector('img').src = d ? bossPortrait(d) : '';
+      el.querySelector('img').style.visibility = d ? '' : 'hidden';
+      el.querySelector('b').textContent = d ? d.name : (online && i === 1 ? (linked ? 'Choisit…' : 'En attente') : '???');
+      el.querySelector('small').textContent = names[i] + (ready ? ' · Prêt !' : '');
+    }
+    // aperçu du boss choisi : ses points forts et ses 3 commandes
+    const info = $('duelInfo');
+    if (!cur) info.innerHTML = `<p class="dempty">${ICO('lock')} Bats au moins un gardien en mode histoire pour jouer en duel.</p>`;
+    else {
+      const st = dStats(cur);
+      const bar = (v, lo, hi) => Math.round(dClamp((v - lo) / (hi - lo || 1), .08, 1) * 100);
+      const ks = dMode === 'local' ? dActive : 0, kn = k => dTouch() ? '' : `<kbd>${dKeyOf(ks, k)}</kbd>`;
+      info.innerHTML = `<div class="dihead"><img src="${bossPortrait(cur)}" alt=""><div><small>Monde ${dWorldOf(cur) + 1} · ${cur.place}</small><b>${cur.name}</b><em>« ${cur.quote} »</em></div></div>`
+        + `<div class="distats">${[['Vie', st.hp, 60, 140], ['Vitesse', st.spd, 200, 290], ['Force des tirs', st.dmg, 1, 10], ['Nombre de tirs', st.out, 1, 16]].map(([n, v, lo, hi]) => `<span>${n}<i><u style="width:${bar(v, lo, hi)}%"></u></i></span>`).join('')}</div>`
+        + `<ul class="diskills">`
+        + `<li><span class="dk dk-fire">${kn('fire')}<b>Tir</b></span><span>${cur.desc} <small>Garde la touche appuyée.</small></span></li>`
+        + (st.alt ? `<li><span class="dk dk-s1">${kn('s1')}<b>Compétence 1</b></span><span><b>${st.altName}</b> <small>Recharge ${Math.round(Math.max(3, st.alt * 1.25))} s</small></span></li>` : '')
+        + `<li><span class="dk dk-s2">${kn(st.alt ? 's2' : 's1')}<b>Compétence ${st.alt ? 2 : ''}</b></span><span><b>${st.sigName}</b> <small>Attaque signature · recharge 9 s</small></span></li>`
+        + `</ul>`;
+    }
+    // la grille des gardiens (les boss pas encore vaincus restent en silhouette)
+    $('duelGrid').innerHTML = WORLDS.map((w, wi) => `<p class="wdsec">Monde ${wi + 1} · ${w.name}</p><div class="bgrid">` + w.bosses.map(d => {
+      const ok = beaten.includes(d.id), sel = dPick[dActive] === d.id;
+      return `<button type="button" class="btile${ok ? '' : ' hide'}${sel ? ' sel' : ''}" data-b="${d.id}" ${ok ? '' : 'disabled'} title="${ok ? d.name : 'Pas encore vaincu'}"><img src="${bossPortrait(d)}" alt="${ok ? d.name : 'Boss inconnu'}"><i>${ok ? d.name : '???'}</i></button>`;
+    }).join('') + '</div>').join('');
+    // le bouton
+    const go = $('duelGo');
+    if (online) {
+      go.textContent = !linked ? 'Combat !' : dnet.ready ? 'Pas prêt' : 'Prêt !';
+      go.disabled = !linked || !cur;
+    } else { go.textContent = 'Combat !'; go.disabled = !dPick[0] || !dPick[1]; }
+    dRenderOnline();
+  }
+  const dNames = () => {
+    const me = rocketName();
+    if (dMode === 'local') return ['Joueur 1', 'Joueur 2'];
+    if (dMode === 'bot') return [me, 'Ordinateur'];
+    return [me, dnet.peer ? dnet.peer.name : 'Ton ami'];
+  };
+  $('duelBtn').onclick = openDuel;
+  $('duelBack').onclick = () => { if (dnet.role) dLeave(); closeHangar(); $('duelPanel').hidden = true; $('menu').hidden = false; state = 'menu'; };
+  $('duelModes').onclick = e => {
+    const b = e.target.closest('button[data-mode]');
+    if (!b || b.dataset.mode === dMode) return;
+    if (dMode === 'online' && dnet.role) dLeave();
+    dMode = b.dataset.mode; dActive = 0; dSaveChoice(); renderDuel(); beep(520, .08, 'triangle', .06);
+  };
+  document.querySelectorAll('.dslot').forEach(el => { el.onclick = () => { const i = +el.dataset.side; if (dMode === 'online' && i === 1) return; dActive = i; renderDuel(); }; });
+  $('duelGrid').onclick = e => {
+    const b = e.target.closest('button[data-b]');
+    if (!b || b.disabled) return;
+    dPick[dActive] = b.dataset.b; dSaveChoice(); beep(600 + Math.random() * 200, .08, 'triangle', .06);
+    if (dMode === 'local' && dActive === 0) dActive = 1;
+    if (dMode === 'online') { dnet.ready = false; dHello(); }
+    renderDuel();
+  };
+  $('duelGo').onclick = () => {
+    if (dMode === 'online') { dnet.ready = !dnet.ready; dHello(); renderDuel(); dTryStart(); return; }
+    const ids = dMode === 'bot' ? [dPick[0], dPick[1] || dPick[0]] : dPick.slice();
+    if (!ids[0] || !ids[1]) return;
+    dStart(ids, dNames(), dMode);
+  };
+  // pause, abandon, revanche
+  $('duelPause').onclick = () => dPauseMenu(true);
+  function dPauseMenu(on) {
+    if (!duel || duel.phase === 'end') return;
+    if (duel.mode !== 'online') duel.paused = on;
+    $('duelMenu').hidden = !on;
+    $('duelResume').textContent = duel.mode === 'online' ? 'Continuer' : 'Reprendre';
+  }
+  $('duelResume').onclick = () => dPauseMenu(false);
+  $('duelQuit').onclick = () => { if (duel && duel.mode === 'online') dLeave(); dExit(true); };
+  $('duelRematch').onclick = () => {
+    const D = duel;
+    if (!D) return;
+    if (D.mode === 'online') { dExit(true); dnet.ready = false; dHello(); renderDuel(); return; }
+    dStart(D.ids, D.names, D.mode);
+  };
+  $('duelChange').onclick = () => dExit(true);
+  $('duelHome').onclick = () => { if (duel && duel.mode === 'online') dLeave(); dExit(false); };
+
+  // clavier pendant le duel
+  addEventListener('keydown', e => {
+    if (state !== 'duel') return;
+    if (e.code === 'Escape' || e.code === 'KeyP') { if (!e.repeat) dPauseMenu($('duelMenu').hidden); e.preventDefault(); return; }
+    dKeys.add(e.code);
+    if (e.code === 'Space' || e.code.startsWith('Arrow') || e.code === 'Enter') e.preventDefault();
+  }, true);
+  addEventListener('keyup', e => dKeys.delete(e.code));
+  addEventListener('blur', () => dKeys.clear());
+
+  // au doigt : chaque moitié de l'écran a son pavé (le joueur du haut a le sien à l'envers, face à lui)
+  function dShowPads() {
+    const D = duel, touch = dTouch();
+    $('duelPads').hidden = !touch;
+    $('dpad1').hidden = D.mode !== 'local';
+    for (const p of dPad) { p.fire = false; p.s1 = p.s2 = 0; p.tx = p.ty = null; }
+  }
+  const dFingers = new Map();
+  function dSideAt(y) {
+    const D = duel;
+    if (D.mode !== 'local') return D.view;
+    return y > innerHeight / 2 ? 0 : 1;
+  }
+  function dToArena(cx, cy) {
+    const A = dArena(), f = toField(cx, cy);
+    let x = (f.x - A.x) / A.s, y = (f.y - A.y) / A.s;
+    if (duel.view === 1) { x = DW - x; y = DH - y; }
+    return { x, y };
+  }
+  cv.addEventListener('pointerdown', e => {
+    if (state !== 'duel' || !duel || e.pointerType === 'mouse') return;
+    const s = dSideAt(e.clientY), F = duel.f[s], a = dToArena(e.clientX, e.clientY), r = dReal(F, F.it.x, F.it.y);
+    dFingers.set(e.pointerId, { s, ax: a.x, ay: a.y, bx: r.x, by: r.y });
+    dPad[s].tx = r.x; dPad[s].ty = r.y;
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => {
+    const f = dFingers.get(e.pointerId);
+    if (!f || !duel) return;
+    const a = dToArena(e.clientX, e.clientY);
+    dPad[f.s].tx = f.bx + (a.x - f.ax) * 1.3; dPad[f.s].ty = f.by + (a.y - f.ay) * 1.3;
+  });
+  const dLift = e => { const f = dFingers.get(e.pointerId); if (!f) return; dFingers.delete(e.pointerId); if (![...dFingers.values()].some(g => g.s === f.s)) dPad[f.s].tx = dPad[f.s].ty = null; };
+  cv.addEventListener('pointerup', dLift); cv.addEventListener('pointercancel', dLift);
+  document.querySelectorAll('.dpad').forEach(pad => {
+    const s = +pad.dataset.side;
+    pad.querySelectorAll('button').forEach(b => {
+      const k = b.dataset.k;
+      b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); const P = dPad[duel && duel.mode !== 'local' ? duel.view : s]; if (k === 'fire') P.fire = true; else P[k] = .25; b.classList.add('on'); });
+      const up = () => { const P = dPad[duel && duel.mode !== 'local' ? duel.view : s]; if (k === 'fire') P.fire = false; b.classList.remove('on'); };
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', up);
+    });
+  });
+  // les boutons tactiles montrent aussi le temps de recharge
+  function dPadUi() {
+    if (!duel || $('duelPads').hidden) return;
+    for (let s = 0; s < 2; s++) {
+      const F = duel.f[duel.mode === 'local' ? s : duel.view], pad = $('dpad' + s);
+      if (pad.hidden) continue;
+      const b1 = pad.querySelector('[data-k="s1"]'), b2 = pad.querySelector('[data-k="s2"]');
+      b2.hidden = !F.st.alt;
+      // sans compétence de déplacement, le bouton éclair lance l'attaque signature : il prend son étoile
+      const u = b1.querySelector('use'), ic = F.st.alt ? '#ic-bolt' : '#ic-star';
+      if (u && u.getAttribute('href') !== ic) u.setAttribute('href', ic);
+      const c1 = F.st.alt ? F.cd1 : F.cd2, m1 = F.st.alt ? F.cd1Max : F.cd2Max;
+      b1.style.setProperty('--p', m1 ? (c1 / m1).toFixed(3) : 0); b2.style.setProperty('--p', (F.cd2 / F.cd2Max).toFixed(3));
+      b1.classList.toggle('wait', c1 > 0); b2.classList.toggle('wait', F.cd2 > 0);
+    }
+  }
+
+  // =====================================================================================
+  // ===== Duel en ligne : un code de salon (même serveur de rendez-vous que l'équipe) =====
+  // =====================================================================================
+  // l'hôte fait tourner le duel ; l'invité pilote son boss chez lui et envoie sa position et ses touches.
+  const dnet = { role: null, pc: null, r: null, u: null, code: '', status: 'idle', msg: '', ask: 0, peer: null, ready: false, in: dNoInput(), inN: [0, 0], n: 0, lastSt: 0, snap: null };
+  const dnetOpen = () => dnet.r && dnet.r.readyState === 'open';
+  const duelLink = code => (/^https?:$/.test(location.protocol) && !/^localhost$|^127\./.test(location.hostname) ? location.origin + location.pathname : 'https://comete-filante.vercel.app/') + '?duel=' + code;
+  function dSend(m, fast) {
+    const ch = fast && dnet.u && dnet.u.readyState === 'open' ? dnet.u : dnet.r;
+    if (!ch || ch.readyState !== 'open') return;
+    try { ch.send(JSON.stringify(m)); } catch (e) {}
+  }
+  function dWire(ch) {
+    if (ch.label === 'u') dnet.u = ch; else dnet.r = ch;
+    ch.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } dOnMsg(m); };
+    if (ch.label === 'r') {
+      ch.onopen = () => { dnet.status = 'connected'; dnet.msg = ''; dnet.ready = false; dHello(); if (!$('duelPanel').hidden) renderDuel(); beep(880, .2, 'triangle', .1, 300); };
+      ch.onclose = () => dDrop();
+      if (ch.readyState === 'open') ch.onopen();
+    }
+  }
+  function dClose() {
+    dnet.ask++;
+    for (const ch of [dnet.r, dnet.u]) if (ch) { ch.onclose = null; try { ch.close(); } catch (e) {} }
+    if (dnet.pc) { try { dnet.pc.close(); } catch (e) {} }
+    dnet.pc = dnet.r = dnet.u = null;
+  }
+  function dNewPc() {
+    dClose();
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    pc.onconnectionstatechange = () => { if (pc === dnet.pc && ['failed', 'closed'].includes(pc.connectionState)) dDrop(); };
+    dnet.pc = pc;
+    return pc;
+  }
+  function dError(msg) { dClose(); dnet.role = null; dnet.peer = null; dnet.status = 'error'; dnet.msg = msg; dnet.ready = false; if (!$('duelPanel').hidden) renderDuel(); }
+  async function dCreate() {
+    if (!window.RTCPeerConnection) return dError('Ce navigateur ne sait pas jouer en ligne. Essaie avec Chrome, Safari ou Firefox à jour.');
+    dnet.role = 'host'; dnet.peer = null; dnet.code = ''; dnet.status = 'creating'; dnet.msg = ''; dnet.ready = false; renderDuel();
+    try {
+      const pc = dNewPc(), ask = dnet.ask;
+      dWire(pc.createDataChannel('r'));
+      dWire(pc.createDataChannel('u', { ordered: false, maxRetransmits: 0 }));
+      await pc.setLocalDescription(await pc.createOffer());
+      await iceDone(pc);
+      const j = await teamCall('POST', { action: 'create', offer: pc.localDescription.sdp });
+      if (ask !== dnet.ask) return;
+      dnet.code = j.code; dnet.status = 'waiting'; renderDuel();
+      for (let i = 0; i < 1200 && ask === dnet.ask; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        if (ask !== dnet.ask) return;
+        const g = await teamCall('GET', null, dnet.code).catch(() => null);
+        if (g && g.answer) { dnet.status = 'linking'; renderDuel(); await pc.setRemoteDescription({ type: 'answer', sdp: g.answer }); dLinkTimeout(ask); return; }
+      }
+    } catch (e) { dError(e.message); }
+  }
+  async function dJoin(code) {
+    code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+    if (code.length !== 5) return dError('Le code a 5 lettres ou chiffres.');
+    if (!window.RTCPeerConnection) return dError('Ce navigateur ne sait pas jouer en ligne. Essaie avec Chrome, Safari ou Firefox à jour.');
+    dnet.role = 'guest'; dnet.peer = null; dnet.code = code; dnet.status = 'joining'; dnet.msg = ''; dnet.ready = false; renderDuel();
+    try {
+      const pc = dNewPc(), ask = dnet.ask;
+      pc.ondatachannel = e => dWire(e.channel);
+      const j = await teamCall('GET', null, code);
+      if (ask !== dnet.ask) return;
+      await pc.setRemoteDescription({ type: 'offer', sdp: j.offer });
+      await pc.setLocalDescription(await pc.createAnswer());
+      await iceDone(pc);
+      await teamCall('POST', { action: 'answer', code, answer: pc.localDescription.sdp });
+      if (ask !== dnet.ask) return;
+      dnet.status = 'linking'; renderDuel(); dLinkTimeout(ask);
+    } catch (e) { dError(e.message); }
+  }
+  function dLinkTimeout(ask) {
+    setTimeout(() => { if (ask === dnet.ask && !dnetOpen()) dError('Vos deux appareils n\'arrivent pas à se connecter. Essayez sur le même Wi-Fi, ou avec un autre réseau, puis recréez un salon.'); }, 20000);
+  }
+  function dHello() { dSend({ t: 'dhello', name: rocketName(), boss: dPick[0], ready: dnet.ready }); }
+  function dLeave() { dSend({ t: 'dleave' }); dClose(); dnet.role = null; dnet.peer = null; dnet.status = 'idle'; dnet.msg = ''; dnet.code = ''; dnet.ready = false; }
+  function dDrop() {
+    if (!dnet.role) return;
+    dClose(); dnet.role = null; dnet.peer = null; dnet.ready = false; dnet.status = 'error'; dnet.msg = 'Ton ami a quitté le salon.';
+    if (duel && duel.mode === 'online') { dExit(true); }
+    else if (!$('duelPanel').hidden) renderDuel();
+  }
+  // l'hôte lance le combat quand les deux joueurs sont prêts
+  function dTryStart() {
+    if (dnet.role !== 'host' || !dnet.ready || !dnet.peer || !dnet.peer.ready || !dPick[0] || !dBoss(dnet.peer.boss || '')) return;
+    const ids = [dPick[0], dnet.peer.boss], names = [rocketName(), dnet.peer.name], arena = dWorldOf(dBoss(ids[Math.random() < .5 ? 0 : 1]));
+    dnet.ready = false; dnet.peer.ready = false; dnet.in = dNoInput(); dnet.inN = [0, 0];
+    dSend({ t: 'dstart', ids, names, arena });
+    dStart(ids, names, 'online', { arena });
+  }
+  function dOnMsg(m) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'dhello') {
+      dnet.peer = { name: cleanName(m.name), boss: dBoss(String(m.boss || '')) ? String(m.boss) : null, ready: !!m.ready };
+      if (!$('duelPanel').hidden) renderDuel();
+      dTryStart();
+    } else if (m.t === 'dleave') { dDrop(); }
+    else if (m.t === 'dstart' && dnet.role === 'guest' && Array.isArray(m.ids) && m.ids.every(id => dBoss(String(id)))) {
+      dnet.ready = false; dnet.snap = null;
+      dStart(m.ids.map(String), [cleanName(m.names && m.names[0]), rocketName()], 'online', { view: 1, guest: true, arena: Math.max(0, Math.min(WORLDS.length - 1, m.arena | 0)) });
+    } else if (m.t === 'di' && dnet.role === 'host') {
+      // les commandes de l'invité : ses compétences sont comptées (un appui n'est jamais perdu)
+      const n1 = m.s1 | 0, n2 = m.s2 | 0;
+      dnet.in = { mx: dClamp(+m.mx || 0, -1, 1), my: dClamp(+m.my || 0, -1, 1), fire: !!m.f, s1: n1 > dnet.inN[0], s2: n2 > dnet.inN[1], tx: null, ty: null,
+        x: Number.isFinite(m.x) ? m.x : null, y: Number.isFinite(m.y) ? m.y : null };
+      if (n1 > dnet.inN[0]) dnet.inN[0] = n1; if (n2 > dnet.inN[1]) dnet.inN[1] = n2;
+    } else if (m.t === 'ds' && dnet.role === 'guest' && duel && duel.guest) { if (!dnet.snap || m.n > dnet.snap.n) dApplySnap(m); }
+    else if (m.t === 'dko' && duel && duel.guest) { duel.lastWin = m.w | 0; if (m.mw !== undefined && m.mw !== null) duel.matchWinner = m.mw | 0; }
+    else if (m.t === 'dend' && duel && duel.guest && duel.phase !== 'end') { duel.matchWinner = m.w | 0; duel.f[0].wins = m.s0 | 0; duel.f[1].wins = m.s1 | 0; dEnd(); }
+  }
+  // ce que l'hôte envoie 20 fois par seconde : la partie entière, en petit
+  function dSnapFighter(F, cl) {
+    const it = {};
+    for (const k in F.it) { const v = F.it[k]; if (typeof v === 'number') it[k] = Math.round(v * 100) / 100; else if (typeof v === 'boolean' || typeof v === 'string') it[k] = v; }
+    delete it.def;
+    if (F.it.pw) { const P = F.it.pw; it.pw = { kind: P.kind, name: P.name, col: P.col, t: P.t, warn: P.warn, tier: P.tier, d: P.d, started: P.started, done: P.done }; }
+    if (F.it.trail && F.it.trail.length) it.trail = F.it.trail.filter((_, i) => i % 2 === 0).map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }));
+    const ci = c => { let i = cl.indexOf(c); if (i < 0) { i = cl.length; cl.push(c); } return i; };
+    return { h: Math.round(F.hp * 10) / 10, c1: Math.round(F.cd1 * 10) / 10, c1m: F.cd1Max, c2: Math.round(F.cd2 * 10) / 10, g: Math.round(F.guard * 10) / 10, w: F.wins, fr: F.free ? 1 : 0, f: F.inp && F.inp.fire ? 1 : 0, dl: Math.round(F.dealt),
+      it, b: F.bul.map(b => [Math.round(b.x), Math.round(b.y), Math.round(b.vx || 0), Math.round(b.vy || 0), b.s || 5, ci(b.c || '#7dff8a'), (b.sq ? 1 : 0) | (b.fuse !== undefined && b.fuse < .6 ? 2 : 0) | (b.wait > 0 && !(b.pre > 0) ? 4 : 0)]),
+      m: F.mins.map(m => [Math.round(m.x), Math.round(m.y), m.r]) };
+  }
+  function dHostSend(t) {
+    const D = duel;
+    if (!D || D.mode !== 'online' || dnet.role !== 'host' || t - dnet.lastSt < 50) return;
+    dnet.lastSt = t;
+    const cl = [];
+    const newPops = pops.slice(Math.max(0, pops.length - 6)).filter(p => p.life > .95).map(p => [Math.round(p.x), Math.round(p.y), p.text, p.color]);
+    const m = { t: 'ds', n: ++dnet.n, ph: D.phase, pt: Math.round(D.pt * 100) / 100, rd: D.round, z: [Math.round(D.zone.x), Math.round(D.zone.y)], zm: D.zoneMsg > 0 ? 1 : 0, sd: D.suddenSaid ? 1 : 0,
+      lw: D.lastWin, mw: D.matchWinner, hit: D.hitT.map(v => v > 0 ? 1 : 0), pk: D.picks.map(k => [k.kind, Math.round(k.x), Math.round(k.y), Math.round(k.life * 10) / 10]),
+      f: D.f.map(F => dSnapFighter(F, cl)), cl, pp: newPops };
+    dSend(m, true);
+    if (D.phase === 'end' && !D.endSent) { D.endSent = true; dSend({ t: 'dend', w: D.matchWinner, s0: D.f[0].wins, s1: D.f[1].wins }); }
+  }
+  function dApplySnap(m) {
+    const D = duel, prev = dnet.snap;
+    dnet.snap = m;
+    if (typeof m.ph === 'string' && m.ph !== 'end') {
+      if (D.phase !== m.ph && m.ph === 'count') { for (let i = 0; i < 3; i++) setTimeout(() => beep(440, .18, 'square', .07), i * 1000); setTimeout(() => beep(880, .5, 'square', .09, 200), 3000); }
+      D.phase = m.ph;
+    }
+    D.pt = +m.pt || 0; D.round = m.rd | 0;
+    if (Array.isArray(m.z)) { D.zone.x = +m.z[0] || 0; D.zone.y = +m.z[1] || 0; }
+    D.zoneMsg = m.zm ? 1 : Math.max(0, D.zoneMsg - .05); D.suddenSaid = !!m.sd;
+    if (m.lw !== undefined && m.lw !== null) D.lastWin = m.lw | 0;
+    if (m.mw !== undefined && m.mw !== null) D.matchWinner = m.mw | 0;
+    if (Array.isArray(m.hit)) m.hit.forEach((v, i) => { if (v) D.hitT[i] = .25; });
+    D.picks = (Array.isArray(m.pk) ? m.pk : []).filter(k => Array.isArray(k) && D_PICKS[k[0]]).map(k => ({ kind: k[0], x: +k[1], y: +k[2], r: 14, rot: performance.now() / 1000, t: 0, life: +k[3] }));
+    const cl = Array.isArray(m.cl) ? m.cl.map(String) : [];
+    (Array.isArray(m.f) ? m.f : []).slice(0, 2).forEach((s, i) => {
+      const F = D.f[i];
+      if (!s || typeof s !== 'object') return;
+      const hp0 = F.hp;
+      F.hp = +s.h || 0; F.cd1 = +s.c1 || 0; F.cd1Max = +s.c1m || F.cd1Max; F.cd2 = +s.c2 || 0; F.guard = +s.g || 0; F.wins = s.w | 0; F.free = !!s.fr; F.dealt = +s.dl || 0;
+      if (i !== D.view) F.inp = { fire: !!s.f };
+      if (F.hp < hp0 - .5) { const r = dReal(F, F.it.x, F.it.y); burst(r.x, r.y, F.def.col, 4, 140, 3); }
+      const it = s.it && typeof s.it === 'object' ? s.it : {};
+      const keep = { x: F.it.x, y: F.it.y };
+      for (const k in it) if (k !== 'def' && k !== 'pw' && k !== 'trail') F.it[k] = it[k];
+      F.it.pw = it.pw && typeof it.pw === 'object' ? it.pw : null;
+      F.it.trail = Array.isArray(it.trail) ? it.trail : [];
+      F.it.def = F.def;
+      // les boss glissent vers leur position (et le nôtre reste sous nos doigts, sauf pendant une glissade, une charge…)
+      F.tx = +it.x; F.ty = +it.y;
+      if (i === D.view && !F.free && prev && D.phase === 'fight') { F.it.x = keep.x; F.it.y = keep.y; }
+      else if (prev) { F.it.x = keep.x; F.it.y = keep.y; }
+      F.bul = (Array.isArray(s.b) ? s.b : []).map(b => ({ x: +b[0], y: +b[1], vx: +b[2], vy: +b[3], s: +b[4] || 5, c: cl[b[5]] || '#7dff8a', sq: !!(b[6] & 1), fuse: b[6] & 2 ? .1 : undefined, wait: b[6] & 4 ? 1 : 0 }));
+      F.mins = (Array.isArray(s.m) ? s.m : []).map(mm => ({ kind: 'alien', type: 'chaser', mini: true, x: +mm[0], y: +mm[1], r: +mm[2] || 10, t: performance.now() / 1000, hitT: 0 }));
+      if (F.hp < hp0 && i === D.view) buzz(30);
+    });
+    for (const p of Array.isArray(m.pp) ? m.pp : []) if (Array.isArray(p) && !pops.some(q => q.text === p[2] && Math.abs(q.x - p[0]) < 4 && q.life > .6)) pops.push({ x: +p[0], y: +p[1], text: String(p[2]).slice(0, 30), color: String(p[3]), life: 1.1 });
+  }
+  // chez l'invité : son boss bouge tout de suite sous ses doigts, le reste suit les images de l'hôte
+  function dGuestTick(dt) {
+    const D = duel, me = D.f[D.view], O = D.f[1 - D.view];
+    D.hitT = D.hitT.map(v => Math.max(0, v - dt)); D.zoneMsg = Math.max(0, D.zoneMsg - dt * .2);
+    me.inp = dReadKeys(D.view, true);
+    me.foe.x = DW - O.it.x; me.foe.y = DH - O.it.y; O.foe.x = DW - me.it.x; O.foe.y = DH - me.it.y;
+    if (D.phase === 'fight' && !me.free) dMove(me, O, dt);
+    else if (me.tx !== undefined && Number.isFinite(me.tx)) { me.it.x += (me.tx - me.it.x) * Math.min(1, dt * 14); me.it.y += (me.ty - me.it.y) * Math.min(1, dt * 14); }
+    if (Number.isFinite(O.tx)) { O.it.x += (O.tx - O.it.x) * Math.min(1, dt * 14); O.it.y += (O.ty - O.it.y) * Math.min(1, dt * 14); }
+    for (const F of D.f) {
+      F.it.t = (F.it.t || 0) + dt;
+      for (const b of F.bul) if (!(b.wait > 0)) { b.x += b.vx * dt; b.y += b.vy * dt; }
+      if (F.it.pw) F.it.pw.t += dt;
+    }
+    dnet.inN[0] += me.inp.s1 ? 1 : 0; dnet.inN[1] += me.inp.s2 ? 1 : 0;
+    dSend({ t: 'di', mx: me.inp.mx, my: me.inp.my, f: me.inp.fire ? 1 : 0, s1: dnet.inN[0], s2: dnet.inN[1], x: Math.round(me.it.x * 10) / 10, y: Math.round(me.it.y * 10) / 10 }, true);
+  }
+  // le panneau « En ligne » de l'écran de sélection
+  function dRenderOnline() {
+    if (dMode !== 'online') return;
+    const linked = dnetOpen(), st = dnet.status;
+    const txt = linked ? (dnet.peer ? `${dnet.peer.name} est dans ton salon. Choisissez vos gardiens, puis appuyez tous les deux sur Prêt.` : 'Connexion réussie !')
+      : st === 'creating' ? 'Création du salon…' : st === 'waiting' ? 'Envoie ce code (ou le lien) à ton ami. Le duel commence quand vous êtes prêts tous les deux.'
+      : st === 'joining' || st === 'linking' ? 'Connexion à ton ami…' : st === 'error' ? dnet.msg : 'Crée un salon et partage le code, ou rejoins celui d\'un ami.';
+    $('duelNetStatus').textContent = txt;
+    $('duelNetStatus').classList.toggle('err', st === 'error' && !linked);
+    $('duelCodeBox').hidden = !(dnet.role === 'host' && dnet.code && !linked);
+    $('duelCode').textContent = dnet.code;
+    $('duelLink').textContent = dnet.code ? duelLink(dnet.code) : '';
+    $('duelNetBtns').hidden = linked || !!dnet.role || ['creating', 'joining', 'linking'].includes(st);
+    $('duelJoinForm').hidden = !dnet.joinOpen || linked || dnet.role === 'host';
+    $('duelShare').hidden = !(dnet.role === 'host' && dnet.code && !linked);
+    $('duelNetLeave').hidden = !(dnet.role);
+  }
+  $('duelCreate').onclick = () => { dnet.joinOpen = false; dCreate(); };
+  $('duelJoin').onclick = () => { dnet.joinOpen = true; renderDuel(); setTimeout(() => $('duelJoinInput').focus(), 30); };
+  $('duelJoinForm').onsubmit = e => { e.preventDefault(); dnet.joinOpen = false; dJoin($('duelJoinInput').value); };
+  $('duelNetLeave').onclick = () => { dLeave(); renderDuel(); };
+  $('duelShare').onclick = async () => {
+    const url = duelLink(dnet.code), text = `Viens m'affronter au Duel des Gardiens de Comète Filante ! Code : ${dnet.code}`;
+    try { if (navigator.share) { await navigator.share({ title: 'Duel des Gardiens', text, url }); return; } } catch (e) { return; }
+    try { await navigator.clipboard.writeText(url); $('duelNetStatus').textContent = 'Lien copié ! Colle-le dans un message à ton ami.'; } catch (e) {}
+  };
+  // le lien d'invitation : ?duel=CODE ouvre le duel en ligne et rejoint tout seul
+  try {
+    const q = new URLSearchParams(location.search), code = q.get('duel');
+    if (code) {
+      q.delete('duel'); history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+      setTimeout(() => { if (!$('naming').hidden) return; dMode = 'online'; openDuel(); dJoin(code); }, 400);
+    }
+  } catch (e) {}
+
   function loop(t) {
     dprCheck(t, t - last);
     keepAwake(t);
@@ -15691,7 +16994,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (!netHW && Math.abs(phoneZoom(cv.clientWidth, cv.clientHeight) - camS) > .001) resize();
     litCheck(t, (t - last) / 1000);
     const dt = Math.min(.033, (t - last) / 1000); last = t;
-    if (netRole === 'guest' && ['play', 'pause', 'dying', 'talk', 'choice', 'over'].includes(state)) netGuestTick(dt);
+    if (state === 'duel') duelUpdate(dt);
+    else if (netRole === 'guest' && ['play', 'pause', 'dying', 'talk', 'choice', 'over'].includes(state)) netGuestTick(dt);
     else if (state === 'play') update(dt);
     else if (state === 'launch') { onScreen(() => updateLaunch(dt)); if (state === 'play') placeStart(); }
     else if (state === 'dying') updateDying(dt);
@@ -15709,6 +17013,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       onScreen(() => drawField(() => { if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t); }));
     }
     if (netRole === 'host') netHostSend(t);
+    if (state === 'duel') { dHostSend(t); dPadUi(); if (!$('duelEnd').hidden) try { drawDuelWinner(t); } catch (e) { console.error(e); } }
     if (!$('team').hidden) drawTeam(t);
     drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
