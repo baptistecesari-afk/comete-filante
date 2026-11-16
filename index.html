@@ -16153,7 +16153,8 @@ body.dfight #game { cursor: none; }
       }
     }
     // une glissade, une charge ou un coup de pinces qui rentre dans l'autre boss
-    if (A.free && A.it.contactT <= 0 && Math.hypot(A.it.x - bx, A.it.y - by) < (A.it.r + B.it.r) * .75) { A.it.contactT = 1; dHurt(B, 8, A); }
+    // (chaque boss reste dans sa moitié : la charge s'arrête à la ligne du milieu et son onde de choc touche l'autre s'il est tout près)
+    if (A.free && A.it.contactT <= 0 && Math.hypot(A.it.x - bx, A.it.y - by) < (A.it.r + B.it.r) * .75 + 70) { A.it.contactT = 1; dHurt(B, 8, A); const r = dReal(B, B.it.x, B.it.y); burst(r.x, r.y, A.def.col, 14, 220, 4); shake = Math.max(shake, .25); }
   }
   // déplacement du boss : clavier, doigt ou ordinateur ; la zone le garde de son côté de l'arène
   function dMove(F, O, dt) {
@@ -16183,7 +16184,7 @@ body.dfight #game { cursor: none; }
     dKeepIn(F);
   }
   function dKeepIn(F) {
-    const it = F.it, z = duel.zone, m = it.r * 1.05;
+    const it = F.it, z = duel.zone, m = it.r * 1.3;
     // même une glissade, une charge ou un saut ne fait jamais sortir le boss de sa moitié (sous terre, il peut juste disparaître par l'arrière)
     if (it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, DH / 2 - it.r * .7); }
     else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, DH / 2 - it.r * .7); }
@@ -16195,7 +16196,7 @@ body.dfight #game { cursor: none; }
     D.pickT -= dt;
     if (D.pickT <= 0 && D.picks.length < 2) {
       const kinds = Object.keys(D_PICKS), kind = kinds[Math.floor(Math.random() * kinds.length)];
-      D.picks.push({ kind, x: DW / 2 + (Math.random() - .5) * Math.max(80, DW - 2 * D.zone.x - 160), y: DH / 2 + (Math.random() - .5) * 60, r: 14, rot: 0, t: 0, life: 11 });
+      D.picks.push({ kind, x: DW / 2 + (Math.random() - .5) * Math.max(80, DW - 2 * D.zone.x - 160), y: DH / 2, r: 14, rot: 0, t: 0, life: 11 });
       D.pickT = 6 + Math.random() * 4;
       beep(900, .12, 'triangle', .05, 300);
     }
@@ -16354,8 +16355,14 @@ body.dfight #game { cursor: none; }
   // ----- dessin -----
   // au doigt, sur un écran en hauteur, l'arène monte un peu pour laisser la place aux boutons en dessous
   function dArena() {
-    const s = Math.min(W / DW, H / DH), spare = H - DH * s;
-    const y = duel && duel.mode !== 'local' && dTouch() ? Math.max(0, Math.min(spare / 2, spare - 172 / camS)) : spare / 2;
+    let s = Math.min(W / DW, H / DH);
+    const pads = duel && duel.mode !== 'local' && dTouch(), room = 172 / camS, top = pads ? 58 / camS : 0;
+    // au doigt, les gros boutons (et le bouton pause en haut) ne doivent jamais couvrir l'arène : s'il n'y a de place ni dessous ni sur le côté, l'arène rapetisse un peu
+    if (pads && H - DH * s < room + top && (W - DW * s) / 2 < room) s = Math.max(.2, Math.min(W / DW, (H - room - top) / DH));
+    // à deux sur le même téléphone, il y a un pavé en haut et un en bas
+    else if (duel && duel.mode === 'local' && dTouch() && H - DH * s < 2 * room && (W - DW * s) / 2 < room) s = Math.max(.2, Math.min(W / DW, (H - 2 * room) / DH));
+    const spare = H - DH * s;
+    const y = pads ? Math.max(Math.min(top, spare), Math.min(spare / 2, spare - room)) : spare / 2;
     return { s, x: (W - DW * s) / 2, y };
   }
   // dessiner dans le repère d'un boss (tourné pour celui du bas)
@@ -16373,6 +16380,8 @@ body.dfight #game { cursor: none; }
     if (on && P.kind === 'ghost') ctx.globalAlpha = .12 + .08 * Math.sin(t / 80);
     if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
     if (on && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
+    // le boss du bas de l'écran vit dans un repère retourné : on redresse son dessin pour qu'il ne soit pas la tête en bas
+    if (F.side === duel.view) { ctx.translate(it.x, it.y); ctx.rotate(Math.PI); ctx.translate(-it.x, -it.y); }
     shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
     drawBoss(it, t);
     ctx.restore();
@@ -16416,7 +16425,13 @@ body.dfight #game { cursor: none; }
     // bonus
     for (const k of D.picks) { ctx.save(); if (k.life < 2 && Math.floor(k.life * 8) % 2) ctx.globalAlpha = .4; drawPickup(k, t); ctx.restore(); }
     // les bestioles, les boss, puis les attaques signature et tous les tirs (par-dessus, pour bien les voir)
-    for (const F of D.f) dInFrame(F, () => { for (const m of F.mins) drawAlien(m, t); dDrawBoss(F, t); });
+    for (const F of D.f) dInFrame(F, () => {
+      for (const m of F.mins) {
+        if (F.side !== D.view) { drawAlien(m, t); continue; }
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(Math.PI); ctx.translate(-m.x, -m.y); drawAlien(m, t); ctx.restore();
+      }
+      dDrawBoss(F, t);
+    });
     for (const F of D.f) dInFrame(F, () => { drawSig(t); for (const b of F.bul) drawEBullet(b, t); });
     for (const p of parts) drawPart(p);
     ctx.globalAlpha = 1;
@@ -16543,9 +16558,9 @@ body.dfight #game { cursor: none; }
     const D = duel;
     D.phase = 'end'; dEndAt = performance.now();
     const w = D.matchWinner, W2 = D.f[w];
-    const mine = D.mode === 'online' ? (D.guest ? 1 : 0) : -1;
+    const mine = D.mode === 'online' ? (D.guest ? 1 : 0) : D.mode === 'bot' ? 0 : -1, lost = mine >= 0 && w !== mine;
     const reward = dReward(D, w, mine);
-    $('duelEndKick').textContent = D.mode === 'online' ? (w === mine ? 'Victoire !' : 'Défaite…') : 'Victoire !';
+    $('duelEndKick').textContent = lost ? 'Défaite…' : 'Victoire !';
     $('duelEndTitle').textContent = `${W2.name} gagne avec ${W2.def.name}`;
     $('duelEndTitle').style.color = D_COL[w];
     $('duelEndScore').innerHTML = `<span style="color:${D_COL[0]}">${D.f[0].name} <b>${D.f[0].wins}</b></span><i>–</i><span style="color:${D_COL[1]}"><b>${D.f[1].wins}</b> ${D.f[1].name}</span>`;
@@ -16555,7 +16570,8 @@ body.dfight #game { cursor: none; }
     $('duelRematch').hidden = false;
     $('duelEnd').hidden = false; $('duelPause').hidden = true; $('duelPads').hidden = true;
     dWinnerDef = W2.def; dWinnerCol = D_COL[w];
-    for (let i = 0; i < 5; i++) setTimeout(() => beep([523, 659, 784, 1047, 1319][i], .2, 'triangle', .09), i * 130);
+    if (lost) for (let i = 0; i < 3; i++) setTimeout(() => beep([392, 330, 262][i], .28, 'triangle', .08), i * 220);
+    else for (let i = 0; i < 5; i++) setTimeout(() => beep([523, 659, 784, 1047, 1319][i], .2, 'triangle', .09), i * 130);
   }
   // une victoire rapporte des Astros (5 duels récompensés par jour, pour garder l'équilibre avec le Défi du jour)
   const D_WIN_ASTROS = 150, D_LOSE_ASTROS = 50, D_DAY_MAX = 5;
@@ -16706,7 +16722,7 @@ body.dfight #game { cursor: none; }
   $('duelPause').onclick = () => dPauseMenu(true);
   function dPauseMenu(on) {
     if (!duel || duel.phase === 'end') return;
-    if (duel.mode !== 'online') duel.paused = on;
+    if (duel.mode !== 'online') { duel.paused = on; $('duelPads').hidden = on || !dTouch(); for (const p of dPad) { p.fire = p.click = p.drag = false; p.tx = p.ty = null; } dFingers.clear(); }
     $('duelMenu').hidden = !on;
     $('duelResume').textContent = duel.mode === 'online' ? 'Continuer' : 'Reprendre';
   }
