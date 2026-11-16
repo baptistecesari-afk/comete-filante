@@ -560,6 +560,69 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .pvlock b { display: block; font-family: var(--display); font-weight: 400; font-size: 13px; letter-spacing: .04em; }
 .preview canvas { width: 200px; height: 240px; max-width: 100%; border-radius: 16px; background: radial-gradient(circle at 50% 40%, var(--deep), var(--night)); }
 .preview .shipname { font-family: var(--display); font-size: 18px; text-align: center; overflow-wrap: anywhere; }
+/* Trophées : résumé par palier et filtres */
+.tsum { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tsum div { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 14px; background: var(--night); border: 2px solid color-mix(in srgb, var(--tier) 45%, transparent); }
+.tsum b { font-family: var(--display); font-weight: 400; font-size: 13px; color: var(--tier); }
+.tsum span { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tsum .medal { width: 22px; height: 22px; }
+.tfilter, .collfilter { justify-content: center; }
+.tier small.tnext { font-size: 11px; color: var(--muted); }
+@media (max-width: 520px) { .tsum { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .tsum div { padding: 8px 2px; } .tsum b { font-size: 10px; } .tsum span { font-size: 12px; } }
+/* Collection et coffres */
+.menugrid .wide { grid-column: 1 / -1; }
+.collbtn .chestbadge { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.6em; margin-left: .5em; padding: 0 .4em; border-radius: 999px; background: var(--tail); color: #1a0a20; font-family: var(--body); font-weight: 800; font-size: .8em; }
+.chestbox { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: center; padding: 14px; border-radius: 18px;
+  background: radial-gradient(ellipse at 20% 50%, color-mix(in srgb, #c86bff 22%, var(--night)), var(--night) 70%); border: 2px solid color-mix(in srgb, #c86bff 45%, transparent); }
+.chestbox canvas { width: 240px; height: auto; aspect-ratio: 360 / 260; }
+.chestinfo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.chestn { font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--star); }
+.chestinfo small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.chestbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.chestbtns button { padding: 10px 16px; font-size: 14px; }
+.chestbtns button:disabled { filter: grayscale(1); opacity: .5; cursor: not-allowed; box-shadow: none; }
+.odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; color: var(--ink); }
+.odds li { display: flex; align-items: center; gap: 6px; }
+.odds i { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--rc); box-shadow: 0 0 8px var(--rc); }
+.odds em { font-style: normal; color: var(--muted); }
+.collpage > * { min-width: 0; }
+.colltabs { flex-wrap: wrap; border-radius: 18px; width: auto; }
+.colltabs button { padding: 7px 12px; font-size: 13px; }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.ccard { font: inherit; text-align: left; color: var(--ink); cursor: var(--cur-clic); display: flex; flex-direction: column; gap: 3px; padding: 6px 8px 8px; border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--rc) 18%, var(--deep)), var(--night) 75%); border: 2px solid color-mix(in srgb, var(--rc) 45%, transparent); position: relative; }
+.ccard canvas { width: 100%; height: auto; aspect-ratio: 160 / 110; }
+.ccard b { font-size: 13px; font-weight: 700; line-height: 1.2; }
+.ccard small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--rc); font-weight: 700; }
+.ccard em { font-style: normal; font-size: 11px; color: var(--muted); }
+.ccard.on { border-color: var(--star); box-shadow: 0 0 0 2px var(--star), 0 0 18px color-mix(in srgb, var(--star) 40%, transparent); }
+.ccard.on em { color: var(--star); }
+.ccard.sel { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.ccard.locked canvas { filter: grayscale(.75) brightness(.6); }
+.ccard.locked::after { content: ''; position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; opacity: .8;
+  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='%23a99fd0'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='%23a99fd0' stroke-width='2.4'/%3E%3C/svg%3E"); }
+.collbar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding: 12px 14px; border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 2px solid color-mix(in srgb, var(--star) 50%, transparent); backdrop-filter: blur(6px); }
+.collbar span { font-size: 14px; flex: 1 1 200px; }
+.collbar .buy:disabled { filter: grayscale(1); opacity: .6; cursor: not-allowed; }
+@media (max-width: 615px) { .odds { grid-template-columns: 1fr; text-align: left; } .colltabs button { padding: 6px 9px; font-size: 12px; } .chestbtns button { flex: 1 1 100%; } .chestbox { grid-template-columns: 1fr; justify-items: center; text-align: center; } .chestbox canvas { width: 200px; } .chestbtns { justify-content: center; } .cgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); } }
+/* cinématique d'ouverture d'un coffre */
+.chestfx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at 50% 55%, rgba(26, 18, 64, .82), rgba(5, 3, 14, .96)); cursor: var(--cur-clic); }
+.chestfx canvas#chestCv { position: absolute; inset: 0; width: 100%; height: 100%; }
+.chestskip { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); text-align: center; color: var(--muted); font-size: 13px; }
+.chestprize { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 420px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+  padding: 18px 18px 16px; border-radius: 24px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 2px solid var(--rc); box-shadow: 0 0 40px color-mix(in srgb, var(--rc) 55%, transparent), inset 0 0 30px color-mix(in srgb, var(--rc) 18%, transparent);
+  animation: prizeIn .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes prizeIn { from { transform: translate(-50%, -50%) scale(.4); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .chestprize { animation: none; } }
+.prizerar { font-family: var(--display); font-size: 16px; letter-spacing: .12em; text-transform: uppercase; color: var(--rc); text-shadow: 0 0 14px var(--rc); }
+.chestprize canvas { width: 100%; height: auto; aspect-ratio: 420 / 300; }
+.prizename { font-family: var(--display); font-weight: 400; font-size: 26px; color: var(--ink); line-height: 1.1; }
+.prizeinfo { font-size: 14px; color: var(--muted); }
+.prizecoin { display: flex; align-items: center; gap: 12px; padding: 22px 0; }
+.prizecoin .coin { width: 64px; height: 64px; margin: 0; }
+.prizecoin b { font-family: var(--display); font-weight: 400; font-size: 44px; color: var(--star); text-shadow: 0 0 18px rgba(255, 216, 107, .6); }
+.chestprize .row { gap: 10px; }
 /* Monnaie du Hangar : les Astros */
 .coin { display: inline-block; width: 1.05em; height: 1.05em; border-radius: 50%; vertical-align: -.18em; margin: 0 .12em;
   background: radial-gradient(circle at 35% 30%, #fff6c8, #ffd86b 40%, #e09a1a 75%, #8a5a08); box-shadow: 0 0 8px rgba(255, 216, 107, .6), inset 0 0 0 1.5px rgba(138, 90, 8, .6);
@@ -1228,6 +1291,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 <path d="M11 13 19.6 4.4" stroke="#1a1030" stroke-width="2.2" stroke-linecap="round"/><path d="M11 13 19.6 4.4" stroke="url(#icg-steel)" stroke-width="1.1" stroke-linecap="round"/>
 <path d="M18.2 3.2l1.5 1.1 1.1 1.5 1.6-.4-1.6-1.6-1.6-1.6z" fill="url(#icg-cyan)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/></symbol>
 <symbol id="ic-done" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.4" fill="url(#icg-green)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M7.2 12.4l3.2 3.2 6.4-6.8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-chest" viewBox="0 0 24 24"><path d="M3.2 10.2V8.6c0-2.6 2.1-4.6 4.6-4.6h8.4c2.5 0 4.6 2 4.6 4.6v1.6z" fill="url(#icg-violet)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<rect x="3.2" y="10.2" width="17.6" height="9.6" rx="1.2" fill="url(#icg-violet)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
+<path d="M3.2 10.2h17.6" stroke="url(#icg-gold)" stroke-width="1.6"/><path d="M7 4.2v15.6M17 4.2v15.6" stroke="url(#icg-gold)" stroke-width="1.6"/>
+<rect x="10.2" y="8.6" width="3.6" height="4.6" rx=".8" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="12" cy="10.9" r=".8" fill="#1a1030"/>
+<path d="M19.4 1.2Q19.8 2.8 21.4 3.2Q19.8 3.6 19.4 5.2Q19 3.6 17.4 3.2Q19 2.8 19.4 1.2z" fill="#fff"/></symbol>
 <symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M7.2 5.6H4.3c0 3 1.3 5.1 3.8 5.6M16.8 5.6h2.9c0 3-1.3 5.1-3.8 5.6" fill="none" stroke="#1a1030" stroke-width="2.6" stroke-linecap="round"/>
 <path d="M7.2 5.6H4.3c0 3 1.3 5.1 3.8 5.6M16.8 5.6h2.9c0 3-1.3 5.1-3.8 5.6" fill="none" stroke="url(#icg-gold)" stroke-width="1.3" stroke-linecap="round"/>
 <path d="M10.8 12.6h2.4l.7 3.9h-3.8z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/>
@@ -1361,6 +1429,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <button class="ghost" id="trophyBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg>Trophées</button>
       <button class="ghost" id="rankBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button>
       <button class="ghost" id="cinemaBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
+      <button class="ghost wide collbtn" id="collBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-chest"/></svg>Collection et coffres</button>
     </div>
     <div class="row menulinks">
       <button class="toggle" id="storyBtn">Histoire</button>
@@ -1417,6 +1486,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         <button type="button" class="ghost" id="teamTrophies">Trophées</button>
         <button type="button" class="ghost" id="teamRank"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button>
         <button type="button" class="ghost" id="teamCinema"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
+        <button type="button" class="ghost wide collbtn" id="teamColl"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-chest"/></svg>Collection et coffres</button>
       </div>
     </div>
     <div class="row menulinks">
@@ -1490,6 +1560,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <div class="opt" data-tab="effets"><span>Flamme</span><div class="chips" id="optFlame"></div></div>
       <div class="opt" data-tab="effets"><span>Traînée</span><div class="chips" id="optTrail"></div></div>
       <div class="opt" data-tab="effets"><span>Couleur des tirs</span><div class="chips" id="optShot"></div></div>
+      <div class="opt" data-tab="effets"><span>Explosion des ennemis</span><div class="chips" id="optBoom"></div></div>
+      <div class="opt" data-tab="effets"><span>Aura</span><div class="chips" id="optAura"></div></div>
       <div class="opt" data-tab="armes"><span>Pistolet</span><div class="powers" id="optGun"></div></div>
       <div class="opt" data-tab="armes"><span>Super-pouvoir</span><div class="powers" id="optPower"></div></div>
       <div class="opt" id="petOpt" data-tab="animaux"><span>Animaux de l'espace</span><p class="wallet" id="petInfo"></p><div class="powers" id="optPet"></div></div>
@@ -1602,11 +1674,59 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   </div>
 </div>
 
+<div class="panel" id="collection" hidden>
+  <div class="hangar atelier collpage">
+    <button class="xclose" data-back="collBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
+    <h2>Collection</h2>
+    <p class="wallet" id="collCount"></p>
+    <section class="chestbox">
+      <canvas id="chestPv" width="360" height="260" aria-label="Ton coffre"></canvas>
+      <div class="chestinfo">
+        <b class="chestn" id="chestN"></b>
+        <small id="chestHow"></small>
+        <div class="chestbtns">
+          <button type="button" class="play" id="chestOpen">Ouvrir un coffre</button>
+          <button type="button" class="ghost" id="chestBuy"></button>
+        </div>
+        <ul class="odds" id="chestOdds" aria-label="Chances dans un coffre"></ul>
+      </div>
+    </section>
+    <nav class="cinetabs colltabs" id="collTabs" role="tablist" aria-label="Familles de skins"></nav>
+    <div class="chips collfilter" id="collFilter"></div>
+    <div class="cgrid" id="collGrid"></div>
+    <div class="collbar" id="collBar" hidden>
+      <span id="collBarText"></span>
+      <button type="button" class="buy" id="collBarBtn"></button>
+    </div>
+    <div class="row">
+      <button class="play" id="collBack">Retour</button>
+    </div>
+  </div>
+</div>
+
+<div class="chestfx" id="chestFx" hidden>
+  <canvas id="chestCv" aria-hidden="true"></canvas>
+  <div class="chestprize" id="chestPrize" hidden>
+    <small class="prizerar" id="prizeRar"></small>
+    <canvas id="prizeCv" width="420" height="300" aria-hidden="true"></canvas>
+    <div class="prizecoin" id="prizeCoin" hidden><i class="coin"></i><b id="prizeAstros"></b></div>
+    <b class="prizename" id="prizeName"></b>
+    <span class="prizeinfo" id="prizeInfo"></span>
+    <div class="row">
+      <button type="button" class="ghost" id="prizeEquip">Équiper</button>
+      <button type="button" class="play" id="prizeOk">Super !</button>
+    </div>
+  </div>
+  <small class="chestskip" id="chestSkip">Touche l'écran pour aller plus vite</small>
+</div>
+
 <div class="panel" id="trophies" hidden>
   <div class="hangar atelier">
     <button class="xclose" data-back="trophyBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Trophées</h2>
     <p class="wallet" id="trophyCount"></p>
+    <div class="tsum" id="trophySum"></div>
+    <div class="chips tfilter" id="trophyFilter"></div>
     <div class="opt" id="titleOpt">
       <span>Titre affiché sous le nom de ta fusée</span>
       <div class="chips" id="optTitle"></div>
@@ -1708,6 +1828,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       <button class="play" id="againBtn">Rejouer</button>
       <button class="ghost" id="overHangarBtn">Hangar</button>
       <button class="ghost" id="overTrophyBtn">Trophées</button>
+      <button class="ghost" id="overCollBtn">Coffres</button>
       <button class="ghost" id="overRankBtn">Classement</button>
     </div>
   </div>
@@ -1883,6 +2004,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { id: 'coeur', name: 'Cœur Étoilé', desc: 'Le vaisseau le plus cher : un cœur brillant avec ses ailes d\'ange, son cockpit et ses petits cœurs en orbite.' },
     { id: 'predateur', name: 'Prédateur', desc: 'Chasseur à armure noire, visière rouge, deux réacteurs et canons latéraux.' },
     { id: 'legende', name: 'Légende', desc: 'Vaisseau blanc et or avec auréole, cockpit diamant et étincelles.' },
+    // vaisseaux des coffres : des designs originaux, dans l'esprit des grands films de science-fiction
+    { id: 'raie', name: 'Raie stellaire', rar: 2, box: 1, desc: 'Une aile volante courbée comme une raie, avec une fente lumineuse sur le bord d\'attaque.' },
+    { id: 'libellule', name: 'Libellule', rar: 2, box: 1, desc: 'Un fuselage fin et quatre longues ailes de verre qui frémissent.' },
+    { id: 'orion', name: 'Croiseur Orion', rar: 3, box: 1, desc: 'Une longue coque blindée avec une barre de projecteurs à l\'avant et trois tuyères.' },
+    { id: 'halo', name: 'Anneau Halo', rar: 4, box: 1, desc: 'Une flèche de cristal tenue au centre d\'un anneau d\'énergie qui tourne.' },
   ];
   const COLORS = [
     { id: 'rouge', name: 'Rouge', hex: '#ff5a6e' },
@@ -1907,6 +2033,14 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { id: 'blinde', name: 'Blindé', hex: '#8f9bb0', grad: ['#e6ecf5', '#8f9bb0', '#3a4252', '#b8c2d4'] },
     { id: 'vertalien', name: 'Vert alien', hex: '#7dff8a' },
     { id: 'argent', name: 'Chrome argenté', hex: '#a8b8d8', grad: ['#ffffff', '#a8b8d8', '#4a5a78', '#dfe8f8'] },
+    // couleurs des coffres
+    { id: 'acier', name: 'Acier bleuté', rar: 2, box: 1, hex: '#6f8fb8', grad: ['#d8e6f8', '#6f8fb8', '#2a3a58'] },
+    { id: 'sakura', name: 'Sakura', rar: 2, box: 1, hex: '#ff9ec8', grad: ['#fff0f6', '#ff9ec8', '#c84a8a'] },
+    { id: 'nacre', name: 'Nacre', rar: 2, box: 1, hex: '#e8e0f0', grad: ['#ffffff', '#f0d8ff', '#c8f0ff', '#e8e0f0'] },
+    { id: 'aurore', name: 'Aurore boréale', rar: 3, box: 1, hex: '#3ad8a8', grad: ['#b8fff0', '#3ad8a8', '#3a6bff', '#b14dff'] },
+    { id: 'cosmos', name: 'Cosmos', rar: 3, box: 1, hex: '#3a2a8a', grad: ['#7ad8ff', '#3a2a8a', '#120a3a', '#ff7ad9'] },
+    { id: 'platine', name: 'Platine', rar: 3, hex: '#d9d4ee', grad: ['#ffffff', '#d9d4ee', '#8a84a8', '#f4f0ff'] },
+    { id: 'eclipse', name: 'Éclipse', rar: 4, box: 1, hex: '#2a2030', grad: ['#ffe9a0', '#ffb020', '#1a1420', '#0a0810', '#ffd86b'] },
   ];
   const FLAMES = [
     { id: 'feu', name: 'Feu', c: ['#fff2b0', '#ff9a3c', '#ff3c3c'] },
@@ -1980,6 +2114,36 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { id: 'pixels', name: 'Pixels', shape: 'pixel', size: 4 },
     { id: 'coeurs', name: 'Cœurs', shape: 'heart', col: '#ff7aa8', size: 5 },
     { id: 'comete', name: 'Queue de comète', shape: 'glow', size: 7, life: 1.8 },
+    // fumées des coffres : pal = couleurs tirées au hasard, hue = arc-en-ciel qui défile, grad = dégradé qui défile
+    { id: 'poussiere', name: 'Poussière d\'étoiles', shape: 'star', size: 2.5, pal: ['#ffffff', '#fff2b0', '#cfe3ff'], life: 1.4 },
+    { id: 'degrade', name: 'Coucher de soleil', rar: 2, box: 1, shape: 'glow', size: 6, life: 1.4, grad: ['#ffe46b', '#ff7a3c', '#ff3c78', '#8a3cff'] },
+    { id: 'neon', name: 'Néon', rar: 2, box: 1, shape: 'neon', size: 4, life: 1.2, pal: ['#ff3cf0', '#3cf0ff'] },
+    { id: 'givre', name: 'Flocons', rar: 2, box: 1, shape: 'flake', size: 4.5, life: 1.5, pal: ['#ffffff', '#bfefff', '#8fd0ff'] },
+    { id: 'foudre', name: 'Arcs électriques', rar: 3, box: 1, shape: 'spark', size: 2, life: .9, pal: ['#7af0ff', '#ffffff', '#b8a6ff'] },
+    { id: 'arcenciel', name: 'Arc-en-ciel', rar: 3, box: 1, shape: 'glow', size: 6, life: 1.6, hue: true },
+    { id: 'nebuleuse', name: 'Nébuleuse', rar: 4, box: 1, shape: 'smoke', size: 9, life: 1.8, pal: ['#b14dff', '#ff4fa0', '#3a6bff', '#4fe0c8'] },
+    { id: 'voie', name: 'Voie lactée', rar: 4, shape: 'star', size: 3.5, life: 2, pal: ['#ffffff', '#cfe3ff', '#d9c8ff', '#fff2b0'] },
+  ];
+  // explosions des ennemis que tu détruis (un effet en plus de l'explosion normale, purement visuel)
+  const BOOMS = [
+    { id: 'classique', name: 'Classique' },
+    { id: 'confettis', name: 'Confettis', rar: 2, box: 1, pal: ['#ff4f6d', '#ffd86b', '#7dff8a', '#7ad8ff', '#c86bff'] },
+    { id: 'onde', name: 'Onde néon', rar: 2, box: 1, pal: ['#3cf0ff', '#ff3cf0'] },
+    { id: 'pixels', name: 'Pixels', rar: 2, box: 1, pal: ['#ffffff', '#7dff8a', '#ffd86b'] },
+    { id: 'etoiles', name: 'Pluie d\'étoiles', rar: 3, box: 1, pal: ['#fff2b0', '#ffd86b', '#ffffff'] },
+    { id: 'coeurs', name: 'Cœurs', rar: 3, box: 1, pal: ['#ff7aa8', '#ff4f8a', '#ffc2e0'] },
+    { id: 'supernova', name: 'Supernova', rar: 4, box: 1, pal: ['#ffffff', '#ffd86b', '#ff7a3c', '#b14dff'] },
+    { id: 'tonnerre', name: 'Tonnerre', rar: 4, pal: ['#ffffff', '#7af0ff', '#b8a6ff'] },
+  ];
+  // auras : une lumière autour de la fusée (purement visuelle)
+  const AURAS = [
+    { id: 'aucune', name: 'Aucune' },
+    { id: 'halo', name: 'Halo doux', rar: 2, box: 1, col: '#9fd8ff' },
+    { id: 'braise', name: 'Braises', rar: 2, box: 1, col: '#ff9a3c' },
+    { id: 'orbite', name: 'Orbites', rar: 3, box: 1, col: '#7af0ff' },
+    { id: 'givre', name: 'Cristaux de givre', rar: 3, box: 1, col: '#bfefff' },
+    { id: 'spectre', name: 'Spectre arc-en-ciel', rar: 4, box: 1, col: '#ff7ad9' },
+    { id: 'couronne', name: 'Couronne d\'étoiles', rar: 4, col: '#ffd86b' },
   ];
   // couleur des tirs ('flamme' = comme la flamme du vaisseau)
   const SHOTS = [
@@ -2543,7 +2707,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     k.restore();
   }
 
-  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', accent: 'auto', motif: 'aucun', glass: 'nuit', flame: 'feu', trail: 'classique', shot: 'flamme', gun: 'blaster', power: 'laser', title: '', pet: '' };
+  const DEFAULT = { name: 'Aurore', model: 'classique', color: 'rouge', accent: 'auto', motif: 'aucun', glass: 'nuit', flame: 'feu', trail: 'classique', shot: 'flamme', gun: 'blaster', power: 'laser', title: '', pet: '', boom: 'classique', aura: 'aucune' };
   let cfg = { ...DEFAULT };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-hangar') || '{}');
@@ -2556,7 +2720,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (SHOTS.some(m => m.id === saved.shot)) cfg.shot = saved.shot;
     if (typeof saved.title === 'string') cfg.title = saved.title;
     if (PETS.some(m => m.id === saved.pet)) cfg.pet = saved.pet;
-    for (const [k, list] of [['accent', ACCENTS], ['motif', MOTIFS], ['glass', GLASSES], ['trail', TRAILS]]) if (list.some(m => m.id === saved[k])) cfg[k] = saved[k];
+    for (const [k, list] of [['accent', ACCENTS], ['motif', MOTIFS], ['glass', GLASSES], ['trail', TRAILS], ['boom', BOOMS], ['aura', AURAS]]) if (list.some(m => m.id === saved[k])) cfg[k] = saved[k];
   } catch (e) {}
   function saveCfg() { try { localStorage.setItem('comete-hangar', JSON.stringify(cfg)); } catch (e) {} refreshShipIcons(); }
 
@@ -2573,13 +2737,16 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   ];
   // prix des objets de personnalisation (0 = gratuit dès le départ)
   const PRICES = {
-    model: { navette: 5800, eclair: 11700, aile: 4700, ovni: 7000, tie: 7800, faucon: 9800, requin: 13600, abeille: 5800, chevalier: 10900, galion: 11700, mecha: 12500, cristal: 15600, arcade: 39000, pixel: 7800, coeur: 100000 },
-    color: { or: 1200, turquoise: 1200, violet: 2000, orange: 2000, blanc: 3100, bleunuit: 1200, rosebonbon: 1200, citron: 1200, corail: 1200, menthe: 1200, noir: 2300, lave: 3100, ocean: 3100, galaxie: 3900, neon: 3500 },
+    model: { raie: 12000, libellule: 12000, orion: 26000, navette: 5800, eclair: 11700, aile: 4700, ovni: 7000, tie: 7800, faucon: 9800, requin: 13600, abeille: 5800, chevalier: 10900, galion: 11700, mecha: 12500, cristal: 15600, arcade: 39000, pixel: 7800, coeur: 100000 },
+    color: { acier: 3500, sakura: 3500, nacre: 3500, aurore: 8000, or: 1200, turquoise: 1200, violet: 2000, orange: 2000, blanc: 3100, bleunuit: 1200, rosebonbon: 1200, citron: 1200, corail: 1200, menthe: 1200, noir: 2300, lave: 3100, ocean: 3100, galaxie: 3900, neon: 3500 },
     accent: { noir: 500, blanc: 500, or: 1000, cyan: 1000, rose: 1000, vert: 1000, violet: 1000, rouge: 1000,
       cuivre: 1800, argent: 2200, turquoise: 1500, corail: 1500, lavande: 1500, citron: 1500, bordeaux: 1800, bleuroi: 1800, menthe: 1500, orange: 1500 },
     motif: { rayures: 1200, etoiles: 1600, damier: 2000, eclair: 2300, camo: 2300, flammes: 2700, course: 3100 },
     glass: { cyan: 500, or: 800, rouge: 500, vert: 500, miroir: 1200, violet: 1500, glace: 2400, lave: 2800 },
-    trail: { etincelles: 1600, bulles: 1200, pixels: 1200, coeurs: 2000, comete: 2700 },
+    trail: { etincelles: 1600, bulles: 1200, pixels: 1200, coeurs: 2000, comete: 2700, poussiere: 900, degrade: 3500, neon: 3500, givre: 3500, foudre: 8000, arcenciel: 8000 },
+    // skins des coffres : les rares et une partie des épiques s'achètent aussi ; les légendaires se gagnent seulement (coffres, trophées)
+    boom: { confettis: 3500, onde: 3500, pixels: 3500, etoiles: 8000 },
+    aura: { halo: 3500, braise: 3500, orbite: 8000 },
     flame: { plasma: 2300, toxique: 2300, rose: 3500, solaire: 2800, glacier: 2800, lave: 3200, emeraude: 3200, amethyste: 3600, ocean: 3600, orroyal: 4800, nuit: 4200, rubis: 4200, electrique: 6000 },
     gun: { double: 7800, eventail: 11700, mitrailleuse: 17600, vague: 21500, plasma: 23400, ricochet: 29300, quintuple: 35100 },
     power: { aimant: 4700, temps: 5900, hyper: 9800, nova: 15600, miroir: 7800, gel: 8600, dragon: 11000, foudre: 11700, missiles: 13700 },
@@ -2595,6 +2762,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { key: 'glass', label: 'Hublot', list: GLASSES },
     { key: 'flame', label: 'Flamme', list: FLAMES },
     { key: 'trail', label: 'Traînée', list: TRAILS },
+    { key: 'boom', label: 'Explosion', list: BOOMS },
+    { key: 'aura', label: 'Aura', list: AURAS },
     { key: 'gun', label: 'Pistolet', list: GUNS },
     { key: 'power', label: 'Super-pouvoir', list: POWERS },
     { key: 'shot', label: 'Tirs', list: SHOTS },
@@ -2605,9 +2774,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     { name: 'Bronze', col: '#e09a5a' },
     { name: 'Argent', col: '#d6dcea' },
     { name: 'Or', col: '#ffd86b' },
+    { name: 'Platine', col: '#d9c8ff' },
     { name: 'Diamant', col: '#7ae8ff' },
   ];
-  const STAT_UNITS = { gardiens: 'gardiens différents battus', aliens: 'aliens détruits', stars: 'étoiles attrapées', rochers: 'astéroïdes détruits', parfaites: 'recharges parfaites', parties: 'parties jouées', vies: 'vies gagnées', pouvoirs: 'super-pouvoirs utilisés' };
+  const STAT_UNITS = { gardiens: 'gardiens différents battus', aliens: 'aliens détruits', stars: 'étoiles attrapées', rochers: 'astéroïdes détruits', parfaites: 'recharges parfaites', parties: 'parties jouées', vies: 'vies gagnées', pouvoirs: 'super-pouvoirs utilisés',
+    boss: 'boss battus', vol: 'années-lumière parcourues', points: 'points marqués au total', propres: 'niveaux finis sans perdre de vie', serie: 'parties d\'affilée avec un boss battu', coffres: 'coffres ouverts', skins: 'skins des coffres dans ta collection' };
   // chaque trophée : un palier (tier), un objectif (stat + goal, ou un exploit), des points bonus,
   // des objets exclusifs (rewards) et parfois un titre à afficher sous le nom de la fusée
   const COLLECTIONS = [
@@ -2615,19 +2786,19 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       { tier: 0, stat: 'gardiens', goal: 1, pts: 200, rewards: [['power', 'tempete']] },
       { tier: 1, stat: 'gardiens', goal: 3, pts: 500, rewards: [['power', 'clone']] },
       { tier: 2, stat: 'gardiens', goal: 6, pts: 1200, rewards: [['power', 'trounoir']] },
-      { tier: 3, stat: 'gardiens', goal: 10, pts: 3000, rewards: [['power', 'supernova']], title: 'Libératrice des étoiles' },
+      { tier: 4, stat: 'gardiens', goal: 10, pts: 3000, rewards: [['power', 'supernova']], title: 'Libératrice des étoiles' },
     ] },
     { id: 'chasseur', name: 'Chasseur d\'aliens', desc: 'Détruis des aliens, boss compris.', items: [
       { tier: 0, stat: 'aliens', goal: 50, pts: 200, rewards: [['color', 'vertalien']] },
       { tier: 1, stat: 'aliens', goal: 250, pts: 600, rewards: [['color', 'emeraude']] },
       { tier: 2, stat: 'aliens', goal: 1000, pts: 1500, rewards: [['color', 'amethyste'], ['color', 'chrome']] },
-      { tier: 3, stat: 'aliens', goal: 3000, pts: 4000, rewards: [['model', 'predateur']], title: 'Fléau des aliens' },
+      { tier: 4, stat: 'aliens', goal: 3000, pts: 4000, rewards: [['model', 'predateur']], title: 'Fléau des aliens' },
     ] },
     { id: 'etoiles', name: 'Attrape-étoiles', desc: 'Rattrape les étoiles volées par Zorg.', items: [
       { tier: 0, stat: 'stars', goal: 100, pts: 150, rewards: [['shot', 'emeraude']] },
       { tier: 1, stat: 'stars', goal: 500, pts: 500, rewards: [['flame', 'aurore']] },
       { tier: 2, stat: 'stars', goal: 2000, pts: 1500, rewards: [['shot', 'electrique']] },
-      { tier: 3, stat: 'stars', goal: 5000, pts: 4000, rewards: [['flame', 'arcenciel'], ['shot', 'arcenciel']], title: 'Comète vivante' },
+      { tier: 4, stat: 'stars', goal: 5000, pts: 4000, rewards: [['flame', 'arcenciel'], ['shot', 'arcenciel']], title: 'Comète vivante' },
     ] },
     { id: 'pilote', name: 'Pilote', desc: 'Ton adresse aux commandes.', items: [
       { tier: 0, name: 'Casse-cailloux', stat: 'rochers', goal: 100, pts: 200 },
@@ -2643,18 +2814,18 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       { tier: 1, name: 'Combo ×15', feat: 'combo15', text: 'Fais un combo ×15', pts: 600, rewards: [['flame', 'combo']] },
       { tier: 2, name: 'Tireur parfait', feat: 'parfait5', text: 'Fais 5 recharges parfaites dans une partie', pts: 800, rewards: [['color', 'argent']] },
       { tier: 2, name: 'Intouchable', feat: 'intouchable', text: 'Arrive au secteur 5 sans perdre une seule vie', pts: 2000, rewards: [['flame', 'fantome']] },
-      { tier: 3, name: 'Chute de l\'Empire', feat: 'zorg', text: 'Bats l\'Empereur Zorg', pts: 3000, rewards: [['model', 'legende']], title: 'Héroïne de la galaxie' },
+      { tier: 4, name: 'Chute de l\'Empire', feat: 'zorg', text: 'Bats l\'Empereur Zorg', pts: 3000, rewards: [['model', 'legende']], title: 'Héroïne de la galaxie' },
       { tier: 1, name: 'Survivante', feat: 'vies3', text: 'Gagne 3 vies dans une partie', pts: 700 },
       { tier: 1, name: 'Double boss', feat: 'boss2', text: 'Bats 2 boss dans une partie', pts: 900 },
       { tier: 2, name: 'Combo ×20', feat: 'combo20', text: 'Fais un combo ×20', pts: 1500 },
       { tier: 2, name: 'Marathon', feat: 'niveau20', text: 'Atteins le niveau 20', pts: 1800 },
-      { tier: 3, name: 'Tornade', feat: 'boss5', text: 'Bats 5 boss dans une partie', pts: 4000, title: 'Tornade de l\'espace' },
+      { tier: 4, name: 'Tornade', feat: 'boss5', text: 'Bats 5 boss dans une partie', pts: 4000, title: 'Tornade de l\'espace' },
     ] },
     { id: 'score', name: 'Défis de score', desc: 'Fais un gros score en une seule partie.', items: [
       { tier: 0, name: 'Score', feat: 'score1000', text: 'Marque 1 000 points dans une partie', pts: 300 },
       { tier: 1, name: 'Score', feat: 'score5000', text: 'Marque 5 000 points dans une partie', pts: 1000 },
       { tier: 2, name: 'Score', feat: 'score15000', text: 'Marque 15 000 points dans une partie', pts: 2500 },
-      { tier: 3, name: 'Score', feat: 'score40000', text: 'Marque 40 000 points dans une partie', pts: 6000, title: 'Machine à points' },
+      { tier: 4, name: 'Score', feat: 'score40000', text: 'Marque 40 000 points dans une partie', pts: 6000, title: 'Machine à points' },
     ] },
     { id: 'aventure', name: 'Aventurière', desc: 'Joue souvent : tout compte, d\'une partie à l\'autre.', items: [
       { tier: 0, name: 'Décollages', stat: 'parties', goal: 5, pts: 250 },
@@ -2674,42 +2845,121 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       { tier: 2, name: 'Secret de la Forge', feat: 'secret2', text: 'Touche 5 fois la planète secrète de la Forge Volcanique', hint: 'Un secret se cache dans la fumée de la Forge Volcanique…', pts: 1500 },
       { tier: 2, name: 'Secret de la Jungle', feat: 'secret3', text: 'Touche 5 fois la planète secrète de la Jungle Cosmique', hint: 'Un secret se faufile entre les lianes de la Jungle Cosmique…', pts: 1500 },
       { tier: 2, name: 'Secret du Néant', feat: 'secret4', text: 'Touche 5 fois la planète secrète du Néant', hint: 'Même au fond du Néant, quelque chose brille…', pts: 1500 },
-      { tier: 3, name: 'Les 5 secrets', feat: 'secrets5', text: 'Trouve les 5 planètes secrètes', hint: 'Trouve les 5 secrets pour savoir ce qui se cache ici…', pts: 3000, title: 'Chasseuse de secrets' },
+      { tier: 4, name: 'Les 5 secrets', feat: 'secrets5', text: 'Trouve les 5 planètes secrètes', hint: 'Trouve les 5 secrets pour savoir ce qui se cache ici…', pts: 3000, title: 'Chasseuse de secrets' },
     ] },
     { id: 'mondes', name: 'Conquérante des mondes', desc: 'Bats le 10e gardien de chaque monde.', items: [
       { tier: 1, name: 'Royaume de Givre', feat: 'monde2', text: 'Bats l\'Impératrice Glacia', pts: 3000 },
       { tier: 2, name: 'Forge Volcanique', feat: 'monde3', text: 'Bats le Seigneur Magmor', pts: 4000 },
       { tier: 2, name: 'Jungle Cosmique', feat: 'monde4', text: 'Bats la Reine-Ruche', pts: 5000 },
-      { tier: 3, name: 'Le Néant', feat: 'monde5', text: 'Bats le Dévoreur d\'étoiles', pts: 8000, title: 'Sauveuse de l\'univers' },
+      { tier: 4, name: 'Le Néant', feat: 'monde5', text: 'Bats le Dévoreur d\'étoiles', pts: 8000, title: 'Sauveuse de l\'univers' },
       { tier: 2, name: 'Gardiens', stat: 'gardiens', goal: 25, pts: 3000 },
-      { tier: 3, name: 'Gardiens', stat: 'gardiens', goal: 50, pts: 10000, title: 'Légende des 50 gardiens' },
+      { tier: 4, name: 'Gardiens', stat: 'gardiens', goal: 50, pts: 10000, title: 'Légende des 50 gardiens' },
+    ] },
+    // ===== nouveaux trophées : ils donnent des Astros, des coffres ou directement un skin (rien qui change le jeu) =====
+    { id: 'boss', name: 'Tombeur de boss', desc: 'Chaque boss battu compte, même un gardien que tu as déjà vaincu.', items: [
+      { tier: 0, stat: 'boss', goal: 3, pts: 300 },
+      { tier: 1, stat: 'boss', goal: 15, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, stat: 'boss', goal: 50, pts: 1500, rewards: [['chest', 1]] },
+      { tier: 3, stat: 'boss', goal: 150, pts: 0, rewards: [['chest', 2]] },
+      { tier: 4, stat: 'boss', goal: 400, pts: 0, rewards: [['boom', 'tonnerre']], title: 'Terreur des gardiens' },
+    ] },
+    { id: 'voyage', name: 'Grand voyage', desc: 'La distance parcourue pendant tes parties : une minute de vol, c\'est une année-lumière.', items: [
+      { tier: 0, stat: 'vol', goal: 10, pts: 250 },
+      { tier: 1, stat: 'vol', goal: 60, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, stat: 'vol', goal: 300, pts: 1500, rewards: [['chest', 1]] },
+      { tier: 3, stat: 'vol', goal: 1000, pts: 0, rewards: [['chest', 2]] },
+      { tier: 4, stat: 'vol', goal: 3000, pts: 0, rewards: [['trail', 'voie']], title: 'Voyageuse des étoiles' },
+    ] },
+    { id: 'cumul', name: 'Pluie de points', desc: 'Tous les points marqués, partie après partie.', items: [
+      { tier: 0, stat: 'points', goal: 10000, pts: 300 },
+      { tier: 1, stat: 'points', goal: 100000, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, stat: 'points', goal: 500000, pts: 2000 },
+      { tier: 3, stat: 'points', goal: 2000000, pts: 0, rewards: [['chest', 3]] },
+      { tier: 4, stat: 'points', goal: 5000000, pts: 5000, rewards: [['color', 'platine']] },
+    ] },
+    { id: 'propre', name: 'Vol sans faute', desc: 'Termine des niveaux sans perdre une seule vie.', items: [
+      { tier: 0, stat: 'propres', goal: 1, pts: 200 },
+      { tier: 1, stat: 'propres', goal: 10, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, stat: 'propres', goal: 50, pts: 1500 },
+      { tier: 3, stat: 'propres', goal: 150, pts: 0, rewards: [['chest', 2]] },
+      { tier: 4, stat: 'propres', goal: 400, pts: 0, rewards: [['aura', 'couronne']], title: 'Pilote sans faute' },
+    ] },
+    { id: 'serie', name: 'Série de victoires', desc: 'Enchaîne des parties où tu bats au moins un boss. Une partie sans boss battu remet la série à zéro.', items: [
+      { tier: 0, stat: 'serie', goal: 2, pts: 300 },
+      { tier: 1, stat: 'serie', goal: 3, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, stat: 'serie', goal: 5, pts: 1500 },
+      { tier: 3, stat: 'serie', goal: 8, pts: 0, rewards: [['chest', 2]] },
+      { tier: 4, stat: 'serie', goal: 12, pts: 4000, title: 'Invincible' },
+    ] },
+    { id: 'coffres', name: 'Chasseur de trésors', desc: 'Ouvre des coffres et complète ta collection de skins.', items: [
+      { tier: 0, name: 'Coffres ouverts', stat: 'coffres', goal: 1, pts: 200 },
+      { tier: 1, name: 'Coffres ouverts', stat: 'coffres', goal: 10, pts: 0, rewards: [['chest', 1]] },
+      { tier: 2, name: 'Coffres ouverts', stat: 'coffres', goal: 30, pts: 1000 },
+      { tier: 3, name: 'Coffres ouverts', stat: 'coffres', goal: 75, pts: 0, rewards: [['chest', 2]] },
+      { tier: 1, name: 'Collection', stat: 'skins', goal: 5, pts: 500 },
+      { tier: 2, name: 'Collection', stat: 'skins', goal: 12, pts: 0, rewards: [['chest', 1]] },
+      { tier: 3, name: 'Collection', stat: 'skins', goal: 20, pts: 2000 },
+      { tier: 4, name: 'Collection', stat: 'skins', goal: 27, pts: 0, rewards: [['chest', 3]], title: 'Grande collectionneuse' },
     ] },
   ];
+  // nouveaux paliers platine dans les anciennes collections (ajoutés à la fin pour garder les numéros des trophées déjà gagnés)
+  const addTo = (id, it) => COLLECTIONS.find(c => c.id === id).items.push(it);
+  addTo('gardiens', { tier: 3, stat: 'gardiens', goal: 8, pts: 0, rewards: [['chest', 1]] });
+  addTo('chasseur', { tier: 3, stat: 'aliens', goal: 2000, pts: 2000 });
+  addTo('etoiles', { tier: 3, stat: 'stars', goal: 3500, pts: 0, rewards: [['chest', 1]] });
+  addTo('score', { tier: 3, name: 'Score', feat: 'score25000', text: 'Marque 25 000 points dans une partie', pts: 0, rewards: [['chest', 2]] });
+  addTo('aventure', { tier: 3, name: 'Décollages', stat: 'parties', goal: 250, pts: 0, rewards: [['chest', 2]] });
+  addTo('aventure', { tier: 4, name: 'Décollages', stat: 'parties', goal: 500, pts: 5000 });
+  addTo('exploits', { tier: 3, name: 'Combo ×30', feat: 'combo30', text: 'Fais un combo ×30', pts: 0, rewards: [['chest', 1]] });
   // liste à plat : chaque trophée a un identifiant « collection:numéro »
   const TROPHIES = [];
   for (const col of COLLECTIONS) col.items.forEach((it, i) => { it.id = col.id + ':' + i; it.col = col; it.rewards = it.rewards || []; TROPHIES.push(it); });
   const trophyName = t => `${t.name || t.col.name} · ${TIERS[t.tier].name}`;
   const EXCL = {};
-  for (const t of TROPHIES) for (const [k, id] of t.rewards) EXCL[k + ':' + id] = t;
-  const rewardName = ([k, id]) => { const c = CATS.find(x => x.key === k); return `${c.label} « ${byId(c.list, id).name} »`; };
+  for (const t of TROPHIES) for (const [k, id] of t.rewards) if (k !== 'chest') EXCL[k + ':' + id] = t;
+  const rewardName = ([k, id]) => { if (k === 'chest') return `${id} coffre${id > 1 ? 's' : ''}`; const c = CATS.find(x => x.key === k); return `${c.label} « ${byId(c.list, id).name} »`; };
   const trophyOf = (key, id) => EXCL[key + ':' + id];
   // les Astros : la monnaie de l'espace, gagnée avec les points des parties
   const astros = n => `${Number(n).toLocaleString('fr-FR')} ✦`;
   function showWallet() { $('pvPoints').innerHTML = `<i class="coin"></i>${Number(shop.credits).toLocaleString('fr-FR')} <small>ASTROS</small>`; }
-  const lockLabel = (key, id) => { const t = trophyOf(key, id); return t ? `Trophée ${trophyName(t)}` : astros(price(key, id)); };
+  const lockLabel = (key, id) => { const t = trophyOf(key, id); return t ? `Trophée ${trophyName(t)}` : boxOnly(key, id) ? `Coffre · ${RARITY[rarityOf(key, id)].name}` : astros(price(key, id)); };
   const rewardText = t => [t.pts ? `+${t.pts} ✦` : '', ...t.rewards.map(rewardName), t.title ? `titre « ${t.title} »` : ''].filter(Boolean).join(' + ');
   const price = (key, id) => PRICES[key][id] || 0;
-  let shop = { v: 3, credits: 0, up: {}, owned: [] };
+  // ===== Rareté des skins et coffres =====
+  // les 4 raretés, leur couleur de lueur, et la chance de chacune quand on ouvre un coffre (en %)
+  const RARITY = {
+    1: { id: 'commun', name: 'Commun', col: '#c9d6ea', p: 60, dup: 0 },
+    2: { id: 'rare', name: 'Rare', col: '#4fa8ff', p: 25, dup: 1000 },
+    3: { id: 'epique', name: 'Épique', col: '#c86bff', p: 11, dup: 1500 },
+    4: { id: 'legendaire', name: 'Légendaire', col: '#ffb020', p: 4, dup: 2000 },
+  };
+  const CHEST_PRICE = 2500, CHEST_EVERY = 25000;
+  const itemOf = (key, id) => { const c = CATS.find(x => x.key === key); return c ? c.list.find(x => x.id === id) : null; };
+  // un skin qu'on ne trouve que dans les coffres (il ne s'achète pas)
+  const boxOnly = (key, id) => { const it = itemOf(key, id); return !!(it && it.box && !price(key, id)); };
+  // rareté : celle du skin s'il en a une, sinon d'après son trophée ou son prix
+  function rarityOf(key, id) {
+    const it = itemOf(key, id), t = trophyOf(key, id);
+    if (it && it.rar) return it.rar;
+    if (t) return t.tier >= 3 ? 4 : t.tier >= 2 ? 3 : 2;
+    const p = price(key, id);
+    return p >= 15000 ? 4 : p >= 6000 ? 3 : p >= 2500 ? 2 : 1;
+  }
+  // les skins qu'on peut trouver dans un coffre
+  const BOX_KEYS = ['model', 'color', 'trail', 'boom', 'aura'];
+  const BOX_POOL = BOX_KEYS.flatMap(k => CATS.find(c => c.key === k).list.filter(it => it.box && !trophyOf(k, it.id)).map(it => ({ key: k, id: it.id, rar: it.rar })));
+  let shop = { v: 3, credits: 0, up: {}, owned: [], chests: 0 };
   try {
     const saved = JSON.parse(localStorage.getItem('comete-atelier') || '{}');
     // version 1 comptait en éclats (1 pour 10 points) : on convertit en points
     if (Number.isFinite(saved.credits)) shop.credits = Math.max(0, Math.floor(saved.credits)) * (saved.v >= 2 ? 1 : 10);
     if (saved.up && typeof saved.up === 'object') for (const u of UPGRADES) shop.up[u.id] = Math.max(0, Math.min(u.max, saved.up[u.id] | 0));
     if (Array.isArray(saved.owned)) shop.owned = saved.owned.filter(x => typeof x === 'string');
+    if (Number.isFinite(saved.chests)) shop.chests = Math.max(0, Math.min(999, Math.floor(saved.chests)));
     // avant la boutique, tout était gratuit : on garde ce que le joueur avait déjà équipé
     if ((saved.v || 0) < 3) for (const c of CATS) if (price(c.key, cfg[c.key]) && !shop.owned.includes(c.key + ':' + cfg[c.key])) shop.owned.push(c.key + ':' + cfg[c.key]);
   } catch (e) {}
-  const owns = (key, id) => (trophyOf(key, id) ? false : !price(key, id)) || shop.owned.includes(key + ':' + id);
+  const owns = (key, id) => (trophyOf(key, id) || boxOnly(key, id) ? false : !price(key, id)) || shop.owned.includes(key + ':' + id);
   for (const c of CATS) if (!owns(c.key, cfg[c.key])) cfg[c.key] = DEFAULT[c.key];
   function saveShop() { try { localStorage.setItem('comete-atelier', JSON.stringify(shop)); } catch (e) {} }
   saveShop();
@@ -2719,11 +2969,11 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const petNow = () => cfg.pet && petOwned(cfg.pet) ? byId(PETS, cfg.pet) : null;
 
   // statistiques gardées d'une partie à l'autre
-  let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, parties: 0, vies: 0, pouvoirs: 0, feats: [], won: [] };
+  let stats = { v: 2, stars: 0, aliens: 0, rochers: 0, parfaites: 0, parties: 0, vies: 0, pouvoirs: 0, boss: 0, vol: 0, points: 0, propres: 0, serie: 0, serieMax: 0, coffres: 0, boxPts: 0, feats: [], won: [] };
   let firstCheck = false;
   try {
     const sv = JSON.parse(localStorage.getItem('comete-stats') || '{}');
-    for (const k of ['stars', 'aliens', 'rochers', 'parfaites', 'parties', 'vies', 'pouvoirs']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
+    for (const k of ['stars', 'aliens', 'rochers', 'parfaites', 'parties', 'vies', 'pouvoirs', 'boss', 'vol', 'points', 'propres', 'serie', 'serieMax', 'coffres', 'boxPts']) if (Number.isFinite(sv[k])) stats[k] = Math.max(0, Math.floor(sv[k]));
     if (Array.isArray(sv.feats)) stats.feats = sv.feats.filter(x => typeof x === 'string');
     // les numéros de trophées ont changé avec la fusion : on recalcule sans redonner les points
     if (sv.v === 2 && Array.isArray(sv.won)) stats.won = sv.won.filter(id => TROPHIES.some(t => t.id === id));
@@ -2740,23 +2990,31 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   let statsDirty = false;
   function saveStats() { statsDirty = false; try { localStorage.setItem('comete-stats', JSON.stringify(stats)); } catch (e) {} }
   setInterval(() => { if (statsDirty) saveStats(); }, 2000);
-  const statOf = k => k === 'gardiens' ? beaten.length : stats[k] || 0;
+  const boxSkins = () => BOX_POOL.filter(b => shop.owned.includes(b.key + ':' + b.id)).length;
+  const statOf = k => k === 'gardiens' ? beaten.length : k === 'boss' ? Math.max(stats.boss, beaten.length) : k === 'vol' ? Math.floor(stats.vol / 60) : k === 'serie' ? stats.serieMax : k === 'skins' ? boxSkins() : stats[k] || 0;
+  // compter sans passer par bump (pas de défi du jour lié)
+  function addStat(k, n = 1) { stats[k] += n; statsDirty = true; checkTrophies(); }
+  // gagner des coffres (trophée, objectif de points)
+  function gainChests(n) { shop.chests = Math.min(999, shop.chests + n); saveShop(); updateCollBtn(); }
   function bump(key) { stats[key]++; statsDirty = true; checkTrophies(); defi(key); if (run.clean && state === 'play') defi(key + 'Propre'); }
   function feat(id) { if (!stats.feats.includes(id)) { stats.feats.push(id); statsDirty = true; checkTrophies(); } }
-  let runTrophies = [];
+  let runTrophies = [], volAcc = 0;
   // silent : débloque sans points ni annonce (progression déjà faite avant)
   function checkTrophies(silent) {
     for (const t of TROPHIES) {
       if (stats.won.includes(t.id)) continue;
       if (!(t.feat ? stats.feats.includes(t.feat) : statOf(t.stat) >= t.goal)) continue;
       stats.won.push(t.id);
-      for (const [k, item] of t.rewards) if (!shop.owned.includes(k + ':' + item)) shop.owned.push(k + ':' + item);
+      for (const [k, item] of t.rewards) {
+        if (k === 'chest') { if (!silent) shop.chests = Math.min(999, shop.chests + item); }
+        else if (!shop.owned.includes(k + ':' + item)) shop.owned.push(k + ':' + item);
+      }
       if (!silent) {
         if (t.pts) shop.credits += t.pts;
         if (state === 'play') runTrophies.push(t);
         queueToast(t);
       }
-      saveShop(); saveStats(); updateTrophyBtn(); renderAtelier();
+      saveShop(); saveStats(); updateTrophyBtn(); renderAtelier(); updateCollBtn();
     }
   }
   const titles = () => TROPHIES.filter(t => t.title && stats.won.includes(t.id)).map(t => t.title);
@@ -2771,10 +3029,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     const t = toastQ.shift(), el = $('toast');
     if (!t) { toastBusy = false; el.hidden = true; return; }
     toastBusy = true;
-    el.style.setProperty('--tier', t.daily ? 'var(--star)' : TIERS[t.tier].col);
-    $('toastKind').textContent = t.daily ? 'Défi du jour réussi' : 'Trophée débloqué';
-    $('toastTitle').textContent = t.daily ? t.daily.title : trophyName(t);
-    $('toastReward').textContent = t.daily ? `+${astros(t.daily.r)} Astros bonus` : rewardText(t);
+    el.style.setProperty('--tier', t.daily ? 'var(--star)' : t.chest ? RARITY[3].col : TIERS[t.tier].col);
+    $('toastKind').textContent = t.daily ? 'Défi du jour réussi' : t.chest ? 'Coffre gagné' : 'Trophée débloqué';
+    $('toastTitle').textContent = t.daily ? t.daily.title : t.chest ? t.chest : trophyName(t);
+    $('toastReward').textContent = t.daily ? `+${astros(t.daily.r)} Astros bonus` : t.chest ? 'À ouvrir dans la Collection' : rewardText(t);
     el.hidden = true; void el.offsetWidth; el.hidden = false;
     beep(660, .12, 'triangle', .1); setTimeout(() => beep(880, .12, 'triangle', .1), 110); setTimeout(() => beep(1320, .3, 'triangle', .1), 220);
     setTimeout(nextToast, toastQ.length > 2 ? 2200 : 3500);
@@ -2901,8 +3159,12 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     $('defiProg').textContent = done ? 'Réussi ! Un nouveau défi t\'attend demain.' : c.g === 1 ? 'À réussir aujourd\'hui' : c.s === 'partie' && c.g > 1 ? `Ton meilleur essai : ${defiShow(c, p)}` : defiShow(c, p);
   }
 
+  let tFil = 'all';
   function renderTrophies() {
-    $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Leurs objets ne s'achètent pas : il faut les gagner. Les Astros bonus vont dans le Hangar.`;
+    $('trophyCount').textContent = `${stats.won.length} trophées sur ${TROPHIES.length}. Chacun donne des Astros bonus, un coffre ou un skin exclusif (qui ne s'achète pas). Rien ne change la puissance de ta fusée.`;
+    // résumé par palier
+    $('trophySum').innerHTML = TIERS.map((tr, i) => { const all = TROPHIES.filter(t => t.tier === i); return `<div style="--tier:${tr.col}"><i class="medal"></i><b>${tr.name}</b><span>${all.filter(t => stats.won.includes(t.id)).length} / ${all.length}</span></div>`; }).join('');
+    $('trophyFilter').innerHTML = [['all', 'Tous'], ['won', 'Débloqués'], ['todo', 'À faire'], ...TIERS.map((tr, i) => ['t' + i, tr.name])].map(([id, name]) => `<button type="button" class="chip" data-fil="${id}" aria-pressed="${tFil === id}">${name}</button>`).join('');
     const own = titles();
     $('titleOpt').hidden = !own.length;
     const ot = $('optTitle'); ot.innerHTML = '';
@@ -2913,23 +3175,32 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       b.onclick = () => { cfg.title = ti; saveCfg(); renderTrophies(); beep(700, .06, 'triangle', .08); };
       ot.appendChild(b);
     }
-    $('trophyList').innerHTML = COLLECTIONS.map(col => `<section class="tcol"><h3 class="subhead">${col.name}</h3>
+    const keep = t => { const won = stats.won.includes(t.id); return tFil === 'all' || (tFil === 'won' && won) || (tFil === 'todo' && !won) || tFil === 't' + t.tier; };
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    $('trophyList').innerHTML = COLLECTIONS.map(col => {
+      // dans chaque collection : du plus facile au plus dur
+      const items = col.items.filter(keep).slice().sort((a, b) => (a.name || '').localeCompare(b.name || '') || a.tier - b.tier || (a.goal || 0) - (b.goal || 0));
+      if (!items.length) return '';
+      const done = col.items.filter(t => stats.won.includes(t.id)).length;
+      return `<section class="tcol"><h3 class="subhead">${col.name} <small>${done} / ${col.items.length}</small></h3>
       <p class="wallet">${col.desc}</p>
-      <div class="tiers">${col.items.map(t => {
+      <div class="tiers">${items.map(t => {
         const tr = TIERS[t.tier], won = stats.won.includes(t.id);
         const goal = t.feat ? 1 : t.goal, val = t.feat ? (stats.feats.includes(t.feat) ? 1 : 0) : Math.min(goal, statOf(t.stat));
         // un trophée secret reste un mystère tant qu'on ne l'a pas gagné
         const hide = t.hint && !won;
-        const cond = hide ? t.hint : t.feat ? t.text : `${t.goal} ${STAT_UNITS[t.stat]}`;
+        const cond = hide ? t.hint : t.feat ? t.text : `${fmt(t.goal)} ${STAT_UNITS[t.stat]}`;
         return `<div class="tier${won ? ' won' : ''}" style="--tier:${tr.col}"><div class="tierhead"><i class="medal"></i><b>${hide ? '??? · ' : t.name ? t.name + ' · ' : ''}${tr.name}</b></div>
           <span>${cond}</span><div class="bar"><i style="width:${(val / goal * 100).toFixed(0)}%"></i></div>
-          <em>${won ? 'Gagné : ' : t.feat ? '' : `${val} / ${goal} · `}${rewardText(t)}</em></div>`;
-      }).join('')}</div></section>`).join('');
+          <em>${won ? 'Gagné : ' : t.feat ? '' : `${fmt(val)} / ${fmt(goal)} · `}${rewardText(t)}</em></div>`;
+      }).join('')}</div></section>`;
+    }).join('') || '<p class="wallet">Aucun trophée ici pour l\'instant.</p>';
   }
+  $('trophyFilter').onclick = e => { const b = e.target.closest('button[data-fil]'); if (b) { tFil = b.dataset.fil; renderTrophies(); beep(600, .06, 'triangle', .06); } };
 
   function buyItem(key, id) {
     const p = price(key, id);
-    if (owns(key, id) || shop.credits < p) return false;
+    if (owns(key, id) || boxOnly(key, id) || trophyOf(key, id) || shop.credits < p) return false;
     shop.credits -= p; shop.owned.push(key + ':' + id);
     cfg[key] = id; saveShop(); saveCfg();
     beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .1, 'triangle', .1), 70); setTimeout(() => beep(1046, .18, 'triangle', .1), 140);
@@ -3078,6 +3349,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   // la fusée réaliste : la flamme d'abord (elle brille, on ne l'éclaire pas), puis la coque éclairée comme du métal
   let rocketPart = 'all';
   function drawRocket(c, x, y, s, conf, t, tilt = 0, boost = 0) {
+    if (conf.aura && conf.aura !== 'aucune') drawAura(c, x, y, s, conf.aura, t);
     // les modèles en pixels restent en pixels
     if (!litOK || conf.model === 'arcade' || conf.model === 'pixel') { drawRocketRaw(c, x, y, s, conf, t, tilt, boost); return; }
     const m = 34 * s, col = byId(COLORS, conf.color).hex || '#ffffff';
@@ -3116,8 +3388,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       c.globalAlpha = 1;
     }
     // le Prédateur a deux réacteurs
-    for (const nx of conf.model === 'predateur' ? [-5, 5] : conf.model === 'arcade' || conf.model === 'pixel' ? [] : [0]) {
-      c.save(); c.translate(nx, 0); if (nx) c.scale(.7, .95);
+    for (const nx of conf.model === 'predateur' ? [-5, 5] : conf.model === 'orion' ? [-6, 0, 6] : conf.model === 'arcade' || conf.model === 'pixel' ? [] : [0]) {
+      c.save(); c.translate(nx, conf.model === 'orion' ? 6 : conf.model === 'raie' ? -2 : conf.model === 'libellule' ? 8 : 0); if (nx) c.scale(.7, .95);
       c.beginPath(); c.moveTo(-5.5, 13); c.quadraticCurveTo(-3, 13 + len * .7, 0, 13 + len); c.quadraticCurveTo(3, 13 + len * .7, 5.5, 13); c.closePath(); c.fill();
       // cœur de la flamme, blanc et bleuté, et chaleur qui éclaire autour de la tuyère
       const cg = c.createLinearGradient(0, 13, 0, 13 + len * .55);
@@ -3453,6 +3725,83 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         c.beginPath(); c.moveTo(sx - 3.5, sy); c.lineTo(sx, sy + 1); c.lineTo(sx + 3.5, sy); c.lineTo(sx, sy - 1); c.closePath(); c.fill();
       }
       c.globalAlpha = 1;
+    } else if (conf.model === 'raie') {
+      // Raie stellaire : une aile volante en forme de raie, fente lumineuse sur le bord d'attaque
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(0, -21);
+      for (const sd of [1, -1]) {
+        if (sd === 1) { c.bezierCurveTo(7, -19, 13, -8, 25, 5); c.quadraticCurveTo(22, 11, 16, 10); c.quadraticCurveTo(9, 8, 5, 11); c.lineTo(1.6, 25); }
+        else { c.lineTo(-1.6, 25); c.lineTo(-5, 11); c.quadraticCurveTo(-9, 8, -16, 10); c.quadraticCurveTo(-22, 11, -25, 5); c.bezierCurveTo(-13, -8, -7, -19, 0, -21); }
+      }
+      c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      // dessous plus sombre au bout des ailes
+      c.fillStyle = dark;
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 25, 5); c.quadraticCurveTo(sd * 22, 11, sd * 16, 10); c.quadraticCurveTo(sd * 17, 6, sd * 19, 1.5); c.closePath(); c.fill(); }
+      c.fillStyle = light; c.globalAlpha = .55;
+      c.beginPath(); c.moveTo(0, -19); c.bezierCurveTo(3, -16, 4, -6, 3, 6); c.lineTo(-3, 6); c.bezierCurveTo(-4, -6, -3, -16, 0, -19); c.closePath(); c.fill(); c.globalAlpha = 1;
+      // fente lumineuse (couleur secondaire si choisie)
+      const slit = acc.hex || '#7af0ff';
+      c.strokeStyle = slit; c.lineWidth = 1.3; c.shadowColor = slit; c.shadowBlur = 8;
+      c.beginPath(); c.moveTo(-21, 3.5); c.bezierCurveTo(-12, -5, -8, -12, -4, -14); c.moveTo(21, 3.5); c.bezierCurveTo(12, -5, 8, -12, 4, -14); c.stroke();
+      c.shadowBlur = 0;
+      c.fillStyle = 'rgba(10, 6, 30, .6)'; c.fillRect(-7, 7, 4, 3); c.fillRect(3, 7, 4, 3);
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1.1;
+      c.beginPath(); c.ellipse(0, -10, 2.8, 4.6, 0, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'libellule') {
+      // Libellule : fuselage fin et quatre ailes de verre qui frémissent
+      const fr = reduce ? 0 : Math.sin(t / 60) * .06;
+      for (const [wy, ang, len, wd] of [[-9, -.28, 14, 3.4], [-1, .22, 12.5, 3]]) for (const sd of [-1, 1]) {
+        c.save(); c.translate(sd * 2, wy); c.rotate(sd * (ang + fr));
+        c.fillStyle = 'rgba(205, 240, 255, .32)'; c.strokeStyle = body; c.lineWidth = .9;
+        c.beginPath(); c.ellipse(sd * len, 0, len, wd, 0, 0, 7); c.fill(); c.stroke();
+        c.strokeStyle = 'rgba(255, 255, 255, .45)'; c.lineWidth = .5;
+        c.beginPath(); c.moveTo(0, 0); c.lineTo(sd * len * 1.9, 0); c.moveTo(sd * len * .6, 0); c.lineTo(sd * len * 1.2, -wd * .7); c.moveTo(sd * len * .9, 0); c.lineTo(sd * len * 1.5, wd * .6); c.stroke();
+        c.restore();
+      }
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(0, -24); c.bezierCurveTo(3.6, -22, 3.4, -10, 2.6, 4); c.lineTo(1.8, 21); c.lineTo(-1.8, 21); c.lineTo(-2.6, 4); c.bezierCurveTo(-3.4, -10, -3.6, -22, 0, -24); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.strokeStyle = dark; c.lineWidth = .8; c.beginPath();
+      for (let y = 6; y < 20; y += 3.2) { c.moveTo(-2.2, y); c.lineTo(2.2, y); }
+      c.stroke();
+      c.fillStyle = dark; c.beginPath(); c.moveTo(-1.8, 19); c.lineTo(-4, 23); c.lineTo(0, 21.5); c.lineTo(4, 23); c.lineTo(1.8, 19); c.closePath(); c.fill();
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1;
+      c.beginPath(); c.ellipse(0, -18, 3, 4, 0, 0, 7); c.fill(); c.stroke();
+    } else if (conf.model === 'orion') {
+      // Croiseur Orion : longue coque blindée, barre de projecteurs à l'avant, trois tuyères
+      c.fillStyle = dark;
+      for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 6, -4); c.lineTo(sd * 12, 0); c.lineTo(sd * 12, 13); c.lineTo(sd * 7, 15); c.closePath(); c.fill(); }
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(-4, -22); c.lineTo(4, -22); c.lineTo(6.5, 8); c.lineTo(10, 13); c.lineTo(10, 19); c.lineTo(-10, 19); c.lineTo(-10, 13); c.lineTo(-6.5, 8); c.closePath(); c.fill();
+      // la barre avant
+      c.beginPath(); c.moveTo(-15, -27); c.lineTo(15, -27); c.lineTo(13, -22.5); c.lineTo(-13, -22.5); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.fillStyle = dark; c.fillRect(-15, -24, 30, 1.4);
+      for (let i = 0; i < 5; i++) { c.globalAlpha = (Math.floor(t / 180) + i) % 5 ? .9 : .35; c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(-12 + i * 6, -25.3, 1, 0, 7); c.fill(); }
+      c.globalAlpha = 1;
+      c.fillStyle = light; c.globalAlpha = .5; c.fillRect(-1.2, -21, 2.4, 26); c.globalAlpha = 1;
+      // passerelle de commandement
+      c.fillStyle = shade(body, -.25); c.fillRect(-4.5, 1, 9, 6);
+      c.fillStyle = glass; c.fillRect(-3.5, 2, 7, 2.2);
+      c.strokeStyle = acc.hex || light; c.lineWidth = 1; c.beginPath(); c.moveTo(-10, 13); c.lineTo(10, 13); c.stroke();
+    } else if (conf.model === 'halo') {
+      // Anneau Halo : une flèche de cristal au centre d'un anneau d'énergie qui tourne
+      const ring = acc.hex || '#7af0ff', sp = reduce ? .5 : Math.sin(t / 700), ry = 6 + Math.abs(sp) * 6, rot = reduce ? 0 : Math.sin(t / 1900) * .12;
+      const arc = (a0, a1, al) => { c.save(); c.rotate(rot); c.globalAlpha = al; c.strokeStyle = ring; c.lineWidth = 2.6; c.shadowColor = ring; c.shadowBlur = 10; c.beginPath(); c.ellipse(0, 3, 24, ry, 0, a0, a1); c.stroke(); c.restore(); c.globalAlpha = 1; };
+      arc(Math.PI, Math.PI * 2, .55);
+      c.shadowBlur = 10;
+      c.fillStyle = bodyFill;
+      c.beginPath(); c.moveTo(0, -26); c.lineTo(6.5, -5); c.lineTo(4, 15); c.lineTo(0, 19); c.lineTo(-4, 15); c.lineTo(-6.5, -5); c.closePath(); c.fill();
+      c.shadowBlur = 0;
+      c.strokeStyle = light; c.lineWidth = .8; c.beginPath(); c.moveTo(0, -26); c.lineTo(0, 19); c.moveTo(-6.5, -5); c.lineTo(6.5, -5); c.moveTo(-4, 15); c.lineTo(0, -5); c.lineTo(4, 15); c.stroke();
+      c.fillStyle = dark; for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 4, 10); c.lineTo(sd * 9, 17); c.lineTo(sd * 3.4, 15); c.closePath(); c.fill(); }
+      c.fillStyle = glass; c.strokeStyle = '#eef0ff'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0, -15); c.lineTo(2.4, -9); c.lineTo(0, -5); c.lineTo(-2.4, -9); c.closePath(); c.fill(); c.stroke();
+      arc(0, Math.PI, .95);
+      // trois nœuds d'énergie qui courent sur l'anneau
+      for (let i = 0; i < 3; i++) { const a = (reduce ? 0 : t / 500) + i * 2.09, nx = Math.cos(a) * 24, ny = 3 + Math.sin(a) * ry; c.globalAlpha = Math.sin(a) > 0 ? 1 : .4; c.fillStyle = '#ffffff'; c.beginPath(); c.arc(nx, ny, 1.6, 0, 7); c.fill(); }
+      c.globalAlpha = 1;
     } else {
       c.fillStyle = dark;
       c.beginPath(); c.moveTo(-7, 2); c.lineTo(-15, 15); c.lineTo(-7, 13); c.closePath(); c.fill();
@@ -3723,6 +4072,24 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       edge(() => P(0, -31, -5, -17, -7, -2, -21, 6, -27, 18), .55);
       gloss(0, -11.4, 2.4, 4.6);
       navs(26, 17.4, .9);
+    } else if (m === 'raie') {
+      for (const x of [-5, 5]) nozzle(x, 11.6, 4, 1.6);
+      seam(() => P(-3, 6, -14, 8)); seam(() => P(3, 6, 14, 8)); seam(() => P(0, -4, 0, 20), .7);
+      rivets(row(-10, 4, -5, 0, 3)); rivets(row(5, 0, 10, 4, 3));
+      gloss(0, -10, 2.8, 4.6); navs(23, 6.4, .9);
+    } else if (m === 'libellule') {
+      nozzle(0, 22.4, 4, 1.6);
+      seam(() => P(-2.4, -12, 2.4, -12), .8); rivets(row(0, -8, 0, 2, 4), .35);
+      gloss(0, -18, 3, 4);
+    } else if (m === 'orion') {
+      for (const x of [-6, 0, 6]) nozzle(x, 20.6, 4.6, 2);
+      seam(() => P(-5, -12, 5, -12)); seam(() => P(-6, 8, 6, 8)); seam(() => P(-12, 6, -7, 6)); seam(() => P(12, 6, 7, 6));
+      rivets(row(-11, 2, -11, 12, 4)); rivets(row(11, 2, 11, 12, 4)); vents(3, -18, 3);
+      edge(() => P(-15, -27, 15, -27), .4); navs(14.5, -26, .8);
+    } else if (m === 'halo') {
+      nozzle(0, 19.6, 5, 2);
+      rivets([[-3, 0], [3, 0], [-2.5, 8], [2.5, 8]], .38);
+      edge(() => P(0, -26, -6.5, -5, -4, 15), .5);
     }
     c.restore();
   }
@@ -3746,6 +4113,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     coeur: { c: [-20, .55], s: [14.5, 4, .65] },
     predateur: { c: [-20, .7], s: [13.5, 0, .8] },
     legende: { c: [-22, .7], s: [13.5, 6, .8] },
+    raie: { c: [-18, .7], s: [11, -2, .75] },
+    libellule: { c: [-22, .55], s: [5, -12, .6] },
+    orion: { c: [-26, .65], s: [12, 4, .75] },
+    halo: { c: [-24, .6], s: [7.5, 2, .65] },
   };
   // ===== Améliorations visibles : chaque compétence devient une pièce d'origine du vaisseau =====
   // Un emplacement fixe par compétence (jamais deux au même endroit) :
@@ -4222,7 +4593,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         b.setAttribute('aria-label', label); b.title = label;
       } else {
         b.textContent = it.name;
-        if (locked) { const sm = document.createElement('small'); sm.textContent = trophyOf(key, it.id) ? 'Trophée' : astros(price(key, it.id)); b.appendChild(sm); }
+        if (locked) { const sm = document.createElement('small'); sm.textContent = trophyOf(key, it.id) ? 'Trophée' : boxOnly(key, it.id) ? 'Coffre' : astros(price(key, it.id)); b.appendChild(sm); }
       }
       b.onclick = () => pick(key, it.id);
       el.appendChild(b);
@@ -4560,7 +4931,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   }
 
   // 3 emplacements pour garder ses looks préférés
-  const STYLE_KEYS = ['model', 'color', 'accent', 'motif', 'glass', 'flame', 'trail', 'shot'];
+  const STYLE_KEYS = ['model', 'color', 'accent', 'motif', 'glass', 'flame', 'trail', 'shot', 'boom', 'aura'];
   let slots = [null, null, null];
   try { const sv = JSON.parse(localStorage.getItem('comete-styles') || '[]'); if (Array.isArray(sv)) slots = [0, 1, 2].map(i => sv[i] && typeof sv[i] === 'object' ? sv[i] : null); } catch (e) {}
   function buildSlots() {
@@ -4620,6 +4991,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     } else if (tro) {
       $('carStatus').textContent = `Trophée ${trophyName(tro)} · ` + (tro.feat ? tro.text : `${Math.min(tro.goal, statOf(tro.stat))} / ${tro.goal} ${STAT_UNITS[tro.stat]}`);
       btn.textContent = 'Trophée requis'; btn.disabled = true;
+    } else if (boxOnly('model', m.id)) {
+      $('carStatus').textContent = `${RARITY[rarityOf('model', m.id)].name} · à trouver dans un coffre`;
+      btn.textContent = 'Dans les coffres'; btn.disabled = true;
     } else {
       const miss = p - shop.credits;
       $('carStatus').textContent = `${astros(p)} · tu as ${astros(shop.credits)}`;
@@ -4717,6 +5091,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     buildChips($('optFlame'), FLAMES, 'flame', true);
     buildChips($('optTrail'), TRAILS, 'trail');
     buildChips($('optShot'), SHOTS, 'shot', true);
+    buildChips($('optBoom'), BOOMS, 'boom');
+    buildChips($('optAura'), AURAS, 'aura');
     buildCards($('optGun'), GUNS, 'gun', g => `Chargeur ${g.mag} · recharge ${String(g.reload).replace('.', ',')} s · ${g.info}`);
     buildCards($('optPower'), POWERS, 'power', p => `Durée ${String(p.dur).replace('.', ',')} s · recharge ${p.cd} s`);
     buildPets();
@@ -4732,7 +5108,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     lk.hidden = !lockPv;
     if (lockPv) {
       const c = lockPv.key === 'pet' ? { list: PETS } : CATS.find(x => x.key === lockPv.key), it = byId(c.list, lockPv.id), tro = trophyOf(lockPv.key, lockPv.id);
-      lk.innerHTML = `<b>${ICO('lock')} Aperçu · pas encore à toi</b>${it.name} · ${tro ? 'trophée ' + trophyName(tro) : astros(price(lockPv.key, lockPv.id))}`;
+      lk.innerHTML = `<b>${ICO('lock')} Aperçu · pas encore à toi</b>${it.name} · ${tro ? 'trophée ' + trophyName(tro) : lockPv.key !== 'pet' && boxOnly(lockPv.key, lockPv.id) ? 'dans les coffres' : astros(price(lockPv.key, lockPv.id))}`;
     }
     if (!teamDetour) $('goBtn').textContent = lockPv ? `Décoller avec ${byId(MODELS, cfg.model).name}` : 'Décoller';
     const look = !!preview && PV_KEYS.includes(preview.key);
@@ -4744,6 +5120,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         $('buyText').textContent = `${c.label} ${it.name} · exclusif, gagne le trophée ${trophyName(tro)}` +
           (tro.feat ? ` : ${tro.text}` : ` (${Math.min(tro.goal, statOf(tro.stat))}/${tro.goal} ${STAT_UNITS[tro.stat]})`);
         $('buyBtn').textContent = 'Trophée requis'; $('buyBtn').disabled = true;
+      } else if (preview.key !== 'pet' && boxOnly(preview.key, preview.id)) {
+        $('buyText').textContent = `${c.label} ${it.name} · ${RARITY[rarityOf(preview.key, preview.id)].name}, à trouver dans un coffre (Collection)`;
+        $('buyBtn').textContent = 'Dans les coffres'; $('buyBtn').disabled = true;
       } else {
         $('buyText').textContent = `${c.label} ${it.name} · ${astros(p)}`;
         const miss = p - shop.credits;
@@ -4812,8 +5191,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     }
   });
   function closePanels() {
-    if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; renderWorldPick(); preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel', 'trophies', 'cinema', 'rankPanel']) $(id).hidden = true; openTeam(); return; } }
-    if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
+    if (teamDetour) { teamDetour = false; $('goBtn').textContent = 'Décoller'; renderWorldPick(); preview = null; if (netOpen()) { for (const id of ['hangar', 'mapPanel', 'trophies', 'collection', 'cinema', 'rankPanel']) $(id).hidden = true; openTeam(); return; } }
+    if (netRole !== 'guest' && netHW) netUnfit(); $('team').hidden = true; $('cinema').hidden = true; $('rankPanel').hidden = true; $('savePanel').hidden = true; $('trophies').hidden = true; $('collection').hidden = true; $('hangar').hidden = true; $('help').hidden = true; $('mapPanel').hidden = true; $('menu').hidden = false; state = 'menu'; }
   $('helpBtn').onclick = () => { renderBossList(); state = 'hangar'; $('menu').hidden = true; $('help').hidden = false; };
   $('helpBack').onclick = closeHangar;
   const openTrophies = () => { initAudio(); renderTrophies(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('trophies').hidden = false; };
@@ -4824,6 +5203,284 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   $('cinemaList').onclick = e => { const b = e.target.closest('button[data-c]'); if (b && !b.disabled) playCinema(b.dataset.c, +b.dataset.w); };
   $('overTrophyBtn').onclick = openTrophies;
   $('trophyBack').onclick = closeHangar;
+  // ===== Collection : tous les skins, les coffres et leur cinématique d'ouverture =====
+  const COLL_TABS = [['tout', 'Tout'], ['model', 'Vaisseaux'], ['color', 'Couleurs'], ['flame', 'Flammes'], ['trail', 'Fumées'], ['boom', 'Explosions'], ['aura', 'Auras']];
+  const COLL_KEYS = ['model', 'color', 'flame', 'trail', 'boom', 'aura'];
+  const KEY_NAME = { model: 'Vaisseau', color: 'Couleur', flame: 'Flamme', trail: 'Fumée', boom: 'Explosion', aura: 'Aura' };
+  let collTab = 'tout', collFil = 'all', collSel = null;
+  const collList = () => COLL_KEYS.flatMap(k => CATS.find(c => c.key === k).list.map(it => ({ key: k, it })));
+  // un skin en petit : la fusée avec ce skin, la fumée qui s'échappe, l'explosion ou l'aura
+  function drawItemPv(k, w, h, key, id, t) {
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
+    const s = h / 100, base = { ...cfg, aura: 'aucune' };
+    if (key === 'boom') { drawBoomDemo(k, w / 2, h / 2, s * 1.4, id, t); return; }
+    if (key === 'trail') { drawTrailDemo(k, w / 2, h * .42, s, id, t, cfg.flame); drawRocket(k, w / 2, h * .3, s * 1.05, base, t, 0, .2); return; }
+    const conf = { ...base, [key]: id };
+    drawRocket(k, w / 2, h * (key === 'flame' ? .4 : .5), s * (key === 'model' ? 1.6 : 1.45), conf, t, 0, key === 'flame' ? .7 : .2);
+  }
+  // comment avoir un skin qu'on n'a pas encore
+  function howTo(key, id) {
+    const tro = trophyOf(key, id);
+    if (tro) return `Trophée ${trophyName(tro)}`;
+    if (boxOnly(key, id)) return 'Dans les coffres';
+    return astros(price(key, id));
+  }
+  function updateCollBtn() {
+    const n = shop.chests, badge = n ? `<span class="chestbadge">${n}</span>` : '';
+    if ($('collBtn')) $('collBtn').innerHTML = ICO('chest') + 'Collection et coffres' + badge;
+    if ($('teamColl')) $('teamColl').innerHTML = ICO('chest') + 'Collection et coffres' + badge;
+    if ($('overCollBtn')) $('overCollBtn').textContent = n ? `Coffres · ${n}` : 'Coffres';
+  }
+  function renderColl() {
+    const all = collList(), own = all.filter(x => owns(x.key, x.it.id)).length;
+    $('collCount').innerHTML = `${own} skins sur ${all.length} dans ta collection · tu as <i class="coin"></i><b>${Number(shop.credits).toLocaleString('fr-FR')}</b> Astros`;
+    const n = shop.chests;
+    $('chestN').textContent = n ? `Tu as ${n} coffre${n > 1 ? 's' : ''} à ouvrir` : 'Pas de coffre à ouvrir';
+    $('chestHow').textContent = `Gagne des coffres avec les trophées, et un coffre tous les ${CHEST_EVERY.toLocaleString('fr-FR')} points marqués. Un skin que tu as déjà se change en Astros.`;
+    $('chestOpen').disabled = !n;
+    $('chestBuy').textContent = `Acheter un coffre · ${astros(CHEST_PRICE)}`;
+    $('chestBuy').disabled = shop.credits < CHEST_PRICE;
+    $('chestOdds').innerHTML = [1, 2, 3, 4].map(r => { const R = RARITY[r]; return `<li style="--rc:${R.col}"><i></i><b>${R.name}</b> ${R.p} % <em>${r === 1 ? '500 à 2 000 Astros' : 'un skin ' + R.name.toLowerCase()}</em></li>`; }).join('');
+    $('collTabs').innerHTML = COLL_TABS.map(([id, name]) => `<button type="button" role="tab" data-tab="${id}" class="${collTab === id ? 'on' : ''}" aria-selected="${collTab === id}">${name}</button>`).join('');
+    $('collFilter').innerHTML = [['all', 'Tous'], ['own', 'Possédés'], ['locked', 'À débloquer']].map(([id, name]) => `<button type="button" class="chip" data-fil="${id}" aria-pressed="${collFil === id}">${name}</button>`).join('');
+    const list = all.filter(x => (collTab === 'tout' || x.key === collTab) && (collFil === 'all' || (collFil === 'own') === owns(x.key, x.it.id)));
+    const grid = $('collGrid'); grid.innerHTML = '';
+    for (const { key, it } of list) {
+      const r = rarityOf(key, it.id), got = owns(key, it.id), on = cfg[key] === it.id, sel = collSel && collSel.key === key && collSel.id === it.id;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'ccard' + (got ? '' : ' locked') + (on ? ' on' : '') + (sel ? ' sel' : '');
+      b.style.setProperty('--rc', RARITY[r].col);
+      b.dataset.k = key; b.dataset.id = it.id;
+      b.innerHTML = `<canvas width="160" height="110" aria-hidden="true"></canvas><b>${it.name}</b><small>${RARITY[r].name} · ${KEY_NAME[key]}</small><em>${on ? 'Équipé' : got ? 'Possédé · touche pour équiper' : howTo(key, it.id)}</em>`;
+      grid.appendChild(b);
+      drawItemPv(b.querySelector('canvas').getContext('2d'), 160, 110, key, it.id, 400);
+    }
+    if (!list.length) grid.innerHTML = '<p class="wallet">Rien ici pour l\'instant.</p>';
+    renderCollBar();
+  }
+  function renderCollBar() {
+    const bar = $('collBar');
+    if (!collSel) { bar.hidden = true; return; }
+    const { key, id } = collSel, it = itemOf(key, id), r = rarityOf(key, id), got = owns(key, id), btn = $('collBarBtn');
+    bar.hidden = false;
+    let txt = `${KEY_NAME[key]} « ${it.name} » · ${RARITY[r].name}`;
+    if (got) { btn.textContent = cfg[key] === id ? 'Équipé' : 'Équiper'; btn.disabled = cfg[key] === id; }
+    else if (trophyOf(key, id)) { const t = trophyOf(key, id); txt += ` · gagne le trophée ${trophyName(t)}` + (t.feat ? ` : ${t.text}` : ` (${Math.min(t.goal, statOf(t.stat)).toLocaleString('fr-FR')} / ${t.goal.toLocaleString('fr-FR')} ${STAT_UNITS[t.stat]})`); btn.textContent = 'Trophée requis'; btn.disabled = true; }
+    else if (boxOnly(key, id)) { txt += ' · se trouve seulement dans les coffres'; btn.textContent = 'Dans les coffres'; btn.disabled = true; }
+    else { const p = price(key, id), miss = p - shop.credits; txt += ` · ${astros(p)}`; btn.textContent = miss > 0 ? `Il te manque ${astros(miss)}` : 'Acheter et équiper'; btn.disabled = miss > 0; }
+    $('collBarText').textContent = txt;
+  }
+  $('collTabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) { collTab = b.dataset.tab; renderColl(); beep(520, .06, 'triangle', .06); } };
+  $('collFilter').onclick = e => { const b = e.target.closest('button[data-fil]'); if (b) { collFil = b.dataset.fil; renderColl(); beep(600, .06, 'triangle', .06); } };
+  $('collGrid').onclick = e => {
+    const b = e.target.closest('.ccard'); if (!b) return;
+    const key = b.dataset.k, id = b.dataset.id;
+    collSel = { key, id };
+    if (owns(key, id)) { cfg[key] = id; saveCfg(); beep(700, .06, 'triangle', .08); }
+    else beep(400, .06, 'triangle', .06);
+    renderColl();
+  };
+  $('collBarBtn').onclick = () => {
+    if (!collSel) return;
+    const { key, id } = collSel;
+    if (owns(key, id)) { cfg[key] = id; saveCfg(); }
+    else if (!buyItem(key, id)) return;
+    renderAtelier(); renderColl(); updateTrophyBtn();
+  };
+  function openColl() { initAudio(); collSel = null; renderColl(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('collection').hidden = false; }
+  $('collBtn').onclick = openColl;
+  $('overCollBtn').onclick = openColl;
+  $('collBack').onclick = closeHangar;
+  $('chestBuy').onclick = () => {
+    if (shop.credits < CHEST_PRICE) return;
+    shop.credits -= CHEST_PRICE; shop.chests++; saveShop(); renderAtelier(); updateCollBtn(); renderColl();
+    beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .14, 'triangle', .1), 70);
+  };
+  $('chestOpen').onclick = () => { if (shop.chests > 0) openChest(); };
+
+  // tirage d'un coffre : la rareté d'abord (60 / 25 / 11 / 4 %), puis le contenu
+  function rollChest() {
+    const x = Math.random() * 100;
+    const rar = x < RARITY[1].p ? 1 : x < RARITY[1].p + RARITY[2].p ? 2 : x < 100 - RARITY[4].p ? 3 : 4;
+    if (rar === 1) return { rar, astros: 500 + Math.floor(Math.random() * 31) * 50 };
+    const pool = BOX_POOL.filter(b => b.rar === rar), pick = pool[Math.floor(Math.random() * pool.length)];
+    if (shop.owned.includes(pick.key + ':' + pick.id)) return { rar, key: pick.key, id: pick.id, dup: true, astros: RARITY[rar].dup };
+    return { rar, key: pick.key, id: pick.id };
+  }
+  // le coffre, dessiné en métal (repère : centre du coffre, taille s) ; open = 0 fermé → 1 ouvert
+  function drawChest(k, x, y, s, open, col, glow, t) {
+    k.save(); k.translate(x, y); k.scale(s, s);
+    // lueur de la rareté derrière le coffre
+    if (glow > 0) {
+      k.globalCompositeOperation = 'lighter';
+      const g = k.createRadialGradient(0, -10, 10, 0, -10, 150); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      k.globalAlpha = Math.min(1, glow) * .75; k.fillStyle = g; k.beginPath(); k.arc(0, -10, 150, 0, 7); k.fill();
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    }
+    // ombre au sol
+    k.fillStyle = 'rgba(0, 0, 0, .45)'; k.beginPath(); k.ellipse(0, 66, 108, 12, 0, 0, 7); k.fill();
+    const metal = (x0, x1) => { const g = k.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#5a5878'); g.addColorStop(.25, '#d8dae8'); g.addColorStop(.5, '#8a88a8'); g.addColorStop(.8, '#3a3852'); g.addColorStop(1, '#22203a'); return g; };
+    // intérieur lumineux quand il s'ouvre
+    if (open > 0) {
+      k.globalCompositeOperation = 'lighter';
+      const ig = k.createLinearGradient(0, -6, 0, -90); ig.addColorStop(0, col); ig.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      k.globalAlpha = open; k.fillStyle = ig; k.beginPath(); k.moveTo(-92, -4); k.lineTo(92, -4); k.lineTo(140, -170); k.lineTo(-140, -170); k.closePath(); k.fill();
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+      k.fillStyle = '#fffaf0'; k.globalAlpha = open; k.fillRect(-90, -8, 180, 6); k.globalAlpha = 1;
+    }
+    // caisse
+    const bg = k.createLinearGradient(0, -4, 0, 60); bg.addColorStop(0, '#4a3a8a'); bg.addColorStop(.5, '#2a2058'); bg.addColorStop(1, '#140e30');
+    k.fillStyle = bg; k.beginPath(); k.roundRect(-96, -4, 192, 64, 8); k.fill();
+    k.strokeStyle = 'rgba(255, 255, 255, .12)'; k.lineWidth = 1; k.beginPath(); k.moveTo(-90, 2); k.lineTo(90, 2); k.stroke();
+    // panneaux gravés
+    k.strokeStyle = 'rgba(0, 0, 0, .45)'; k.lineWidth = 1.5;
+    for (const px of [-62, 18]) { k.beginPath(); k.roundRect(px, 8, 44, 40, 5); k.stroke(); }
+    // cerclages en métal
+    for (const bx of [-78, 66]) { k.fillStyle = metal(bx, bx + 12); k.fillRect(bx, -4, 12, 64); }
+    k.fillStyle = metal(-96, 96); k.fillRect(-96, 52, 192, 8);
+    // rivets
+    k.fillStyle = '#e8eaf4';
+    for (const rx of [-72, 72]) for (const ry of [6, 26, 46]) { k.beginPath(); k.arc(rx, ry, 1.8, 0, 7); k.fill(); }
+    // couvercle (il se soulève et bascule)
+    k.save();
+    k.translate(0, -4 - open * 70); k.rotate(-open * .25); k.scale(1, 1 - open * .55);
+    const lg = k.createLinearGradient(0, -52, 0, 0); lg.addColorStop(0, '#5a48a8'); lg.addColorStop(.6, '#30246a'); lg.addColorStop(1, '#1e1648');
+    k.fillStyle = lg; k.beginPath(); k.moveTo(-96, 0); k.lineTo(-96, -26); k.bezierCurveTo(-96, -58, 96, -58, 96, -26); k.lineTo(96, 0); k.closePath(); k.fill();
+    for (const bx of [-78, 66]) { k.fillStyle = metal(bx, bx + 12); k.beginPath(); k.moveTo(bx, 0); k.lineTo(bx, -40 + Math.abs(bx + 6) * .12); k.lineTo(bx + 12, -41 + Math.abs(bx + 6) * .12); k.lineTo(bx + 12, 0); k.closePath(); k.fill(); }
+    k.fillStyle = metal(-96, 96); k.fillRect(-96, -6, 192, 6);
+    // reflet
+    k.strokeStyle = 'rgba(255, 255, 255, .25)'; k.lineWidth = 2; k.beginPath(); k.moveTo(-70, -36); k.bezierCurveTo(-40, -46, 40, -46, 70, -36); k.stroke();
+    k.restore();
+    // serrure : brille de la couleur de la rareté
+    if (open < .3) {
+      k.save(); k.translate(0, -2);
+      k.fillStyle = metal(-14, 14); k.beginPath(); k.roundRect(-14, -12, 28, 30, 5); k.fill();
+      k.shadowColor = col; k.shadowBlur = 6 + glow * 16; k.fillStyle = glow > 0 ? col : '#2a2048';
+      k.beginPath(); k.arc(0, 0, 5, 0, 7); k.fill(); k.fillRect(-2, 2, 4, 9); k.shadowBlur = 0;
+      k.restore();
+    }
+    // fente lumineuse entre la caisse et le couvercle
+    if (glow > 0 && open === 0) {
+      k.globalCompositeOperation = 'lighter'; k.globalAlpha = Math.min(1, glow);
+      k.strokeStyle = col; k.lineWidth = 3; k.shadowColor = col; k.shadowBlur = 14;
+      k.beginPath(); k.moveTo(-94, -5); k.lineTo(94, -5); k.stroke(); k.shadowBlur = 0;
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    }
+    k.restore();
+  }
+  // petit coffre qui flotte dans la Collection
+  function drawChestIdle(t) {
+    const cv = $('chestPv'), k = cv.getContext('2d');
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, cv.width, cv.height);
+    const has = shop.chests > 0, bob = reduce ? 0 : Math.sin(t / 600) * 5;
+    drawChest(k, cv.width / 2, cv.height * .56 + bob, 1.3, 0, '#c86bff', has ? .35 + .2 * Math.sin(t / 400) : 0, t);
+  }
+  // ----- la cinématique -----
+  let cx = null; // état de la cinématique en cours
+  const ccv = $('chestCv'), cctx = ccv.getContext('2d');
+  const easeBack = q => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(q - 1, 3) + c1 * Math.pow(q - 1, 2); };
+  function openChest() {
+    if (cx || shop.chests <= 0) return;
+    initAudio();
+    shop.chests--; stats.coffres++; statsDirty = true;
+    const res = rollChest();
+    // on garde tout de suite le gain (si on ferme l'onglet pendant la cinématique, rien n'est perdu)
+    if (res.astros) shop.credits += res.astros;
+    if (res.key && !res.dup) shop.owned.push(res.key + ':' + res.id);
+    saveShop(); saveStats();
+    cx = { t0: performance.now(), res, col: RARITY[res.rar].col, parts: [], opened: false, shown: false, nextRumble: 0 };
+    $('chestPrize').hidden = true; $('chestSkip').hidden = false; $('chestFx').hidden = false;
+    const r = ccv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
+    ccv.width = Math.round(r.width * d); ccv.height = Math.round(r.height * d);
+    requestAnimationFrame(chestLoop);
+  }
+  const OPEN_AT = 2400;
+  function chestBurst(x, y, col, n, sp) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * 7, v = sp * (.3 + Math.random() * .7);
+      cx.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - sp * .25, life: 1 + Math.random() * .8, max: 1.8, col: Math.random() < .35 ? '#ffffff' : col, z: 2 + Math.random() * 3, star: Math.random() < .3 });
+    }
+  }
+  function chestLoop(now) {
+    if (!cx) return;
+    const e = now - cx.t0, w = ccv.width, h = ccv.height, k = cctx, S = Math.min(w / 360, h / 420), cxp = w / 2, cyp = h * .58;
+    const dt = Math.min(.05, (now - (cx.last || now)) / 1000); cx.last = now;
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
+    let y = cyp, shakeX = 0, glow = 0, open = 0;
+    if (e < 700) { const q = easeBack(Math.min(1, e / 700)); y = -h * .3 + (cyp + h * .3) * q; }
+    else if (e < OPEN_AT) {
+      const q = (e - 700) / (OPEN_AT - 700);
+      shakeX = reduce ? 0 : Math.sin(e / 28) * (2 + q * 9) * S; glow = q;
+      // grondement qui monte, et étincelles autour du coffre
+      if (e >= cx.nextRumble) { beep(90 + q * 220, .12, 'sawtooth', .05 + q * .05, 40); cx.nextRumble = e + 260 - q * 150; }
+      if (!reduce && Math.random() < .2 + q * .6) chestBurst(cxp + (Math.random() - .5) * 180 * S, cyp - 10 * S, cx.col, 1, 60 * S);
+    } else {
+      open = Math.min(1, (e - OPEN_AT) / 260); glow = 1;
+      if (!cx.opened) {
+        cx.opened = true;
+        chestBurst(cxp, cyp - 20 * S, cx.col, reduce ? 30 : 90 + cx.res.rar * 30, 420 * S);
+        // accord qui monte : plus de notes pour une rareté plus haute
+        const notes = [523, 659, 784, 1046, 1318, 1568];
+        for (let i = 0; i < 2 + cx.res.rar; i++) setTimeout(() => beep(notes[i], .22 + i * .04, 'triangle', .11), i * 85);
+        beep(160, .5, 'sine', .14, 500);
+        if (cx.res.rar === 4) setTimeout(() => beep(2093, .6, 'triangle', .08), 520);
+      }
+      // rayons de lumière qui tournent
+      if (!reduce) {
+        k.save(); k.translate(cxp, cyp - 40 * S); k.rotate(e / 2200); k.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 12; i++) {
+          k.rotate(Math.PI / 6); const g = k.createLinearGradient(0, 0, 0, -h * .7); g.addColorStop(0, cx.col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          k.globalAlpha = .18 * open; k.fillStyle = g; k.beginPath(); k.moveTo(-8 * S, 0); k.lineTo(-40 * S, -h * .7); k.lineTo(40 * S, -h * .7); k.lineTo(8 * S, 0); k.closePath(); k.fill();
+        }
+        k.restore();
+      }
+      if (e - OPEN_AT < 180) { k.globalAlpha = 1 - (e - OPEN_AT) / 180; k.fillStyle = '#ffffff'; k.fillRect(0, 0, w, h); k.globalAlpha = 1; }
+      if (!cx.shown && e > OPEN_AT + 650) showPrize();
+    }
+    drawChest(k, cxp + shakeX, y, S, open, cx.col, glow, now);
+    // particules
+    k.globalCompositeOperation = 'lighter';
+    for (const p of cx.parts) {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 140 * S * dt; p.vx *= .985; p.life -= dt;
+      k.globalAlpha = Math.max(0, Math.min(1, p.life / p.max * 1.5)); k.fillStyle = p.col;
+      if (p.star) { k.beginPath(); for (let j = 0; j < 8; j++) { const a = j * Math.PI / 4, rr = j % 2 ? p.z * .3 * S : p.z * 1.6 * S; k.lineTo(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr); } k.closePath(); k.fill(); }
+      else { k.beginPath(); k.arc(p.x, p.y, p.z * S * .7, 0, 7); k.fill(); }
+    }
+    k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    cx.parts = cx.parts.filter(p => p.life > 0);
+    if (cx.shown && cx.res.key && !$('chestPrize').hidden) { const pc = $('prizeCv'); drawItemPv(pc.getContext('2d'), pc.width, pc.height, cx.res.key, cx.res.id, now); }
+    requestAnimationFrame(chestLoop);
+  }
+  function showPrize() {
+    cx.shown = true; $('chestSkip').hidden = true;
+    const { res } = cx, R = RARITY[res.rar], el = $('chestPrize');
+    el.style.setProperty('--rc', R.col);
+    $('prizeRar').textContent = R.name;
+    const skin = res.key ? itemOf(res.key, res.id) : null;
+    $('prizeCv').hidden = !skin; $('prizeCoin').hidden = !!skin && !res.dup;
+    if (res.dup) $('prizeCoin').hidden = false;
+    $('prizeAstros').textContent = res.astros ? '+' + Number(res.astros).toLocaleString('fr-FR') : '';
+    if (!skin) { $('prizeName').textContent = 'Astros'; $('prizeInfo').textContent = 'Ils vont tout de suite dans ton Hangar.'; }
+    else {
+      $('prizeName').textContent = skin.name;
+      $('prizeInfo').textContent = res.dup ? `${KEY_NAME[res.key]} que tu as déjà : il se change en ${astros(res.astros)} Astros.` : `Nouveau skin · ${KEY_NAME[res.key]}`;
+    }
+    $('prizeEquip').hidden = !skin || res.dup || cfg[res.key] === res.id;
+    el.hidden = false;
+    checkTrophies(); renderAtelier(); updateCollBtn();
+  }
+  function closeChest() {
+    cx = null; $('chestFx').hidden = true; $('chestPrize').hidden = true;
+    if (!$('collection').hidden) renderColl();
+  }
+  $('chestFx').addEventListener('pointerdown', e => {
+    if (!cx || e.target.closest('.chestprize')) return;
+    // toucher l'écran accélère : on passe directement à l'ouverture
+    if (performance.now() - cx.t0 < OPEN_AT) cx.t0 = performance.now() - OPEN_AT;
+    else if (!cx.shown) showPrize();
+  });
+  $('prizeOk').onclick = () => { beep(700, .06, 'triangle', .08); closeChest(); };
+  $('prizeEquip').onclick = () => { if (cx && cx.res.key && owns(cx.res.key, cx.res.id)) { cfg[cx.res.key] = cx.res.id; saveCfg(); beep(880, .1, 'triangle', .08); } closeChest(); };
   // Hangar : Pistolet, Super-pouvoir, Animaux et Compétences en carrousels ; le point rond ouvre la section en grand
   for (const id of ['optGun', 'optPower', 'optPet', 'upgrades']) {
     const list = $(id), opt = list.closest('.opt'), title = opt.querySelector(':scope > span').textContent;
@@ -9078,6 +9735,167 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     }
   }
 
+  // ===== Skins des coffres : fumées, explosions et auras (que de l'affichage, aucun effet sur le jeu) =====
+  // couleur d'une particule de fumée : palette au hasard, arc-en-ciel qui défile ou dégradé qui défile
+  function trailColor(tr, fl) {
+    if (tr.hue) return `hsl(${Math.floor(performance.now() / 5) % 360}, 100%, 65%)`;
+    if (tr.grad) { const q = (performance.now() / 1400) % tr.grad.length; return tr.grad[Math.floor(q)]; }
+    if (tr.pal) return tr.pal[Math.floor(Math.random() * tr.pal.length)];
+    return tr.col || fl[1 + (Math.random() < .5 ? 1 : 0)];
+  }
+  function trailPart(tr, fl, x, y, vx0, life0) {
+    const life = life0 * (tr.life || 1), sh = tr.shape;
+    const p = { x: x + (Math.random() - .5) * 6, y, vx: (Math.random() - .5) * 40 - vx0 * .1, vy: 160 + Math.random() * 120, life, color: trailColor(tr, fl), size: tr.size || 3, shape: sh };
+    if (sh === 'smoke') { p.max = life; p.grow = 10; p.vy *= .6; }
+    if (sh === 'spark') { p.vx = (Math.random() - .5) * 260; p.vy = 120 + Math.random() * 200; }
+    if (sh === 'flake') { p.rot = Math.random() * 3; p.vr = (Math.random() - .5) * 4; }
+    return p;
+  }
+  // l'effet en plus quand un ennemi explose, selon l'explosion choisie par la fusée qui l'a détruit
+  function skinBoom(x, y, id, sc = 1) {
+    const b = byId(BOOMS, id);
+    if (!b.pal) return;
+    if (netRole === 'host') netFx.push(['k', x | 0, y | 0, b.id, sc]);
+    const R = Math.random, pal = b.pal, col = i => pal[i % pal.length], m = reduce ? .4 : 1, n = Math.ceil(16 * Math.sqrt(sc) * m);
+    if (b.id === 'confettis') for (let i = 0; i < n + 6; i++) {
+      const a = R() * 7, v = 80 + R() * 220;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, g: 260, life: 1 + R() * .6, color: col(i), size: 5 + R() * 3, shape: 'confetti', rot: R() * 7, vr: (R() - .5) * 16 });
+    } else if (b.id === 'onde') {
+      for (let i = 0; i < 3; i++) parts.push({ x, y, vx: 0, vy: 0, life: .5 + i * .15, max: .5 + i * .15, color: col(i), size: (46 + i * 22) * sc, shape: 'ring' });
+      for (let i = 0; i < n; i++) { const a = i / n * 7, v = 220 + R() * 120; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .5, color: col(i), size: 3, shape: 'neon' }); }
+    } else if (b.id === 'pixels') for (let i = 0; i < n + 4; i++) {
+      const a = R() * 7, v = 60 + R() * 200;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .7 + R() * .5, color: col(i), size: 4 + (R() < .3 ? 4 : 0), shape: 'pixel' });
+    } else if (b.id === 'etoiles') for (let i = 0; i < n; i++) {
+      const a = R() * 7, v = 100 + R() * 220;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, g: 180, life: .9 + R() * .6, color: col(i), size: 4 + R() * 4, shape: 'star' });
+    } else if (b.id === 'coeurs') for (let i = 0; i < Math.ceil(n * .7); i++) {
+      const a = R() * 7, v = 60 + R() * 160;
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 90, life: 1 + R() * .5, color: col(i), size: 5 + R() * 4, shape: 'heart' });
+    } else if (b.id === 'tonnerre') {
+      parts.push({ x, y, vx: 0, vy: 0, life: .18, max: .18, color: '#e6f6ff', size: 60 * sc, shape: 'flash' });
+      parts.push({ x, y, vx: 0, vy: 0, life: .5, max: .5, color: '#7af0ff', size: 70 * sc, shape: 'ring' });
+      for (let i = 0; i < n * 1.4; i++) { const a = R() * 7, v = 300 + R() * 420; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .25 + R() * .3, color: col(i), size: 2 + R() * 1.5, shape: 'spark' }); }
+      for (let i = 0; i < 6; i++) { const a = R() * 7, v = 90 + R() * 60; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .6, color: '#7af0ff', size: 4, shape: 'neon' }); }
+    } else if (b.id === 'supernova') {
+      parts.push({ x, y, vx: 0, vy: 0, life: .25, max: .25, color: '#ffffff', size: 70 * sc, shape: 'flash' });
+      for (let i = 0; i < 3; i++) parts.push({ x, y, vx: 0, vy: 0, life: .6 + i * .2, max: .6 + i * .2, color: col(i + 1), size: (60 + i * 34) * sc, shape: 'ring' });
+      for (let i = 0; i < n * 1.5; i++) { const a = R() * 7, v = 260 + R() * 360; parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: .4 + R() * .4, color: col(i), size: 2.4, shape: 'spark' }); }
+    }
+  }
+  // l'aura dessinée derrière une fusée (repère de la fusée, taille s)
+  function drawAura(c, x, y, s, id, t) {
+    const a = byId(AURAS, id);
+    if (!a.col) return;
+    c.save(); c.translate(x, y); c.scale(s, s);
+    const op = c.globalCompositeOperation, ga = c.globalAlpha;
+    c.globalCompositeOperation = 'lighter';
+    const glowR = (r, col, al) => { const g = c.createRadialGradient(0, 0, r * .2, 0, 0, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); c.globalAlpha = ga * al; c.fillStyle = g; c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.globalAlpha = ga; };
+    const T = reduce ? 0 : t;
+    if (a.id === 'halo') {
+      glowR(38 + Math.sin(T / 400) * 3, a.col, .35);
+      c.strokeStyle = a.col; c.globalAlpha = ga * .45; c.lineWidth = 1.4; c.beginPath(); c.arc(0, 0, 30 + Math.sin(T / 400) * 2, 0, 7); c.stroke();
+    } else if (a.id === 'braise') {
+      glowR(34, '#ff7a1f', .3);
+      for (let i = 0; i < 8; i++) {
+        const q = ((T / 1600) + i / 8) % 1, ang = i * 2.4, r = 16 + q * 18;
+        c.globalAlpha = ga * (1 - q) * .9; c.fillStyle = i % 2 ? '#ffb020' : '#ff6a1f';
+        c.beginPath(); c.arc(Math.cos(ang) * r * .9, Math.sin(ang) * r * .6 - q * 18, 1.6 + (1 - q) * 1.4, 0, 7); c.fill();
+      }
+    } else if (a.id === 'orbite') {
+      glowR(32, a.col, .18);
+      for (let k = 0; k < 2; k++) {
+        c.save(); c.rotate(k ? .9 : -.9); c.scale(1, .38);
+        c.strokeStyle = a.col; c.globalAlpha = ga * .4; c.lineWidth = 1.6; c.beginPath(); c.arc(0, 0, 32, 0, 7); c.stroke();
+        const an = T / (k ? 700 : 900) + k * 2;
+        c.globalAlpha = ga; c.fillStyle = '#ffffff'; c.shadowColor = a.col; c.shadowBlur = 8;
+        c.beginPath(); c.arc(Math.cos(an) * 32, Math.sin(an) * 32, 3.2, 0, 7); c.fill(); c.shadowBlur = 0;
+        c.restore();
+      }
+    } else if (a.id === 'givre') {
+      glowR(36, '#7ad8ff', .22);
+      c.strokeStyle = a.col; c.lineWidth = 1.2;
+      for (let i = 0; i < 6; i++) {
+        const an = T / 2200 + i * Math.PI / 3, px = Math.cos(an) * 31, py = Math.sin(an) * 27, z = 4 + (i % 2) * 1.5;
+        c.globalAlpha = ga * (.6 + .4 * Math.sin(T / 300 + i)); c.beginPath();
+        for (let k = 0; k < 3; k++) { const b = k * Math.PI / 3 + an; c.moveTo(px - Math.cos(b) * z, py - Math.sin(b) * z); c.lineTo(px + Math.cos(b) * z, py + Math.sin(b) * z); }
+        c.stroke();
+      }
+    } else if (a.id === 'spectre') {
+      glowR(40, '#c86bff', .2);
+      c.lineWidth = 3;
+      for (let i = 0; i < 24; i++) {
+        const a0 = i / 24 * Math.PI * 2 + T / 1200;
+        c.strokeStyle = `hsl(${(i * 15 + T / 8) % 360}, 100%, 62%)`; c.globalAlpha = ga * .7;
+        c.beginPath(); c.arc(0, 0, 32 + Math.sin(T / 250 + i) * 1.5, a0, a0 + Math.PI / 12 + .02); c.stroke();
+      }
+    } else if (a.id === 'couronne') {
+      glowR(38, '#ffd86b', .3);
+      c.fillStyle = '#fff2b0';
+      for (let i = 0; i < 5; i++) {
+        const an = T / 1500 + i * Math.PI * 2 / 5, px = Math.cos(an) * 32, py = Math.sin(an) * 32 * .8, r = 4.2;
+        c.globalAlpha = ga * (.75 + .25 * Math.sin(T / 200 + i)); c.beginPath();
+        for (let k = 0; k < 10; k++) { const b = k * Math.PI / 5 - Math.PI / 2 + an, rr = k % 2 ? r * .45 : r; c.lineTo(px + Math.cos(b) * rr, py + Math.sin(b) * rr); }
+        c.closePath(); c.fill();
+      }
+    }
+    c.globalCompositeOperation = op; c.globalAlpha = ga;
+    c.restore();
+  }
+  // petits aperçus dessinés (Collection, Hangar) : une fumée ou une explosion figée, sans particules
+  function drawTrailDemo(k, x, y, s, id, t, flame) {
+    const tr = byId(TRAILS, id), fl = flameColsOf(flame || 'feu', t), R = i => (Math.sin(i * 12.9898) * 43758.5453) % 1;
+    k.save();
+    for (let i = 0; i < 16; i++) {
+      const q = ((t / 900) + i / 16) % 1, px = x + Math.sin(i * 1.7 + t / 500) * 4 * s * q * 3, py = y + q * 70 * s, z = (tr.size || 3) * s * (1 - q * .4);
+      let col = tr.col || fl[1 + (i % 2)];
+      if (tr.hue) col = `hsl(${(i * 22 + t / 5) % 360}, 100%, 65%)`;
+      else if (tr.grad) col = tr.grad[Math.floor(i / 16 * tr.grad.length)];
+      else if (tr.pal) col = tr.pal[i % tr.pal.length];
+      k.globalAlpha = 1 - q; k.fillStyle = col; k.strokeStyle = col;
+      const sh = tr.shape;
+      if (sh === 'glow' || sh === 'neon' || sh === 'smoke') {
+        k.globalCompositeOperation = 'lighter'; const r = z * (sh === 'smoke' ? 1.6 + q * 2 : sh === 'neon' ? 2.2 : 1.6);
+        const g = k.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); k.fillStyle = g; k.beginPath(); k.arc(px, py, r, 0, 7); k.fill();
+        if (sh === 'neon') { k.fillStyle = '#fff'; k.beginPath(); k.arc(px, py, z * .35, 0, 7); k.fill(); }
+        k.globalCompositeOperation = 'source-over';
+      } else if (sh === 'bubble') { k.lineWidth = 1.2; k.beginPath(); k.arc(px, py, z, 0, 7); k.stroke(); }
+      else if (sh === 'pixel') k.fillRect(Math.round(px), Math.round(py), z, z);
+      else if (sh === 'heart') { k.beginPath(); k.moveTo(px, py + z * .6); k.bezierCurveTo(px - z, py - z * .2, px - z * .5, py - z, px, py - z * .35); k.bezierCurveTo(px + z * .5, py - z, px + z, py - z * .2, px, py + z * .6); k.fill(); }
+      else if (sh === 'flake') { k.lineWidth = 1; k.beginPath(); for (let j = 0; j < 3; j++) { const a = j * Math.PI / 3 + i; k.moveTo(px - Math.cos(a) * z, py - Math.sin(a) * z); k.lineTo(px + Math.cos(a) * z, py + Math.sin(a) * z); } k.stroke(); }
+      else if (sh === 'spark') { k.lineWidth = z; k.beginPath(); const dx = (R(i) - .5) * 14 * s; k.moveTo(px + dx, py); k.lineTo(px + dx * 1.6, py + 8 * s); k.stroke(); }
+      else if (sh) { k.beginPath(); for (let j = 0; j < 8; j++) { const a = j * Math.PI / 4, rr = j % 2 ? z * .3 : z; k.lineTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr); } k.closePath(); k.fill(); }
+      else { k.fillRect(px - z / 2, py - z / 2, z, z); }
+    }
+    k.restore();
+  }
+  function drawBoomDemo(k, x, y, s, id, t) {
+    const b = byId(BOOMS, id), q = reduce ? .45 : (t / 1300) % 1, R = i => Math.abs(Math.sin(i * 91.7)) ;
+    k.save(); k.translate(x, y); k.scale(s, s);
+    // le cœur de l'explosion normale (toujours là)
+    const fire = k.createRadialGradient(0, 0, 0, 0, 0, 16 + q * 10); fire.addColorStop(0, `rgba(255, 246, 220, ${1 - q})`); fire.addColorStop(.5, `rgba(255, 154, 60, ${.8 * (1 - q)})`); fire.addColorStop(1, 'rgba(255, 90, 31, 0)');
+    k.globalCompositeOperation = 'lighter'; k.fillStyle = fire; k.beginPath(); k.arc(0, 0, 28, 0, 7); k.fill(); k.globalCompositeOperation = 'source-over';
+    const pal = b.pal || ['#ffe6a0', '#ff9a3c'], d = 8 + q * 34;
+    k.globalAlpha = 1 - q * .9;
+    for (let i = 0; i < 14; i++) {
+      const a = i / 14 * Math.PI * 2 + R(i) * .4, r = d * (.7 + R(i + 3) * .5), px = Math.cos(a) * r, py = Math.sin(a) * r + (b.id === 'confettis' || b.id === 'etoiles' ? q * q * 14 : 0), col = pal[i % pal.length], z = 4;
+      k.fillStyle = col; k.strokeStyle = col;
+      if (b.id === 'confettis') { k.save(); k.translate(px, py); k.rotate(i + q * 6); k.fillRect(-3, -1.5, 6, 3); k.restore(); }
+      else if (b.id === 'pixels') k.fillRect(Math.round(px / 3) * 3, Math.round(py / 3) * 3, i % 3 ? 3 : 5, i % 3 ? 3 : 5);
+      else if (b.id === 'etoiles' || b.id === 'supernova') { k.beginPath(); for (let j = 0; j < 10; j++) { const aa = j * Math.PI / 5 - Math.PI / 2, rr = j % 2 ? z * .45 : z; k.lineTo(px + Math.cos(aa) * rr, py + Math.sin(aa) * rr); } k.closePath(); k.fill(); }
+      else if (b.id === 'coeurs') { k.beginPath(); k.moveTo(px, py + z * .6); k.bezierCurveTo(px - z, py - z * .2, px - z * .5, py - z, px, py - z * .35); k.bezierCurveTo(px + z * .5, py - z, px + z, py - z * .2, px, py + z * .6); k.fill(); }
+      else if (b.id === 'onde') { k.beginPath(); k.arc(px, py, 2, 0, 7); k.fill(); }
+      else if (b.id === 'tonnerre') { k.lineWidth = 1.6; k.beginPath(); k.moveTo(px * .3, py * .3); k.lineTo(px * .6 + (i % 2 ? 3 : -3), py * .6); k.lineTo(px, py); k.stroke(); }
+      else { k.lineWidth = 2; k.beginPath(); k.moveTo(px * .6, py * .6); k.lineTo(px, py); k.stroke(); }
+    }
+    if (b.id === 'onde' || b.id === 'supernova' || b.id === 'tonnerre') {
+      k.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 3; i++) { const qq = Math.max(0, q - i * .12); k.globalAlpha = Math.max(0, 1 - qq) * .8; k.strokeStyle = pal[(i + 1) % pal.length]; k.lineWidth = 2.5; k.beginPath(); k.arc(0, 0, 6 + qq * 40, 0, 7); k.stroke(); }
+      k.globalCompositeOperation = 'source-over';
+    }
+    k.restore();
+  }
+
   function pop(x, y, text, color = '#ff7aa8') { if (netRole === 'host') netFx.push(['p', x | 0, y | 0, text, color]); pops.push({ x, y, text, color, life: 1.1 }); }
 
   // une fusée ramasse une étoile ou un bonus (en ligne, le pote peut aussi le demander : il l'a touché chez lui)
@@ -9093,7 +9911,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       updateHud();
     } else if (it.kind === 'star') {
       it.dead = true; combo++; comboT = 2.2;
-      bump('stars'); if (combo >= 10) feat('combo10'); if (combo >= 15) feat('combo15'); if (combo >= 20) feat('combo20');
+      bump('stars'); if (combo >= 10) feat('combo10'); if (combo >= 15) feat('combo15'); if (combo >= 20) feat('combo20'); if (combo >= 30) feat('combo30');
       defi('combo', combo, true); if (combo === 5 || combo === 8 || combo === 10) defi('combo' + combo);
       score += 10 * combo; burst(it.x, it.y, '#ffd86b', 12, 160);
       beep(520 + Math.min(combo, 16) * 40, .1, 'triangle', .12);
@@ -9139,11 +9957,13 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     }
     it.dead = true;
     if (duoStats && scorer >= 0 && (it.kind === 'rock' || it.kind === 'alien')) { duoStats.kills[scorer]++; if (it.boss) duoStats.bosses[scorer]++; }
+    const boomOf = duo && p2 && scorer === 1 ? p2Conf().boom : cfg.boom;
+    if (boomOf && boomOf !== 'classique') skinBoom(it.x, it.y, boomOf, it.boss ? 2.4 : Math.max(.7, (it.r || 14) / 18));
     if (it.kind === 'rock') { score += 5; explode(it.x, it.y, '#8f86b8', it.r / 22, 'roche'); beep(160, .1, 'square', .05); bump('rochers'); return; }
     score += it.pts;
     pop(it.x, it.y - 20, '+' + it.pts, '#7dff8a');
     bump('aliens');
-    if (it.boss) { if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); }
+    if (it.boss) { if (!run.bossHit) feat('intact'); if (it.def.id === 'zorg') feat('zorg'); addStat('boss'); }
     if (it.boss) { defi('boss'); if (!run.bossHit) defi('intact'); if (!run.bossPow) defi('bossSansPouvoir'); defi('rapide', time - run.bossT0); }
     if (it.boss) {
       if (it.r0) it.r = it.r0;
@@ -9216,7 +10036,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       beep(900, .2, 'sine', .1, 500);
       return;
     }
-    run.clean = false;
+    run.clean = false; run.lvHurt = true;
     if (boss) run.bossHit = true;
     // partie à deux : chaque fusée a ses propres vies
     const two = duo && p2, mine = two && pl === p2 ? 'p2' : 'p1';
@@ -9282,6 +10102,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .95; p.vy *= .95; p.life -= dt;
       if (p.grow) p.size += p.grow * dt;
       if (p.shape === 'smoke') p.vy -= 12 * dt;
+      if (p.g) p.vy += p.g * dt;
       if (p.vr) p.rot += p.vr * dt;
       // les débris en feu laissent une traînée de flammes et de fumée
       if (p.burn && Math.random() < .5) parts.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: .4, max: .4, color: Math.random() < .5 ? '#ffb020' : '#3a3346', size: 5, grow: 18, shape: Math.random() < .5 ? 'fire' : 'smoke' });
@@ -9443,6 +10264,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   }
 
   function gameOver() {
+    // série de victoires : une partie compte si on y a battu au moins un boss
+    if (run.bosses > 0) { stats.serie++; stats.serieMax = Math.max(stats.serieMax, stats.serie); } else stats.serie = 0;
+    checkTrophies();
     saveStats();
     state = 'over'; $('pauseBtn').hidden = true; $('powerBtn').hidden = true; $('weapons').hidden = true; $('banner').classList.remove('show');
     const record = !duo && score > run.bestBefore;
@@ -9580,7 +10404,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   netOn = () => !!netRole;
   let netRole = null, netPeer = null, netMine = cfg, netIn = { k: [0, 0], tg: null, f: false, at: 0 }, netFx = [];
   let netPc = null, netR = null, netU = null, netCode = '', netStatus = 'idle', netMsg = '', netSent = 0, netInT = 0, netLastSt = '', netAsk = 0;
-  const STYLE_LISTS = { model: MODELS, color: COLORS, accent: ACCENTS, motif: MOTIFS, glass: GLASSES, flame: FLAMES, trail: TRAILS, shot: SHOTS };
+  const STYLE_LISTS = { model: MODELS, color: COLORS, accent: ACCENTS, motif: MOTIFS, glass: GLASSES, flame: FLAMES, trail: TRAILS, shot: SHOTS, boom: BOOMS, aura: AURAS };
   // la fusée de l'autre joueur : seulement des styles qui existent dans le jeu
   function cleanCfg(c) {
     const o = { ...DEFAULT };
@@ -9849,7 +10673,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       if (m.cfg && netPeer) { netPeer.cfg = cleanCfg(m.cfg); netPeer.name = cleanName(m.name); }
       netFit(m.W, m.H);
       netCloseFilm();
-      for (const id of ['menu', 'team', 'over', 'paused', 'hangar', 'trophies', 'help', 'cinema', 'mapPanel', 'rankPanel', 'savePanel']) $(id).hidden = true;
+      for (const id of ['menu', 'team', 'over', 'paused', 'hangar', 'trophies', 'collection', 'help', 'cinema', 'mapPanel', 'rankPanel', 'savePanel']) $(id).hidden = true;
       duo = true; reset(); netMine = cfg;
       $('againBtn').hidden = true;
       netLastSt = 'launch'; beginLaunch();
@@ -9862,7 +10686,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       $('cineNum').textContent = m.num; $('cineName').textContent = m.name; $('cinePlace').textContent = m.place; $('cineQuote').textContent = m.quote;
       c.hidden = true; void c.offsetWidth; c.hidden = false;
     } else if (m.t === 'beaten') {
-      // les boss battus comptent aussi pour le pote
+      // les boss battus comptent aussi pour le pote (et pour ses trophées « Tombeur de boss » et « Série de victoires »)
+      if (bossById(m.id)) { run.bosses++; addStat('boss'); }
       if (bossById(m.id) && !beaten.includes(m.id)) { beaten.push(m.id); try { localStorage.setItem('comete-boss', JSON.stringify(beaten)); } catch (e) {} checkTrophies(); }
       const op = Math.min(WORLDS.length, Math.floor(Number(m.open) || 0));
       if (op > worldsOpen) { worldsOpen = op; saveWorlds(); }
@@ -9928,6 +10753,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     for (const f of m.fx || []) {
       if (f[0] === 'b') burst(f[1], f[2], f[3], f[4], f[5], f[6]);
       else if (f[0] === 'e') explode(f[1], f[2], f[3], f[4], f[5]);
+      else if (f[0] === 'k') skinBoom(f[1], f[2], String(f[3]), +f[4] || 1);
       else if (f[0] === 'p') pop(f[1], f[2], String(f[3]), f[4]);
       else if (f[0] === 's') beep(f[1], f[2], f[3], f[4], f[5]);
     }
@@ -10095,7 +10921,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const kitOf = c => `${byId(GUNS, c && c.gun).name} · ${byId(POWERS, c && c.power).name}`;
   function openTeam() {
     initAudio();
-    for (const id of ['menu', 'over', 'hangar', 'trophies', 'help', 'cinema', 'mapPanel']) $(id).hidden = true;
+    for (const id of ['menu', 'over', 'hangar', 'trophies', 'collection', 'help', 'cinema', 'mapPanel']) $(id).hidden = true;
     state = 'hangar'; $('team').hidden = false;
     myReady = false; if (netOpen()) { netSend({ t: 'ready', r: false }); netHello(); }
     renderTeam();
@@ -10223,6 +11049,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   };
   $('teamHangar').onclick = teamGo(() => { openHangar(); $('goBtn').textContent = 'Retour à l\'équipe'; });
   $('teamTrophies').onclick = teamGo(openTrophies);
+  $('teamColl').onclick = teamGo(openColl);
   $('teamRank').onclick = teamGo(openRanking);
   $('teamCinema').onclick = teamGo(() => { cineTab = 'duo'; openCinema(); });
   $('teamWorld').onclick = () => { if (netRole !== 'host') return; teamGo(() => { openMap(); $('mapGo').textContent = 'Retour à l\'équipe'; })(); };
@@ -10335,7 +11162,14 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   // verse dans le Hangar les points pas encore comptés de la partie en cours
   function creditRun() {
     const add = score - run.credited;
-    if (add > 0) { shop.credits += add; run.credited = score; saveShop(); }
+    if (add > 0) {
+      shop.credits += add; run.credited = score;
+      // un coffre offert tous les 25 000 points marqués (au total)
+      stats.points += add; statsDirty = true;
+      const due = Math.floor(stats.points / CHEST_EVERY) - stats.boxPts;
+      if (due > 0) { stats.boxPts += due; shop.chests = Math.min(999, shop.chests + due); queueToast({ chest: `${due > 1 ? due + ' coffres' : 'Un coffre'} pour ${(stats.boxPts * CHEST_EVERY).toLocaleString('fr-FR')} points marqués` }); updateCollBtn(); }
+      saveShop(); checkTrophies();
+    }
   }
   function saveRecord() {
     if (duo) return; // une partie à deux ne compte pas pour le record (ni pour le classement mondial)
@@ -10573,10 +11407,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       p2.y = Math.max(p2.r + 70, Math.min(H - p2.r - 10, p2.y + p2.vy * dt));
       p2.tilt += (Math.max(-.45, Math.min(.45, p2.vx / 900)) - p2.tilt) * Math.min(1, dt * 10);
     }
-    const fl = flameColsOf(p2Conf().flame, performance.now());
-    for (let i = 0; i < (reduce ? 1 : 2); i++) {
-      parts.push({ x: p2.x - Math.sin(p2.tilt) * 18 + (Math.random() - .5) * 6, y: p2.y + Math.cos(p2.tilt) * 18, vx: (Math.random() - .5) * 40 - p2.vx * .1, vy: 160 + Math.random() * 120, life: .3 + Math.random() * .2, color: fl[1 + (Math.random() < .5 ? 1 : 0)], size: 3 });
-    }
+    const fl = flameColsOf(p2Conf().flame, performance.now()), tr2 = byId(TRAILS, p2Conf().trail);
+    for (let i = 0; i < (reduce ? 1 : 2); i++) parts.push(trailPart(tr2, fl, p2.x - Math.sin(p2.tilt) * 18, p2.y + Math.cos(p2.tilt) * 18, p2.vx, .3 + Math.random() * .2));
     p2.fireT -= dt;
     if (infinite > 0 || nova) p2.reload = 0;
     if (p2.reload > 0) { if ((p2.reload -= dt) <= 0) { p2.reload = 0; p2.ammo = gun.mag; } }
@@ -10612,10 +11444,14 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (zooAt && time >= zooAt) { zooAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startZooFree(); return; }
     if (clacAt && time >= clacAt) { clacAt = 0; sayLeft = 0; $('sayBubble').hidden = true; startClacFilm(); return; }
     if (storyAt && time >= storyAt) { storyAt = 0; storyNext === 'world' ? startTransit() : startFinale(); return; }
+    // distance parcourue (trophées « Grand voyage ») : comptée par paquets de 5 secondes de vol
+    volAcc += dt; if (volAcc >= 5) { stats.vol += Math.round(volAcc); volAcc = 0; statsDirty = true; checkTrophies(); }
     // le chrono du niveau s'arrête tant que le boss est en vie
     if (!boss && !(bonusT > 0)) lvT += dt;
     if (lvT >= levelSecs()) {
       lvT = 0; level++; updateHud(); setTheme(level);
+      // niveau fini sans perdre de vie (trophées « Vol sans faute »)
+      if (!run.lvHurt) addStat('propres'); run.lvHurt = false;
       levelFx = { t: performance.now(), name: themeOf(level).name, col: themeOf(level).neb[0], col2: themeOf(level).neb[1], lv: level };
       if (level >= 10) feat('niveau10'); if (level >= 20) feat('niveau20');
       defi('niveau', level, true); defi('partiesNiveau', level); if (run.clean) defi('niveauPropre', level, true); if (run.noPow) defi('niveauSansPouvoir', level, true);
@@ -10685,11 +11521,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     // particules de réacteur
     const fl = flameColsOf(cfg.flame, performance.now());
     const n = player.ko ? 0 : reduce ? 1 : (hyper ? 4 : 2), tr = byId(TRAILS, cfg.trail);
-    for (let i = 0; i < n; i++) {
-      const ex = player.x - Math.sin(player.tilt) * 18, ey = player.y + Math.cos(player.tilt) * 18;
-      parts.push({ x: ex + (Math.random() - .5) * 6, y: ey, vx: (Math.random() - .5) * 40 - player.vx * .1, vy: 160 + Math.random() * 120, life: (.3 + Math.random() * .2) * (tr.life || 1),
-        color: tr.col || fl[1 + (Math.random() < .5 ? 1 : 0)], size: tr.size || 3, shape: tr.shape });
-    }
+    for (let i = 0; i < n; i++) parts.push(trailPart(tr, fl, player.x - Math.sin(player.tilt) * 18, player.y + Math.cos(player.tilt) * 18, player.vx, .3 + Math.random() * .2));
 
     // tir manuel avec chargeur limité
     fireT -= dt;
@@ -10868,7 +11700,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       pop(W / 2, 130, 'Caisse ∞ en approche !', '#ff9a3c');
     }
     // 1UP : une vie bonus tous les 2 500 points
-    for (const g of [1000, 5000, 15000, 40000]) if (score >= g) feat('score' + g);
+    for (const g of [1000, 5000, 15000, 25000, 40000]) if (score >= g) feat('score' + g);
     // défi du jour : points, temps de vol, chrono
     if (score > run.scored) { defi('points', score - run.scored); run.scored = score; defi('score', score, true); defi('chrono', score, true); if (run.clean) defi('scorePropre', score, true); if (run.noPow) defi('sansPouvoir', score, true); }
     defi('temps', dt / 60); if (run.clean) defi('tempsPropre', dt / 60);
@@ -11373,6 +12205,20 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       ctx.restore();
     }
     else if (p.shape === 'pixel') ctx.fillRect(Math.round(p.x / 4) * 4, Math.round(p.y / 4) * 4, z, z);
+    else if (p.shape === 'neon') {
+      // fumée néon : un point très lumineux avec un cœur blanc
+      ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.6));
+      ctx.drawImage(softSprite(p.color), p.x - z * 2.5, p.y - z * 2.5, z * 5, z * 5);
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(p.x, p.y, z * .35, 0, 7); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+    } else if (p.shape === 'flake') {
+      // flocon à six branches
+      ctx.lineWidth = 1.1; ctx.beginPath();
+      for (let k = 0; k < 3; k++) { const a = k * Math.PI / 3 + (p.rot || 0); ctx.moveTo(p.x - Math.cos(a) * z, p.y - Math.sin(a) * z); ctx.lineTo(p.x + Math.cos(a) * z, p.y + Math.sin(a) * z); }
+      ctx.stroke();
+    } else if (p.shape === 'confetti') {
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot || 0); ctx.scale(1, Math.cos((p.rot || 0) * 2.3));
+      ctx.fillRect(-z / 2, -z / 4, z, z / 2); ctx.restore();
+    }
     else if (p.shape === 'bubble') { ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(p.x, p.y, z * (1.4 - p.life), 0, 7); ctx.stroke(); }
     else if (p.shape === 'glow') { ctx.globalAlpha *= .5; ctx.beginPath(); ctx.arc(p.x, p.y, z * Math.min(1, p.life), 0, 7); ctx.fill(); }
     else if (p.shape === 'heart') {
@@ -14778,7 +15624,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   }
 
   // les objets qui changent l'allure de la fusée : on les montre dans la barre d'achat
-  const PV_KEYS = ['color', 'accent', 'motif', 'glass', 'flame', 'trail'];
+  const PV_KEYS = ['color', 'accent', 'motif', 'glass', 'flame', 'trail', 'aura', 'boom'];
   function drawBuyPreview(t) {
     const cv = $('buyPv');
     if (cv.hidden || !preview) return;
@@ -14867,6 +15713,12 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); drawBuyPreview(t); } catch (e) { console.error(e); }
+    // Collection : le coffre qui flotte et le skin choisi, animé
+    if (!$('collection').hidden && $('chestFx').hidden) try {
+      drawChestIdle(t);
+      const sc = collSel && $('collGrid').querySelector('.ccard.sel canvas');
+      if (sc) drawItemPv(sc.getContext('2d'), 160, 110, collSel.key, collSel.id, t);
+    } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
   }
   reset();
@@ -14875,6 +15727,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   if (firstCheck) checkTrophies(true);
   renderAtelier();
   updateTrophyBtn();
+  updateCollBtn();
   renderDefi();
   requestAnimationFrame(loop);
 })();
