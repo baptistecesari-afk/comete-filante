@@ -1331,14 +1331,19 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 .dendreward small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
 /* les boutons au doigt : en bas à droite pour le joueur du bas, à l'envers en haut à gauche pour celui du haut */
 #duelPads { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
-.dpad { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; align-items: flex-end; pointer-events: none; }
+.dpad { position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 168px; height: 162px; pointer-events: none; }
 .dpad.top { right: auto; bottom: auto; left: calc(12px + env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px)); transform: rotate(180deg); }
 .dpad button { --p: 0; pointer-events: auto; touch-action: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 15px var(--display);
   border: 2px solid #ffffff59; background: conic-gradient(rgba(8, 4, 24, .75) calc(var(--p) * 360deg), color-mix(in srgb, var(--star) 28%, rgba(20, 14, 48, .7)) 0); box-shadow: 0 6px 16px #0007; }
-.dpad button .ic { width: 22px; height: 22px; }
+.dpad button .ic { width: 24px; height: 24px; }
+.dpad button { position: absolute; width: 66px; height: 66px; align-content: center; gap: 1px; }
+.dpad button small { font: 600 10px var(--body, system-ui); letter-spacing: .02em; opacity: .9; }
+.dpad [data-k="s2"] { right: 98px; bottom: 4px; }
+.dpad [data-k="s1"] { right: 10px; bottom: 96px; }
 .dpad button.wait { opacity: .7; }
 .dpad button.on { transform: scale(.92); border-color: var(--star); }
-.dpad .dfire { width: 74px; height: 74px; background: color-mix(in srgb, #ff7aa8 40%, rgba(20, 14, 48, .7)); }
+body.dfight #game { cursor: none; }
+.dpad .dfire { right: 0; bottom: 0; width: 88px; height: 88px; background: color-mix(in srgb, #ff7aa8 40%, rgba(20, 14, 48, .7)); }
 @media (max-width: 720px) {
   .dgrid .bgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .dgrid .btile img { width: 40px; height: 40px; }
@@ -1807,13 +1812,13 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 <button class="btn-pause dpause" id="duelPause" aria-label="Pause" hidden><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-pause"/></svg></button>
 <div id="duelPads" hidden>
   <div class="dpad" id="dpad0" data-side="0">
-    <button type="button" data-k="s2" aria-label="Compétence 2"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg></button>
-    <button type="button" data-k="s1" aria-label="Compétence 1"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></button>
+    <button type="button" data-k="s2" aria-label="Super pouvoir"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg><small>Super</small></button>
+    <button type="button" data-k="s1" aria-label="Frappe spécifique"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg><small>Frappe</small></button>
     <button type="button" data-k="fire" class="dfire" aria-label="Tir">Tir</button>
   </div>
   <div class="dpad top" id="dpad1" data-side="1">
-    <button type="button" data-k="s2" aria-label="Compétence 2"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg></button>
-    <button type="button" data-k="s1" aria-label="Compétence 1"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg></button>
+    <button type="button" data-k="s2" aria-label="Super pouvoir"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg><small>Super</small></button>
+    <button type="button" data-k="s1" aria-label="Frappe spécifique"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg><small>Frappe</small></button>
     <button type="button" data-k="fire" class="dfire" aria-label="Tir">Tir</button>
   </div>
 </div>
@@ -15894,6 +15899,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   // Chaque boss vit dans « son » repère, exactement comme en mode histoire : lui en haut, l'adversaire en bas.
   // Le repère du boss du bas (joueur 1) est simplement tourné d'un demi-tour. Ainsi chaque boss rejoue
   // ses VRAIES attaques du mode histoire (mêmes fonctions), c'est le joueur qui décide quand il tire.
+  const D_PTR_SPD = 2.6, D_KEY_SPD = 1.35;
   const DW = 600, DH = 880, D_BS = 1.12, D_CALM = .9;
   const D_TARGET = 5.2;      // dégâts par seconde visés contre une cible qui bouge sans esquiver (sert à équilibrer les boss)
   const D_SIG_DMG = 9;       // dégâts d'une attaque signature qui touche (laser, éclair, colonne…)
@@ -15919,20 +15925,23 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const dWorldOf = def => Math.max(0, WORLDS.findIndex(w => w.bosses.includes(def)));
   const dBoss = id => ALL_BOSSES.find(d => d.id === id);
   const dClamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  // touches du clavier (par leur place, comme ça Z Q S D marche en AZERTY et W A S D en QWERTY)
+  // commandes : le joueur 1 joue à la souris (le boss suit le pointeur, clic gauche = tir, Espace = super pouvoir, Z = frappe),
+  // le joueur 2 au clavier (flèches, K = tir, L = super pouvoir, M = frappe). s1 = frappe spécifique, s2 = super pouvoir.
+  // (Z est pris par sa place sur le clavier en AZERTY comme en QWERTY)
   const D_KEYS = [
-    { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], s1: ['KeyE'], s2: ['KeyR'] },
-    { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['KeyK', 'Numpad1', 'Numpad0'], s1: ['KeyL', 'Numpad2'], s2: ['Semicolon', 'Numpad3'] },
+    { up: [], down: [], left: [], right: [], fire: [], s1: ['KeyW', 'KeyZ'], s2: ['Space'] },
+    { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['KeyK', 'Numpad1', 'Numpad0'], s1: ['Semicolon', 'Numpad3'], s2: ['KeyL', 'Numpad2'] },
   ];
   let dKeyName = { KeyW: 'Z', KeyA: 'Q', KeyS: 'S', KeyD: 'D', Space: 'Espace', KeyE: 'E', KeyR: 'R', KeyK: 'K', KeyL: 'L', Semicolon: 'M' };
   try { if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then(m => { for (const k of Object.keys(dKeyName)) { const v = m.get(k); if (v && k !== 'Space') dKeyName[k] = v.toUpperCase(); } }).catch(() => {}); } catch (e) {}
-  const dMoveKeys = s => s ? 'Flèches' : ['KeyW', 'KeyA', 'KeyS', 'KeyD'].map(k => dKeyName[k]).join(' ');
-  const dKeyOf = (s, k) => dKeyName[D_KEYS[s][k][0]] || D_KEYS[s][k][0];
+  const dMoveKeys = s => s ? 'Flèches' : 'Souris';
+  const D_J1_LABEL = { fire: 'Clic', s1: 'Z', s2: 'Espace' };
+  const dKeyOf = (s, k) => s === 0 ? D_J1_LABEL[k] : dKeyName[D_KEYS[s][k][0]] || D_KEYS[s][k][0];
   const dTouch = () => matchMedia('(pointer: coarse)').matches;
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
   // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
-  const dStatCache = {}, D_TUNE = { mere: 2.44, reine: 1.52, oeil: 1.09, crabe: 1.76, meduse: 1.26, pieuvre: 0.6, spectre: 0.99, forteresse: 0.58, dragon: 0.78, zorg: 0.4, pingouin: 3, yeti: 1.2, flocon: 0.98, morse: 2.58, golemglace: 0.75, hibou: 1.26, serpent: 2.66, sorciere: 1.37, mammouth: 1.19, glacia: 0.65, salamandre: 1.19, magmagolem: 1.11, phenix: 1.91, ver: 0.89, cyclope: 1.09, scorpion: 0.81, chauvesouris: 3, volcan: 2.17, hydre: 0.45, magmor: 0.41, fleur: 1.02, mante: 2.54, champignon: 1.0, araignee: 0.63, cameleon: 2.72, scarabee: 1.17, liane: 0.57, grenouille: 3, essaim: 1.16, ruche: 1.3, sentinelle: 1.18, miroir: 1.43, horloge: 0.99, glitch: 0.88, prisme: 0.96, jumelles: 0.45, trounoirv: 5, architecte: 0.65, oeilneant: 1.34, devoreur: 0.56 };
+  const dStatCache = {}, D_TUNE = { mere: 1.64, reine: 1.96, oeil: 1.17, crabe: 1.91, meduse: 1.17, pieuvre: 0.63, spectre: 1.13, forteresse: 0.71, dragon: 0.71, zorg: 0.39, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.9, golemglace: 0.74, hibou: 1.3, serpent: 3.11, sorciere: 2.49, mammouth: 0.85, glacia: 0.54, salamandre: 1.38, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.34, scorpion: 0.85, chauvesouris: 4.52, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 2.92, champignon: 0.98, araignee: 0.63, cameleon: 2.58, scarabee: 1.13, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.36, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.66, oeilneant: 0.87, devoreur: 0.6 };
   function dStats(def) {
     if (dStatCache[def.id]) return dStatCache[def.id];
     const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
@@ -15961,7 +15970,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         // la moitié du temps elle se balance vite, l'autre moitié elle bouge à peine
         const fast = i < N / 2 ? 1 : .2;
         F.foe.x = DW / 2 + (Math.sin(tt * 1.3) * .7 + Math.sin(tt * .37) * .3) * DW * .34 * fast; F.foe.y = DH - 170 + Math.sin(tt * .7) * 60 * fast;
-        dTick(F, dt, { fire: true, s1: F.cd1 <= 0, s2: false });
+        dTick(F, dt, { fire: true, s1: F.cd1 <= 0, s2: !F.st.alt });
         for (const b of F.bul) {
           if (!b._c) { b._c = 1; made++; }
           if (!b.dead && Math.hypot(b.x - F.foe.x, b.y - F.foe.y) < 30 + (b.s || 5)) { b.dead = true; hits++; }
@@ -16012,9 +16021,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     F.hurt = Math.max(0, F.hurt - dt); F.guard = Math.max(0, F.guard - dt);
     it.hp = F.hp; it.maxHp = F.st.hp;
     dWith(F, () => {
-      // compétence 2 : l'attaque signature (la même qu'en mode histoire)
-      // (un boss sans compétence 1 a son attaque signature sur les deux touches)
-      if ((F.st.alt ? inp.s2 : inp.s1 || inp.s2) && F.cd2 <= 0 && !it.pw) { it.spT = 0; F.cd2 = F.cd2Max; }
+      // super pouvoir : l'attaque signature (la même qu'en mode histoire)
+      if (inp.s2 && F.cd2 <= 0 && !it.pw) { it.spT = 0; F.cd2 = F.cd2Max; }
       const lock = updateSig(it, dt, D_BS);
       it.spT = 99;
       F.free = lock;
@@ -16022,6 +16030,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
         // tir de base : les attaques habituelles du boss avancent seulement tant que le joueur tient la touche
         const f = inp.fire ? dt * D_CALM : 0;
         if (inp.fire && it.fireT > 50) it.fireT = 1.2;
+        // on appuie sur le tir : le premier tir part tout de suite (au plus une fois par seconde, pour ne pas tirer plus vite en tapotant)
+        if (inp.fire && !F.fireOn && it.t - (F.fireKick || -9) > 1) { F.fireKick = it.t; it.fireT = Math.min(it.fireT, .12); it.aimT = Math.min(it.aimT, .5); }
+        F.fireOn = !!inp.fire;
         it.fireT -= f; it.aimT -= f;
         if (!F.st.alt) it.altT -= f;
         else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) it.altT = 0;
@@ -16047,6 +16058,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   function dMoveBullets(dt) {
     for (const b of ebullets) {
       if (b.dead) continue;
+      // un tir oublié (qui tourne ou attend) finit toujours par disparaître
+      b.age = (b.age || 0) + dt; if (b.age > 14) { b.dead = true; continue; }
+      b.px = b.x; b.py = b.y;
       if (b.home > 0) {
         b.home -= dt; const a = Math.atan2(player.y - b.y, player.x - b.x), sp2 = b.hsp || 150;
         b.vx += (Math.cos(a) * sp2 - b.vx) * Math.min(1, dt * 1.8); b.vy += (Math.sin(a) * sp2 - b.vy) * Math.min(1, dt * 1.8);
@@ -16089,7 +16103,6 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     const it = F.it, P = it.pw, on = P && P.t >= P.warn, r = dReal(F, it.x, it.y);
     if (it.invuln || (on && P.kind === 'bubble') || F.guard > 0) { burst(r.x, r.y, F.guard > 0 ? '#7ad8ff' : '#ffffff', 3, 100, 2); return false; }
     if (on && P.kind === 'mirror') { dWith(F, () => aimed(it.x, it.y, 300, '#ffffff', 5)); return false; }
-    if (F.hurt > 0) return false;
     F.hp = Math.max(0, F.hp - dmg); it.hp = F.hp; it.hitT = .08; F.hurt = .07;
     if (by) by.dealt += dmg;
     D.hitT[F.side] = .25;
@@ -16107,12 +16120,19 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     }
     return true;
   }
+  // distance d'un point au trajet d'un tir pendant une image
+  function dSegDist(x1, y1, x2, y2, px, py) {
+    const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy;
+    const k = l ? dClamp(((px - x1) * dx + (py - y1) * dy) / l, 0, 1) : 0;
+    return Math.hypot(x1 + dx * k - px, y1 + dy * k - py);
+  }
   // les tirs (et les bestioles) d'un boss contre l'autre
   function dCollide(A, B) {
     const bx = DW - B.it.x, by = DH - B.it.y, R = dHitR(B);
     for (const b of A.bul) {
       if (b.dead) continue;
-      if (Math.abs(b.x - bx) < R + 20 && Math.hypot(b.x - bx, b.y - by) < R + (b.s || 5) - 1) {
+      // on regarde tout le trajet du tir depuis l'image d'avant : un tir rapide ne peut pas « sauter » par-dessus le boss
+      if (dSegDist(b.px ?? b.x, b.py ?? b.y, b.x, b.y, bx, by) < R + (b.s || 5) - 1) {
         b.dead = true;
         const r = dReal(A, b.x, b.y); burst(r.x, r.y, b.c || '#ffffff', 3, 90, 2);
         dHurt(B, A.st.dmg, A);
@@ -16143,11 +16163,16 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       const sp = F.st.spd * (on && P.kind === 'freeze' ? .45 : 1);
       if (inp.lx !== undefined) { vx = inp.lx; vy = inp.ly; }
       else if (inp.tx != null) {
-        // le doigt : le boss file vers l'endroit visé
-        const tl = dReal(F, inp.tx, inp.ty), dx = tl.x - it.x, dy = tl.y - it.y, dd = Math.hypot(dx, dy), k = Math.min(1, dd / (sp * dt + .01));
-        if (dd > 1) { vx = dx / dd * k; vy = dy / dd * k; }
-      } else { vx = F.side === 0 ? -inp.mx : inp.mx; vy = F.side === 0 ? -inp.my : inp.my; }
-      const l = Math.hypot(vx, vy); if (l > 1) { vx /= l; vy /= l; }
+        // la souris ou le doigt : le boss glisse vers le point visé, vite de loin et en douceur à l'arrivée (sans à-coups)
+        const tl = dReal(F, inp.tx, inp.ty), dx = tl.x - it.x, dy = tl.y - it.y, dd = Math.hypot(dx, dy);
+        if (dd > .3) { const step = Math.min(dd * Math.min(1, dt * 22), sp * D_PTR_SPD * dt); it.x += dx / dd * step; it.y += dy / dd * step; }
+      } else {
+        // au clavier, « haut » fait toujours avancer vers l'adversaire, même pour le joueur du haut de l'écran
+        const low = F.side === (duel.view || 0);
+        vx = low ? -inp.mx : inp.mx; vy = -inp.my;
+        vx *= D_KEY_SPD; vy *= D_KEY_SPD;
+      }
+      const l = Math.hypot(vx, vy), lm = inp.lx !== undefined ? 1 : D_KEY_SPD; if (l > lm) { vx *= lm / l; vy *= lm / l; }
       it.x += vx * sp * dt; it.y += vy * sp * dt;
     }
     // rayon tracteur, attraction : l'autre boss nous tire vers lui
@@ -16159,8 +16184,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   }
   function dKeepIn(F) {
     const it = F.it, z = duel.zone, m = it.r * 1.05;
-    if (F.free || it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, DH - 90); }
-    else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, DH / 2 - 26); }
+    // même une glissade, une charge ou un saut ne fait jamais sortir le boss de sa moitié (sous terre, il peut juste disparaître par l'arrière)
+    if (it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, DH / 2 - it.r * .7); }
+    else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, DH / 2 - it.r * .7); }
   }
   // bonus qui apparaissent au milieu de l'arène : soin, bouclier, recharge instantanée
   const D_PICKS = { vie: ['Soin', '#ff7aa8'], shield: ['Bouclier', '#7ad8ff'], charge: ['Recharge', '#ffd86b'] };
@@ -16254,7 +16280,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   const dKeys = new Set();
   const dHeld = (s, k) => D_KEYS[s][k].some(c => dKeys.has(c));
   const dEdge = [{ s1: false, s2: false }, { s1: false, s2: false }];
-  const dPad = [{ fire: false, s1: 0, s2: 0, tx: null, ty: null }, { fire: false, s1: 0, s2: 0, tx: null, ty: null }];
+  const dPad = [{ fire: false, click: false, drag: false, mouse: false, s1: 0, s2: 0, tx: null, ty: null }, { fire: false, click: false, drag: false, mouse: false, s1: 0, s2: 0, tx: null, ty: null }];
   function dReadKeys(s, both) {
     const ks = both ? [0, 1] : [s];
     const any = k => ks.some(i => dHeld(i, k));
@@ -16262,7 +16288,10 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     inp.mx = (any('right') ? 1 : 0) - (any('left') ? 1 : 0);
     inp.my = (any('down') ? 1 : 0) - (any('up') ? 1 : 0);
     const P = dPad[s];
-    inp.fire = any('fire') || P.fire;
+    // au téléphone, le boss tire tout seul tant que le doigt le guide
+    inp.fire = any('fire') || P.fire || P.click || P.drag;
+    // une flèche reprend la main sur la souris
+    if ((inp.mx || inp.my) && P.mouse) { P.tx = P.ty = null; P.mouse = false; }
     // compétences : on garde l'appui jusqu'à ce qu'il serve (un appui rapide n'est jamais perdu)
     const s1 = any('s1'), s2 = any('s2');
     inp.s1 = (s1 && !dEdge[s].s1) || P.s1 > 0; inp.s2 = (s2 && !dEdge[s].s2) || P.s2 > 0;
@@ -16273,7 +16302,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   }
   // l'ordinateur d'entraînement : il esquive le tir le plus menaçant, sinon il se place face à l'adversaire
   function dBot(F, O) {
-    const it = F.it, inp = { fire: true, s1: F.cd1 <= 0 && Math.random() < .02, s2: F.cd2 <= 0 && Math.random() < .01, lx: 0, ly: 0 };
+    const it = F.it, inp = { fire: true, s1: F.cd1 <= 0 && Math.random() < .02, s2: F.cd2 <= 0 && Math.random() < (F.st.alt ? .01 : .03), lx: 0, ly: 0 };
     let best = null, bd = 1e9;
     for (const b of O.bul) {
       const x = DW - b.x, y = DH - b.y, vy = -b.vy, vx = -b.vx;
@@ -16326,7 +16355,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   // au doigt, sur un écran en hauteur, l'arène monte un peu pour laisser la place aux boutons en dessous
   function dArena() {
     const s = Math.min(W / DW, H / DH), spare = H - DH * s;
-    const y = duel && duel.mode !== 'local' && dTouch() ? Math.max(0, Math.min(spare / 2, spare - 104 / camS)) : spare / 2;
+    const y = duel && duel.mode !== 'local' && dTouch() ? Math.max(0, Math.min(spare / 2, spare - 172 / camS)) : spare / 2;
     return { s, x: (W - DW * s) / 2, y };
   }
   // dessiner dans le repère d'un boss (tourné pour celui du bas)
@@ -16476,8 +16505,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     if (k > .12) ctx.fillText(`${Math.ceil(F.hp)} PV`, 24 + shk, rowBar + .5);
     // les 3 boutons
     // les touches s'affichent seulement pour les boss pilotés au clavier sur cet appareil
-    const keys = D.mode === 'local' ? F.side : F.side === D.view ? -1 : -2, touch = dTouch();
-    const btns = [['fire', 'Tir', 0, 0, F.def.col]].concat(F.st.alt ? [['s1', F.st.altName, F.cd1, F.cd1Max, '#ffd86b'], ['s2', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol]] : [['s1', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol, false, 's2']]);
+    const keys = D.mode === 'local' ? F.side : F.side === D.view ? 0 : -2, touch = dTouch();
+    // tir, super pouvoir (étoile), et la frappe spécifique (éclair) seulement pour les boss qui en ont une
+    const btns = [['fire', 'Tir', 0, 0, F.def.col], ['s2', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol]].concat(F.st.alt ? [['s1', F.st.altName, F.cd1, F.cd1Max, '#ffd86b']] : []);
     if (!padSide) btns.forEach(([k2, label, cd, mx, c, off, glyph], i) => {
       const x = DW - 150 + i * 52 + (F.st.alt ? 0 : 52), y = bottom ? DH - 40 : 40, R = 19;
       ctx.save();
@@ -16493,7 +16523,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       // la touche à utiliser (sur ordinateur), sinon le nom
       ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(239, 234, 255, .8)';
       const ky = bottom ? y - R - 7 : y + R + 9;
-      const kname = touch || keys === -2 ? '' : keys >= 0 ? dKeyOf(keys, k2) : `${dKeyOf(0, k2)} / ${dKeyOf(1, k2)}`;
+      const kname = touch || keys < 0 ? '' : dKeyOf(keys, k2);
       if (kname && !off) ctx.fillText(kname, x, ky);
       ctx.restore();
     });
@@ -16601,7 +16631,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     document.querySelectorAll('#duelModes button').forEach(b => b.classList.toggle('on', b.dataset.mode === dMode));
     $('duelOnline').hidden = !online;
     $('duelLocalHelp').hidden = dMode !== 'local' || dTouch();
-    if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> ${dMoveKeys(0)} · tir ${dKeyOf(0, 'fire')} · compétences ${dKeyOf(0, 's1')} et ${dKeyOf(0, 's2')}</span><span><b style="color:${D_COL[1]}">Joueur 2</b> ${dMoveKeys(1)} · tir ${dKeyOf(1, 'fire')} · compétences ${dKeyOf(1, 's1')} et ${dKeyOf(1, 's2')}</span>`;
+    if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> le boss suit la souris · tir clic gauche · super pouvoir Espace · frappe Z</span><span><b style="color:${D_COL[1]}">Joueur 2</b> flèches (haut = avancer) · tir ${dKeyOf(1, 'fire')} · super pouvoir ${dKeyOf(1, 's2')} · frappe ${dKeyOf(1, 's1')}</span>`;
     // les deux places
     const names = dNames();
     for (let i = 0; i < 2; i++) {
@@ -16625,9 +16655,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       info.innerHTML = `<div class="dihead"><img src="${bossPortrait(cur)}" alt=""><div><small>Monde ${dWorldOf(cur) + 1} · ${cur.place}</small><b>${cur.name}</b><em>« ${cur.quote} »</em></div></div>`
         + `<div class="distats">${[['Vie', st.hp, 60, 140], ['Vitesse', st.spd, 200, 290], ['Force des tirs', st.dmg, 1, 10], ['Nombre de tirs', st.out, 1, 16]].map(([n, v, lo, hi]) => `<span>${n}<i><u style="width:${bar(v, lo, hi)}%"></u></i></span>`).join('')}</div>`
         + `<ul class="diskills">`
-        + `<li><span class="dk dk-fire">${kn('fire')}<b>Tir</b></span><span>${cur.desc} <small>Garde la touche appuyée.</small></span></li>`
-        + (st.alt ? `<li><span class="dk dk-s1">${kn('s1')}<b>Compétence 1</b></span><span><b>${st.altName}</b> <small>Recharge ${Math.round(Math.max(3, st.alt * 1.25))} s</small></span></li>` : '')
-        + `<li><span class="dk dk-s2">${kn(st.alt ? 's2' : 's1')}<b>Compétence ${st.alt ? 2 : ''}</b></span><span><b>${st.sigName}</b> <small>Attaque signature · recharge 9 s</small></span></li>`
+        + `<li><span class="dk dk-fire">${kn('fire')}<b>Tir</b></span><span>${cur.desc} <small>${dTouch() ? 'Tir automatique quand tu glisses le doigt.' : ks === 0 ? 'Garde le clic enfoncé.' : 'Garde la touche appuyée.'}</small></span></li>`
+        + `<li><span class="dk dk-s2">${kn('s2')}<b>Super pouvoir</b></span><span><b>${st.sigName}</b> <small>Attaque signature · recharge 9 s</small></span></li>`
+        + (st.alt ? `<li><span class="dk dk-s1">${kn('s1')}<b>Frappe</b></span><span><b>${st.altName}</b> <small>Recharge ${Math.round(Math.max(3, st.alt * 1.25))} s</small></span></li>` : '')
         + `</ul>`;
     }
     // la grille des gardiens (les boss pas encore vaincus restent en silhouette)
@@ -16706,7 +16736,7 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
     const D = duel, touch = dTouch();
     $('duelPads').hidden = !touch;
     $('dpad1').hidden = D.mode !== 'local';
-    for (const p of dPad) { p.fire = false; p.s1 = p.s2 = 0; p.tx = p.ty = null; }
+    for (const p of dPad) { p.fire = p.click = p.drag = p.mouse = false; p.s1 = p.s2 = 0; p.tx = p.ty = null; }
   }
   const dFingers = new Map();
   function dSideAt(y) {
@@ -16723,17 +16753,35 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
   cv.addEventListener('pointerdown', e => {
     if (state !== 'duel' || !duel || e.pointerType === 'mouse') return;
     const s = dSideAt(e.clientY), F = duel.f[s], a = dToArena(e.clientX, e.clientY), r = dReal(F, F.it.x, F.it.y);
+    // le boss bouge comme le doigt, mais là où il est : le doigt peut glisser n'importe où sans le cacher
+    for (const [id, g] of dFingers) if (g.s === s) dFingers.delete(id);
     dFingers.set(e.pointerId, { s, ax: a.x, ay: a.y, bx: r.x, by: r.y });
-    dPad[s].tx = r.x; dPad[s].ty = r.y;
+    dPad[s].tx = r.x; dPad[s].ty = r.y; dPad[s].drag = true;
+    try { cv.setPointerCapture(e.pointerId); } catch (err) {}
     e.preventDefault();
   });
   cv.addEventListener('pointermove', e => {
     const f = dFingers.get(e.pointerId);
     if (!f || !duel) return;
     const a = dToArena(e.clientX, e.clientY);
-    dPad[f.s].tx = f.bx + (a.x - f.ax) * 1.3; dPad[f.s].ty = f.by + (a.y - f.ay) * 1.3;
+    dPad[f.s].tx = f.bx + (a.x - f.ax) * 1.15; dPad[f.s].ty = f.by + (a.y - f.ay) * 1.15;
   });
-  const dLift = e => { const f = dFingers.get(e.pointerId); if (!f) return; dFingers.delete(e.pointerId); if (![...dFingers.values()].some(g => g.s === f.s)) dPad[f.s].tx = dPad[f.s].ty = null; };
+  const dLift = e => { const f = dFingers.get(e.pointerId); if (!f) return; dFingers.delete(e.pointerId); if (![...dFingers.values()].some(g => g.s === f.s)) { dPad[f.s].tx = dPad[f.s].ty = null; dPad[f.s].drag = false; } };
+  // la souris : le boss du joueur 1 (ou le sien, en ligne et contre l'ordinateur) suit le pointeur ; clic gauche = tir
+  const dMouseSide = () => duel.mode === 'local' ? 0 : duel.view;
+  addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || state !== 'duel' || !duel || duel.paused) return;
+    const P = dPad[dMouseSide()], a = dToArena(e.clientX, e.clientY);
+    P.tx = a.x; P.ty = a.y; P.mouse = true;
+  });
+  cv.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || state !== 'duel' || !duel || e.button !== 0) return;
+    const P = dPad[dMouseSide()], a = dToArena(e.clientX, e.clientY);
+    P.click = true; P.tx = a.x; P.ty = a.y; P.mouse = true;
+    e.preventDefault();
+  });
+  addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button === 0) for (const p of dPad) p.click = false; });
+  cv.addEventListener('contextmenu', e => { if (state === 'duel') e.preventDefault(); });
   cv.addEventListener('pointerup', dLift); cv.addEventListener('pointercancel', dLift);
   document.querySelectorAll('.dpad').forEach(pad => {
     const s = +pad.dataset.side;
@@ -16751,13 +16799,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       const F = duel.f[duel.mode === 'local' ? s : duel.view], pad = $('dpad' + s);
       if (pad.hidden) continue;
       const b1 = pad.querySelector('[data-k="s1"]'), b2 = pad.querySelector('[data-k="s2"]');
-      b2.hidden = !F.st.alt;
-      // sans compétence de déplacement, le bouton éclair lance l'attaque signature : il prend son étoile
-      const u = b1.querySelector('use'), ic = F.st.alt ? '#ic-bolt' : '#ic-star';
-      if (u && u.getAttribute('href') !== ic) u.setAttribute('href', ic);
-      const c1 = F.st.alt ? F.cd1 : F.cd2, m1 = F.st.alt ? F.cd1Max : F.cd2Max;
-      b1.style.setProperty('--p', m1 ? (c1 / m1).toFixed(3) : 0); b2.style.setProperty('--p', (F.cd2 / F.cd2Max).toFixed(3));
-      b1.classList.toggle('wait', c1 > 0); b2.classList.toggle('wait', F.cd2 > 0);
+      b1.hidden = !F.st.alt;
+      b1.style.setProperty('--p', F.cd1Max ? (F.cd1 / F.cd1Max).toFixed(3) : 0); b2.style.setProperty('--p', (F.cd2 / F.cd2Max).toFixed(3));
+      b1.classList.toggle('wait', F.cd1 > 0); b2.classList.toggle('wait', F.cd2 > 0);
     }
   }
 
@@ -17013,6 +17057,8 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
       onScreen(() => drawField(() => { if (netRole === 'guest' && netPeer) { cfg = netPeer.cfg; try { draw(t); } finally { cfg = netMine; } } else draw(t); }));
     }
     if (netRole === 'host') netHostSend(t);
+    const dFight = state === 'duel' && !!duel && !duel.paused && duel.phase !== 'end';
+    if (dFight !== document.body.classList.contains('dfight')) document.body.classList.toggle('dfight', dFight);
     if (state === 'duel') { dHostSend(t); dPadUi(); if (!$('duelEnd').hidden) try { drawDuelWinner(t); } catch (e) { console.error(e); } }
     if (!$('team').hidden) drawTeam(t);
     drawFill(t);
