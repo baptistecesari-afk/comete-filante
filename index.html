@@ -1285,6 +1285,9 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 #dslot1 span { align-items: flex-end; }
 .dvs { font-family: var(--display); color: #ff7aa8; font-size: 22px; text-shadow: 0 0 16px #ff7aa880; }
 .dvs .ic { width: 30px; height: 30px; margin: 0; }
+.dlevels { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -4px 0 0; font-size: 13px; color: var(--muted); }
+.dlevels .cinetabs { margin: 0; }
+.dlevels .cinetabs button { padding: 6px 14px; font-size: 13px; }
 .dhelp { margin: -4px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; font-size: 13px; color: var(--muted); text-align: center; }
 .dinfo { padding: 14px 16px; border-radius: 20px; background: #0b0820b3; border: 1.5px solid color-mix(in srgb, var(--w2) 40%, transparent); display: flex; flex-direction: column; gap: 12px; }
 .dempty { margin: 0; text-align: center; color: var(--muted); }
@@ -2087,6 +2090,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       <button type="button" class="dslot" id="dslot1" data-side="1"><img alt=""><span><small></small><b></b></span></button>
     </div>
     <p class="dhelp" id="duelLocalHelp" hidden></p>
+    <div class="dlevels" id="duelLevels" hidden><span>Ordinateur</span><div class="cinetabs" role="tablist"><button type="button" role="tab" data-lvl="facile">Facile</button><button type="button" role="tab" data-lvl="normal">Normal</button><button type="button" role="tab" data-lvl="coriace">Coriace</button></div></div>
     <div class="dinfo" id="duelInfo"></div>
     <div class="dgrid" id="duelGrid"></div>
     <div class="row mpbtns dbtns">
@@ -6181,7 +6185,12 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const g = P.t - P.warn, first = g >= 0 && !P.started;
     if (first) P.started = true;
     const lock = P.kind === 'dash' || P.kind === 'teleport';
-    if (g < 0) { if (P.kind === 'teleport') it.alpha = 1 - P.t / P.warn; return lock; }
+    if (g < 0) {
+      if (P.kind === 'teleport') it.alpha = 1 - P.t / P.warn;
+      // en duel, le laser suit sa cible pendant l'annonce et se fige juste avant de tirer (on peut toujours l'esquiver)
+      if (P.kind === 'laser' && player.sigR && P.t < P.warn - .4) d.xs = d.xs.map((x, i) => clampX(player.x + (i - (d.xs.length - 1) / 2) * 120));
+      return lock;
+    }
     // les attaques spéciales du boss touchent les deux fusées
     const hit = pl => { if (!playerSafe(pl)) { hitPlayer(pl); return true; } return false; };
     const k = P.kind;
@@ -6190,10 +6199,11 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     } else if (k === 'mines' && first) {
       for (let i = 0; i < 3 + Math.round(tier * 2); i++) shot(it.x, it.y + 20, (Math.random() - .5) * 260, 60 + Math.random() * 80, P.col, 9, { fuse: 1.4 + Math.random() * .6, fn: 6 + Math.round(tier * 3), fs: 150 * bs, fc: P.col });
     } else if (k === 'laser' || k === 'pillars') {
-      for (const x of d.xs) for (const pl of rockets()) if (Math.abs(pl.x - x) < (k === 'laser' ? 13 : 16) && (k === 'pillars' || pl.y > it.y) && hit(pl)) return true;
+      // pl.sigR : en duel, la cible est un boss entier (pas une petite fusée), le rayon le touche dès qu'il en frôle le bord
+      for (const x of d.xs) for (const pl of rockets()) if (Math.abs(pl.x - x) < (k === 'laser' ? 13 : 16) + (pl.sigR || 0) && (k === 'pillars' || pl.y > it.y) && hit(pl)) return true;
     } else if (k === 'storm') {
       if (first) shake = .2;
-      for (const q of d.pts) for (const pl of rockets()) if (Math.hypot(pl.x - q.x, pl.y - q.y) < 42 && hit(pl)) return true;
+      for (const q of d.pts) for (const pl of rockets()) if (Math.hypot(pl.x - q.x, pl.y - q.y) < 42 + (pl.sigR || 0) * .8 && hit(pl)) return true;
     } else if (k === 'meteor' && first) {
       for (const x of d.xs) shot(x, -20, 0, (300 + tier * 60), P.col, 12);
     } else if (k === 'wall' && first) {
@@ -6236,7 +6246,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       d.a = a;
       for (const pl of rockets()) {
         const dx = pl.x - it.x, dy = pl.y - it.y, along = dx * Math.cos(a) + dy * Math.sin(a), side = Math.abs(-dx * Math.sin(a) + dy * Math.cos(a));
-        if (along > 0 && side < 12 && hit(pl)) return true;
+        if (along > 0 && side < 12 + (pl.sigR || 0) && hit(pl)) return true;
       }
     } else if (k === 'heal') {
       it.hp = Math.min(it.maxHp, it.hp + it.maxHp * (.05 + tier * .02) * sp / SIG_DUR.heal);
@@ -16246,7 +16256,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
   // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
-  const dStatCache = {}, D_TUNE = { mere: 1.64, reine: 1.96, oeil: 1.17, crabe: 1.91, meduse: 1.17, pieuvre: 0.63, spectre: 1.13, forteresse: 0.71, dragon: 0.71, zorg: 0.39, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.9, golemglace: 0.74, hibou: 1.3, serpent: 3.11, sorciere: 2.49, mammouth: 0.85, glacia: 0.54, salamandre: 1.38, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.34, scorpion: 0.85, chauvesouris: 4.52, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 2.92, champignon: 0.98, araignee: 0.63, cameleon: 2.58, scarabee: 1.13, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.36, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.66, oeilneant: 0.87, devoreur: 0.6 };
+  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 1.91, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 3.11, sorciere: 3.02, mammouth: 0.85, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
   function dStats(def) {
     if (dStatCache[def.id]) return dStatCache[def.id];
     const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
@@ -16322,7 +16332,9 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   function dTick(F, dt, inp) {
     const it = F.it, d = F.def;
     it.t += dt; if (it.hitT > 0) it.hitT -= dt; if (it.contactT > 0) it.contactT -= dt;
-    F.cd1 = Math.max(0, F.cd1 - dt); F.cd2 = Math.max(0, F.cd2 - dt); F.win = Math.max(0, F.win - dt);
+    // surcharge : les recharges vont 2,5 fois plus vite et on tire plus vite
+    const sg = F.surge ? 2.5 : 1;
+    F.cd1 = Math.max(0, F.cd1 - dt * sg); F.cd2 = Math.max(0, F.cd2 - dt * sg); F.win = Math.max(0, F.win - dt);
     F.hurt = Math.max(0, F.hurt - dt); F.guard = Math.max(0, F.guard - dt);
     it.hp = F.hp; it.maxHp = F.st.hp;
     dWith(F, () => {
@@ -16333,14 +16345,17 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       F.free = lock;
       if (!lock) {
         // tir de base : les attaques habituelles du boss avancent seulement tant que le joueur tient la touche
-        const f = inp.fire ? dt * D_CALM : 0;
+        const f = inp.fire ? dt * D_CALM * (F.surge ? 1.35 : 1) : 0;
         if (inp.fire && it.fireT > 50) it.fireT = 1.2;
         // on appuie sur le tir : le premier tir part tout de suite (au plus une fois par seconde, pour ne pas tirer plus vite en tapotant)
         if (inp.fire && !F.fireOn && it.t - (F.fireKick || -9) > 1) { F.fireKick = it.t; it.fireT = Math.min(it.fireT, .12); it.aimT = Math.min(it.aimT, .5); }
         F.fireOn = !!inp.fire;
-        it.fireT -= f; it.aimT -= f;
+        // une frappe lancée (rayon prisme, balayage, jet de dard, pétales…) va jusqu'au bout, même si on ne tient pas le tir
+        const busy = it.beam > 0 || it.warn > 0 || it.sweepT > 0 || it.pre > 0 || it.stream > 0 || it.aiming > 0 || it.petal > 0;
+        if ((it.beam > 0 || it.sweepT > 0 || it.stream > 0 || it.petal > 0) && it.aimT > .1) it.aimT = .1;
+        it.fireT -= f; it.aimT -= busy && !inp.fire ? dt * D_CALM : f;
         if (!F.st.alt) it.altT -= f;
-        else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) it.altT = 0;
+        else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) { it.altT = 0; if (d.id === 'cameleon') it.fireT = 0; } // le caméléon : sa frappe, c'est le coup de langue
         const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y;
         (d.move || moveW1)(it, dt, D_BS, dt, () => {});
         if (pend && it.altT > 0) { F.cd1Max = Math.max(3, it.altT * 1.25); F.cd1 = F.cd1Max; it.altT = 99; F.win = 2.4; }
@@ -16398,8 +16413,10 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   function dSigHit(F) {
     const V = dOpp(F);
     if (V.sigHurt > 0) return;
-    V.sigHurt = 1;
-    dHurt(V, D_SIG_DMG, F);
+    // un rayon (laser, arc-en-ciel) brûle tant qu'on reste dedans : un coup toutes les 0,3 s ; le reste ne touche qu'une fois
+    const P = F.it.pw;
+    V.sigHurt = P && (P.kind === 'laser' || P.kind === 'sweep') ? .3 : 1;
+    dHurt(V, D_SIG_DMG * (F.dmgK || 1), F);
   }
   function dPopReal(x, y, text, col) { pops.push({ x, y, text, color: col, life: 1.1 }); }
   function dHurt(F, dmg, by) {
@@ -16440,12 +16457,12 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       if (dSegDist(b.px ?? b.x, b.py ?? b.y, b.x, b.y, bx, by) < R + (b.s || 5) - 1) {
         b.dead = true;
         const r = dReal(A, b.x, b.y); burst(r.x, r.y, b.c || '#ffffff', 3, 90, 2);
-        dHurt(B, A.st.dmg, A);
+        dHurt(B, A.st.dmg * (A.dmgK || 1), A);
       }
     }
     for (const m of A.mins) if (!m.dead && Math.hypot(m.x - bx, m.y - by) < R + m.r) {
       m.dead = true; const r = dReal(A, m.x, m.y); explode(r.x, r.y, '#7dff8a', .6);
-      dHurt(B, Math.max(4, A.st.dmg * 2), A);
+      dHurt(B, Math.max(4, A.st.dmg * 2) * (A.dmgK || 1), A);
     }
     // les tirs de B détruisent les bestioles de A
     if (A.mins.length) for (const b of B.bul) {
@@ -16533,6 +16550,63 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       if (lo && D.phase === 'fight') dRoundOver(lo.side ? 0 : 1);
     }
   }
+  // événements de l'arène : de temps en temps, il arrive quelque chose aux deux boss en même temps (toujours pareil des deux côtés)
+  const D_EVENTS = { meteor: ['Pluie de météores !', '#ff9a3c'], comet: ['Comète d\'or !', '#ffd86b'], surge: ['Surcharge !', '#7ad8ff'] };
+  const D_EV_FIRST = 14, D_ROCK_WARN = 1.1;
+  function dEvReset(D) { D.ev = null; D.evT = D_EV_FIRST; D.evMsg = 0; D.rocks = []; D.comet = null; }
+  function dEvents(dt) {
+    const D = duel;
+    D.evMsg = Math.max(0, D.evMsg - dt);
+    if (!D.ev) {
+      D.evT -= dt;
+      if (D.evT > 0 || D.rt > D_SUDDEN - 8) return;
+      const ks = Object.keys(D_EVENTS).filter(k => k !== D.evLast), kind = ks[Math.floor(Math.random() * ks.length)];
+      D.ev = { kind, t: 0, dur: kind === 'meteor' ? 6 : kind === 'comet' ? 6.5 : 7, n: 0 };
+      D.evLast = kind; D.evMsg = 2.4; D.rocks = []; D.comet = null;
+      // la comète traverse l'arène sur la ligne du milieu : le premier boss qui la touche 3 fois la gagne
+      if (kind === 'comet') { const fromL = Math.random() < .5; D.comet = { x: fromL ? -30 : DW + 30, y: DH / 2, vx: (fromL ? 1 : -1) * (DW + 60) / 6, ph: Math.random() * 6, r: 18, rot: 0, h: [0, 0] }; }
+      beep(kind === 'surge' ? 900 : 520, .5, 'triangle', .08, kind === 'meteor' ? -300 : 400);
+      return;
+    }
+    const E = D.ev;
+    E.t += dt;
+    if (E.kind === 'meteor') {
+      // des météores tombent par paires : un dans chaque camp, à la même place vue de chaque boss
+      while (E.n < 8 && E.t > E.n * .55) {
+        E.n++;
+        const x = 70 + Math.random() * (DW - 140), y = DH / 2 + 70 + Math.random() * (DH / 2 - 190), r = 15 + Math.random() * 6;
+        for (const [qx, qy] of [[x, y], [DW - x, DH - y]]) D.rocks.push({ id: D.rockN = (D.rockN || 0) + 1, x: qx, y: qy, t: 0, r, rot: Math.random() * 6, vr: (Math.random() - .5) * 3, shape: Array.from({ length: 9 }, () => .75 + Math.random() * .35) });
+      }
+      for (const q of D.rocks) {
+        q.t += dt; q.rot += q.vr * dt;
+        if (q.t >= D_ROCK_WARN && !q.done) {
+          q.done = true;
+          for (const F of D.f) { const r = dReal(F, F.it.x, F.it.y); if (Math.hypot(r.x - q.x, r.y - q.y) < 40 + dHitR(F)) dHurt(F, 7, null); }
+          explode(q.x, q.y, '#ff9a3c', .7, 'roche'); shake = Math.max(shake, .15); beep(120, .25, 'sawtooth', .07, -60);
+        }
+      }
+      D.rocks = D.rocks.filter(q => q.t < D_ROCK_WARN + .1);
+    } else if (E.kind === 'comet' && D.comet) {
+      const c = D.comet;
+      c.x += c.vx * dt; c.y = DH / 2 + Math.sin(E.t * 2.2 + c.ph) * 34; c.rot += dt * 3;
+      if (Math.random() < .5) parts.push({ x: c.x, y: c.y, vx: -c.vx * .2 + (Math.random() - .5) * 40, vy: (Math.random() - .5) * 40, life: .5, max: .5, color: '#ffd86b', size: 3 });
+      for (const F of D.f) for (const b of F.bul) {
+        if (b.dead) continue;
+        const r = dReal(F, b.x, b.y);
+        if (Math.hypot(r.x - c.x, r.y - c.y) > c.r + (b.s || 5)) continue;
+        b.dead = true; c.h[F.side]++; burst(c.x, c.y, '#ffd86b', 5, 120, 2); beep(1300 + c.h[F.side] * 200, .06, 'triangle', .05);
+        if (c.h[F.side] >= 3) {
+          // le gagnant : super pouvoir et frappe rechargés, un peu de vie, et un bouclier court
+          F.cd1 = F.cd2 = 0; F.hp = F.it.hp = Math.min(F.st.hp, F.hp + Math.round(F.st.hp * .15)); F.guard = Math.max(F.guard, 2);
+          dPopReal(c.x, c.y - 24, `Comète pour ${F.name} !`, D_COL[F.side]);
+          burst(c.x, c.y, '#ffd86b', 30, 260, 4); beep(700, .5, 'triangle', .1, 600);
+          D.comet = null; break;
+        }
+      }
+      if (D.comet && (c.x < -60 || c.x > DW + 60)) D.comet = null;
+    }
+    if (E.t >= E.dur || (E.kind === 'comet' && !D.comet)) { D.ev = null; D.rocks = []; D.comet = null; D.evT = 18 + Math.random() * 6; }
+  }
   function dPlace(F) {
     const it = F.it;
     Object.assign(it, { x: DW / 2, y: 150, fireT: 1.2, aimT: 1.2, altT: F.st.alt ? 99 : 2.5, spT: 99, pw: null, rage: false, alpha: 1, invuln: 0, hitT: 0, contactT: 0,
@@ -16551,7 +16625,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   function dNextRound() {
     const D = duel;
     if (D.matchWinner !== undefined) { dEnd(); return; }
-    D.round++; D.phase = 'count'; D.pt = 0; D.rt = 0; D.zone = { x: 0, y: 0 }; D.zoneSaid = false; D.suddenSaid = false; D.picks = []; D.pickT = 7;
+    D.round++; D.phase = 'count'; D.pt = 0; D.rt = 0; D.zone = { x: 0, y: 0 }; D.zoneSaid = false; D.suddenSaid = false; D.picks = []; D.pickT = 7; dEvReset(D);
     for (const F of D.f) dPlace(F);
   }
 
@@ -16563,6 +16637,9 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     duel = { mode, view: opt.view || 0, guest: !!opt.guest, f: defs.map((d, i) => dNewFighter(d, i, sts[i], names[i])), round: 1, phase: 'count', pt: 0, rt: 0,
       zone: { x: 0, y: 0 }, picks: [], pickT: 7, hitT: [0, 0], zoneMsg: 0, matchWinner: undefined, ids, names, arena: opt.arena ?? dWorldOf(defs[1]) };
     for (const F of duel.f) dPlace(F);
+    dEvReset(duel); duel.lvl = opt.lvl || 'normal';
+    // l'ordinateur d'entraînement : plus ou moins fort selon le niveau choisi
+    if (mode === 'bot') duel.f[1].dmgK = (D_LVLS[duel.lvl] || D_LVLS.normal).dmg;
     world = duel.arena; setTheme(1 + Math.floor(Math.random() * 3), true); resetScenery(false);
     parts = []; pops = []; flash = 0; shake = 0;
     for (const id of ['menu', 'duelPanel', 'duelEnd', 'duelMenu', 'over', 'team']) $(id).hidden = true;
@@ -16607,21 +16684,54 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     return inp;
   }
   // l'ordinateur d'entraînement : il esquive le tir le plus menaçant, sinon il se place face à l'adversaire
+  // facile : il voit les tirs plus tard, bouge moins vite et tire moins ; coriace : il voit loin, évite aussi les rayons et les météores,
+  // garde son super pouvoir pour quand il est bien placé, et va chercher les bonus et la comète
+  const D_LVLS = {
+    facile: { look: .55, sp: .6, fire: .55, s1: .008, s2: .012, dmg: .7 },
+    normal: { look: 1.1, sp: 1, fire: 1, s1: .02, s2: .03, dmg: 1 },
+    coriace: { look: 1.5, sp: 1, fire: 1, s1: .05, s2: .06, smart: true, dmg: 1.3 },
+  };
   function dBot(F, O) {
-    const it = F.it, inp = { fire: true, s1: F.cd1 <= 0 && Math.random() < .02, s2: F.cd2 <= 0 && Math.random() < (F.st.alt ? .01 : .03), lx: 0, ly: 0 };
+    const L = D_LVLS[F.lvl || (duel && duel.lvl) || 'normal'] || D_LVLS.normal, it = F.it, D = duel;
+    const fire = L.fire >= 1 || Math.sin(it.t * 1.7) > 1 - L.fire * 2;
+    const inp = { fire, s1: F.cd1 <= 0 && Math.random() < L.s1, s2: F.cd2 <= 0 && Math.random() < (F.st.alt ? L.s2 * .4 : L.s2), lx: 0, ly: 0 };
+    const reach = it.r * .9 + 10, ox = DW - O.it.x;
     let best = null, bd = 1e9;
     for (const b of O.bul) {
       const x = DW - b.x, y = DH - b.y, vy = -b.vy, vx = -b.vx;
       if (vy > -20) continue;
       const tt = (y - it.y) / -vy;
-      if (tt < 0 || tt > 1.1) continue;
+      if (tt < 0 || tt > L.look) continue;
       const px = x + vx * tt, dx = px - it.x;
-      if (Math.abs(dx) > it.r * .9 + 10) continue;
+      if (Math.abs(dx) > reach) continue;
       if (tt < bd) { bd = tt; best = dx; }
     }
+    if (L.smart) {
+      // les rayons, colonnes et éclairs annoncés par l'autre boss, et les météores qui vont tomber
+      const P = O.it.pw;
+      if (P && P.t < P.warn + .7) {
+        if ((P.kind === 'laser' || P.kind === 'pillars') && P.d.xs) for (const x of P.d.xs) { const dx = DW - x - it.x; if (Math.abs(dx) < reach + 18 && (best === null || Math.abs(dx) < Math.abs(best))) best = dx || 1; }
+        if (P.kind === 'storm' && P.d.pts) for (const q of P.d.pts) { const dx = DW - q.x - it.x; if (Math.hypot(dx, DH - q.y - it.y) < 42 + reach) best = dx || 1; }
+      }
+      for (const q of D.rocks || []) { const r = dReal(F, q.x, q.y), dx = r.x - it.x; if (Math.hypot(dx, r.y - it.y) < 40 + reach && q.t > .3) best = dx || 1; }
+      // super pouvoir : quand l'autre est en face (les rayons et les colonnes visent mieux), ou à coup sûr quand la vie baisse
+      const sk = (SIG[F.def.id] || [])[0];
+      if (F.cd2 <= 0 && ((['laser', 'pillars', 'sweep', 'storm'].includes(sk) ? Math.abs(ox - it.x) < 50 : Math.random() < .04) || F.hp < F.st.hp * .35)) inp.s2 = true;
+    }
     if (best !== null) inp.lx = best > 0 ? -1 : 1;
-    else { const tx = DW - O.it.x + Math.sin(it.t * .9) * 90; inp.lx = dClamp((tx - it.x) / 60, -1, 1) * .8; }
-    inp.ly = dClamp((150 + Math.sin(it.t * .6) * 60 - it.y) / 60, -1, 1) * .6;
+    else {
+      let tx = ox + Math.sin(it.t * .9) * (L.smart ? 40 : 90), ty = 150 + Math.sin(it.t * .6) * 60;
+      if (L.smart) {
+        // un bonus ou la comète sur la ligne du milieu : il y va s'il a le temps
+        const goal = (D.comet ? [D.comet] : []).concat(D.picks || []).map(k => dReal(F, k.x, k.y)).sort((a, b) => Math.abs(a.x - it.x) - Math.abs(b.x - it.x))[0];
+        if (goal && !D.comet) { tx = goal.x; ty = goal.y; }
+        else if (goal) { tx = goal.x; }
+      }
+      inp.lx = dClamp((tx - it.x) / 60, -1, 1) * .8;
+      inp.ly = dClamp((ty - it.y) / 60, -1, 1) * .6;
+    }
+    if (best !== null) inp.ly = dClamp((150 + Math.sin(it.t * .6) * 60 - it.y) / 60, -1, 1) * .6;
+    inp.lx *= L.sp; inp.ly *= L.sp;
     return inp;
   }
 
@@ -16636,7 +16746,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (D.mode === 'local') { A.inp = dReadKeys(0); B.inp = dReadKeys(1); }
     else if (D.mode === 'bot') { A.inp = dReadKeys(0, true); B.inp = dBot(B, A); }
     else { A.inp = dReadKeys(0, true); B.inp = dnet.in; }
-    for (const [F, O] of [[A, B], [B, A]]) { F.foe.x = DW - O.it.x; F.foe.y = DH - O.it.y; F.foe.r = dHitR(O); F.foe.hurt = O.sigHurt; }
+    for (const F of D.f) F.surge = !!(D.ev && D.ev.kind === 'surge');
+    for (const [F, O] of [[A, B], [B, A]]) { F.foe.x = DW - O.it.x; F.foe.y = DH - O.it.y; F.foe.r = F.foe.sigR = dHitR(O); F.foe.hurt = O.sigHurt; }
     if (D.phase === 'count' && D.pt >= 3.4) { D.phase = 'fight'; D.pt = 0; }
     if (D.phase === 'end') { updateFx(dt); return; }
     const fight = D.phase === 'fight', ddt = D.phase === 'ko' ? dt * .3 : dt;
@@ -16652,7 +16763,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       // une glissade ou une charge ne fait jamais sortir le boss par les côtés
       if (fight) dKeepIn(F);
     }
-    if (fight) { dCollide(A, B); dCollide(B, A); dPicks(dt); dZone(dt); D.rt += dt; }
+    if (fight) { dCollide(A, B); dCollide(B, A); dPicks(dt); dZone(dt); dEvents(dt); D.rt += dt; }
     if (D.phase === 'ko' && D.pt > 2.4) dNextRound();
     updateFx(dt);
   }
@@ -16729,6 +16840,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (flip) { ctx.translate(DW, DH); ctx.rotate(Math.PI); }
     // bonus
     for (const k of D.picks) { ctx.save(); if (k.life < 2 && Math.floor(k.life * 8) % 2) ctx.globalAlpha = .4; drawPickup(k, t); ctx.restore(); }
+    dDrawEvents(t, flip);
     // les bestioles, les boss, puis les attaques signature et tous les tirs (par-dessus, pour bien les voir)
     for (const F of D.f) dInFrame(F, () => {
       for (const m of F.mins) {
@@ -16777,6 +16889,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       if (D.pt < 3) dBig(String(n), DH / 2 + 10, 96 * (1.35 - k * .35), '#ffd86b', 1 - Math.max(0, k - .7) * 3);
       else dBig('Combat !', DH / 2 + 10, 64 * (1.2 - (D.pt - 3) * .4), '#ff7aa8', 1);
     } else if (D.phase === 'fight' && D.pt < .7) dBig('Combat !', DH / 2 + 10, 64, '#ff7aa8', 1 - D.pt / .7);
+    if (D.evMsg > 0 && D.ev) dBig(D_EVENTS[D.ev.kind][0], DH / 2 - 40, 28, D_EVENTS[D.ev.kind][1], Math.min(1, D.evMsg));
     if (D.zoneMsg > 0) dBig(D.suddenSaid ? 'Mort subite !' : 'La zone rétrécit !', DH / 2 + 4, 26, D.suddenSaid ? '#ff7aa8' : '#e0a0ff', Math.min(1, D.zoneMsg));
     if (D.phase === 'ko') {
       const w = D.f[D.lastWin], a = Math.min(1, D.pt * 3);
@@ -16784,6 +16897,41 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       dBig(D.matchWinner !== undefined ? `${w.name} gagne le duel !` : `Manche pour ${w.name}`, DH / 2 + 34, 22, D_COL[w.side], Math.min(1, Math.max(0, D.pt - .4) * 3));
     }
     ctx.restore();
+  }
+  // météores (une cible au sol, puis le rocher qui tombe du haut de l'écran), comète d'or, halo de surcharge
+  function dDrawEvents(t, flip) {
+    const D = duel, blink = .35 + .35 * Math.sin(t / 60);
+    for (const q of D.rocks || []) {
+      const k = Math.min(1, q.t / D_ROCK_WARN), R = 40;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 120, 60, ${blink + .25})`; ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+      ctx.beginPath(); ctx.arc(q.x, q.y, R, 0, 7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255, 120, 60, .16)'; ctx.beginPath(); ctx.arc(q.x, q.y, R * k, 0, 7); ctx.fill();
+      ctx.restore();
+      const off = (flip ? 1 : -1) * 340 * (1 - k);
+      const g = q.g || (q.g = { r: q.r, shape: q.shape, rot: 0 });
+      g.x = q.x + (flip ? -1 : 1) * 60 * (1 - k); g.y = q.y + off; g.rot = q.rot;
+      drawAsteroid(g);
+    }
+    const c = D.comet;
+    if (c) {
+      ctx.save();
+      const tl = ctx.createLinearGradient(c.x, c.y, c.x - Math.sign(c.vx) * 120, c.y);
+      tl.addColorStop(0, 'rgba(255, 216, 107, .7)'); tl.addColorStop(1, 'rgba(255, 216, 107, 0)');
+      ctx.fillStyle = tl; ctx.beginPath(); ctx.moveTo(c.x, c.y - c.r * .7); ctx.lineTo(c.x - Math.sign(c.vx) * 120, c.y); ctx.lineTo(c.x, c.y + c.r * .7); ctx.closePath(); ctx.fill();
+      ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 24; ctx.fillStyle = '#ffd86b';
+      drawStar(c.x, c.y, c.r, c.rot); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = '#fff6d6'; drawStar(c.x, c.y, c.r * .5, c.rot); ctx.fill();
+      // les coups de chaque joueur sur la comète (3 pour la gagner)
+      (c.h || [0, 0]).forEach((n, i) => { for (let j = 0; j < 3; j++) { const sy = i === 0 ? 1 : -1; ctx.fillStyle = j < n ? D_COL[i] : 'rgba(255, 255, 255, .18)'; ctx.beginPath(); ctx.arc(c.x + (j - 1) * 11, c.y + sy * (c.r + 10), 3.5, 0, 7); ctx.fill(); } });
+      ctx.restore();
+    }
+    if (D.ev && D.ev.kind === 'surge') for (const F of D.f) {
+      const r = dReal(F, F.it.x, F.it.y);
+      ctx.save(); ctx.strokeStyle = '#7ad8ff'; ctx.shadowColor = '#7ad8ff'; ctx.shadowBlur = 14; ctx.lineWidth = 3; ctx.globalAlpha = .45 + .3 * Math.sin(t / 70);
+      for (let i = 0; i < 6; i++) { const a = t / 260 + i * Math.PI / 3; ctx.beginPath(); ctx.arc(r.x, r.y, F.it.r * 1.25, a, a + .5); ctx.stroke(); }
+      ctx.restore();
+    }
   }
   function dBig(txt, y, size, col, a) {
     if (a <= 0) return;
@@ -16930,8 +17078,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   }
 
   // ----- écran de sélection -----
-  let dMode = 'local', dActive = 0, dPick = [null, null];
-  try { const v = JSON.parse(localStorage.getItem('comete-duel-choix') || '{}'); if (Array.isArray(v.p)) dPick = v.p.slice(0, 2).map(x => typeof x === 'string' ? x : null); if (['local', 'online', 'bot'].includes(v.m)) dMode = v.m; } catch (e) {}
+  let dMode = 'local', dActive = 0, dPick = [null, null], dLvl = 'normal';
+  try { const v = JSON.parse(localStorage.getItem('comete-duel-choix') || '{}'); if (Array.isArray(v.p)) dPick = v.p.slice(0, 2).map(x => typeof x === 'string' ? x : null); if (['local', 'online', 'bot'].includes(v.m)) dMode = v.m; if (D_LVLS[v.l]) dLvl = v.l; } catch (e) {}
   const dOpen = () => ALL_BOSSES.filter(d => beaten.includes(d.id));
   function openDuel() {
     initAudio();
@@ -16942,7 +17090,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (dMode === 'online' && !dnet.role) dActive = 0;
     renderDuel();
   }
-  function dSaveChoice() { try { localStorage.setItem('comete-duel-choix', JSON.stringify({ p: dPick, m: dMode })); } catch (e) {} }
+  function dSaveChoice() { try { localStorage.setItem('comete-duel-choix', JSON.stringify({ p: dPick, m: dMode, l: dLvl })); } catch (e) {} }
   function renderDuel() {
     const open = dOpen(), online = dMode === 'online', linked = online && dnetOpen();
     const pan = $('duelPanel'), cur = dBoss(dPick[dActive] || '') || null;
@@ -16951,6 +17099,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     $('duelCount').innerHTML = `<span><b>${open.length}</b>/${ALL_BOSSES.length} gardiens jouables</span><span>Duels gagnés <b>${stats.duels || 0}</b></span>`;
     document.querySelectorAll('#duelModes button').forEach(b => b.classList.toggle('on', b.dataset.mode === dMode));
     $('duelOnline').hidden = !online;
+    $('duelLevels').hidden = dMode !== 'bot';
+    document.querySelectorAll('#duelLevels button').forEach(b => b.classList.toggle('on', b.dataset.lvl === dLvl));
     $('duelLocalHelp').hidden = dMode !== 'local' || dTouch();
     if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> le boss suit la souris · tir clic gauche · super pouvoir Espace · frappe Z</span><span><b style="color:${D_COL[1]}">Joueur 2</b> flèches (haut = avancer) · tir ${dKeyOf(1, 'fire')} · super pouvoir ${dKeyOf(1, 's2')} · frappe ${dKeyOf(1, 's1')}</span>`;
     // les deux places
@@ -16997,7 +17147,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   const dNames = () => {
     const me = rocketName();
     if (dMode === 'local') return ['Joueur 1', 'Joueur 2'];
-    if (dMode === 'bot') return [me, 'Ordinateur'];
+    if (dMode === 'bot') return [me, dLvl === 'normal' ? 'Ordinateur' : 'Ordinateur ' + dLvl];
     return [me, dnet.peer ? dnet.peer.name : 'Ton ami'];
   };
   $('duelBtn').onclick = openDuel;
@@ -17007,6 +17157,11 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (!b || b.dataset.mode === dMode) return;
     if (dMode === 'online' && dnet.role) dLeave();
     dMode = b.dataset.mode; dActive = 0; dSaveChoice(); renderDuel(); beep(520, .08, 'triangle', .06);
+  };
+  $('duelLevels').onclick = e => {
+    const b = e.target.closest('button[data-lvl]');
+    if (!b || b.dataset.lvl === dLvl) return;
+    dLvl = b.dataset.lvl; dSaveChoice(); renderDuel(); beep(520, .08, 'triangle', .06);
   };
   document.querySelectorAll('.dslot').forEach(el => { el.onclick = () => { const i = +el.dataset.side; if (dMode === 'online' && i === 1) return; dActive = i; renderDuel(); }; });
   $('duelGrid').onclick = e => {
@@ -17021,7 +17176,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (dMode === 'online') { dnet.ready = !dnet.ready; dHello(); renderDuel(); dTryStart(); return; }
     const ids = dMode === 'bot' ? [dPick[0], dPick[1] || dPick[0]] : dPick.slice();
     if (!ids[0] || !ids[1]) return;
-    dStart(ids, dNames(), dMode);
+    dStart(ids, dNames(), dMode, { lvl: dLvl });
   };
   // pause, abandon, revanche
   $('duelPause').onclick = () => dPauseMenu(true);
@@ -17258,7 +17413,9 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const newPops = pops.slice(Math.max(0, pops.length - 6)).filter(p => p.life > .95).map(p => [Math.round(p.x), Math.round(p.y), p.text, p.color]);
     const m = { t: 'ds', n: ++dnet.n, ph: D.phase, pt: Math.round(D.pt * 100) / 100, rd: D.round, z: [Math.round(D.zone.x), Math.round(D.zone.y)], zm: D.zoneMsg > 0 ? 1 : 0, sd: D.suddenSaid ? 1 : 0,
       lw: D.lastWin, mw: D.matchWinner, hit: D.hitT.map(v => v > 0 ? 1 : 0), pk: D.picks.map(k => [k.kind, Math.round(k.x), Math.round(k.y), Math.round(k.life * 10) / 10]),
-      f: D.f.map(F => dSnapFighter(F, cl)), cl, pp: newPops };
+      f: D.f.map(F => dSnapFighter(F, cl)), cl, pp: newPops,
+      ev: D.ev ? [D.ev.kind, Math.round(D.ev.t * 10) / 10] : 0, em: D.evMsg > 0 ? 1 : 0, rk: (D.rocks || []).map(q => [q.id, Math.round(q.x), Math.round(q.y), Math.round(q.t * 100) / 100, Math.round(q.r)]),
+      co: D.comet ? [Math.round(D.comet.x), Math.round(D.comet.y), D.comet.h[0], D.comet.h[1], Math.sign(D.comet.vx)] : 0 };
     dSend(m, true);
     if (D.phase === 'end' && !D.endSent) { D.endSent = true; dSend({ t: 'dend', w: D.matchWinner, s0: D.f[0].wins, s1: D.f[1].wins }); }
   }
@@ -17276,6 +17433,18 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (m.mw !== undefined && m.mw !== null) D.matchWinner = m.mw | 0;
     if (Array.isArray(m.hit)) m.hit.forEach((v, i) => { if (v) D.hitT[i] = .25; });
     D.picks = (Array.isArray(m.pk) ? m.pk : []).filter(k => Array.isArray(k) && D_PICKS[k[0]]).map(k => ({ kind: k[0], x: +k[1], y: +k[2], r: 14, rot: performance.now() / 1000, t: 0, life: +k[3] }));
+    // événements de l'arène (l'hôte décide, l'invité les dessine)
+    const ek = Array.isArray(m.ev) && D_EVENTS[m.ev[0]] ? m.ev[0] : null;
+    if (ek && (!D.ev || D.ev.kind !== ek)) beep(ek === 'surge' ? 900 : 520, .5, 'triangle', .08, ek === 'meteor' ? -300 : 400);
+    D.ev = ek ? { kind: ek, t: +m.ev[1] || 0 } : null;
+    D.evMsg = m.em ? 1 : Math.max(0, (D.evMsg || 0) - .05);
+    const old = new Map((D.rocks || []).map(q => [q.id, q]));
+    D.rocks = (Array.isArray(m.rk) ? m.rk : []).filter(q => Array.isArray(q)).map(q => {
+      const o = old.get(q[0]) || { id: q[0], rot: Math.random() * 6, vr: (Math.random() - .5) * 3, shape: Array.from({ length: 9 }, () => .75 + Math.random() * .35) };
+      old.delete(q[0]); o.x = +q[1]; o.y = +q[2]; o.t = +q[3] || 0; o.r = +q[4] || 16; return o;
+    });
+    for (const q of old.values()) if (q.t > D_ROCK_WARN - .25) explode(q.x, q.y, '#ff9a3c', .7, 'roche');
+    D.comet = Array.isArray(m.co) ? { x: +m.co[0], y: +m.co[1], h: [m.co[2] | 0, m.co[3] | 0], vx: +m.co[4] || 1, r: 18, rot: performance.now() / 330 } : null;
     const cl = Array.isArray(m.cl) ? m.cl.map(String) : [];
     (Array.isArray(m.f) ? m.f : []).slice(0, 2).forEach((s, i) => {
       const F = D.f[i];
@@ -17303,7 +17472,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   // chez l'invité : son boss bouge tout de suite sous ses doigts, le reste suit les images de l'hôte
   function dGuestTick(dt) {
     const D = duel, me = D.f[D.view], O = D.f[1 - D.view];
-    D.hitT = D.hitT.map(v => Math.max(0, v - dt)); D.zoneMsg = Math.max(0, D.zoneMsg - dt * .2);
+    D.hitT = D.hitT.map(v => Math.max(0, v - dt)); D.zoneMsg = Math.max(0, D.zoneMsg - dt * .2); D.evMsg = Math.max(0, (D.evMsg || 0) - dt * .2);
+    for (const q of D.rocks || []) { q.t += dt; q.rot += q.vr * dt; }
     me.inp = dReadKeys(D.view, true);
     me.foe.x = DW - O.it.x; me.foe.y = DH - O.it.y; O.foe.x = DW - me.it.x; O.foe.y = DH - me.it.y;
     if (D.phase === 'fight' && !me.free) dMove(me, O, dt);
