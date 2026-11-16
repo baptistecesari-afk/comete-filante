@@ -1363,6 +1363,220 @@ body.dfight #game { cursor: none; }
   .distats { grid-template-columns: 1fr; }
   .diskills li { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* ===== Menu principal façon jeu mobile : tout sur un écran (barre du haut, monde, vaisseau, récompenses, défis, Jouer) et des onglets en bas ===== */
+:root { --tabh: 66px; --safeb: env(safe-area-inset-bottom, 0px); }
+#menu {
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding: 0 0 calc(var(--tabh) + var(--safeb)); overflow-x: hidden; overflow-y: auto;
+}
+.mlegacy { display: none !important; }
+.mglass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62);
+  border: 1.5px solid rgba(180, 170, 225, .45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 14px rgba(0, 0, 0, .35);
+}
+/* barre du haut */
+.mtop {
+  position: sticky; top: 0; z-index: 4; flex: none; width: min(100%, 520px); box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: max(10px, env(safe-area-inset-top, 0px)) 14px 6px;
+}
+.mprof, .mcoins, .mround, .mworld, .mquick button, .marrow, .mcine, .tabbar button, .subtabs button, .mdrow { font: inherit; color: var(--ink); cursor: var(--cur-clic); -webkit-tap-highlight-color: transparent; }
+.mprof { display: flex; align-items: center; gap: 0; padding: 0; background: none; border: 0; min-width: 0; text-align: left; }
+.mava { position: relative; z-index: 1; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; }
+.mava { background: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .02)), rgba(32, 22, 72, .85); border: 1.5px solid rgba(255, 216, 107, .6); box-shadow: 0 4px 12px rgba(0, 0, 0, .4); }
+.mava .ic { width: 32px; height: 32px; }
+.mlvl { position: relative; z-index: 2; width: 38px; height: 38px; margin-left: -12px; margin-top: 18px; display: grid; place-items: center; flex: none; }
+.mlvl .ic { position: absolute; inset: 0; width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
+.mlvl b { position: relative; font-family: var(--display); font-weight: 400; font-size: 10px; color: #2a1640; margin-top: 2px; }
+.mprofx { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin-left: 4px; }
+.mprofx b { font-family: var(--display); font-weight: 400; font-size: 13px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; }
+.mxp { display: block; width: clamp(64px, 22vw, 120px); height: 8px; border-radius: 99px; background: rgba(0, 0, 0, .45); border: 1px solid rgba(180, 170, 225, .4); overflow: hidden; }
+.mxp i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #ffb35c, var(--star)); box-shadow: 0 0 8px rgba(255, 216, 107, .6); transition: width .5s; }
+.mright { display: flex; align-items: center; gap: 8px; flex: none; }
+.mcoins { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 8px; border-radius: 999px; }
+.mcoins, .mround { background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .72); border: 1.5px solid rgba(180, 170, 225, .45); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 14px rgba(0, 0, 0, .35); }
+.mcoins .coin { width: 22px; height: 22px; margin: 0; }
+.mcoins b { font-family: var(--display); font-weight: 400; font-size: 15px; color: var(--star); font-variant-numeric: tabular-nums; min-width: 2ch; }
+.mplus { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #1a3a10; background: linear-gradient(180deg, #c8ff9a, #57e07a 55%, #239a46); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 0 #14662c; }
+.mplus .ic { width: 16px; height: 16px; }
+.mround { width: 44px; height: 44px; border-radius: 50%; padding: 0; display: grid; place-items: center; }
+.mround .ic { width: 28px; height: 28px; }
+/* les deux vues (Monde, Multijoueur) */
+#menu .mview { flex: 1 0 auto; width: min(100%, 480px); max-width: none; box-sizing: border-box; padding: 0 16px 10px; display: flex; flex-direction: column; align-items: center; gap: clamp(6px, 1.3vh, 14px); }
+#menu .mview[hidden] { display: none; }
+#menu .mlogo { padding: 0; margin-top: -2px; pointer-events: none; }
+#menu .mlogo h1 { font-size: clamp(22px, 6.2vw, 30px); line-height: 1; transform: rotate(-3deg); white-space: nowrap; }
+.mworld { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; padding: 0 6px; max-width: 100%; }
+.mworld b { font-family: var(--display); font-weight: 400; font-size: clamp(24px, 7.4vw, 36px); line-height: 1.02; text-transform: uppercase; text-wrap: balance;
+  background: linear-gradient(180deg, #fff 10%, var(--w2, var(--star)) 120%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(11, 8, 32, .7)) drop-shadow(0 0 18px color-mix(in srgb, var(--w2, var(--star)) 45%, transparent)); }
+.mworld small { font-size: 12.5px; color: #c9c2ea; display: inline-flex; align-items: center; gap: 5px; }
+.mworld small .ic { width: 15px; height: 15px; }
+.mworld.lock b { background: none; color: #8a83ad; filter: drop-shadow(0 3px 0 rgba(11, 8, 32, .7)); }
+.mstats { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; width: 100%; }
+.mstats > div:not(.mbadge) { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border-radius: 14px; background: rgba(12, 8, 32, .45); border: 1px solid rgba(180, 170, 225, .22); }
+.mstats small { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.mstats b { font-family: var(--display); font-weight: 400; font-size: 17px; font-variant-numeric: tabular-nums; }
+.mbadge { width: 66px; height: 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; isolation: isolate; }
+.mbadge::before { content: ''; position: absolute; inset: 0; z-index: -1; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--w2, var(--star)) 85%, #fff), color-mix(in srgb, var(--w1, #5b3a9e) 80%, #000)); }
+.mbadge::after { content: ''; position: absolute; inset: 3px; z-index: -1; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); background: rgba(14, 10, 36, .88); }
+.mbadge b { font-size: 18px; color: var(--star); line-height: 1; }
+.mbadge small { font-size: 9px; }
+.mbadge.full b { color: #fff; }
+/* le vaisseau équipé */
+.mship { position: relative; flex: 1 1 140px; width: 100%; min-height: 120px; max-height: 300px; }
+.mship canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mcine { position: absolute; right: 0; bottom: 4px; width: 40px; height: 40px; border-radius: 50%; padding: 0; display: grid; place-items: center; opacity: .8;
+  background: rgba(20, 14, 48, .55); border: 1px solid rgba(180, 170, 225, .35); transition: opacity .2s, transform .16s; }
+.mcine .ic { width: 22px; height: 22px; }
+/* rangée d'icônes rapides */
+.mquick { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; width: 100%; }
+.mquick button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; background: none; border: 0; min-width: 0; }
+.mq { position: relative; width: 54px; height: 54px; display: grid; place-items: center; isolation: isolate; transition: transform .16s cubic-bezier(.3, 1.6, .5, 1); }
+.mq::before { content: ''; position: absolute; inset: 0; z-index: -1; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); background: linear-gradient(180deg, rgba(255, 216, 107, .75), rgba(180, 170, 225, .35)); }
+.mq::after { content: ''; position: absolute; inset: 2px; z-index: -1; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); background: linear-gradient(180deg, #3a2a78, #1a1240 70%); }
+.mq .ic { width: 30px; height: 30px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .5)); }
+.mquick small { font-size: 10.5px; line-height: 1.1; color: #e3ddfa; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.mquick time { font-size: 10px; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 10px; white-space: nowrap; }
+.mquick button.ready time { color: #9fffc0; }
+.mquick button.off .mq { filter: grayscale(.7) brightness(.8); }
+.mdot, .tbadge { position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; display: grid; place-items: center;
+  font: 800 12px/1 var(--body); font-style: normal; color: #fff; background: linear-gradient(180deg, #ff7a7a, #e0243c); border: 2px solid #1a1240; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); }
+.mdot { animation: mdotPop 1.6s ease-in-out infinite; }
+@keyframes mdotPop { 0%, 70%, 100% { transform: scale(1); } 80% { transform: scale(1.25); } 90% { transform: scale(.95); } }
+/* défis en cours */
+.mdefis { width: 100%; display: flex; flex-direction: column; gap: 5px; }
+.mdefis h2 { margin: 0; display: flex; justify-content: space-between; align-items: baseline; font-family: var(--display); font-weight: 400; font-size: 13px; color: var(--star); text-align: left; }
+.mdefis h2 small { font-family: var(--body); font-size: 11.5px; color: var(--muted); font-weight: 600; }
+#mDefis { display: flex; flex-direction: column; gap: 5px; }
+.mdrow { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 4px 9px; width: 100%; box-sizing: border-box; padding: 6px 10px; border-radius: 12px; text-align: left;
+  background: rgba(20, 14, 48, .62); border: 1px solid rgba(180, 170, 225, .3); }
+.mdrow.today { border-color: rgba(255, 216, 107, .55); }
+.mdrow.done { border-color: rgba(87, 224, 122, .55); }
+.mdrow > .ic { width: 24px; height: 24px; grid-row: span 2; }
+.mdrow span { font-size: 12.5px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mdrow em { font-style: normal; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mdrow .mbar { grid-column: 2 / 4; height: 6px; border-radius: 99px; background: rgba(0, 0, 0, .45); overflow: hidden; }
+.mdrow .mbar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--tail), var(--star)); }
+.mdrow.done .mbar i { background: linear-gradient(90deg, #2ea852, #9fffc0); }
+/* Jouer et le choix du monde */
+.mplay { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding-top: 2px; }
+#menu .mplay .play { flex: 1 1 auto; max-width: 260px; font-size: 26px; padding: 16px 20px; }
+#menu .mplay .play:disabled { filter: grayscale(.85) brightness(.75); cursor: not-allowed; }
+#menu .mplay .play:disabled::after { animation: none; opacity: 0; }
+#menu .mplay .play small { display: block; font-family: var(--body); font-weight: 700; font-size: 11px; letter-spacing: .04em; text-transform: none; margin-top: 2px; }
+.marrow { flex: none; width: 50px; height: 50px; border-radius: 50%; padding: 0; display: grid; place-items: center; color: var(--star);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .72); border: 1.5px solid rgba(255, 216, 107, .5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), 0 6px 14px rgba(0, 0, 0, .35); transition: transform .16s cubic-bezier(.3, 1.6, .5, 1); position: relative; }
+.marrow:not(.next) .ic { transform: scaleX(-1); }
+.marrow .ic { width: 22px; height: 22px; }
+.marrow:disabled { opacity: .3; cursor: default; }
+.marrow.lock { color: #8a83ad; border-color: rgba(180, 170, 225, .35); }
+.marrow .mlk { position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; }
+.marrow .mlk .ic { width: 20px; height: 20px; transform: none; }
+/* Multijoueur : deux grandes cartes */
+.mtitle { margin: 6px 0 2px; font-family: var(--display); font-weight: 400; font-size: 26px; color: var(--star); }
+.mcard { position: relative; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: 1fr; gap: 10px; padding: 14px; border-radius: 22px; text-align: left;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .7); border: 2px solid var(--mc); box-shadow: 0 0 22px color-mix(in srgb, var(--mc) 30%, transparent), 0 10px 22px rgba(0, 0, 0, .45); }
+.mcard.duo { --mc: #4fe0c8; }
+.mcard.duel { --mc: #ff7aa8; }
+.mcpic { height: clamp(90px, 16vh, 150px); border-radius: 14px; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--mc) 35%, transparent), rgba(8, 5, 24, .85) 75%); }
+.mcduo .ic { width: 84px; height: 84px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .5)); }
+.mvs img { height: 92%; aspect-ratio: 1; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, .6)); }
+.mvs img:last-child { transform: scaleX(-1); }
+.mvs img.hide { filter: brightness(0) drop-shadow(0 0 6px rgba(255, 255, 255, .4)); opacity: .7; }
+.mvs b { font-family: var(--display); font-weight: 400; font-size: 26px; color: var(--star); text-shadow: 0 3px 0 #6a1a3a, 0 0 18px rgba(255, 122, 168, .7); }
+.mctxt b { display: block; font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--mc); margin-bottom: 4px; }
+.mctxt p { margin: 0; font-size: 14px; line-height: 1.4; color: #d9d3f5; }
+#menu .mcard .play { justify-self: stretch; font-size: 20px; padding: 13px 20px; }
+/* fenêtres posées sur le menu (défi, calendrier, profil, paramètres) */
+.msheet { position: fixed; inset: 0; z-index: 45; display: grid; place-items: center; padding: 16px; background: rgba(5, 3, 16, .7); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.msheet[hidden] { display: none; }
+.msbox { position: relative; width: min(100%, 26rem); max-height: calc(100% - 20px); overflow-y: auto; box-sizing: border-box; padding: 22px 18px 18px; border-radius: 22px; display: flex; flex-direction: column; gap: 12px; align-items: center;
+  background: linear-gradient(180deg, #2a1d5e, #140e33); border: 1.5px solid rgba(255, 216, 107, .45); box-shadow: 0 20px 50px rgba(0, 0, 0, .6); }
+.msbox h2 { margin: 0 40px 0; font-family: var(--display); font-weight: 400; font-size: 22px; color: var(--star); text-align: center; }
+.msbox .xclose { top: 12px; right: 12px; width: 36px; height: 36px; }
+.mspart { width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.mspart[hidden] { display: none; }
+.msnote { margin: 0; font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.4; }
+.msgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.msgrid .ghost { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; padding: 12px 6px; position: relative; isolation: isolate; color: #efeaff; white-space: nowrap;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .02) 55%), rgba(20, 14, 48, .62); border: 1.5px solid rgba(180, 170, 225, .55); }
+.msgrid .ghost .ic { width: 20px; height: 20px; flex: none; }
+.mcal { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.mcal li { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(20, 14, 48, .62); border: 1px solid rgba(180, 170, 225, .25); font-size: 13px; text-align: left; }
+.mcal li.on { border-color: var(--star); background: rgba(255, 216, 107, .1); }
+.mcal li.ok { border-color: rgba(87, 224, 122, .6); }
+.mcal small { font-family: var(--display); font-size: 11px; color: var(--muted); line-height: 1.1; }
+.mcal li.on small { color: var(--star); }
+.mcal b { font-weight: 700; display: block; }
+.mcal span span { color: var(--muted); font-size: 12px; }
+.mcal em { font-style: normal; font-family: var(--display); font-size: 12px; color: var(--star); white-space: nowrap; }
+.mprofil { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.mprofil .mpbig { display: flex; align-items: center; gap: 12px; }
+.mprofil .mpbig .ic { width: 56px; height: 56px; }
+.mprofil .mpbig b { font-family: var(--display); font-weight: 400; font-size: 20px; display: block; }
+.mprofil .mpbig small { color: var(--muted); font-size: 13px; }
+.mprofil .mxp { width: 100%; height: 10px; }
+.mprofil dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; width: 100%; margin: 0; font-size: 14px; }
+.mprofil dt { color: var(--muted); text-align: left; }
+.mprofil dd { margin: 0; font-family: var(--display); font-size: 14px; text-align: right; }
+/* barre d'onglets du bas */
+.tabbar { position: fixed; z-index: 40; left: 50%; bottom: 0; transform: translateX(-50%); width: min(100%, 560px); box-sizing: border-box;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); height: calc(var(--tabh) + var(--safeb)); padding: 0 4px var(--safeb);
+  background: linear-gradient(180deg, rgba(36, 26, 82, .96), rgba(14, 10, 36, .98)); border-top: 1.5px solid rgba(255, 216, 107, .35);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .45); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.tabbar[hidden] { display: none; }
+.tabbar button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; background: none; border: 0; position: relative; min-width: 0; }
+.tbi { position: relative; width: 32px; height: 32px; display: grid; place-items: center; transition: transform .2s cubic-bezier(.3, 1.6, .5, 1); }
+.tbi .ic { width: 28px; height: 28px; filter: grayscale(.55) brightness(.85); transition: filter .2s; }
+.tabbar small { font-size: 11px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tabbar button.on::before { content: ''; position: absolute; inset: 5px 4px; z-index: -1; border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 216, 107, .28), rgba(255, 216, 107, .06) 70%); border: 1px solid rgba(255, 216, 107, .45); }
+.tabbar button.on .tbi { transform: translateY(-3px) scale(1.15); }
+.tabbar button.on .tbi .ic { filter: none; }
+.tabbar button.on small { color: var(--star); }
+.tbadge { top: -6px; right: -10px; min-width: 18px; height: 18px; font-size: 11px; }
+/* les pages ouvertes par un onglet laissent la place à la barre */
+body.tabs-on :is(#hangar, #collection, #trophies, #rankPanel) { padding-bottom: calc(var(--tabh) + var(--safeb) + 16px); }
+/* sous-onglets Trophées / Classement */
+.subtabs { grid-column: 1 / -1; justify-self: center; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(8, 5, 24, .6); border: 1px solid rgba(180, 170, 225, .3); margin: 0 auto; }
+.subtabs button { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 999px; background: none; border: 0; font-family: var(--display); font-size: 13px; color: var(--muted); }
+.subtabs button .ic { width: 18px; height: 18px; }
+.subtabs button.on { color: #2a1640; background: linear-gradient(180deg, #fff0b8, #ffd86b 50%, #f0ae3c); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 2px 0 #b0781e; }
+@media (hover: hover) and (pointer: fine) {
+  .mquick button:hover .mq, .marrow:not(:disabled):hover { transform: translateY(-3px) scale(1.06); }
+  .tabbar button:not(.on):hover .tbi { transform: translateY(-2px); }
+  .tabbar button:hover small { color: #efeaff; }
+  .mcine:hover { opacity: 1; transform: scale(1.08); }
+  .mworld:hover small { color: var(--star); }
+  .mdrow:hover { border-color: rgba(255, 216, 107, .7); }
+}
+.mquick button:active .mq, .marrow:not(:disabled):active, .mround:active, .mcoins:active { transform: scale(.92); }
+/* petits écrans (en hauteur) : on resserre pour que tout tienne sans défiler */
+@media (max-height: 760px) {
+  #menu .mlogo { display: none; }
+  .mq { width: 48px; height: 48px; }
+  .mq .ic { width: 26px; height: 26px; }
+  .mdrow { padding: 4px 10px; }
+  .mbadge { width: 58px; height: 58px; }
+  #menu .mplay .play { padding: 13px 20px; font-size: 23px; }
+}
+@media (max-height: 680px) {
+  :root { --tabh: 58px; }
+  .mstats > div:not(.mbadge) { padding: 4px; }
+  .mstats b { font-size: 15px; }
+  .mquick small { font-size: 9.5px; }
+  .mdefis h2 { font-size: 12px; }
+  .mdrow:nth-child(3) { display: none; }
+  .tbi .ic { width: 24px; height: 24px; }
+  .mship { min-height: 90px; }
+}
+@media (prefers-reduced-motion: reduce) { .mdot { animation: none; } .tbi, .mq, .marrow { transition: none; } }
 </style>
 
 <body>
@@ -1482,6 +1696,12 @@ body.dfight #game { cursor: none; }
 <ellipse cx="12" cy="12" rx="10.4" ry="3.6" transform="rotate(-18 12 12)" fill="none" stroke="url(#icg-violet)" stroke-width="1.5"/>
 <circle cx="12" cy="12" r="4.6" fill="#05020c" stroke="#e7b8ff" stroke-width="1"/>
 <path d="M2.4 14.6A10.4 3.6 -18 0 0 21.6 9.4" fill="none" stroke="#f3dcff" stroke-width="1.5" stroke-linecap="round"/></symbol>
+<symbol id="ic-gear" viewBox="0 0 24 24"><path d="M19.15 10.10 22.05 10.27 22.05 13.73 19.15 13.90 18.40 15.71 20.33 17.89 17.89 20.33 15.71 18.40 13.90 19.15 13.73 22.05 10.27 22.05 10.10 19.15 8.29 18.40 6.11 20.33 3.67 17.89 5.60 15.71 4.85 13.90 1.95 13.73 1.95 10.27 4.85 10.10 5.60 8.29 3.67 6.11 6.11 3.67 8.29 5.60 10.10 4.85 10.27 1.95 13.73 1.95 13.90 4.85 15.71 5.60 17.89 3.67 20.33 6.11 18.40 8.29z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="12" cy="12" r="5.2" fill="url(#icg-slate)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.3" fill="#0f0a24" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M8.6 9.4a4 4 0 0 1 3-2" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1" stroke-linecap="round"/></symbol>
+<symbol id="ic-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16.4" rx="2.6" fill="url(#icg-parch)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M3 9.8V7.6A2.6 2.6 0 0 1 5.6 5h12.8A2.6 2.6 0 0 1 21 7.6v2.2z" fill="url(#icg-red)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><rect x="6.6" y="2.6" width="2.4" height="5" rx="1.2" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><rect x="15" y="2.6" width="2.4" height="5" rx="1.2" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><g fill="#463e6c" fill-opacity=".55"><rect x="5.6" y="12" width="2.6" height="2.2" rx=".5"/><rect x="9.4" y="12" width="2.6" height="2.2" rx=".5"/><rect x="5.6" y="16" width="2.6" height="2.2" rx=".5"/><rect x="9.4" y="16" width="2.6" height="2.2" rx=".5"/></g><path d="M16.3 11.6l1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".6" stroke-linejoin="round"/></symbol>
+<symbol id="ic-gift" viewBox="0 0 24 24"><path d="M12 7.6C10.6 4.2 6.6 3.4 6.2 5.6 5.8 7.6 9.4 8 12 7.6zM12 7.6c1.4-3.4 5.4-4.2 5.8-2 .4 2-3.2 2.4-5.8 2z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><rect x="4.4" y="11.4" width="15.2" height="10" rx="1.6" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><rect x="3" y="7.6" width="18" height="4.4" rx="1.4" fill="url(#icg-pink)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M10.8 7.6h2.4v13.8h-2.4z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M5 9.2h4.6" stroke="#fff" stroke-opacity=".6" stroke-width="1" stroke-linecap="round"/></symbol>
+<symbol id="ic-helmet" viewBox="0 0 24 24"><path d="M5 19.6c-1.4-1.6-2.2-3.8-2.2-6.2a9.2 9.2 0 0 1 18.4 0c0 2.4-.8 4.6-2.2 6.2z" fill="url(#icg-steel)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M6.4 13.2a5.6 4.6 0 0 1 11.2 0v1.2a5.6 3.6 0 0 1-11.2 0z" fill="url(#icg-glass)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><path d="M8.2 11.8c.8-1.4 2.2-2 3.6-2" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.1" stroke-linecap="round"/><path d="M4.4 19.6h15.2l.6 1.8H3.8z" fill="url(#icg-gold)" stroke="#1a1030" stroke-width=".8" stroke-linejoin="round"/><circle cx="12" cy="5.4" r="1" fill="#ff7aa8"/></symbol>
+<symbol id="ic-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></symbol>
+<symbol id="ic-chev" viewBox="0 0 24 24"><path d="M9 4.8l7.2 7.2L9 19.2" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
 <canvas id="gameFill" aria-hidden="true"></canvas>
@@ -1519,38 +1739,115 @@ body.dfight #game { cursor: none; }
 <div class="banner" id="banner"></div>
 
 <div class="panel" id="menu">
-  <div class="card">
-    <div class="logo"><h1>Comète<br>Filante</h1></div>
-    <p>Pilote ta fusée, tire sur les aliens et attrape les étoiles.</p>
-    <button class="play" id="startBtn">Jouer</button>
-    <button type="button" class="ghost duobtn" id="duoBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>Partie à deux</button>
-    <button type="button" class="ghost duobtn duelbtn" id="duelBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-swords"/></svg>Duel des Gardiens</button>
-    <button type="button" class="worldbtn" id="worldBtn"><span class="wbmap" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-map"/></svg></span><span class="wbtxt"><b>Choisis ton monde</b><small id="worldNow"></small></span><span class="wbgo" aria-hidden="true">›</span></button>
-    <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
-      <span class="dfico" id="defiIco" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg></span>
-      <span class="dftxt">
-        <span class="dfhead"><small>Défi du jour</small><b id="defiTitle"></b><em id="defiGain"></em></span>
-        <span class="dfgoal" id="defiText"></span>
-        <span class="dfbar"><i id="defiBar"></i></span>
-        <small class="dfprog" id="defiProg"></small>
-      </span>
+  <header class="mtop">
+    <button type="button" class="mprof" id="mProfile" aria-label="Ton profil de pilote">
+      <span class="mava"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-helmet"/></svg></span>
+      <span class="mlvl" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg><b id="mLvl">1</b></span>
+      <span class="mprofx"><b id="mPilot">Pilote</b><span class="mxp"><i id="mXpBar"></i></span></span>
+    </button>
+    <div class="mright">
+      <button type="button" class="mcoins" id="mCoins" aria-label="Boutique"><i class="coin"></i><b id="mCredits">0</b><span class="mplus"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-plus"/></svg></span></button>
+      <button type="button" class="mround" id="mGear" aria-label="Paramètres" title="Paramètres"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-gear"/></svg></button>
     </div>
-    <div class="menugrid">
-      <button class="ghost" id="hangarBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-hangar"/></svg>Hangar</button>
-      <button class="ghost" id="trophyBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg>Trophées</button>
-      <button class="ghost" id="rankBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button>
-      <button class="ghost" id="cinemaBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
-      <button class="ghost wide collbtn" id="collBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-chest"/></svg>Collection et coffres</button>
+  </header>
+
+  <div class="mview card" id="mHome">
+    <div class="logo mlogo"><h1>Comète Filante</h1></div>
+    <button type="button" class="mworld" id="mWorld" aria-label="Voir la carte des mondes"><b id="mWorldName"></b><small id="mWorldSub"></small></button>
+    <div class="mstats">
+      <div><small>Dernière partie</small><b id="mLast">—</b></div>
+      <div class="mbadge" id="mBadge"><b id="mProg">0/10</b><small>boss</small></div>
+      <div><small>Meilleur score</small><b id="mBest">—</b></div>
     </div>
-    <div class="row menulinks">
-      <button class="toggle" id="storyBtn">Histoire</button>
-      <button class="toggle" id="helpBtn">Comment jouer</button>
-      <button class="toggle" id="saveBtn">Sauvegarde</button>
-      <button class="toggle" id="soundBtn">Son : activé</button>
-      <button class="toggle" id="handBtn">Droitier</button>
+    <div class="mship">
+      <canvas id="mShipCv" aria-label="Ton vaisseau"></canvas>
+      <button type="button" class="mcine" id="mCine" aria-label="Cinématiques" title="Cinématiques"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg></button>
+    </div>
+    <div class="mquick" id="mQuick" role="group" aria-label="Récompenses">
+      <button type="button" data-q="defi"><span class="mq"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg><em class="mdot" hidden>!</em></span><small>Défi du jour</small><time></time></button>
+      <button type="button" data-q="cal"><span class="mq"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-calendar"/></svg><em class="mdot" hidden>!</em></span><small>Calendrier</small><time></time></button>
+      <button type="button" data-q="coffre"><span class="mq"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-chest"/></svg><em class="mdot" hidden>!</em></span><small>Coffre gratuit</small><time></time></button>
+      <button type="button" data-q="bonus"><span class="mq"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-bolt"/></svg><em class="mdot" hidden>!</em></span><small>Bonus</small><time></time></button>
+      <button type="button" data-q="cadeau"><span class="mq"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-gift"/></svg><em class="mdot" hidden>!</em></span><small>Cadeau</small><time></time></button>
+    </div>
+    <section class="mdefis">
+      <h2 id="mDefisHead">Défis</h2>
+      <div id="mDefis"></div>
+    </section>
+    <div class="mplay">
+      <button type="button" class="marrow" id="mPrev" aria-label="Monde précédent"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-chev"/></svg></button>
+      <button type="button" class="play" id="mPlay">Jouer</button>
+      <button type="button" class="marrow next" id="mNext" aria-label="Monde suivant"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-chev"/></svg></button>
     </div>
   </div>
+
+  <div class="mview" id="mMulti" hidden>
+    <h2 class="mtitle">Multijoueur</h2>
+    <article class="mcard duo">
+      <div class="mcpic" aria-hidden="true"><span class="mcduo"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg></span></div>
+      <div class="mctxt"><b>Partie à deux</b><p>Jouez l'histoire ensemble, sur le même appareil ou en ligne avec un code à partager. Les ennemis ont deux fois plus de vie.</p></div>
+      <button type="button" class="play" id="mDuo">Jouer</button>
+    </article>
+    <article class="mcard duel">
+      <div class="mcpic mvs" id="mVs" aria-hidden="true"></div>
+      <div class="mctxt"><b>Duel des Gardiens</b><p>Prends le contrôle d'un gardien déjà vaincu et affronte un ami ou l'ordinateur. Deux manches gagnantes.</p></div>
+      <button type="button" class="play" id="mDuel">Jouer</button>
+    </article>
+  </div>
+
+  <div class="msheet" id="mSheet" hidden>
+    <div class="msbox" role="dialog" aria-modal="true" aria-labelledby="mSheetTitle">
+      <button type="button" class="xclose" id="mSheetX" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
+      <h2 id="mSheetTitle"></h2>
+      <div class="mspart" data-part="defi">
+        <div class="defi" id="defiCard" role="group" aria-label="Défi du jour">
+          <span class="dfico" id="defiIco" aria-hidden="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg></span>
+          <span class="dftxt">
+            <span class="dfhead"><small>Défi du jour</small><b id="defiTitle"></b><em id="defiGain"></em></span>
+            <span class="dfgoal" id="defiText"></span>
+            <span class="dfbar"><i id="defiBar"></i></span>
+            <small class="dfprog" id="defiProg"></small>
+          </span>
+        </div>
+        <p class="msnote" id="mDefiNext"></p>
+      </div>
+      <div class="mspart" data-part="cal"><p class="msnote">Un nouveau défi chaque jour, à minuit. Voici ceux de la semaine.</p><ol class="mcal" id="mCal"></ol></div>
+      <div class="mspart" data-part="profil"><div class="mprofil" id="mProfil"></div></div>
+      <div class="mspart" data-part="reglages">
+        <div class="msgrid">
+          <button class="ghost" id="cinemaBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-clap"/></svg>Cinématiques</button>
+          <button class="ghost" id="storyBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-play"/></svg>Histoire</button>
+          <button class="ghost" id="helpBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-bulb"/></svg>Comment jouer</button>
+          <button class="ghost" id="saveBtn"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-shield"/></svg>Sauvegarde</button>
+        </div>
+        <div class="row menulinks">
+          <button class="toggle" id="soundBtn">Son : activé</button>
+          <button class="toggle" id="handBtn">Droitier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- anciens boutons de l'accueil : gardés (cachés) pour que leurs fonctions restent les mêmes -->
+  <div class="mlegacy" hidden>
+    <button class="play" id="startBtn">Jouer</button>
+    <button type="button" id="duoBtn">Partie à deux</button>
+    <button type="button" id="duelBtn">Duel des Gardiens</button>
+    <button type="button" id="worldBtn"><small id="worldNow"></small></button>
+    <button id="hangarBtn">Hangar</button>
+    <button id="trophyBtn">Trophées</button>
+    <button id="rankBtn">Classement</button>
+    <button id="collBtn">Collection et coffres</button>
+  </div>
 </div>
+
+<nav class="tabbar" id="tabbar" aria-label="Navigation" hidden>
+  <button type="button" data-tab="boutique"><span class="tbi"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-chest"/></svg><em class="tbadge" hidden></em></span><small>Boutique</small></button>
+  <button type="button" data-tab="hangar"><span class="tbi"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-hangar"/></svg><em class="tbadge" hidden></em></span><small>Hangar</small></button>
+  <button type="button" data-tab="monde" class="on"><span class="tbi" id="tabWorldIco"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-galaxy"/></svg><em class="tbadge" hidden></em></span><small>Monde</small></button>
+  <button type="button" data-tab="multi"><span class="tbi"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg><em class="tbadge" hidden></em></span><small>Multijoueur</small></button>
+  <button type="button" data-tab="trophees"><span class="tbi"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg><em class="tbadge" hidden></em></span><small>Trophées</small></button>
+</nav>
 
 <div class="panel" id="team" hidden>
   <div class="card teamcard">
@@ -1912,6 +2209,7 @@ body.dfight #game { cursor: none; }
 <div class="panel" id="trophies" hidden>
   <div class="hangar atelier">
     <button class="xclose" data-back="trophyBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
+    <nav class="subtabs" aria-label="Trophées et classement"><button type="button" data-sub="trophees" class="on" aria-current="page"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg>Trophées</button><button type="button" data-sub="classement"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button></nav>
     <h2>Trophées</h2>
     <p class="wallet" id="trophyCount"></p>
     <div class="tsum" id="trophySum"></div>
@@ -1930,6 +2228,7 @@ body.dfight #game { cursor: none; }
 <div class="panel" id="rankPanel" hidden>
   <div class="hangar atelier">
     <button class="xclose" data-back="rankBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
+    <nav class="subtabs" aria-label="Trophées et classement"><button type="button" data-sub="trophees"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-trophy"/></svg>Trophées</button><button type="button" data-sub="classement" class="on" aria-current="page"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-podium"/></svg>Classement</button></nav>
     <h2>Classement mondial</h2>
     <p class="wallet">Tous les joueurs du monde, classés par leur meilleur score. Pas besoin d'e-mail : choisis juste ton nom de joueur.</p>
     <div class="opt" id="rankJoinBox">
@@ -5375,9 +5674,10 @@ body.dfight #game { cursor: none; }
   $('menu').addEventListener('pointerdown', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    initAudio(); beep(b.id === 'startBtn' ? 520 : 760, .09, 'triangle', .07, b.id === 'startBtn' ? 400 : 260);
+    const big0 = b.id === 'mPlay' || b.classList.contains('play');
+    initAudio(); beep(big0 ? 520 : 760, .09, 'triangle', .07, big0 ? 400 : 260);
     if (reduce) return;
-    const x = e.clientX, y = e.clientY, big = b.id === 'startBtn' ? 1.6 : 1;
+    const x = e.clientX, y = e.clientY, big = big0 ? 1.6 : 1;
     const ring = document.createElement('b'); ring.style.transform = `translate(${x}px, ${y}px)`; clicFx.appendChild(ring);
     ring.animate([{ transform: `translate(${x}px, ${y}px) scale(.1)`, opacity: 1 }, { transform: `translate(${x}px, ${y}px) scale(${big})`, opacity: 0 }], { duration: 450, easing: 'cubic-bezier(.2, .8, .3, 1)' }).onfinish = () => ring.remove();
     const cols = ['#ffffff', '#ffd86b', '#ffe9a8', '#ff9ec0', '#9fd8ff'];
@@ -15530,12 +15830,7 @@ body.dfight #game { cursor: none; }
     }
     if (state === 'launch') drawLaunch(t);
     if (state === 'menu' && !$('menu').hidden) drawMenuSky(t);
-    if (state === 'menu' && W > 900 && !reduce) {
-      const mx = W * .86, my = H * .62 + Math.sin(t / 700) * 14;
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5;
-      ctx.drawImage(softSprite(flameColsOf(cfg.flame, t)[1]), mx - 40, my + 10, 80, 120); ctx.restore();
-      drawRocket(ctx, mx, my, 2.2, cfg, t, Math.sin(t / 900) * .1, .6);
-    }
+    // (la fusée de l'accueil est maintenant dessinée en grand au centre du menu : voir drawHomeShip)
     // passage de niveau : saut en vitesse lumière, vague de couleur du nouveau décor et grand titre
     if (levelFx && playing) {
       const q = (t - levelFx.t) / 1800;
@@ -17077,6 +17372,7 @@ body.dfight #game { cursor: none; }
     if (dFight !== document.body.classList.contains('dfight')) document.body.classList.toggle('dfight', dFight);
     if (state === 'duel') { dHostSend(t); dPadUi(); if (!$('duelEnd').hidden) try { drawDuelWinner(t); } catch (e) { console.error(e); } }
     if (!$('team').hidden) drawTeam(t);
+    if (!$('menu').hidden) try { drawHomeShip(t); } catch (e) { console.error(e); }
     drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); drawBuyPreview(t); } catch (e) { console.error(e); }
@@ -17088,6 +17384,267 @@ body.dfight #game { cursor: none; }
     } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
   }
+  // ===== Menu principal façon jeu mobile : barre du haut, monde en cours, vaisseau, récompenses, défis, Jouer, et onglets en bas =====
+  // (rien ici ne donne d'Astros : le menu ne fait que montrer et ouvrir ce qui existe déjà)
+  let mView = 'home', mSheetPart = '';
+  const mFmt = n => Number(n).toLocaleString('fr-FR');
+  // niveau du pilote : seulement pour l'affichage, d'après tous les points marqués (aucune récompense)
+  const lvlNeed = L => 2000 * L;                       // points pour passer du niveau L au suivant
+  function pilotLevel() {
+    let L = 1, rest = stats.points || 0;
+    while (rest >= lvlNeed(L) && L < 99) { rest -= lvlNeed(L); L++; }
+    return { L, rest, need: lvlNeed(L) };
+  }
+  // dernière partie et meilleur score de chaque monde (pour l'affichage du menu)
+  let mScores = { last: {}, best: {} };
+  try { const v = JSON.parse(localStorage.getItem('comete-menu-scores') || 'null'); if (v && typeof v === 'object') mScores = { last: v.last || {}, best: v.best || {} }; else if (best > 0 && worldsOpen === 1) mScores.best[0] = best; } catch (e) {}
+  const saveMScores = () => { try { localStorage.setItem('comete-menu-scores', JSON.stringify(mScores)); } catch (e) {} };
+  // ce qui est « nouveau » : skins gagnés pas encore vus, trophées pas encore regardés
+  let mSeen = null, mSeenTro = 0;
+  try { const v = JSON.parse(localStorage.getItem('comete-menu-vus') || 'null'); if (v && Array.isArray(v.o)) { mSeen = v.o; mSeenTro = v.t | 0; } } catch (e) {}
+  if (!mSeen) { mSeen = shop.owned.slice(); mSeenTro = stats.won.length; }
+  const saveMSeen = () => { try { localStorage.setItem('comete-menu-vus', JSON.stringify({ o: mSeen, t: mSeenTro })); } catch (e) {} };
+  const newSkins = () => shop.owned.filter(k => !mSeen.includes(k) && !k.startsWith('pet:')).length;
+  const newTro = () => Math.max(0, stats.won.length - mSeenTro);
+  const seeSkins = () => { mSeen = shop.owned.slice(); saveMSeen(); };
+  const seeTro = () => { mSeenTro = stats.won.length; saveMSeen(); };
+  // temps jusqu'à minuit (le défi du jour change à minuit, heure de l'appareil)
+  function untilMidnight() { const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0); return m - n; }
+  const hms = ms => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min ${String(s % 60).padStart(2, '0')}`; };
+  // duels récompensés aujourd'hui (lu seulement, le Duel des Gardiens garde son propre code)
+  const duelLeft = () => { const today = new Date().toISOString().slice(0, 10); return dDay.d === today ? Math.max(0, D_DAY_MAX - dDay.n) : D_DAY_MAX; };
+  const duelReset = () => { const n = new Date(), m = new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1)); return m - n; };
+  // monde affiché par les flèches (un monde fermé se montre grisé, avec un cadenas)
+  let mWorld = startWorld;
+  function renderHome() {
+    if (!$('mHome')) return;
+    // barre du haut
+    const lv = pilotLevel();
+    $('mLvl').textContent = lv.L; $('mPilot').textContent = joueur ? joueur.name : cfg.name;
+    $('mXpBar').style.width = `${Math.round(lv.rest / lv.need * 100)}%`;
+    $('mProfile').setAttribute('aria-label', `Profil : ${cfg.name}, niveau ${lv.L}`);
+    $('mCredits').textContent = mFmt(shop.credits);
+    // le monde
+    const i = mWorld, w = WORLDS[i], open = i < worldsOpen, won = w.bosses.filter(d => beaten.includes(d.id)).length;
+    const home = $('mHome'); home.style.setProperty('--w1', w.col[0]); home.style.setProperty('--w2', w.col[1]);
+    $('mWorld').classList.toggle('lock', !open);
+    $('mWorldName').innerHTML = open ? w.name : `${ICO('lock')} ???`;
+    $('mWorldSub').innerHTML = open ? `${ICO(w.icon, 'flat')} Monde ${i + 1} · voir la carte` : `Monde ${i + 1} · bats ${WORLDS[i - 1].bosses[9].name} pour l'ouvrir`;
+    const last = mScores.last[i], bst = mScores.best[i];
+    $('mLast').textContent = open && last != null ? mFmt(last) : '—';
+    $('mBest').textContent = open && bst != null ? mFmt(bst) : '—';
+    $('mProg').textContent = open ? `${won}/10` : '0/10';
+    $('mBadge').classList.toggle('full', won === 10);
+    $('mBadge').setAttribute('aria-label', `${won} boss sur 10 battus`);
+    // Jouer et flèches
+    const pb = $('mPlay');
+    pb.disabled = !open;
+    pb.innerHTML = open ? 'Jouer' : `${ICO('lock', 'flat')} Fermé`;
+    for (const [id, j] of [['mPrev', i - 1], ['mNext', i + 1]]) {
+      const b = $(id), ok = j >= 0 && j < WORLDS.length, lk = ok && j >= worldsOpen;
+      b.disabled = !ok; b.classList.toggle('lock', lk);
+      b.innerHTML = ICO('chev', 'flat') + (lk ? `<span class="mlk">${ICO('lock')}</span>` : '');
+      b.setAttribute('aria-label', ok ? `${id === 'mPrev' ? 'Monde précédent' : 'Monde suivant'} : Monde ${j + 1}${lk ? ' (fermé)' : ''}` : 'Pas d\'autre monde');
+    }
+    // onglet Monde : l'icône du monde choisi
+    $('tabWorldIco').firstElementChild.outerHTML = ICO(WORLDS[startWorld].icon);
+    renderQuick(); renderMDefis(); renderBadges();
+  }
+  // rangée d'icônes rapides : pastille « ! » quand c'est prêt, minuteur sinon
+  function renderQuick() {
+    const set = (q, ready, time, off, dot) => {
+      const b = $('mQuick').querySelector(`[data-q="${q}"]`);
+      b.classList.toggle('ready', !!ready); b.classList.toggle('off', !!off);
+      const d = b.querySelector('.mdot'); d.hidden = !ready; d.textContent = dot || '!';
+      b.querySelector('time').textContent = time || '';
+    };
+    const c = defiToday();
+    set('defi', !defiSave.done, defiSave.done ? hms(untilMidnight()) : `+${mFmt(c.r)}`);
+    set('cal', false, hms(untilMidnight()));
+    const toNext = CHEST_EVERY - ((stats.points || 0) % CHEST_EVERY);
+    set('coffre', shop.chests > 0, shop.chests > 0 ? `${shop.chests} à ouvrir` : `${mFmt(toNext)} pts`, false, shop.chests > 1 ? String(Math.min(99, shop.chests)) : '!');
+    const canDuel = dOpen().length > 0, left = duelLeft();
+    set('bonus', canDuel && left > 0, !canDuel ? 'Bats un boss' : left > 0 ? `${left}/${D_DAY_MAX} duels` : hms(duelReset()), !canDuel || !left);
+    const ns = newSkins();
+    set('cadeau', ns > 0, ns > 0 ? `${ns} nouveau${ns > 1 ? 'x' : ''}` : 'Aucun', !ns, ns > 1 ? String(Math.min(99, ns)) : '!');
+  }
+  // les 3 défis en cours : le défi du jour, puis les 2 trophées les plus proches d'être gagnés
+  function mGoals() {
+    const list = [];
+    for (const t of TROPHIES) {
+      if (stats.won.includes(t.id) || t.feat || t.hint || !(t.goal > 1)) continue;
+      const v = Math.min(t.goal, statOf(t.stat)), r = v / t.goal;
+      if (r < 1) list.push({ t, v, r });
+    }
+    return list.sort((a, b) => b.r - a.r || a.t.goal - b.t.goal).slice(0, 2);
+  }
+  function renderMDefis() {
+    const c = defiToday(), done = defiSave.done, p = done ? c.g : Math.min(defiSave.p, c.g);
+    $('mDefisHead').innerHTML = `Défis en cours <small>${ICO('trophy', 'flat')} ${mFmt(stats.won.length)} réussis</small>`;
+    const row = (cls, ico, txt, prog, pct, act, label) => `<button type="button" class="mdrow ${cls}" data-go="${act}" aria-label="${label}">${ICO(ico)}<span>${txt}</span><em>${prog}</em><span class="mbar"><i style="width:${pct}%"></i></span></button>`;
+    let h = row('today' + (done ? ' done' : ''), done ? 'done' : 'target', `${done ? 'Réussi : ' : ''}${c.text}`, done ? 'Réussi' : `${defiShow(c, p)} · +${mFmt(c.r)}`, Math.round(p / c.g * 100), 'defi', `Défi du jour : ${c.text}`);
+    for (const g of mGoals()) {
+      const t = g.t, txt = `${t.name || t.col.name} : ${mFmt(t.goal)} ${STAT_UNITS[t.stat]}`;
+      h += row('', 'trophy', txt, `${mFmt(g.v)} / ${mFmt(t.goal)}`, Math.round(g.r * 100), 'trophees', `Trophée ${trophyName(t)} : ${txt}`);
+    }
+    $('mDefis').innerHTML = h;
+  }
+  // pastilles rouges sur les onglets : coffres à ouvrir, trophées débloqués, nouveaux skins
+  function renderBadges() {
+    const n = { boutique: shop.chests, hangar: newSkins(), trophees: newTro() };
+    document.querySelectorAll('#tabbar button').forEach(b => {
+      const e = b.querySelector('.tbadge'), v = n[b.dataset.tab] || 0;
+      e.hidden = !v; e.textContent = v > 99 ? '99+' : v;
+    });
+  }
+  // flèches : monde précédent / suivant
+  function mGoWorld(d) {
+    const j = mWorld + d;
+    if (j < 0 || j >= WORLDS.length) return;
+    mWorld = j;
+    if (j < worldsOpen && j !== startWorld) { startWorld = j; saveWorlds(); renderWorldPick(); menuWorld(); }
+    beep(500 + j * 120, .08, 'triangle', .08);
+    renderHome();
+  }
+  $('mPrev').onclick = () => mGoWorld(-1);
+  $('mNext').onclick = () => mGoWorld(1);
+  $('mPlay').onclick = () => { if (mWorld < worldsOpen) { startWorld = mWorld; play(); } };
+  $('mWorld').onclick = () => { if (mWorld < worldsOpen) openMap(); };
+  $('mCine').onclick = openCinema;
+  $('mCoins').onclick = () => mTab('boutique');
+  $('mDuo').onclick = () => $('duoBtn').click();
+  $('mDuel').onclick = () => $('duelBtn').click();
+  // fenêtres posées sur le menu
+  function mSheet(part) {
+    mSheetPart = part;
+    const titles = { defi: 'Défi du jour', cal: 'Calendrier des défis', profil: 'Ton profil', reglages: 'Paramètres' };
+    $('mSheetTitle').textContent = titles[part];
+    document.querySelectorAll('#mSheet .mspart').forEach(e => { e.hidden = e.dataset.part !== part; });
+    if (part === 'defi') { renderDefi(); $('mDefiNext').textContent = defiSave.done ? `Prochain défi dans ${hms(untilMidnight())}.` : 'Les Astros du défi se gagnent une seule fois par jour.'; }
+    if (part === 'cal') renderCal();
+    if (part === 'profil') renderProfil();
+    $('mSheet').hidden = false;
+    setTimeout(() => $('mSheetX').focus(), 30);
+  }
+  const mSheetClose = () => { $('mSheet').hidden = true; mSheetPart = ''; };
+  $('mSheetX').onclick = mSheetClose;
+  $('mSheet').onclick = e => { if (e.target === $('mSheet')) mSheetClose(); };
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !$('mSheet').hidden) mSheetClose(); });
+  // les boutons des paramètres ouvrent d'autres pages : on referme la fenêtre d'abord
+  for (const id of ['cinemaBtn', 'storyBtn', 'helpBtn', 'saveBtn']) $(id).addEventListener('click', mSheetClose);
+  function renderCal() {
+    const today = dayKey(), names = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'];
+    let h = '';
+    for (let k = 0; k < 7; k++) {
+      const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + k);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, c = defiOf(key), on = key === today;
+      h += `<li class="${on ? 'on' : ''}${on && defiSave.done ? ' ok' : ''}"><small>${on ? 'Auj.' : names[d.getDay()]}<br>${d.getDate()}</small><span><b>${c.title}</b><span>${on ? c.text : 'À découvrir ce jour-là'}</span></span><em>${on && defiSave.done ? ICO('done', 'flat') : '+' + mFmt(c.r)}</em></li>`;
+    }
+    $('mCal').innerHTML = h;
+  }
+  function renderProfil() {
+    const lv = pilotLevel();
+    $('mProfil').innerHTML = `<div class="mpbig">${ICO('helmet')}<div><b>${esc(cfg.name)}</b><small>Pilote niveau ${lv.L}${cfg.title ? ' · ' + esc(cfg.title) : ''}</small></div></div>`
+      + `<span class="mxp"><i style="width:${Math.round(lv.rest / lv.need * 100)}%"></i></span><p class="msnote">${mFmt(lv.need - lv.rest)} points avant le niveau ${lv.L + 1}. Le niveau grandit avec tous les points que tu marques (il ne change pas la puissance de ta fusée).</p>`
+      + `<dl><dt>Points marqués</dt><dd>${mFmt(stats.points || 0)}</dd><dt>Parties jouées</dt><dd>${mFmt(stats.parties)}</dd><dt>Gardiens vaincus</dt><dd>${beaten.length}/${ALL_BOSSES.length}</dd><dt>Mondes ouverts</dt><dd>${worldsOpen}/${WORLDS.length}</dd><dt>Trophées</dt><dd>${stats.won.length}/${TROPHIES.length}</dd><dt>Record</dt><dd>${mFmt(best)}</dd></dl>`
+      + `<button type="button" class="ghost" id="mProfHangar">${ICO('hangar')} Changer de nom au Hangar</button>`;
+    $('mProfHangar').onclick = () => { mSheetClose(); mTab('hangar'); };
+  }
+  $('mProfile').onclick = () => mSheet('profil');
+  $('mGear').onclick = () => mSheet('reglages');
+  $('mQuick').onclick = e => {
+    const b = e.target.closest('button[data-q]'); if (!b) return;
+    const q = b.dataset.q;
+    if (q === 'defi') mSheet('defi');
+    else if (q === 'cal') mSheet('cal');
+    else if (q === 'coffre') mTab('boutique');
+    else if (q === 'bonus') $('duelBtn').click();
+    else if (q === 'cadeau') mTab('boutique');
+  };
+  $('mDefis').onclick = e => { const b = e.target.closest('button[data-go]'); if (!b) return; if (b.dataset.go === 'defi') mSheet('defi'); else mTab('trophees'); };
+  // Multijoueur : aperçu du Duel, deux gardiens face à face
+  function renderMulti() {
+    const open = dOpen(), pick = open.length >= 2 ? [open[open.length - 1], open[Math.max(0, open.length - 2)]] : open.length ? [open[0], ALL_BOSSES[1]] : [ALL_BOSSES[0], ALL_BOSSES[1]];
+    $('mVs').innerHTML = pick.map((d, k) => `<img src="${bossPortrait(d)}" alt=""${beaten.includes(d.id) ? '' : ' class="hide"'}>${k === 0 ? '<b>VS</b>' : ''}`).join('');
+  }
+  // ----- onglets du bas -----
+  const TAB_PANELS = ['hangar', 'collection', 'trophies', 'rankPanel'];
+  function mTab(tab) {
+    mSheetClose();
+    const cur = curTab();
+    if (tab === 'monde' || tab === 'multi') {
+      if (cur !== 'monde' && cur !== 'multi') { preview = null; closePanels(); }
+      mView = tab === 'multi' ? 'multi' : 'home';
+      $('mHome').hidden = mView !== 'home'; $('mMulti').hidden = mView !== 'multi';
+      if (mView === 'multi') renderMulti(); else { mWorld = startWorld; renderHome(); }
+      $('menu').scrollTop = 0;
+    } else {
+      preview = null; closePanels();
+      if (tab === 'boutique') openColl();
+      else if (tab === 'hangar') openHangar();
+      else if (tab === 'trophees') openTrophies();
+    }
+    syncTabs();
+  }
+  function curTab() {
+    if (!$('collection').hidden) return 'boutique';
+    if (!$('hangar').hidden) return 'hangar';
+    if (!$('trophies').hidden || !$('rankPanel').hidden) return 'trophees';
+    return mView === 'multi' ? 'multi' : 'monde';
+  }
+  $('tabbar').onclick = e => { const b = e.target.closest('button[data-tab]'); if (!b) return; initAudio(); beep(640, .06, 'triangle', .07); mTab(b.dataset.tab); };
+  // sous-onglets Trophées / Classement
+  document.querySelectorAll('.subtabs').forEach(n => n.onclick = e => {
+    const b = e.target.closest('button[data-sub]'); if (!b || b.classList.contains('on')) return;
+    beep(600, .06, 'triangle', .06);
+    if (b.dataset.sub === 'classement') { $('trophies').hidden = true; openRanking(); }
+    else { $('rankPanel').hidden = true; openTrophies(); }
+  });
+  // la barre d'onglets se montre sur le menu et sur les pages qu'elle ouvre
+  function syncTabs() {
+    const onMenu = !$('menu').hidden, onPage = TAB_PANELS.some(id => !$(id).hidden);
+    const show = (onMenu || onPage) && !teamDetour && $('over').hidden && $('team').hidden && $('duelPanel').hidden && $('naming').hidden;
+    $('tabbar').hidden = !show; document.body.classList.toggle('tabs-on', show);
+    if (!show) return;
+    const cur = curTab();
+    document.querySelectorAll('#tabbar button').forEach(b => { const on = b.dataset.tab === cur; b.classList.toggle('on', on); b.setAttribute('aria-current', on ? 'page' : 'false'); });
+    if (cur === 'hangar' || cur === 'boutique') seeSkins();
+    if (cur === 'trophees') seeTro();
+    renderBadges();
+  }
+  // on suit l'ouverture et la fermeture des pages
+  const mObs = new MutationObserver(ms => {
+    for (const m of ms) {
+      const el = m.target;
+      if (el.id === 'over' && !el.hidden && !duo && !netRole) {
+        // fin de partie en solo : on retient le score du monde pour le menu
+        const w = startWorld;
+        mScores.last[w] = score; if (score > (mScores.best[w] || 0)) mScores.best[w] = score; saveMScores();
+        mView = 'home';
+      }
+      if (el.id === 'menu' && !el.hidden) { mWorld = startWorld; $('mHome').hidden = mView !== 'home'; $('mMulti').hidden = mView !== 'multi'; if (mView === 'multi') renderMulti(); renderHome(); }
+    }
+    syncTabs();
+  });
+  for (const id of ['menu', 'over', 'team', 'duelPanel', 'naming', ...TAB_PANELS]) mObs.observe($(id), { attributes: true, attributeFilter: ['hidden'] });
+  // minuteurs : une fois par seconde, seulement quand le menu est affiché
+  setInterval(() => { if (!$('menu').hidden && mView === 'home') renderQuick(); if (mSheetPart === 'defi' && defiSave.done) $('mDefiNext').textContent = `Prochain défi dans ${hms(untilMidnight())}.`; }, 1000);
+  // le vaisseau équipé, en grand, qui flotte doucement avec sa fumée
+  function drawHomeShip(t) {
+    const c = $('mShipCv');
+    if (!c || mView !== 'home') return;
+    const r = Math.min(2, devicePixelRatio || 1), w = Math.round(c.clientWidth * r), h = Math.round(c.clientHeight * r);
+    if (!w || !h) return;
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const k = c.getContext('2d');
+    k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
+    const s = Math.min(h / 92, w / 70), bob = reduce ? 0 : Math.sin(t / 650) * 4 * s, x = w / 2, y = h * .36 + bob;
+    const conf = { ...cfg, evo: shop.up };
+    drawTrailDemo(k, x, y + 14 * s * .9, s * .9, cfg.trail, t, cfg.flame);
+    drawRocket(k, x, y, s * 1.1, conf, t, reduce ? 0 : Math.sin(t / 1100) * .08, .35);
+    if (cfg.pet && petsFreed()) drawPet(k, cfg.pet, x + 30 * s, y + 18 * s - bob * .5, s * .8, t);
+  }
+  renderHome(); syncTabs();
   reset();
   world = startWorld; setTheme(1, true);
   resetScenery(false);
