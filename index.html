@@ -1345,6 +1345,16 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 .dendreward small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
 /* les boutons au doigt : en bas à droite pour le joueur du bas, à l'envers en haut à gauche pour celui du haut */
 #duelPads { position: fixed; inset: 0; pointer-events: none; z-index: 3; }
+/* téléphone tenu debout pendant un duel : on demande de le tourner */
+#duelTurn { position: fixed; inset: 0; z-index: 6; display: grid; place-items: center; background: color-mix(in srgb, var(--night) 88%, transparent); text-align: center; padding: 24px; }
+#duelTurn[hidden] { display: none; }
+.dturnbox { display: grid; gap: 8px; justify-items: center; max-width: 300px; }
+.dturnbox svg { width: 140px; height: 105px; }
+.dturnbox .dtph { fill: none; stroke: var(--star); stroke-width: 3; transform-origin: 60px 40px; animation: dtturn 2.2s ease-in-out infinite; }
+.dturnbox .dtarr { fill: none; stroke: #ffffffb0; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.dturnbox b { font: 22px var(--display); color: var(--star); font-weight: 400; }
+.dturnbox span { color: var(--muted); font-size: 15px; }
+@keyframes dtturn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(90deg); } 100% { transform: rotate(0); } }
 .dpad { position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); width: 168px; height: 162px; pointer-events: none; }
 .dpad.top { right: auto; bottom: auto; left: calc(12px + env(safe-area-inset-left, 0px)); top: calc(14px + env(safe-area-inset-top, 0px)); transform: rotate(180deg); }
 .dpad button { --p: 0; pointer-events: auto; touch-action: none; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 15px var(--display);
@@ -2111,6 +2121,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 </div>
 
 <button class="btn-pause dpause" id="duelPause" aria-label="Pause" hidden><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-pause"/></svg></button>
+<div id="duelTurn" hidden><div class="dturnbox"><svg viewBox="0 0 120 90" aria-hidden="true"><rect class="dtph" x="44" y="12" width="32" height="56" rx="6"/><path class="dtarr" d="M88 26a30 30 0 0 1 4 30m0 0l-8-4m8 4l3-9"/></svg><b>Tourne ton téléphone</b><span>Le Duel des Gardiens se joue en largeur.</span></div></div>
 <div id="duelPads" hidden>
   <div class="dpad" id="dpad0" data-side="0">
     <button type="button" data-k="s2" aria-label="Super pouvoir"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-star"/></svg><small>Super</small></button>
@@ -16711,13 +16722,32 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     for (const id of ['menu', 'duelPanel', 'duelEnd', 'duelMenu', 'over', 'team']) $(id).hidden = true;
     $('duelPause').hidden = false;
     dShowPads();
+    dLandscape(true);
     state = 'duel';
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     for (let i = 0; i < 3; i++) setTimeout(() => { if (duel && duel.phase === 'count') beep(440, .18, 'square', .07); }, 200 + i * 1000);
     setTimeout(() => { if (duel && duel.phase !== 'end') beep(880, .5, 'square', .09, 200); }, 3200);
   }
+  // le duel se joue téléphone tourné en largeur : on essaie de bloquer l'écran en paysage (Android, en plein écran),
+  // sinon un message demande de tourner le téléphone
+  const dUpright = () => dTouch() && innerHeight > innerWidth;
+  let dFull = false;
+  function dLandscape(on) {
+    try {
+      if (on && dTouch()) {
+        const el = document.documentElement, lock = () => { try { const p = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
+        if (!document.fullscreenElement && el.requestFullscreen) { const p = el.requestFullscreen({ navigationUI: 'hide' }); dFull = true; if (p && p.then) p.then(lock, () => { dFull = false; }); else lock(); }
+        else lock();
+      } else if (!on) {
+        try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+        if (dFull && document.fullscreenElement && document.exitFullscreen) { const p = document.exitFullscreen(); if (p && p.catch) p.catch(() => {}); }
+        dFull = false;
+      }
+    } catch (e) {}
+  }
   function dExit(toPanel) {
     const was = duel;
+    dLandscape(false); $('duelTurn').hidden = true;
     duel = null; dKeys.clear();
     for (const id of ['duelPause', 'duelPads', 'duelEnd', 'duelMenu']) $(id).hidden = true;
     world = startWorld; setTheme(1, true); resetScenery(false); parts = []; pops = [];
@@ -16734,8 +16764,11 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const ks = both ? [0, 1] : [s];
     const any = k => ks.some(i => dHeld(i, k));
     const inp = dNoInput();
-    inp.mx = (any('right') ? 1 : 0) - (any('left') ? 1 : 0);
-    inp.my = (any('down') ? 1 : 0) - (any('up') ? 1 : 0);
+    // l'arène est couchée : le boss de gauche avance avec la flèche droite, celui de droite avec la flèche gauche,
+    // et haut/bas restent ceux de l'écran (on traduit en touches de l'arène « debout » d'origine)
+    const leftSide = duel && duel.mode === 'local' ? s === 0 : true;
+    inp.mx = (any('down') ? 1 : 0) - (any('up') ? 1 : 0);
+    inp.my = leftSide ? (any('left') ? 1 : 0) - (any('right') ? 1 : 0) : (any('right') ? 1 : 0) - (any('left') ? 1 : 0);
     const P = dPad[s];
     // au téléphone, le boss tire tout seul tant que le doigt le guide
     inp.fire = any('fire') || P.fire || P.click || P.drag;
@@ -16807,6 +16840,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (!D) return;
     if (D.guest) { dGuestTick(dt); updateFx(dt); return; }
     if (D.paused) return;
+    // téléphone tenu debout : le duel attend qu'on le tourne (en ligne, l'autre joueur ne peut pas attendre)
+    if (dUpright() && D.mode !== 'online') return;
     D.pt += dt; D.zoneMsg = Math.max(0, D.zoneMsg - dt); D.hitT = D.hitT.map(v => Math.max(0, v - dt));
     const [A, B] = D.f;
     if (D.mode === 'local') { A.inp = dReadKeys(0); B.inp = dReadKeys(1); }
@@ -16836,17 +16871,21 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 
   // ----- dessin -----
   // au doigt, sur un écran en hauteur, l'arène monte un peu pour laisser la place aux boutons en dessous
+  // l'arène est couchée (en largeur) : à l'écran elle fait DH de large et DW de haut, chaque boss dans sa moitié, à gauche et à droite
+  const LW = DH, LH = DW;
   function dArena() {
-    let s = Math.min(W / DW, H / DH);
-    const pads = duel && duel.mode !== 'local' && dTouch(), room = 172 / camS, top = pads ? 58 / camS : 0;
-    // au doigt, les gros boutons (et le bouton pause en haut) ne doivent jamais couvrir l'arène : s'il n'y a de place ni dessous ni sur le côté, l'arène rapetisse un peu
-    if (pads && H - DH * s < room + top && (W - DW * s) / 2 < room) s = Math.max(.2, Math.min(W / DW, (H - room - top) / DH));
-    // à deux sur le même téléphone, il y a un pavé en haut et un en bas
-    else if (duel && duel.mode === 'local' && dTouch() && H - DH * s < 2 * room && (W - DW * s) / 2 < room) s = Math.max(.2, Math.min(W / DW, (H - 2 * room) / DH));
-    const spare = H - DH * s;
-    const y = pads ? Math.max(Math.min(top, spare), Math.min(spare / 2, spare - room)) : spare / 2;
-    return { s, x: (W - DW * s) / 2, y };
+    let s = Math.min(W / LW, H / LH);
+    const pads = duel && duel.mode !== 'local' && dTouch(), room = 178 / camS, low = 166 / camS;
+    // au doigt, les gros boutons (en bas à droite) ne doivent jamais couvrir l'arène : l'arène se pousse à gauche, et rapetisse s'il le faut
+    if (pads && W - LW * s < room && H - LH * s < low) s = Math.max(.2, Math.min((W - room) / LW, H / LH));
+    // à deux sur le même téléphone, il y a un pavé de chaque côté
+    else if (duel && duel.mode === 'local' && dTouch() && W - LW * s < 2 * room) s = Math.max(.2, Math.min((W - 2 * room) / LW, H / LH));
+    const spare = W - LW * s;
+    const x = pads && H - LH * s < low ? Math.max(0, Math.min(spare / 2, spare - room)) : spare / 2;
+    return { s, x, y: (H - LH * s) / 2 };
   }
+  // passer de l'arène « debout » (où vit tout le jeu) à l'écran couché : le bas de l'arène part à gauche, le haut à droite
+  const dScr = (x, y) => ({ x: DH - y, y: x });
   // dessiner dans le repère d'un boss (tourné pour celui du bas)
   function dInFrame(F, fn) {
     const sv = [player, boss, W, H];
@@ -16863,10 +16902,11 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
     if (on && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
     // le boss du bas de l'écran vit dans un repère retourné : on redresse son dessin pour qu'il ne soit pas la tête en bas
-    const turn = F.side === duel.view, tr = it.trail;
-    if (turn) { ctx.translate(it.x, it.y); ctx.rotate(Math.PI); ctx.translate(-it.x, -it.y); }
-    // le corps du serpent (la queue du dragon) est fait de vraies positions : on les retourne aussi, pour qu'il reste derrière la tête
-    if (turn && tr && tr.length) it.trail = tr.map(p => ({ x: 2 * it.x - p.x, y: 2 * it.y - p.y }));
+    // l'arène est aussi couchée d'un quart de tour : on le défait pour que chaque boss reste debout à l'écran
+    const turn = F.side === duel.view, tr = it.trail, ang = (turn ? Math.PI : 0) - Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang);
+    ctx.translate(it.x, it.y); ctx.rotate(ang); ctx.translate(-it.x, -it.y);
+    // le corps du serpent (la queue du dragon) est fait de vraies positions : on les tourne à l'envers, pour qu'il reste derrière la tête
+    if (tr && tr.length) it.trail = tr.map(p => { const dx = p.x - it.x, dy = p.y - it.y; return { x: it.x + dx * ca + dy * sa, y: it.y - dx * sa + dy * ca }; });
     shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
     try { drawBoss(it, t); } finally { it.trail = tr; }
     ctx.restore();
@@ -17060,6 +17100,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (!D) return;
     const A = dArena(), flip = D.view === 1;
     ctx.save(); ctx.translate(A.x, A.y); ctx.scale(A.s, A.s);
+    // l'arène est couchée : son bas (mon camp) à gauche, son haut (l'adversaire) à droite
+    ctx.save(); ctx.translate(LW, 0); ctx.rotate(Math.PI / 2);
     // l'arène : un plateau spatial futuriste, la barrière du milieu, deux camps aux couleurs des joueurs
     const sideCol = i => D_COL[flip ? 1 - i : i];
     dDrawArena(t, sideCol, A.s * camS * DPR);
@@ -17067,13 +17109,12 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     ctx.beginPath(); ctx.rect(0, 0, DW, DH); ctx.clip();
     if (flip) { ctx.translate(DW, DH); ctx.rotate(Math.PI); }
     // bonus
-    for (const k of D.picks) { ctx.save(); if (k.life < 2 && Math.floor(k.life * 8) % 2) ctx.globalAlpha = .4; drawPickup(k, t); ctx.restore(); }
+    for (const k of D.picks) { ctx.save(); if (k.life < 2 && Math.floor(k.life * 8) % 2) ctx.globalAlpha = .4; ctx.translate(k.x, k.y); ctx.rotate(flip ? Math.PI / 2 : -Math.PI / 2); ctx.translate(-k.x, -k.y); drawPickup(k, t); ctx.restore(); }
     dDrawEvents(t, flip);
     // les bestioles, les boss, puis les attaques signature et tous les tirs (par-dessus, pour bien les voir)
     for (const F of D.f) dInFrame(F, () => {
       for (const m of F.mins) {
-        if (F.side !== D.view) { drawAlien(m, t); continue; }
-        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(Math.PI); ctx.translate(-m.x, -m.y); drawAlien(m, t); ctx.restore();
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate((F.side === D.view ? Math.PI : 0) - Math.PI / 2); ctx.translate(-m.x, -m.y); drawAlien(m, t); ctx.restore();
       }
       dDrawBoss(F, t);
     });
@@ -17102,13 +17143,14 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       ctx.restore();
     }
     ctx.restore();
+    ctx.restore();
     // textes flottants (toujours à l'endroit)
     ctx.font = '18px Bungee, Impact, sans-serif'; ctx.textAlign = 'center';
-    for (const p of pops) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; ctx.fillText(p.text, flip ? DW - p.x : p.x, flip ? DH - p.y : p.y); }
+    for (const p of pops) { ctx.globalAlpha = Math.min(1, p.life * 2); ctx.fillStyle = p.color; const q = dScr(flip ? DW - p.x : p.x, flip ? DH - p.y : p.y); ctx.fillText(p.text, q.x, q.y); }
     ctx.globalAlpha = 1;
-    // bandeaux des deux joueurs
+    // bandeaux des deux joueurs : le mien à gauche, l'adversaire à droite
     const me = flip ? 1 : 0;
-    dHud(D.f[me], true, t); dHud(D.f[1 - me], false, t);
+    dHud(D.f[me], false, t); dHud(D.f[1 - me], true, t);
     // annonces : compte à rebours, zone, K.O.
     ctx.textAlign = 'center';
     if (D.phase === 'count') {
@@ -17136,9 +17178,10 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       ctx.beginPath(); ctx.arc(q.x, q.y, R, 0, 7); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(255, 120, 60, .16)'; ctx.beginPath(); ctx.arc(q.x, q.y, R * k, 0, 7); ctx.fill();
       ctx.restore();
+      // le rocher tombe du haut de l'écran (l'arène est couchée : le haut de l'écran est le côté gauche de l'arène debout)
       const off = (flip ? 1 : -1) * 340 * (1 - k);
       const g = q.g || (q.g = { r: q.r, shape: q.shape, rot: 0 });
-      g.x = q.x + (flip ? -1 : 1) * 60 * (1 - k); g.y = q.y + off; g.rot = q.rot;
+      g.x = q.x + off; g.y = q.y + (flip ? 1 : -1) * 60 * (1 - k); g.rot = q.rot;
       drawAsteroid(g);
     }
     const c = D.comet;
@@ -17165,47 +17208,58 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (a <= 0) return;
     ctx.save(); ctx.globalAlpha = Math.min(1, a);
     ctx.font = `${Math.round(size)}px Bungee, Impact, system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineWidth = Math.max(3, size / 9); ctx.strokeStyle = 'rgba(8, 4, 24, .85)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, DW / 2, y);
-    ctx.shadowColor = col; ctx.shadowBlur = size / 3; ctx.fillStyle = col; ctx.fillText(txt, DW / 2, y);
+    // les annonces sont écrites pour l'arène debout : on les recentre sur l'arène couchée
+    y += (LH - DH) / 2;
+    ctx.lineWidth = Math.max(3, size / 9); ctx.strokeStyle = 'rgba(8, 4, 24, .85)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, LW / 2, y);
+    ctx.shadowColor = col; ctx.shadowBlur = size / 3; ctx.fillStyle = col; ctx.fillText(txt, LW / 2, y);
     ctx.restore();
   }
-  // le bandeau d'un joueur : nom, boss, vie, manches gagnées, et ses 3 boutons avec leur temps de recharge
-  function dHud(F, bottom, t) {
-    const D = duel, col = D_COL[F.side], y0 = bottom ? DH - 78 : 0, h = 78;
+  // le bandeau d'un joueur, en haut de l'arène couchée (le mien à gauche, l'adversaire à droite, en miroir) :
+  // nom, boss, vie, manches gagnées, et ses 3 boutons avec leur temps de recharge
+  function dHud(F, right, t) {
+    const D = duel, col = D_COL[F.side], h = 74, half = LW / 2;
+    // X : une position comptée depuis le bord de l'arène (à gauche pour moi, à droite pour l'adversaire)
+    const X = x => right ? LW - x : x, AL = right ? 'right' : 'left';
     ctx.save();
-    const g = ctx.createLinearGradient(0, y0, 0, y0 + h);
-    g.addColorStop(bottom ? 0 : 1, 'rgba(8, 5, 22, 0)'); g.addColorStop(bottom ? 1 : 0, 'rgba(8, 5, 22, .82)');
-    ctx.fillStyle = g; ctx.fillRect(0, y0, DW, h);
-    const rowName = bottom ? DH - 52 : 22, rowBar = bottom ? DH - 32 : 42;
-    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-    ctx.font = '15px Bungee, Impact, sans-serif'; ctx.fillStyle = col; ctx.fillText(F.name, 16, rowName);
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, 'rgba(8, 5, 22, .82)'); g.addColorStop(1, 'rgba(8, 5, 22, 0)');
+    ctx.fillStyle = g; ctx.fillRect(right ? half : 0, 0, half, h);
+    const rowName = 20, rowBar = 40;
+    ctx.textBaseline = 'middle'; ctx.textAlign = AL;
+    // au doigt, les boutons de ce boss sont sur l'écran (avec leur temps de recharge) : la barre prend toute la moitié
+    const padSide = dTouch() && (D.mode === 'local' || F.side === D.view);
+    const room = half - 16 - (padSide ? 28 : 186), wr = D_ROUNDS * 18 + 6;
+    ctx.font = '15px Bungee, Impact, sans-serif'; ctx.fillStyle = col; ctx.fillText(F.name, X(16), rowName);
     const nw = ctx.measureText(F.name).width;
-    ctx.font = '600 13px Outfit, system-ui, sans-serif'; ctx.fillStyle = 'rgba(239, 234, 255, .75)'; ctx.fillText(F.def.name, 24 + nw, rowName + 1);
-    // manches gagnées
+    // le nom du boss, raccourci s'il ne tient pas (il ne doit jamais passer sous les boutons)
+    ctx.font = '600 13px Outfit, system-ui, sans-serif'; ctx.fillStyle = 'rgba(239, 234, 255, .75)';
+    let bn = F.def.name;
+    while (bn.length > 3 && ctx.measureText(bn).width > room - nw - 8) bn = bn.slice(0, -2).trimEnd() + '…';
+    if (ctx.measureText(bn).width <= room - nw - 8) ctx.fillText(bn, X(24 + nw), rowName + 1);
+    // manches gagnées : au bout de la barre de vie
     for (let i = 0; i < D_ROUNDS; i++) {
-      const x = 16 + nw + 24 + ctx.measureText(F.def.name).width + 16 + i * 18;
-      ctx.beginPath(); ctx.arc(x, rowName, 6, 0, 7);
+      const x = X(16 + room - wr + 12 + i * 18);
+      ctx.beginPath(); ctx.arc(x, rowBar, 6, 0, 7);
       if (i < F.wins) { ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0; }
       else { ctx.strokeStyle = 'rgba(239, 234, 255, .45)'; ctx.lineWidth = 2; ctx.stroke(); }
     }
-    // au doigt, les boutons de ce boss sont sur l'écran (avec leur temps de recharge) : la barre prend toute la largeur
-    const padSide = dTouch() && (D.mode === 'local' || F.side === D.view);
-    // barre de vie (elle tremble un peu quand le boss est touché)
-    const bw = DW - 16 - (padSide ? 16 : 190), shk = D.hitT[F.side] > 0 ? (Math.random() - .5) * 4 : 0, k = Math.max(0, F.hp / F.st.hp);
-    ctx.fillStyle = 'rgba(20, 14, 48, .9)'; rrect(16 + shk, rowBar - 7, bw, 14, 7); ctx.fill();
-    const hg = ctx.createLinearGradient(16, 0, 16 + bw, 0);
+    // barre de vie (elle tremble un peu quand le boss est touché) ; elle se vide vers le milieu de l'arène
+    const bw = room - wr, shk = D.hitT[F.side] > 0 ? (Math.random() - .5) * 4 : 0, k = Math.max(0, F.hp / F.st.hp);
+    const bx = (right ? LW - 16 - bw : 16) + shk, fw = Math.max(10, bw * k);
+    ctx.fillStyle = 'rgba(20, 14, 48, .9)'; rrect(bx, rowBar - 7, bw, 14, 7); ctx.fill();
+    const hg = ctx.createLinearGradient(X(16), 0, X(16 + bw), 0);
     hg.addColorStop(0, k < .3 ? '#ff4f6d' : F.def.col); hg.addColorStop(1, k < .3 ? '#ff9a3c' : '#ffffff');
-    if (k > 0) { ctx.fillStyle = hg; rrect(16 + shk, rowBar - 7, Math.max(10, bw * k), 14, 7); ctx.fill(); }
-    ctx.strokeStyle = 'rgba(255, 255, 255, .35)'; ctx.lineWidth = 1.5; rrect(16 + shk, rowBar - 7, bw, 14, 7); ctx.stroke();
-    ctx.font = '700 11px Outfit, system-ui, sans-serif'; ctx.fillStyle = '#120a2a'; ctx.textAlign = 'left';
-    if (k > .12) ctx.fillText(`${Math.ceil(F.hp)} PV`, 24 + shk, rowBar + .5);
+    if (k > 0) { ctx.fillStyle = hg; rrect(right ? bx + bw - fw : bx, rowBar - 7, fw, 14, 7); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(255, 255, 255, .35)'; ctx.lineWidth = 1.5; rrect(bx, rowBar - 7, bw, 14, 7); ctx.stroke();
+    ctx.font = '700 11px Outfit, system-ui, sans-serif'; ctx.fillStyle = '#120a2a'; ctx.textAlign = AL;
+    if (k > .12) ctx.fillText(`${Math.ceil(F.hp)} PV`, X(24) + shk, rowBar + .5);
     // les 3 boutons
     // les touches s'affichent seulement pour les boss pilotés au clavier sur cet appareil
     const keys = D.mode === 'local' ? F.side : F.side === D.view ? 0 : -2, touch = dTouch();
     // tir, super pouvoir (étoile), et la frappe spécifique (éclair) seulement pour les boss qui en ont une
     const btns = [['fire', 'Tir', 0, 0, F.def.col], ['s2', F.st.sigName, F.cd2, F.cd2Max, F.st.sigCol]].concat(F.st.alt ? [['s1', F.st.altName, F.cd1, F.cd1Max, '#ffd86b']] : []);
     if (!padSide) btns.forEach(([k2, label, cd, mx, c, off, glyph], i) => {
-      const x = DW - 150 + i * 52 + (F.st.alt ? 0 : 52), y = bottom ? DH - 40 : 40, R = 19;
+      const x = X(half - 150 + i * 52 + (F.st.alt ? 0 : 52)), y = 34, R = 18;
       ctx.save();
       ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
       ctx.fillStyle = off ? 'rgba(20, 14, 48, .6)' : cd > 0 ? 'rgba(20, 14, 48, .92)' : `${c}33`; ctx.fill();
@@ -17218,9 +17272,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       }
       // la touche à utiliser (sur ordinateur), sinon le nom
       ctx.font = '600 10px Outfit, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(239, 234, 255, .8)';
-      const ky = bottom ? y - R - 7 : y + R + 9;
       const kname = touch || keys < 0 ? '' : dKeyOf(keys, k2);
-      if (kname && !off) ctx.fillText(kname, x, ky);
+      if (kname && !off) ctx.fillText(kname, x, y + R + 9);
       ctx.restore();
     });
     ctx.restore();
@@ -17359,7 +17412,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
         + (ks === 0 ? `<span>Commandes ${pl}</span><div class="cinetabs" role="tablist"><button type="button" role="tab" data-style="souris" class="${dCtl.style === 'souris' ? 'on' : ''}">Souris</button><button type="button" role="tab" data-style="clavier" class="${dCtl.style === 'clavier' ? 'on' : ''}">Clavier</button></div>` : `<span>Commandes ${pl}</span>`)
         + `<small>${dBind ? (dBindMsg || 'Appuie sur la nouvelle touche (Échap pour annuler).') : 'Clique sur une touche pour la changer.'}</small>`
         + `<button type="button" class="dctlreset" data-reset="${ks}">Par défaut</button></div>`;
-      const moveTxt = ks === 1 ? 'Flèches (haut = avancer)' : dCtl.style === 'souris' ? 'Le boss suit la souris.' : `${['up', 'left', 'down', 'right'].map(k => dKeyLabel(D_KEYS[0][k][0])).join(' ')} (haut = avancer)`;
+      const moveTxt = ks === 1 ? 'Flèches (gauche = avancer)' : dCtl.style === 'souris' ? 'Le boss suit la souris.' : `${['up', 'left', 'down', 'right'].map(k => dKeyLabel(D_KEYS[0][k][0])).join(' ')} (droite = avancer)`;
       info.innerHTML = `<div class="dihead"><img src="${bossPortrait(cur)}" alt=""><div><small>Monde ${dWorldOf(cur) + 1} · ${cur.place}</small><b>${cur.name}</b><em>« ${cur.quote} »</em></div></div>`
         + `<div class="distats">${[['Vie', st.hp, 60, 140], ['Vitesse', st.spd, 200, 290], ['Force des tirs', st.dmg, 1, 10], ['Nombre de tirs', st.out, 1, 16]].map(([n, v, lo, hi]) => `<span>${n}<i><u style="width:${bar(v, lo, hi)}%"></u></i></span>`).join('')}</div>`
         + ctl + `<ul class="diskills">`
@@ -17478,20 +17531,22 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     for (const p of dPad) { p.fire = p.click = p.drag = p.mouse = false; p.s1 = p.s2 = 0; p.tx = p.ty = null; }
   }
   const dFingers = new Map();
-  function dSideAt(y) {
+  function dSideAt(x) {
     const D = duel;
     if (D.mode !== 'local') return D.view;
-    return y > innerHeight / 2 ? 0 : 1;
+    return x < innerWidth / 2 ? 0 : 1;
   }
   function dToArena(cx, cy) {
     const A = dArena(), f = toField(cx, cy);
-    let x = (f.x - A.x) / A.s, y = (f.y - A.y) / A.s;
+    // l'écran montre l'arène couchée : on la remet debout
+    const sx = (f.x - A.x) / A.s, sy = (f.y - A.y) / A.s;
+    let x = sy, y = DH - sx;
     if (duel.view === 1) { x = DW - x; y = DH - y; }
     return { x, y };
   }
   cv.addEventListener('pointerdown', e => {
     if (state !== 'duel' || !duel || e.pointerType === 'mouse') return;
-    const s = dSideAt(e.clientY), F = duel.f[s], a = dToArena(e.clientX, e.clientY), r = dReal(F, F.it.x, F.it.y);
+    const s = dSideAt(e.clientX), F = duel.f[s], a = dToArena(e.clientX, e.clientY), r = dReal(F, F.it.x, F.it.y);
     // le boss bouge comme le doigt, mais là où il est : le doigt peut glisser n'importe où sans le cacher
     for (const [id, g] of dFingers) if (g.s === s) dFingers.delete(id);
     dFingers.set(e.pointerId, { s, ax: a.x, ay: a.y, bx: r.x, by: r.y });
@@ -17814,7 +17869,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (netRole === 'host') netHostSend(t);
     const dFight = state === 'duel' && !!duel && !duel.paused && duel.phase !== 'end';
     if (dFight !== document.body.classList.contains('dfight')) document.body.classList.toggle('dfight', dFight);
-    if (state === 'duel') { dHostSend(t); dPadUi(); if (!$('duelEnd').hidden) try { drawDuelWinner(t); } catch (e) { console.error(e); } }
+    if (state === 'duel') { const up = dUpright() && !!duel && duel.phase !== 'end'; if ($('duelTurn').hidden === up) $('duelTurn').hidden = !up; dHostSend(t); dPadUi(); if (!$('duelEnd').hidden) try { drawDuelWinner(t); } catch (e) { console.error(e); } }
     if (!$('team').hidden) drawTeam(t);
     if (!$('menu').hidden) try { drawHomeShip(t); } catch (e) { console.error(e); }
     drawFill(t);
