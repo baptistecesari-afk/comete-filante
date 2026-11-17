@@ -16293,7 +16293,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
   // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
-  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 1.91, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 3.11, sorciere: 3.02, mammouth: 0.85, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
+  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 1.91, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 1.5, sorciere: 3.02, mammouth: 0.85, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
   function dStats(def) {
     if (dStatCache[def.id]) return dStatCache[def.id];
     const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
@@ -16393,12 +16393,22 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
         it.fireT -= f; it.aimT -= busy && !inp.fire ? dt * D_CALM : f;
         if (!F.st.alt) it.altT -= f;
         else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) { it.altT = 0; if (d.id === 'cameleon') it.fireT = 0; } // le caméléon : sa frappe, c'est le coup de langue
-        const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y;
+        const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y, t0 = it.trail[0];
         (d.move || moveW1)(it, dt, D_BS, dt, () => {});
         if (pend && it.altT > 0) { F.cd1Max = Math.max(3, it.altT * 1.25); F.cd1 = F.cd1Max; it.altT = 99; F.win = 2.4; }
         // le boss ne bouge que sous les doigts du joueur, sauf pendant une compétence qui le déplace
         if (!(F.win > 0 && D_MOVE_SKILL.has(d.id))) { it.x = px; it.y = py; }
         else if (it.x !== px || it.y !== py || it.burrow > 0) F.free = true;
+        // le corps du Serpent de Givre et la queue du Dragon : le mode histoire y ajoute un point de SON trajet ;
+        // en duel, on le remplace par la vraie place du boss (sinon la queue part loin de la tête), seulement quand il avance
+        if (it.trail.length && it.trail[0] !== t0) {
+          const n = it.trail.length;
+          it.trail.shift();
+          const h = it.trail[0];
+          const dd = h ? Math.hypot(h.x - it.x, h.y - it.y) : 99;
+          // un point tous les 6 px au plus : même quand le boss file vite, le corps reste d'un seul morceau
+          if (dd > 3) { const k = h ? Math.min(12, Math.ceil(dd / 6)) : 1; for (let j = 1; j <= k; j++) it.trail.unshift(h ? { x: h.x + (it.x - h.x) * j / k, y: h.y + (it.y - h.y) * j / k } : { x: it.x, y: it.y }); while (it.trail.length > n) it.trail.pop(); }
+        }
       }
       dMoveBullets(dt);
       for (const m of items) {
@@ -16644,10 +16654,13 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     }
     if (E.t >= E.dur || (E.kind === 'comet' && !D.comet)) { D.ev = null; D.rocks = []; D.comet = null; D.evT = 18 + Math.random() * 6; }
   }
+  // le corps du serpent (et la queue du dragon) part de la tête, bien rangé derrière elle, au début de chaque manche
+  // (la queue du dragon se dessine déjà vers l'arrière toute seule : ses points partent tous de la tête)
+  const dBody = id => Array.from({ length: id === 'serpent' ? 60 : id === 'dragon' ? 40 : 0 }, (_, i) => ({ x: DW / 2, y: 150 - (id === 'serpent' ? i * 1.5 : 0) }));
   function dPlace(F) {
     const it = F.it;
     Object.assign(it, { x: DW / 2, y: 150, fireT: 1.2, aimT: 1.2, altT: F.st.alt ? 99 : 2.5, spT: 99, pw: null, rage: false, alpha: 1, invuln: 0, hitT: 0, contactT: 0,
-      revived: false, slide: 0, charge: false, burrow: 0, jump: 0, burstT: 0, breath: 0, jet: 0, blizz: 0, trail: [], midSaid: false, r: F.def.r });
+      revived: false, slide: 0, charge: false, burrow: 0, jump: 0, burstT: 0, breath: 0, jet: 0, blizz: 0, trail: dBody(F.def.id), midSaid: false, r: F.def.r });
     F.hp = it.hp = F.st.hp; F.bul = []; F.mins = []; F.cd1 = 0; F.cd2 = 3; F.win = 0; F.free = false; F.hurt = 0; F.sigHurt = 0; F.guard = 0;
   }
   function dRoundOver(winner) {
@@ -16834,9 +16847,12 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (P && P.kind === 'teleport') ctx.globalAlpha = Math.max(.05, it.alpha ?? 1);
     if (on && P.kind === 'shrink') { ctx.translate(it.x, it.y); ctx.scale(.55, .55); ctx.translate(-it.x, -it.y); }
     // le boss du bas de l'écran vit dans un repère retourné : on redresse son dessin pour qu'il ne soit pas la tête en bas
-    if (F.side === duel.view) { ctx.translate(it.x, it.y); ctx.rotate(Math.PI); ctx.translate(-it.x, -it.y); }
+    const turn = F.side === duel.view, tr = it.trail;
+    if (turn) { ctx.translate(it.x, it.y); ctx.rotate(Math.PI); ctx.translate(-it.x, -it.y); }
+    // le corps du serpent (la queue du dragon) est fait de vraies positions : on les retourne aussi, pour qu'il reste derrière la tête
+    if (turn && tr && tr.length) it.trail = tr.map(p => ({ x: 2 * it.x - p.x, y: 2 * it.y - p.y }));
     shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
-    drawBoss(it, t);
+    try { drawBoss(it, t); } finally { it.trail = tr; }
     ctx.restore();
     if (on && (P.kind === 'bubble' || P.kind === 'mirror' || P.kind === 'heal')) {
       ctx.save(); ctx.strokeStyle = P.col; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .3 * Math.sin(t / 90);
