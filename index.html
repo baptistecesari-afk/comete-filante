@@ -1308,6 +1308,17 @@ button, a, label, [role="tab"] { touch-action: manipulation; }
 .dk b { font-weight: 400; }
 .dk-fire b { color: #ff7aa8; } .dk-s1 b { color: #ffd86b; } .dk-s2 b { color: #7ad8ff; }
 .dk kbd { font: 700 11px var(--body); min-width: 1.8em; padding: 3px 6px; text-align: center; border-radius: 7px; color: var(--ink); background: #ffffff14; border: 1px solid #ffffff38; border-bottom-width: 3px; }
+.dkey { padding: 0; border: 0; background: none; box-shadow: none; cursor: var(--cur-clic); border-radius: 7px; }
+.dkey:hover kbd, .dkey:focus-visible kbd { border-color: #ffd86b; color: #ffd86b; }
+.dkey.wait kbd { border-color: #ffd86b; color: #ffd86b; animation: dkwait .8s ease-in-out infinite alternate; }
+@keyframes dkwait { to { background: #ffd86b30; } }
+.dk-move b { color: var(--muted); }
+.dctl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; color: var(--muted); }
+.dctl > span { font-family: var(--display); font-size: 12px; color: var(--ink); }
+.dctl .cinetabs { margin: 0; }
+.dctl .cinetabs button { padding: 5px 12px; font-size: 12px; }
+.dctl small { flex: 1 1 12em; }
+.dctlreset { padding: 5px 12px; font-size: 12px; border-radius: 999px; background: transparent; color: var(--muted); border: 1.5px solid #ffffff30; box-shadow: none; }
 .dgrid { display: flex; flex-direction: column; gap: 8px; }
 .dgrid .wdsec { margin: 4px 0 0; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .dgrid .bgrid { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
@@ -16247,11 +16258,37 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     { up: [], down: [], left: [], right: [], fire: [], s1: ['KeyW', 'KeyZ'], s2: ['Space'] },
     { up: ['ArrowUp'], down: ['ArrowDown'], left: ['ArrowLeft'], right: ['ArrowRight'], fire: ['KeyK', 'Numpad1', 'Numpad0'], s1: ['Semicolon', 'Numpad3'], s2: ['KeyL', 'Numpad2'] },
   ];
-  let dKeyName = { KeyW: 'Z', KeyA: 'Q', KeyS: 'S', KeyD: 'D', Space: 'Espace', KeyE: 'E', KeyR: 'R', KeyK: 'K', KeyL: 'L', Semicolon: 'M' };
-  try { if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then(m => { for (const k of Object.keys(dKeyName)) { const v = m.get(k); if (v && k !== 'Space') dKeyName[k] = v.toUpperCase(); } }).catch(() => {}); } catch (e) {}
-  const dMoveKeys = s => s ? 'Flèches' : 'Souris';
-  const D_J1_LABEL = { fire: 'Clic', s1: 'Z', s2: 'Espace' };
-  const dKeyOf = (s, k) => s === 0 ? D_J1_LABEL[k] : dKeyName[D_KEYS[s][k][0]] || D_KEYS[s][k][0];
+  // le nom d'une touche tel qu'il est écrit sur le clavier du joueur (AZERTY, QWERTY…)
+  let dLayout = null;
+  const dKeyName = { KeyW: 'Z', KeyA: 'Q', KeyS: 'S', KeyD: 'D', KeyQ: 'A', KeyZ: 'W', KeyM: ',', Semicolon: 'M', Space: 'Espace', Enter: 'Entrée', ShiftLeft: 'Maj', ShiftRight: 'Maj', ControlLeft: 'Ctrl', ControlRight: 'Ctrl', AltLeft: 'Alt', AltRight: 'Alt Gr', Backspace: 'Effacer', Tab: 'Tab',
+    ArrowUp: 'Haut', ArrowDown: 'Bas', ArrowLeft: 'Gauche', ArrowRight: 'Droite' };
+  try { if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then(m => { dLayout = m; }).catch(() => {}); } catch (e) {}
+  function dKeyLabel(code) {
+    if (!code) return '';
+    const v = dLayout && !/^(Space|Arrow|Numpad|Shift|Control|Alt|Enter|Tab|Backspace)/.test(code) ? dLayout.get(code) : null;
+    if (v && v.trim()) return v.toUpperCase();
+    if (dKeyName[code]) return dKeyName[code];
+    let m = /^Key(.)$/.exec(code); if (m) return m[1];
+    m = /^Digit(.)$/.exec(code); if (m) return m[1];
+    m = /^Numpad(.+)$/.exec(code); if (m) return 'Pavé ' + m[1];
+    return code;
+  }
+  // commandes réglables : chaque joueur peut choisir ses touches, et le joueur 1 peut jouer à la souris (par défaut) ou au clavier
+  const D_STYLE_KEYS = {
+    souris: { up: [], down: [], left: [], right: [], fire: [], s1: ['KeyW', 'KeyZ'], s2: ['Space'] },
+    clavier: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], fire: ['Space'], s1: ['KeyR'], s2: ['KeyE'] },
+  };
+  const D_J2_KEYS = { ...D_KEYS[1] };
+  let dCtl = { style: 'souris', b: [{}, {}] };
+  try { const v = JSON.parse(localStorage.getItem('comete-duel-touches') || '{}'); if (D_STYLE_KEYS[v.style]) dCtl.style = v.style; if (Array.isArray(v.b)) dCtl.b = [0, 1].map(i => { const o = {}; for (const k of ['fire', 's1', 's2']) if (v.b[i] && typeof v.b[i][k] === 'string') o[k] = v.b[i][k].slice(0, 24); return o; }); } catch (e) {}
+  function dApplyCtl() {
+    const base = [D_STYLE_KEYS[dCtl.style], D_J2_KEYS];
+    for (let i = 0; i < 2; i++) { Object.assign(D_KEYS[i], base[i]); for (const k of ['fire', 's1', 's2']) if (dCtl.b[i][k]) D_KEYS[i][k] = [dCtl.b[i][k]]; }
+  }
+  function dSaveCtl() { dApplyCtl(); try { localStorage.setItem('comete-duel-touches', JSON.stringify(dCtl)); } catch (e) {} }
+  dApplyCtl();
+  const dMouse = () => dCtl.style === 'souris';
+  const dKeyOf = (s, k) => s === 0 && k === 'fire' && !D_KEYS[0].fire.length ? 'Clic' : dKeyLabel(D_KEYS[s][k][0]);
   const dTouch = () => matchMedia('(pointer: coarse)').matches;
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
@@ -17102,7 +17139,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     $('duelLevels').hidden = dMode !== 'bot';
     document.querySelectorAll('#duelLevels button').forEach(b => b.classList.toggle('on', b.dataset.lvl === dLvl));
     $('duelLocalHelp').hidden = dMode !== 'local' || dTouch();
-    if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> le boss suit la souris · tir clic gauche · super pouvoir Espace · frappe Z</span><span><b style="color:${D_COL[1]}">Joueur 2</b> flèches (haut = avancer) · tir ${dKeyOf(1, 'fire')} · super pouvoir ${dKeyOf(1, 's2')} · frappe ${dKeyOf(1, 's1')}</span>`;
+    if (dMode === 'local' && !dTouch()) $('duelLocalHelp').innerHTML = `<span><b style="color:${D_COL[0]}">Joueur 1</b> ${dMouse() ? 'le boss suit la souris' : ['up', 'left', 'down', 'right'].map(k => dKeyLabel(D_KEYS[0][k][0])).join(' ')} · tir ${dKeyOf(0, 'fire')} · super pouvoir ${dKeyOf(0, 's2')} · frappe ${dKeyOf(0, 's1')}</span><span><b style="color:${D_COL[1]}">Joueur 2</b> flèches (haut = avancer) · tir ${dKeyOf(1, 'fire')} · super pouvoir ${dKeyOf(1, 's2')} · frappe ${dKeyOf(1, 's1')}</span>`;
     // les deux places
     const names = dNames();
     for (let i = 0; i < 2; i++) {
@@ -17122,11 +17159,20 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     else {
       const st = dStats(cur);
       const bar = (v, lo, hi) => Math.round(dClamp((v - lo) / (hi - lo || 1), .08, 1) * 100);
-      const ks = dMode === 'local' ? dActive : 0, kn = k => dTouch() ? '' : `<kbd>${dKeyOf(ks, k)}</kbd>`;
+      const ks = dMode === 'local' ? dActive : 0, wait = k => dBind && dBind.s === ks && dBind.k === k;
+      // sur ordinateur, chaque touche est un bouton : on clique dessus, puis on appuie sur la nouvelle touche
+      const kn = k => dTouch() ? '' : `<button type="button" class="dkey${wait(k) ? ' wait' : ''}" data-s="${ks}" data-k="${k}" title="Changer la touche"><kbd>${wait(k) ? '…' : dKeyOf(ks, k)}</kbd></button>`;
+      const pl = dMode === 'local' ? `du joueur ${ks + 1}` : '';
+      const ctl = dTouch() ? '' : `<div class="dctl">`
+        + (ks === 0 ? `<span>Commandes ${pl}</span><div class="cinetabs" role="tablist"><button type="button" role="tab" data-style="souris" class="${dCtl.style === 'souris' ? 'on' : ''}">Souris</button><button type="button" role="tab" data-style="clavier" class="${dCtl.style === 'clavier' ? 'on' : ''}">Clavier</button></div>` : `<span>Commandes ${pl}</span>`)
+        + `<small>${dBind ? (dBindMsg || 'Appuie sur la nouvelle touche (Échap pour annuler).') : 'Clique sur une touche pour la changer.'}</small>`
+        + `<button type="button" class="dctlreset" data-reset="${ks}">Par défaut</button></div>`;
+      const moveTxt = ks === 1 ? 'Flèches (haut = avancer)' : dCtl.style === 'souris' ? 'Le boss suit la souris.' : `${['up', 'left', 'down', 'right'].map(k => dKeyLabel(D_KEYS[0][k][0])).join(' ')} (haut = avancer)`;
       info.innerHTML = `<div class="dihead"><img src="${bossPortrait(cur)}" alt=""><div><small>Monde ${dWorldOf(cur) + 1} · ${cur.place}</small><b>${cur.name}</b><em>« ${cur.quote} »</em></div></div>`
         + `<div class="distats">${[['Vie', st.hp, 60, 140], ['Vitesse', st.spd, 200, 290], ['Force des tirs', st.dmg, 1, 10], ['Nombre de tirs', st.out, 1, 16]].map(([n, v, lo, hi]) => `<span>${n}<i><u style="width:${bar(v, lo, hi)}%"></u></i></span>`).join('')}</div>`
-        + `<ul class="diskills">`
-        + `<li><span class="dk dk-fire">${kn('fire')}<b>Tir</b></span><span>${cur.desc} <small>${dTouch() ? 'Tir automatique quand tu glisses le doigt.' : ks === 0 ? 'Garde le clic enfoncé.' : 'Garde la touche appuyée.'}</small></span></li>`
+        + ctl + `<ul class="diskills">`
+        + (dTouch() ? '' : `<li><span class="dk dk-move"><b>Déplacement</b></span><span><small>${moveTxt}</small></span></li>`)
+        + `<li><span class="dk dk-fire">${kn('fire')}<b>Tir</b></span><span>${cur.desc} <small>${dTouch() ? 'Tir automatique quand tu glisses le doigt.' : dKeyOf(ks, 'fire') === 'Clic' ? 'Garde le clic enfoncé.' : 'Garde la touche appuyée' + (ks === 0 ? ' (le clic tire aussi).' : '.')}</small></span></li>`
         + `<li><span class="dk dk-s2">${kn('s2')}<b>Super pouvoir</b></span><span><b>${st.sigName}</b> <small>Attaque signature · recharge 9 s</small></span></li>`
         + (st.alt ? `<li><span class="dk dk-s1">${kn('s1')}<b>Frappe</b></span><span><b>${st.altName}</b> <small>Recharge ${Math.round(Math.max(3, st.alt * 1.25))} s</small></span></li>` : '')
         + `</ul>`;
@@ -17158,6 +17204,31 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if (dMode === 'online' && dnet.role) dLeave();
     dMode = b.dataset.mode; dActive = 0; dSaveChoice(); renderDuel(); beep(520, .08, 'triangle', .06);
   };
+  // changer ses commandes
+  let dBind = null, dBindMsg = '';
+  $('duelInfo').addEventListener('click', e => {
+    const kb = e.target.closest('.dkey'), st = e.target.closest('[data-style]'), rs = e.target.closest('[data-reset]');
+    if (kb) { const s = +kb.dataset.s, k = kb.dataset.k; dBind = dBind && dBind.s === s && dBind.k === k ? null : { s, k }; dBindMsg = ''; renderDuel(); beep(700, .06, 'triangle', .05); }
+    else if (st && st.dataset.style !== dCtl.style) { dCtl.style = st.dataset.style; dCtl.b[0] = {}; dBind = null; dSaveCtl(); renderDuel(); beep(520, .08, 'triangle', .06); }
+    else if (rs) { const s = +rs.dataset.reset; dCtl.b[s] = {}; if (s === 0) dCtl.style = 'souris'; dBind = null; dSaveCtl(); renderDuel(); beep(420, .08, 'triangle', .06); }
+  });
+  addEventListener('keydown', e => {
+    if (!dBind || $('duelPanel').hidden) return;
+    e.preventDefault(); e.stopPropagation();
+    if (e.repeat) return;
+    const { s, k } = dBind;
+    if (e.code === 'Escape') { dBind = null; renderDuel(); return; }
+    // touches réservées : la pause, et les touches de déplacement
+    const move = ['up', 'down', 'left', 'right'].flatMap(m => D_KEYS[s][m]);
+    if (e.code === 'KeyP' || e.code === 'Tab' || move.includes(e.code)) { dBindMsg = `${dKeyLabel(e.code)} est déjà prise (pause ou déplacement). Choisis une autre touche.`; renderDuel(); beep(200, .12, 'square', .05); return; }
+    // déjà utilisée par l'autre joueur (à deux ici) : refusée ; par une autre action du même joueur : les deux s'échangent
+    const other = 1 - s, oth = dMode === 'local' && Object.keys(D_KEYS[other]).some(a => D_KEYS[other][a].includes(e.code));
+    if (oth) { dBindMsg = `${dKeyLabel(e.code)} sert déjà au joueur ${other + 1}. Choisis une autre touche.`; renderDuel(); beep(200, .12, 'square', .05); return; }
+    const prev = D_KEYS[s][k][0] || null;
+    for (const a of ['fire', 's1', 's2']) if (a !== k && D_KEYS[s][a].includes(e.code)) { if (prev) dCtl.b[s][a] = prev; else delete dCtl.b[s][a]; }
+    dCtl.b[s][k] = e.code; dBind = null; dBindMsg = '';
+    dSaveCtl(); renderDuel(); beep(900, .08, 'triangle', .06, 200);
+  }, true);
   $('duelLevels').onclick = e => {
     const b = e.target.closest('button[data-lvl]');
     if (!b || b.dataset.lvl === dLvl) return;
@@ -17246,14 +17317,15 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   // la souris : le boss du joueur 1 (ou le sien, en ligne et contre l'ordinateur) suit le pointeur ; clic gauche = tir
   const dMouseSide = () => duel.mode === 'local' ? 0 : duel.view;
   addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse' || state !== 'duel' || !duel || duel.paused) return;
+    if (e.pointerType !== 'mouse' || state !== 'duel' || !duel || duel.paused || !dMouse()) return;
     const P = dPad[dMouseSide()], a = dToArena(e.clientX, e.clientY);
     P.tx = a.x; P.ty = a.y; P.mouse = true;
   });
   cv.addEventListener('pointerdown', e => {
     if (e.pointerType !== 'mouse' || state !== 'duel' || !duel || e.button !== 0) return;
     const P = dPad[dMouseSide()], a = dToArena(e.clientX, e.clientY);
-    P.click = true; P.tx = a.x; P.ty = a.y; P.mouse = true;
+    P.click = true;
+    if (dMouse()) { P.tx = a.x; P.ty = a.y; P.mouse = true; }
     e.preventDefault();
   });
   addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button === 0) for (const p of dPad) p.click = false; });
