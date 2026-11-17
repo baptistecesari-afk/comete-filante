@@ -566,7 +566,7 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .tsum b { font-family: var(--display); font-weight: 400; font-size: 13px; color: var(--tier); }
 .tsum span { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .tsum .medal { width: 22px; height: 22px; }
-.tfilter, .collfilter { justify-content: center; }
+.tfilter { justify-content: center; }
 .tier small.tnext { font-size: 11px; color: var(--muted); }
 @media (max-width: 520px) { .tsum { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; } .tsum div { padding: 8px 2px; } .tsum b { font-size: 10px; } .tsum span { font-size: 12px; } }
 /* Collection et coffres */
@@ -586,26 +586,7 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 .odds i { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--rc); box-shadow: 0 0 8px var(--rc); }
 .odds em { font-style: normal; color: var(--muted); }
 .collpage > * { min-width: 0; }
-.colltabs { flex-wrap: wrap; border-radius: 18px; width: auto; }
-.colltabs button { padding: 7px 12px; font-size: 13px; }
-.cgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
-.ccard { font: inherit; text-align: left; color: var(--ink); cursor: var(--cur-clic); display: flex; flex-direction: column; gap: 3px; padding: 6px 8px 8px; border-radius: 14px;
-  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--rc) 18%, var(--deep)), var(--night) 75%); border: 2px solid color-mix(in srgb, var(--rc) 45%, transparent); position: relative; }
-.ccard canvas { width: 100%; height: auto; aspect-ratio: 160 / 110; }
-.ccard b { font-size: 13px; font-weight: 700; line-height: 1.2; }
-.ccard small { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--rc); font-weight: 700; }
-.ccard em { font-style: normal; font-size: 11px; color: var(--muted); }
-.ccard.on { border-color: var(--star); box-shadow: 0 0 0 2px var(--star), 0 0 18px color-mix(in srgb, var(--star) 40%, transparent); }
-.ccard.on em { color: var(--star); }
-.ccard.sel { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.ccard.locked canvas { filter: grayscale(.75) brightness(.6); }
-.ccard.locked::after { content: ''; position: absolute; top: 8px; right: 8px; width: 16px; height: 16px; opacity: .8;
-  background: no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='5' y='10' width='14' height='11' rx='2' fill='%23a99fd0'/%3E%3Cpath d='M8 10V7a4 4 0 0 1 8 0v3' fill='none' stroke='%23a99fd0' stroke-width='2.4'/%3E%3C/svg%3E"); }
-.collbar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; padding: 12px 14px; border-radius: 16px;
-  background: color-mix(in srgb, var(--panel) 92%, transparent); border: 2px solid color-mix(in srgb, var(--star) 50%, transparent); backdrop-filter: blur(6px); }
-.collbar span { font-size: 14px; flex: 1 1 200px; }
-.collbar .buy:disabled { filter: grayscale(1); opacity: .6; cursor: not-allowed; }
-@media (max-width: 615px) { .odds { grid-template-columns: 1fr; text-align: left; } .colltabs button { padding: 6px 9px; font-size: 12px; } .chestbtns button { flex: 1 1 100%; } .chestbox { grid-template-columns: 1fr; justify-items: center; text-align: center; } .chestbox canvas { width: 200px; } .chestbtns { justify-content: center; } .cgrid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); } }
+@media (max-width: 615px) { .odds { grid-template-columns: 1fr; text-align: left; } .chestbtns button { flex: 1 1 100%; } .chestbox { grid-template-columns: 1fr; justify-items: center; text-align: center; } .chestbox canvas { width: 200px; } .chestbtns { justify-content: center; } }
 /* cinématique d'ouverture d'un coffre */
 .chestfx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at 50% 55%, rgba(26, 18, 64, .82), rgba(5, 3, 14, .96)); cursor: var(--cur-clic); }
 .chestfx canvas#chestCv { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -2212,7 +2193,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 <div class="panel" id="collection" hidden>
   <div class="hangar atelier collpage">
     <button class="xclose" data-back="collBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
-    <h2>Collection</h2>
+    <h2>Coffres</h2>
     <p class="wallet" id="collCount"></p>
     <section class="chestbox">
       <canvas id="chestPv" width="360" height="260" aria-label="Ton coffre"></canvas>
@@ -2226,13 +2207,6 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
         <ul class="odds" id="chestOdds" aria-label="Chances dans un coffre"></ul>
       </div>
     </section>
-    <nav class="cinetabs colltabs" id="collTabs" role="tablist" aria-label="Familles de skins"></nav>
-    <div class="chips collfilter" id="collFilter"></div>
-    <div class="cgrid" id="collGrid"></div>
-    <div class="collbar" id="collBar" hidden>
-      <span id="collBarText"></span>
-      <button type="button" class="buy" id="collBarBtn"></button>
-    </div>
     <div class="row">
       <button class="play" id="collBack">Retour</button>
     </div>
@@ -6051,11 +6025,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   $('overTrophyBtn').onclick = openTrophies;
   $('trophyBack').onclick = closeHangar;
   // ===== Collection : tous les skins, les coffres et leur cinématique d'ouverture =====
-  const COLL_TABS = [['tout', 'Tout'], ['model', 'Vaisseaux'], ['color', 'Couleurs'], ['flame', 'Flammes'], ['trail', 'Fumées'], ['boom', 'Explosions'], ['aura', 'Auras']];
-  const COLL_KEYS = ['model', 'color', 'flame', 'trail', 'boom', 'aura'];
   const KEY_NAME = { model: 'Vaisseau', color: 'Couleur', flame: 'Flamme', trail: 'Fumée', boom: 'Explosion', aura: 'Aura' };
-  let collTab = 'tout', collFil = 'all', collSel = null;
-  const collList = () => COLL_KEYS.flatMap(k => CATS.find(c => c.key === k).list.map(it => ({ key: k, it })));
   // un skin en petit : la fusée avec ce skin, la fumée qui s'échappe, l'explosion ou l'aura
   function drawItemPv(k, w, h, key, id, t) {
     k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, w, h);
@@ -6065,76 +6035,24 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const conf = { ...base, [key]: id };
     drawRocket(k, w / 2, h * (key === 'flame' ? .4 : .5), s * (key === 'model' ? 1.6 : 1.45), conf, t, 0, key === 'flame' ? .7 : .2);
   }
-  // comment avoir un skin qu'on n'a pas encore
-  function howTo(key, id) {
-    const tro = trophyOf(key, id);
-    if (tro) return `Trophée ${trophyName(tro)}`;
-    if (boxOnly(key, id)) return 'Dans les coffres';
-    return astros(price(key, id));
-  }
   function updateCollBtn() {
     const n = shop.chests, badge = n ? `<span class="chestbadge">${n}</span>` : '';
-    if ($('collBtn')) $('collBtn').innerHTML = ICO('chest') + 'Collection et coffres' + badge;
-    if ($('teamColl')) $('teamColl').innerHTML = ICO('chest') + 'Collection et coffres' + badge;
+    if ($('collBtn')) $('collBtn').innerHTML = ICO('chest') + 'Coffres' + badge;
+    if ($('teamColl')) $('teamColl').innerHTML = ICO('chest') + 'Coffres' + badge;
     if ($('overCollBtn')) $('overCollBtn').textContent = n ? `Coffres · ${n}` : 'Coffres';
   }
+  // l'écran Boutique reste simple : seulement le coffre, l'ouvrir (gagné) ou l'acheter ; les skins s'équipent au Hangar
   function renderColl() {
-    const all = collList(), own = all.filter(x => owns(x.key, x.it.id)).length;
-    $('collCount').innerHTML = `${own} skins sur ${all.length} dans ta collection · tu as <i class="coin"></i><b>${Number(shop.credits).toLocaleString('fr-FR')}</b> Astros`;
+    $('collCount').innerHTML = `Tu as <i class="coin"></i><b>${Number(shop.credits).toLocaleString('fr-FR')}</b> Astros`;
     const n = shop.chests;
     $('chestN').textContent = n ? `Tu as ${n} coffre${n > 1 ? 's' : ''} à ouvrir` : 'Pas de coffre à ouvrir';
-    $('chestHow').textContent = `Gagne des coffres avec les trophées, et un coffre tous les ${CHEST_EVERY.toLocaleString('fr-FR')} points marqués. Un skin que tu as déjà se change en Astros.`;
+    $('chestHow').textContent = `Gagne des coffres avec les trophées, et un coffre tous les ${CHEST_EVERY.toLocaleString('fr-FR')} points marqués. Un skin que tu as déjà se change en Astros. Tes skins s'équipent dans le Hangar.`;
     $('chestOpen').disabled = !n;
     $('chestBuy').textContent = `Acheter un coffre · ${astros(CHEST_PRICE)}`;
     $('chestBuy').disabled = shop.credits < CHEST_PRICE;
     $('chestOdds').innerHTML = [1, 2, 3, 4].map(r => { const R = RARITY[r]; return `<li style="--rc:${R.col}"><i></i><b>${R.name}</b> ${R.p} % <em>${r === 1 ? '500 à 2 000 Astros' : 'un skin ' + R.name.toLowerCase()}</em></li>`; }).join('');
-    $('collTabs').innerHTML = COLL_TABS.map(([id, name]) => `<button type="button" role="tab" data-tab="${id}" class="${collTab === id ? 'on' : ''}" aria-selected="${collTab === id}">${name}</button>`).join('');
-    $('collFilter').innerHTML = [['all', 'Tous'], ['own', 'Possédés'], ['locked', 'À débloquer']].map(([id, name]) => `<button type="button" class="chip" data-fil="${id}" aria-pressed="${collFil === id}">${name}</button>`).join('');
-    const list = all.filter(x => (collTab === 'tout' || x.key === collTab) && (collFil === 'all' || (collFil === 'own') === owns(x.key, x.it.id)));
-    const grid = $('collGrid'); grid.innerHTML = '';
-    for (const { key, it } of list) {
-      const r = rarityOf(key, it.id), got = owns(key, it.id), on = cfg[key] === it.id, sel = collSel && collSel.key === key && collSel.id === it.id;
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'ccard' + (got ? '' : ' locked') + (on ? ' on' : '') + (sel ? ' sel' : '');
-      b.style.setProperty('--rc', RARITY[r].col);
-      b.dataset.k = key; b.dataset.id = it.id;
-      b.innerHTML = `<canvas width="160" height="110" aria-hidden="true"></canvas><b>${it.name}</b><small>${RARITY[r].name} · ${KEY_NAME[key]}</small><em>${on ? 'Équipé' : got ? 'Possédé · touche pour équiper' : howTo(key, it.id)}</em>`;
-      grid.appendChild(b);
-      drawItemPv(b.querySelector('canvas').getContext('2d'), 160, 110, key, it.id, 400);
-    }
-    if (!list.length) grid.innerHTML = '<p class="wallet">Rien ici pour l\'instant.</p>';
-    renderCollBar();
   }
-  function renderCollBar() {
-    const bar = $('collBar');
-    if (!collSel) { bar.hidden = true; return; }
-    const { key, id } = collSel, it = itemOf(key, id), r = rarityOf(key, id), got = owns(key, id), btn = $('collBarBtn');
-    bar.hidden = false;
-    let txt = `${KEY_NAME[key]} « ${it.name} » · ${RARITY[r].name}`;
-    if (got) { btn.textContent = cfg[key] === id ? 'Équipé' : 'Équiper'; btn.disabled = cfg[key] === id; }
-    else if (trophyOf(key, id)) { const t = trophyOf(key, id); txt += ` · ${t.col.solo ? 'réussis le défi Solo' : 'gagne le trophée'} ${trophyName(t)}` + (t.feat ? ` : ${t.text}` : ` (${Math.min(t.goal, statOf(t.stat)).toLocaleString('fr-FR')} / ${t.goal.toLocaleString('fr-FR')} ${STAT_UNITS[t.stat]})`); btn.textContent = t.col.solo ? 'Défi Solo requis' : 'Trophée requis'; btn.disabled = true; }
-    else if (boxOnly(key, id)) { txt += ' · se trouve seulement dans les coffres'; btn.textContent = 'Dans les coffres'; btn.disabled = true; }
-    else { const p = price(key, id), miss = p - shop.credits; txt += ` · ${astros(p)}`; btn.textContent = miss > 0 ? `Il te manque ${astros(miss)}` : 'Acheter et équiper'; btn.disabled = miss > 0; }
-    $('collBarText').textContent = txt;
-  }
-  $('collTabs').onclick = e => { const b = e.target.closest('button[data-tab]'); if (b) { collTab = b.dataset.tab; renderColl(); beep(520, .06, 'triangle', .06); } };
-  $('collFilter').onclick = e => { const b = e.target.closest('button[data-fil]'); if (b) { collFil = b.dataset.fil; renderColl(); beep(600, .06, 'triangle', .06); } };
-  $('collGrid').onclick = e => {
-    const b = e.target.closest('.ccard'); if (!b) return;
-    const key = b.dataset.k, id = b.dataset.id;
-    collSel = { key, id };
-    if (owns(key, id)) { cfg[key] = id; saveCfg(); beep(700, .06, 'triangle', .08); }
-    else beep(400, .06, 'triangle', .06);
-    renderColl();
-  };
-  $('collBarBtn').onclick = () => {
-    if (!collSel) return;
-    const { key, id } = collSel;
-    if (owns(key, id)) { cfg[key] = id; saveCfg(); }
-    else if (!buyItem(key, id)) return;
-    renderAtelier(); renderColl(); updateTrophyBtn();
-  };
-  function openColl() { initAudio(); collSel = null; renderColl(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('collection').hidden = false; }
+  function openColl() { initAudio(); renderColl(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('collection').hidden = false; }
   $('collBtn').onclick = openColl;
   $('overCollBtn').onclick = openColl;
   $('collBack').onclick = closeHangar;
@@ -18510,12 +18428,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     drawFill(t);
     // une erreur de dessin dans le Hangar ne doit jamais bloquer tout le jeu
     if (state === 'hangar' && !$('hangar').hidden) try { drawPreview(t); drawCarousel(t); drawActs(t); drawBuyPreview(t); } catch (e) { console.error(e); }
-    // Collection : le coffre qui flotte et le skin choisi, animé
-    if (!$('collection').hidden && $('chestFx').hidden) try {
-      drawChestIdle(t);
-      const sc = collSel && $('collGrid').querySelector('.ccard.sel canvas');
-      if (sc) drawItemPv(sc.getContext('2d'), 160, 110, collSel.key, collSel.id, t);
-    } catch (e) { console.error(e); }
+    // Boutique : le coffre qui flotte
+    if (!$('collection').hidden && $('chestFx').hidden) try { drawChestIdle(t); } catch (e) { console.error(e); }
     requestAnimationFrame(loop);
   }
   // ===== Menu principal façon jeu mobile : barre du haut, monde en cours, vaisseau, récompenses, défis, Jouer, et onglets en bas =====
