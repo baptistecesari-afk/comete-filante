@@ -572,21 +572,45 @@ body.gaucher .power { right: auto; left: calc(16px + env(safe-area-inset-left, 0
 /* Collection et coffres */
 .menugrid .wide { grid-column: 1 / -1; }
 .collbtn .chestbadge { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.6em; margin-left: .5em; padding: 0 .4em; border-radius: 999px; background: var(--tail); color: #1a0a20; font-family: var(--body); font-weight: 800; font-size: .8em; }
-.chestbox { display: grid; grid-template-columns: 240px 1fr; gap: 16px; align-items: center; padding: 14px; border-radius: 18px;
-  background: radial-gradient(ellipse at 20% 50%, color-mix(in srgb, #c86bff 22%, var(--night)), var(--night) 70%); border: 2px solid color-mix(in srgb, #c86bff 45%, transparent); }
-.chestbox canvas { width: 240px; height: auto; aspect-ratio: 360 / 260; }
-.chestinfo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.chestn { font-family: var(--display); font-weight: 400; font-size: 20px; color: var(--star); }
+.chestbox { --cc: #8f9cff; display: grid; grid-template-columns: minmax(0, 1.1fr) 1fr; gap: 16px; align-items: center; padding: 14px 18px; border-radius: 20px; position: relative; overflow: hidden;
+  background: radial-gradient(ellipse at 28% 62%, color-mix(in srgb, var(--cc) 26%, var(--night)), var(--night) 68%); border: 2px solid color-mix(in srgb, var(--cc) 55%, transparent);
+  box-shadow: inset 0 0 40px color-mix(in srgb, var(--cc) 14%, transparent), 0 8px 26px rgba(0, 0, 0, .35); transition: border-color .3s, background .3s; }
+.chestbox::before { content: ''; position: absolute; left: 4%; right: 52%; bottom: 10%; height: 18%; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--cc) 30%, transparent), transparent 70%); pointer-events: none; }
+.chestbox canvas { width: 100%; max-width: 420px; height: auto; aspect-ratio: 460 / 300; justify-self: center; position: relative; }
+.chestinfo { display: flex; flex-direction: column; gap: 8px; min-width: 0; position: relative; }
+.chestrank { font-size: 11px !important; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--cc) !important; }
+.chestn { font-family: var(--display); font-weight: 400; font-size: 24px; color: var(--star); line-height: 1.1; }
 .chestinfo small { color: var(--muted); font-size: 13px; line-height: 1.45; }
-.chestbtns { display: flex; gap: 8px; flex-wrap: wrap; }
-.chestbtns button { padding: 10px 16px; font-size: 14px; }
+.chestbtns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.chestbtns button { padding: 11px 18px; font-size: 14px; }
 .chestbtns button:disabled { filter: grayscale(1); opacity: .5; cursor: not-allowed; box-shadow: none; }
-.odds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 12px; color: var(--ink); }
-.odds li { display: flex; align-items: center; gap: 6px; }
+.odds { list-style: none; margin: 0; padding: 8px 12px; display: grid; grid-template-columns: 1fr; gap: 4px 12px; font-size: 12px; color: var(--ink); border-radius: 12px; background: rgba(0, 0, 0, .22); }
+.odds li { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.odds em { margin-left: auto; }
+.odds li.off { opacity: .35; }
 .odds i { width: 10px; height: 10px; border-radius: 50%; flex: none; background: var(--rc); box-shadow: 0 0 8px var(--rc); }
 .odds em { font-style: normal; color: var(--muted); }
+.chestrow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.chestcard { --cc: #8f9cff; position: relative; font: inherit; color: var(--ink); cursor: var(--cur-clic); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 6px 8px; border-radius: 16px; text-align: center;
+  background: radial-gradient(ellipse at 50% 60%, color-mix(in srgb, var(--cc) 20%, var(--deep)), var(--night) 75%); border: 2px solid color-mix(in srgb, var(--cc) 30%, transparent); transition: transform .15s, border-color .15s, box-shadow .15s; }
+.chestcard:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--cc) 60%, transparent); }
+.chestcard.on { border-color: var(--cc); box-shadow: 0 0 0 2px var(--cc), 0 0 22px color-mix(in srgb, var(--cc) 45%, transparent); }
+.chestcard canvas { width: 100%; height: auto; aspect-ratio: 168 / 112; }
+.chestcard b { font-size: 13px; font-weight: 700; line-height: 1.15; }
+.chestcard small { font-size: 12px; color: var(--star); display: inline-flex; align-items: center; gap: 3px; }
+.chestcard small .ic { width: 12px; height: 12px; }
+.chestcard.locked canvas { filter: grayscale(.45) brightness(.75); }
+.chestcard.locked small { color: var(--muted); }
+.chestcard .chestbadge { position: absolute; top: 6px; right: 6px; display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--tail); color: #1a0a20; font-weight: 800; font-size: 12px; z-index: 1; }
+.chestpips { display: flex; gap: 3px; margin-top: 2px; }
+.chestpips em { width: 6px; height: 6px; border-radius: 50%; background: var(--cc); box-shadow: 0 0 6px var(--cc); }
+.chestnote { margin: 0; text-align: center; font-size: 13px; color: var(--muted); line-height: 1.45; }
 .collpage > * { min-width: 0; }
-@media (max-width: 615px) { .odds { grid-template-columns: 1fr; text-align: left; } .chestbtns button { flex: 1 1 100%; } .chestbox { grid-template-columns: 1fr; justify-items: center; text-align: center; } .chestbox canvas { width: 200px; } .chestbtns { justify-content: center; } }
+@media (max-width: 615px) {
+  .odds { grid-template-columns: 1fr; text-align: left; } .chestbtns button { flex: 1 1 100%; } .chestbox { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 10px 12px 14px; }
+  .chestbox::before { left: 15%; right: 15%; top: 28%; bottom: auto; } .chestbox canvas { max-width: 320px; } .chestbtns { justify-content: center; } .chestinfo { align-items: center; width: 100%; } .odds { width: 100%; }
+  .chestrow { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 8px; } .chestcard { flex: 0 0 112px; scroll-snap-align: center; } .chestcard b { font-size: 12px; }
+}
 /* cinématique d'ouverture d'un coffre */
 .chestfx { position: fixed; inset: 0; z-index: 60; background: radial-gradient(ellipse at 50% 55%, rgba(26, 18, 64, .82), rgba(5, 3, 14, .96)); cursor: var(--cur-clic); }
 .chestfx canvas#chestCv { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -2195,18 +2219,21 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     <button class="xclose" data-back="collBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <h2>Coffres</h2>
     <p class="wallet" id="collCount"></p>
-    <section class="chestbox">
-      <canvas id="chestPv" width="360" height="260" aria-label="Ton coffre"></canvas>
+    <section class="chestbox" id="chestBox">
+      <canvas id="chestPv" width="460" height="300" aria-label="Le coffre choisi"></canvas>
       <div class="chestinfo">
+        <small class="chestrank" id="chestRank"></small>
         <b class="chestn" id="chestN"></b>
         <small id="chestHow"></small>
+        <ul class="odds" id="chestOdds" aria-label="Chances dans ce coffre"></ul>
         <div class="chestbtns">
-          <button type="button" class="play" id="chestOpen">Ouvrir un coffre</button>
-          <button type="button" class="ghost" id="chestBuy"></button>
+          <button type="button" class="play" id="chestOpen">Ouvrir un coffre gagné</button>
+          <button type="button" class="play" id="chestBuy"></button>
         </div>
-        <ul class="odds" id="chestOdds" aria-label="Chances dans un coffre"></ul>
       </div>
     </section>
+    <div class="chestrow" id="chestRow" role="tablist" aria-label="Les 5 coffres"></div>
+    <p class="chestnote" id="chestNote"></p>
     <div class="row">
       <button class="play" id="collBack">Retour</button>
     </div>
@@ -3543,7 +3570,19 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     3: { id: 'epique', name: 'Épique', col: '#c86bff', p: 11, dup: 1500 },
     4: { id: 'legendaire', name: 'Légendaire', col: '#ffb020', p: 4, dup: 2000 },
   };
-  const CHEST_PRICE = 2500, CHEST_EVERY = 25000;
+  const CHEST_EVERY = 25000;
+  // les 5 coffres : plus il coûte cher, plus il donne des skins rares ; les plus beaux se débloquent avec les trophées.
+  // odds = chances en % (Commun, Rare, Épique, Légendaire) ; com = Astros d'un tirage Commun. Aucun coffre ne rend plus d'Astros qu'il ne coûte.
+  // Les coffres gagnés (trophées, points) sont des coffres d'acier, comme avant.
+  const CHESTS = [
+    { id: 'cargo', name: 'Caisse de cargo', price: 1500, need: 0, odds: [70, 25, 4, 1], com: [300, 900], col: '#e8b32a', text: 'Une vieille caisse de soute. Pas chère, mais souvent des Astros.' },
+    { id: 'acier', name: "Coffre d'acier", price: 2500, need: 0, odds: [60, 25, 11, 4], com: [500, 2000], col: '#8f9cff', text: 'Le coffre classique. C\'est aussi celui que tu gagnes avec les trophées et les points.' },
+    { id: 'or', name: 'Coffre royal', price: 5000, need: 15, odds: [35, 38, 20, 7], com: [1000, 2500], col: '#ffc94a', text: 'Bois laqué et or massif. Plus de skins, et de meilleurs.' },
+    { id: 'cristal', name: 'Coffre de cristal', price: 9000, need: 40, odds: [0, 40, 42, 18], com: [0, 0], col: '#7ae8ff', text: 'Taillé dans un cristal des glaces. Toujours un skin, souvent épique.' },
+    { id: 'etoile', name: "Coffre d'étoile", price: 15000, need: 75, odds: [0, 0, 55, 45], com: [0, 0], col: '#ffb020', text: 'Forgé dans le cœur d\'une étoile. Un skin épique ou légendaire à coup sûr.' },
+  ];
+  const chestOf = id => CHESTS.find(c => c.id === id) || CHESTS[1];
+  const chestOpenFor = c => stats.won.length >= c.need;
   const itemOf = (key, id) => { const c = CATS.find(x => x.key === key); return c ? c.list.find(x => x.id === id) : null; };
   // un skin qu'on ne trouve que dans les coffres (il ne s'achète pas)
   const boxOnly = (key, id) => { const it = itemOf(key, id); return !!(it && it.box && !price(key, id)); };
@@ -6041,119 +6080,279 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     if ($('teamColl')) $('teamColl').innerHTML = ICO('chest') + 'Coffres' + badge;
     if ($('overCollBtn')) $('overCollBtn').textContent = n ? `Coffres · ${n}` : 'Coffres';
   }
-  // l'écran Boutique reste simple : seulement le coffre, l'ouvrir (gagné) ou l'acheter ; les skins s'équipent au Hangar
+  // l'écran Boutique reste simple : les 5 coffres, en ouvrir un gagné ou en acheter un ; les skins s'équipent au Hangar
+  let chestSel = 'acier';
   function renderColl() {
-    $('collCount').innerHTML = `Tu as <i class="coin"></i><b>${Number(shop.credits).toLocaleString('fr-FR')}</b> Astros`;
-    const n = shop.chests;
-    $('chestN').textContent = n ? `Tu as ${n} coffre${n > 1 ? 's' : ''} à ouvrir` : 'Pas de coffre à ouvrir';
-    $('chestHow').textContent = `Gagne des coffres avec les trophées, et un coffre tous les ${CHEST_EVERY.toLocaleString('fr-FR')} points marqués. Un skin que tu as déjà se change en Astros. Tes skins s'équipent dans le Hangar.`;
-    $('chestOpen').disabled = !n;
-    $('chestBuy').textContent = `Acheter un coffre · ${astros(CHEST_PRICE)}`;
-    $('chestBuy').disabled = shop.credits < CHEST_PRICE;
-    $('chestOdds').innerHTML = [1, 2, 3, 4].map(r => { const R = RARITY[r]; return `<li style="--rc:${R.col}"><i></i><b>${R.name}</b> ${R.p} % <em>${r === 1 ? '500 à 2 000 Astros' : 'un skin ' + R.name.toLowerCase()}</em></li>`; }).join('');
+    $('collCount').innerHTML = `Tu as <i class="coin"></i><b>${Number(shop.credits).toLocaleString('fr-FR')}</b> Astros · ${stats.won.length} trophée${stats.won.length > 1 ? 's' : ''}`;
+    const n = shop.chests, ch = chestOf(chestSel), ok = chestOpenFor(ch), rank = CHESTS.indexOf(ch) + 1;
+    $('chestRow').innerHTML = CHESTS.map((c, i) => {
+      const op = chestOpenFor(c), badge = c.id === 'acier' && n ? `<span class="chestbadge">${n}</span>` : '';
+      return `<button type="button" role="tab" class="chestcard${c.id === chestSel ? ' on' : ''}${op ? '' : ' locked'}" data-id="${c.id}" aria-selected="${c.id === chestSel}" style="--cc:${c.col}">${badge}<canvas data-id="${c.id}" width="168" height="112" aria-hidden="true"></canvas><b>${c.name}</b><small>${op ? astros(c.price) : ICO('lock') + c.need + ' trophées'}</small><i class="chestpips" aria-label="Rareté ${i + 1} sur 5">${'<em></em>'.repeat(i + 1)}</i></button>`;
+    }).join('');
+    $('chestBox').style.setProperty('--cc', ch.col);
+    $('chestRank').textContent = `Coffre ${rank} sur 5`;
+    $('chestN').textContent = ch.name;
+    $('chestHow').textContent = ch.text + (ok ? '' : ` Il se débloque avec ${ch.need} trophées (tu en as ${stats.won.length}).`);
+    $('chestOdds').innerHTML = [1, 2, 3, 4].map(r => { const R = RARITY[r], p = ch.odds[r - 1]; return `<li style="--rc:${R.col}"${p ? '' : ' class="off"'}><i></i><b>${R.name}</b> ${p} % <em>${r === 1 ? (p ? `${ch.com[0].toLocaleString('fr-FR')} à ${ch.com[1].toLocaleString('fr-FR')} Astros` : 'jamais') : 'un skin ' + R.name.toLowerCase()}</em></li>`; }).join('');
+    // les coffres gagnés sont des coffres d'acier
+    const earned = ch.id === 'acier' && n > 0;
+    $('chestOpen').hidden = !earned;
+    $('chestOpen').textContent = `Ouvrir un coffre gagné · ${n}`;
+    const miss = ch.price - shop.credits;
+    $('chestBuy').textContent = !ok ? `Bloqué · ${ch.need} trophées` : miss > 0 ? `Il te manque ${astros(miss)}` : `Acheter et ouvrir · ${astros(ch.price)}`;
+    $('chestBuy').disabled = !ok || miss > 0;
+    $('chestBuy').className = earned ? 'ghost' : 'play';
+    $('chestNote').textContent = n && ch.id !== 'acier' ? `Tu as ${n} coffre${n > 1 ? 's' : ''} d'acier gagné${n > 1 ? 's' : ''} : choisis le Coffre d'acier pour ${n > 1 ? 'les ' : "l'"}ouvrir.` : `Gagne des coffres d'acier avec les trophées, et un tous les ${CHEST_EVERY.toLocaleString('fr-FR')} points marqués. Un skin que tu as déjà se change en Astros. Tes skins s'équipent dans le Hangar.`;
   }
-  function openColl() { initAudio(); renderColl(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('collection').hidden = false; }
+  $('chestRow').onclick = e => { const b = e.target.closest('button[data-id]'); if (b && b.dataset.id !== chestSel) { chestSel = b.dataset.id; renderColl(); beep(560 + CHESTS.findIndex(c => c.id === chestSel) * 60, .07, 'triangle', .06); } };
+  function openColl() { initAudio(); if (shop.chests > 0) chestSel = 'acier'; renderColl(); state = 'hangar'; for (const id of ['menu', 'over']) $(id).hidden = true; $('collection').hidden = false; }
   $('collBtn').onclick = openColl;
   $('overCollBtn').onclick = openColl;
   $('collBack').onclick = closeHangar;
+  // acheter un coffre l'ouvre tout de suite
   $('chestBuy').onclick = () => {
-    if (shop.credits < CHEST_PRICE) return;
-    shop.credits -= CHEST_PRICE; shop.chests++; saveShop(); renderAtelier(); updateCollBtn(); renderColl();
+    const ch = chestOf(chestSel);
+    if (cx || !chestOpenFor(ch) || shop.credits < ch.price) return;
+    shop.credits -= ch.price; saveShop(); renderAtelier();
     beep(523, .08, 'triangle', .1); setTimeout(() => beep(784, .14, 'triangle', .1), 70);
+    openChest(ch.id, true);
   };
-  $('chestOpen').onclick = () => { if (shop.chests > 0) openChest(); };
+  $('chestOpen').onclick = () => { if (shop.chests > 0) openChest('acier'); };
 
-  // tirage d'un coffre : la rareté d'abord (60 / 25 / 11 / 4 %), puis le contenu
-  function rollChest() {
-    const x = Math.random() * 100;
-    const rar = x < RARITY[1].p ? 1 : x < RARITY[1].p + RARITY[2].p ? 2 : x < 100 - RARITY[4].p ? 3 : 4;
-    if (rar === 1) return { rar, astros: 500 + Math.floor(Math.random() * 31) * 50 };
-    const pool = BOX_POOL.filter(b => b.rar === rar), pick = pool[Math.floor(Math.random() * pool.length)];
+  // tirage d'un coffre : la rareté d'abord (selon le coffre), puis le contenu
+  function rollChest(ch) {
+    let x = Math.random() * 100, rar = 4;
+    for (let r = 1; r <= 4; r++) { if (x < ch.odds[r - 1]) { rar = r; break; } x -= ch.odds[r - 1]; }
+    if (rar === 1) return { rar, astros: ch.com[0] + Math.floor(Math.random() * ((ch.com[1] - ch.com[0]) / 50 + 1)) * 50 };
+    let pool = BOX_POOL.filter(b => b.rar === rar);
+    while (!pool.length && rar > 2) pool = BOX_POOL.filter(b => b.rar === --rar);
+    const pick = pool[Math.floor(Math.random() * pool.length)];
     if (shop.owned.includes(pick.key + ':' + pick.id)) return { rar, key: pick.key, id: pick.id, dup: true, astros: RARITY[rar].dup };
     return { rar, key: pick.key, id: pick.id };
   }
-  // le coffre, dessiné en métal (repère : centre du coffre, taille s) ; open = 0 fermé → 1 ouvert
-  function drawChest(k, x, y, s, open, col, glow, t) {
-    k.save(); k.translate(x, y); k.scale(s, s);
-    // lueur de la rareté derrière le coffre
-    if (glow > 0) {
-      k.globalCompositeOperation = 'lighter';
-      const g = k.createRadialGradient(0, -10, 10, 0, -10, 150); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      k.globalAlpha = Math.min(1, glow) * .75; k.fillStyle = g; k.beginPath(); k.arc(0, -10, 150, 0, 7); k.fill();
-      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
-    }
-    // ombre au sol
-    k.fillStyle = 'rgba(0, 0, 0, .45)'; k.beginPath(); k.ellipse(0, 66, 108, 12, 0, 0, 7); k.fill();
-    const metal = (x0, x1) => { const g = k.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, '#5a5878'); g.addColorStop(.25, '#d8dae8'); g.addColorStop(.5, '#8a88a8'); g.addColorStop(.8, '#3a3852'); g.addColorStop(1, '#22203a'); return g; };
-    // intérieur lumineux quand il s'ouvre
-    if (open > 0) {
-      k.globalCompositeOperation = 'lighter';
-      const ig = k.createLinearGradient(0, -6, 0, -90); ig.addColorStop(0, col); ig.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      k.globalAlpha = open; k.fillStyle = ig; k.beginPath(); k.moveTo(-92, -4); k.lineTo(92, -4); k.lineTo(140, -170); k.lineTo(-140, -170); k.closePath(); k.fill();
-      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
-      k.fillStyle = '#fffaf0'; k.globalAlpha = open; k.fillRect(-90, -8, 180, 6); k.globalAlpha = 1;
-    }
-    // caisse
-    const bg = k.createLinearGradient(0, -4, 0, 60); bg.addColorStop(0, '#4a3a8a'); bg.addColorStop(.5, '#2a2058'); bg.addColorStop(1, '#140e30');
-    k.fillStyle = bg; k.beginPath(); k.roundRect(-96, -4, 192, 64, 8); k.fill();
-    k.strokeStyle = 'rgba(255, 255, 255, .12)'; k.lineWidth = 1; k.beginPath(); k.moveTo(-90, 2); k.lineTo(90, 2); k.stroke();
-    // panneaux gravés
-    k.strokeStyle = 'rgba(0, 0, 0, .45)'; k.lineWidth = 1.5;
-    for (const px of [-62, 18]) { k.beginPath(); k.roundRect(px, 8, 44, 40, 5); k.stroke(); }
-    // cerclages en métal
-    for (const bx of [-78, 66]) { k.fillStyle = metal(bx, bx + 12); k.fillRect(bx, -4, 12, 64); }
-    k.fillStyle = metal(-96, 96); k.fillRect(-96, 52, 192, 8);
-    // rivets
-    k.fillStyle = '#e8eaf4';
-    for (const rx of [-72, 72]) for (const ry of [6, 26, 46]) { k.beginPath(); k.arc(rx, ry, 1.8, 0, 7); k.fill(); }
-    // couvercle (il se soulève et bascule)
-    k.save();
-    k.translate(0, -4 - open * 70); k.rotate(-open * .25); k.scale(1, 1 - open * .55);
-    const lg = k.createLinearGradient(0, -52, 0, 0); lg.addColorStop(0, '#5a48a8'); lg.addColorStop(.6, '#30246a'); lg.addColorStop(1, '#1e1648');
-    k.fillStyle = lg; k.beginPath(); k.moveTo(-96, 0); k.lineTo(-96, -26); k.bezierCurveTo(-96, -58, 96, -58, 96, -26); k.lineTo(96, 0); k.closePath(); k.fill();
-    for (const bx of [-78, 66]) { k.fillStyle = metal(bx, bx + 12); k.beginPath(); k.moveTo(bx, 0); k.lineTo(bx, -40 + Math.abs(bx + 6) * .12); k.lineTo(bx + 12, -41 + Math.abs(bx + 6) * .12); k.lineTo(bx + 12, 0); k.closePath(); k.fill(); }
-    k.fillStyle = metal(-96, 96); k.fillRect(-96, -6, 192, 6);
-    // reflet
-    k.strokeStyle = 'rgba(255, 255, 255, .25)'; k.lineWidth = 2; k.beginPath(); k.moveTo(-70, -36); k.bezierCurveTo(-40, -46, 40, -46, 70, -36); k.stroke();
+  // les 5 coffres, dessinés en 3/4 avec leur matière (repère : centre du coffre, taille s) ; open = 0 fermé → 1 ouvert
+  const CH_L = -104, CH_R = 80, CH_Y = -2, CH_B = 58, CH_DX = 24, CH_DY = 16, CH_LH = 16, CH_LA = 26;
+  const chLidH = u => CH_LH + CH_LA * Math.sin(Math.PI * u);
+  const chPt = (x, u) => [x + CH_DX * u, CH_Y - CH_DY * u - chLidH(u)];
+  // jusqu'où on voit le dessus du couvercle (la crête)
+  const CH_U = (() => { let best = 0, bu = 0; for (let u = 0; u <= 1.0001; u += .01) { const v = CH_DY * u + chLidH(u); if (v > best) { best = v; bu = u; } } return bu; })();
+  const STEEL = ['#4a4862', '#e6e8f2', '#9a98b4', '#4a4866', '#24223a'];
+  const GOLD = ['#7a4e0c', '#fff0b0', '#e2aa3c', '#9a6410', '#4a2a04'];
+  const SILVER = ['#7e8ea6', '#ffffff', '#c8d6e8', '#6a7a96', '#3a4660'];
+  const CHEST_LOOK = {
+    cargo: { body: ['#7f8466', '#5c604a', '#363929'], side: ['#4c4f3c', '#272920'], lid: ['#3e4130', '#6a6e54', '#8e9374'], cap: ['#4f523e', '#2a2c20'], trim: STEEL, slot: '#1a1c14' },
+    acier: { body: ['#4e4ca8', '#2e2c6e', '#17153c'], side: ['#29276a', '#100e2e'], lid: ['#221e56', '#3e3a92', '#6460c8'], cap: ['#2c2868', '#121032'], trim: STEEL, slot: '#0c0a22' },
+    or: { body: ['#a8283e', '#701226', '#3c0812'], side: ['#5a0e1e', '#2a040c'], lid: ['#4a0a18', '#8a1a30', '#c03a54'], cap: ['#5e1020', '#2a040c'], trim: GOLD, slot: '#1e0408' },
+    cristal: { body: ['rgba(170, 240, 255, .62)', 'rgba(70, 160, 235, .55)', 'rgba(24, 60, 140, .7)'], side: ['rgba(60, 140, 220, .6)', 'rgba(16, 40, 110, .75)'], lid: ['rgba(30, 80, 170, .7)', 'rgba(90, 190, 245, .6)', 'rgba(200, 248, 255, .7)'], cap: ['rgba(60, 140, 220, .65)', 'rgba(20, 50, 120, .8)'], trim: SILVER, slot: '#0a2048' },
+    etoile: { body: ['#2e1a5c', '#170c36', '#070312'], side: ['#1a0e3a', '#05020c'], lid: ['#0a0520', '#22124a', '#3e2478'], cap: ['#1c0f40', '#06030e'], trim: GOLD, slot: '#05020c' },
+  };
+  // étoiles fixes du coffre d'étoile (toujours aux mêmes endroits)
+  const CH_STARS = Array.from({ length: 46 }, (_, i) => { const r = n => { const v = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return v - Math.floor(v); }; return { x: CH_L + r(1) * (CH_R - CH_L + CH_DX), y: -60 + r(2) * 118, z: .5 + r(3) * 1.4, p: r(4) * 7 }; });
+  function chGrad(k, x0, y0, x1, y1, stops) { const g = k.createLinearGradient(x0, y0, x1, y1); stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c)); return g; }
+  // surface du couvercle entre x0 et x1, et entre les profondeurs u0 et u1
+  function chLidPath(k, x0, x1, u0, u1) {
+    k.beginPath();
+    for (let u = u0; u <= u1 + 1e-6; u += (u1 - u0) / 16) { const [a, b] = chPt(x0, u); k.lineTo(a, b); }
+    for (let u = u1; u >= u0 - 1e-6; u -= (u1 - u0) / 16) { const [a, b] = chPt(x1, u); k.lineTo(a, b); }
+    k.closePath();
+  }
+  function chRivet(k, x, y, r, light) {
+    const g = k.createRadialGradient(x - r * .35, y - r * .35, 0, x, y, r); g.addColorStop(0, light || '#ffffff'); g.addColorStop(.5, '#a8a6c0'); g.addColorStop(1, '#2a283c');
+    k.fillStyle = g; k.beginPath(); k.arc(x, y, r, 0, 7); k.fill();
+  }
+  function chGem(k, x, y, r, col, t) {
+    k.save(); k.translate(x, y);
+    k.fillStyle = col; k.beginPath(); k.moveTo(0, -r); k.lineTo(r * .85, 0); k.lineTo(0, r); k.lineTo(-r * .85, 0); k.closePath(); k.fill();
+    k.fillStyle = 'rgba(255, 255, 255, .55)'; k.beginPath(); k.moveTo(0, -r); k.lineTo(r * .4, -r * .1); k.lineTo(0, 0); k.lineTo(-r * .4, -r * .1); k.closePath(); k.fill();
+    k.strokeStyle = 'rgba(0, 0, 0, .35)'; k.lineWidth = .8; k.beginPath(); k.moveTo(0, -r); k.lineTo(r * .85, 0); k.lineTo(0, r); k.lineTo(-r * .85, 0); k.closePath(); k.stroke();
+    const tw = Math.max(0, Math.sin(t / 500 + x * .1)); if (tw > .85) { k.globalAlpha = (tw - .85) * 6; k.fillStyle = '#fff'; k.fillRect(-r * 1.2, -.5, r * 2.4, 1); k.fillRect(-.5, -r * 1.2, 1, r * 2.4); k.globalAlpha = 1; }
     k.restore();
-    // serrure : brille de la couleur de la rareté
-    if (open < .3) {
-      k.save(); k.translate(0, -2);
-      k.fillStyle = metal(-14, 14); k.beginPath(); k.roundRect(-14, -12, 28, 30, 5); k.fill();
-      k.shadowColor = col; k.shadowBlur = 6 + glow * 16; k.fillStyle = glow > 0 ? col : '#2a2048';
-      k.beginPath(); k.arc(0, 0, 5, 0, 7); k.fill(); k.fillRect(-2, 2, 4, 9); k.shadowBlur = 0;
+  }
+  // décor de la face avant, selon le coffre (dessiné à l'intérieur de la face)
+  function chFront(k, type, L, R, T, B, t) {
+    if (type === 'cargo') {
+      // tôles soudées, numéro peint au pochoir, rayures et rouille
+      k.strokeStyle = 'rgba(0, 0, 0, .35)'; k.lineWidth = 1.2;
+      for (const x of [L + 62, R - 62]) { k.beginPath(); k.moveTo(x, T); k.lineTo(x, B); k.stroke(); }
+      k.strokeStyle = 'rgba(255, 255, 255, .08)'; for (const x of [L + 63.5, R - 60.5]) { k.beginPath(); k.moveTo(x, T); k.lineTo(x, B); k.stroke(); }
+      k.fillStyle = 'rgba(235, 230, 200, .55)'; k.font = '700 15px monospace'; k.textAlign = 'center'; k.textBaseline = 'middle';
+      k.fillText('C-07', (L + R) / 2 + 52, T + 22); k.font = '700 8px monospace'; k.fillText('SOUTE 3', (L + R) / 2 - 58, T + 36);
+      k.strokeStyle = 'rgba(220, 215, 190, .22)'; k.lineWidth = .8;
+      for (const [a, b, c, d] of [[L + 20, T + 12, L + 44, T + 18], [R - 40, T + 30, R - 14, T + 26], [L + 70, T + 40, L + 92, T + 44]]) { k.beginPath(); k.moveTo(a, b); k.lineTo(c, d); k.stroke(); }
+      k.fillStyle = 'rgba(150, 70, 30, .35)'; for (const [x, y, r] of [[L + 8, B - 14, 6], [R - 10, T + 8, 4], [L + 96, B - 12, 5]]) { k.beginPath(); k.ellipse(x, y, r * 1.4, r, 0, 0, 7); k.fill(); }
+    } else if (type === 'acier') {
+      // deux panneaux en creux avec un liseré lumineux
+      for (const px of [L + 34, R - 80]) {
+        k.fillStyle = 'rgba(0, 0, 0, .28)'; k.beginPath(); k.roundRect(px, T + 10, 50, B - T - 26, 5); k.fill();
+        k.strokeStyle = 'rgba(255, 255, 255, .14)'; k.lineWidth = 1; k.beginPath(); k.moveTo(px + 2, B - 15); k.lineTo(px + 48, B - 15); k.stroke();
+        k.strokeStyle = 'rgba(140, 170, 255, .55)'; k.beginPath(); k.moveTo(px + 8, T + 16); k.lineTo(px + 42, T + 16); k.stroke();
+      }
+    } else if (type === 'or') {
+      // arabesques dorées gravées
+      k.strokeStyle = 'rgba(255, 210, 120, .5)'; k.lineWidth = 1.4;
+      for (const cx0 of [L + 52, R - 44]) {
+        k.beginPath(); k.moveTo(cx0 - 22, T + 26); k.bezierCurveTo(cx0 - 18, T + 8, cx0 - 2, T + 8, cx0, T + 22); k.bezierCurveTo(cx0 + 2, T + 8, cx0 + 18, T + 8, cx0 + 22, T + 26); k.stroke();
+        k.beginPath(); k.moveTo(cx0 - 22, T + 26); k.bezierCurveTo(cx0 - 14, T + 40, cx0 + 14, T + 40, cx0 + 22, T + 26); k.stroke();
+        k.beginPath(); k.arc(cx0, T + 26, 3, 0, 7); k.stroke();
+      }
+      k.strokeStyle = 'rgba(255, 220, 140, .3)'; k.lineWidth = 1; k.beginPath(); k.roundRect(L + 4, T + 4, R - L - 8, B - T - 18, 4); k.stroke();
+    } else if (type === 'cristal') {
+      // facettes taillées et cœur lumineux
+      const g = k.createRadialGradient((L + R) / 2, T + 24, 2, (L + R) / 2, T + 24, 80); g.addColorStop(0, 'rgba(220, 255, 255, .55)'); g.addColorStop(1, 'rgba(120, 220, 255, 0)');
+      k.fillStyle = g; k.fillRect(L, T, R - L, B - T);
+      k.strokeStyle = 'rgba(255, 255, 255, .5)'; k.lineWidth = 1;
+      const pts = [[L, T + 30], [L + 40, T], [L + 70, T + 50], [L + 110, T + 4], [L + 140, B], [R, T + 20], [L + 24, B]];
+      k.beginPath(); for (let i = 0; i < pts.length - 1; i++) { k.moveTo(...pts[i]); k.lineTo(...pts[i + 1]); } k.moveTo(L + 70, T + 50); k.lineTo(L + 24, B); k.moveTo(L + 110, T + 4); k.lineTo(R, T + 20); k.stroke();
+      k.fillStyle = 'rgba(255, 255, 255, .12)'; k.beginPath(); k.moveTo(L + 40, T); k.lineTo(L + 70, T + 50); k.lineTo(L + 110, T + 4); k.closePath(); k.fill();
+    } else if (type === 'etoile') {
+      // une nébuleuse et des étoiles qui scintillent
+      for (const [x, y, r, c] of [[L + 50, T + 20, 60, 'rgba(160, 80, 255, .45)'], [R - 30, T + 40, 50, 'rgba(60, 140, 255, .35)'], [L + 110, T + 10, 40, 'rgba(255, 90, 180, .25)']]) {
+        const g = k.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, c); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); k.fillStyle = g; k.fillRect(L, T, R - L, B - T);
+      }
+      for (const s of CH_STARS) { k.globalAlpha = .35 + .65 * Math.abs(Math.sin(t / 700 + s.p)); k.fillStyle = '#fff'; k.beginPath(); k.arc(s.x, s.y, s.z * .7, 0, 7); k.fill(); }
+      k.globalAlpha = 1;
+    }
+  }
+  function drawChest(k, x, y, s, open, col, glow, t, type = 'acier') {
+    const M = CHEST_LOOK[type] || CHEST_LOOK.acier, L = CH_L, R = CH_R, T = CH_Y, B = CH_B, DX = CH_DX, DY = CH_DY;
+    const metal = (x0, x1, y0 = 0, y1 = 0) => chGrad(k, x0, y0, x1, y1, M.trim);
+    k.save(); k.translate(x, y); k.scale(s, s);
+    // lueur de la rareté derrière le coffre (le coffre d'étoile et le cristal brillent toujours un peu)
+    const aura = Math.max(glow, type === 'etoile' ? .35 + .1 * Math.sin(t / 500) : type === 'cristal' ? .18 : 0);
+    if (aura > 0) {
+      k.globalCompositeOperation = 'lighter';
+      const g = k.createRadialGradient(0, -10, 10, 0, -10, 160); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      k.globalAlpha = Math.min(1, aura) * .75; k.fillStyle = g; k.beginPath(); k.arc(0, -10, 160, 0, 7); k.fill();
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    }
+    // ombre au sol, douce
+    const sg = k.createRadialGradient(DX / 2 - 12, B - 4, 10, DX / 2 - 12, B - 4, 130); sg.addColorStop(0, 'rgba(0, 0, 0, .6)'); sg.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    k.fillStyle = sg; k.beginPath(); k.ellipse(DX / 2 - 12, B - 2, 132, 18, 0, 0, 7); k.fill();
+    // côté droit de la caisse
+    k.fillStyle = chGrad(k, R, 0, R + DX, 0, M.side);
+    k.beginPath(); k.moveTo(R, T); k.lineTo(R + DX, T - DY); k.lineTo(R + DX, B - DY); k.lineTo(R, B); k.closePath(); k.fill();
+    // face avant
+    k.fillStyle = chGrad(k, 0, T, 0, B, M.body); k.beginPath(); k.rect(L, T, R - L, B - T); k.fill();
+    k.save(); k.beginPath(); k.rect(L, T, R - L, B - T); k.clip(); chFront(k, type, L, R, T, B, t);
+    // ombre portée du couvercle et assombrissement en bas
+    k.fillStyle = chGrad(k, 0, T, 0, T + 14, ['rgba(0, 0, 0, .45)', 'rgba(0, 0, 0, 0)']); k.fillRect(L, T, R - L, 14);
+    k.restore();
+    // l'ouverture et la lumière qui en sort
+    if (open > 0) {
+      k.fillStyle = M.slot; k.beginPath(); k.moveTo(L, T); k.lineTo(R, T); k.lineTo(R + DX, T - DY); k.lineTo(L + DX, T - DY); k.closePath(); k.fill();
+      k.globalCompositeOperation = 'lighter';
+      const ig = k.createLinearGradient(0, T, 0, T - 180); ig.addColorStop(0, col); ig.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      k.globalAlpha = open; k.fillStyle = ig; k.beginPath(); k.moveTo(L + 4, T - 2); k.lineTo(R + DX - 4, T - DY + 2); k.lineTo(R + 70, T - 190); k.lineTo(L - 40, T - 190); k.closePath(); k.fill();
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    }
+    // cerclages : bas de la caisse, montants avant et sur le côté, coins
+    k.fillStyle = metal(0, 0, B - 11, B); k.fillRect(L, B - 11, R - L, 11);
+    if (type === 'cargo') {
+      // bandes jaunes et noires de soute
+      k.save(); k.beginPath(); k.rect(L, B - 11, R - L, 11); k.clip();
+      for (let i = L - 12; i < R; i += 14) { k.fillStyle = '#e8b32a'; k.beginPath(); k.moveTo(i, B); k.lineTo(i + 7, B); k.lineTo(i + 18, B - 11); k.lineTo(i + 11, B - 11); k.closePath(); k.fill(); }
       k.restore();
+    }
+    k.fillStyle = chGrad(k, R, 0, R + DX, 0, [M.trim[3], M.trim[4]]); k.beginPath(); k.moveTo(R, B - 11); k.lineTo(R + DX, B - 11 - DY); k.lineTo(R + DX, B - DY); k.lineTo(R, B); k.closePath(); k.fill();
+    const posts = type === 'cargo' ? [L + 2, R - 14] : [L + 14, R - 26];
+    for (const bx of posts) {
+      k.fillStyle = metal(bx, bx + 12); k.fillRect(bx, T, 12, B - T);
+      k.fillStyle = 'rgba(0, 0, 0, .3)'; k.fillRect(bx + 12, T, 2, B - T);
+    }
+    // montant au milieu du côté
+    const sx = R + DX * .5;
+    k.fillStyle = chGrad(k, sx - 5, 0, sx + 5, 0, [M.trim[3], M.trim[1], M.trim[4]]); k.beginPath(); k.moveTo(sx - 5, T - DY * .5 + 3); k.lineTo(sx + 5, T - DY * .5 - 3); k.lineTo(sx + 5, B - DY * .5 - 3); k.lineTo(sx - 5, B - DY * .5 + 3); k.closePath(); k.fill();
+    // coins renforcés
+    for (const [cx0, cy0, dir] of [[L, B, 1], [R, B, -1]]) { k.fillStyle = metal(cx0 - 2, cx0 + dir * 18); k.beginPath(); k.moveTo(cx0, cy0); k.lineTo(cx0 + dir * 18, cy0); k.lineTo(cx0, cy0 - 18); k.closePath(); k.fill(); }
+    // rivets ou gemmes sur les montants
+    for (const bx of posts) for (const ry of [T + 8, (T + B) / 2, B - 17]) {
+      if (type === 'or' && ry === (T + B) / 2) chGem(k, bx + 6, ry, 4.5, '#3aa0ff', t);
+      else if (type === 'etoile' && ry === (T + B) / 2) chGem(k, bx + 6, ry, 4, '#c86bff', t);
+      else chRivet(k, bx + 6, ry, 2.2, type === 'or' || type === 'etoile' ? '#fff6c8' : null);
+    }
+    // arête claire de la face avant
+    k.strokeStyle = 'rgba(255, 255, 255, .22)'; k.lineWidth = 1.2; k.beginPath(); k.moveTo(R, T); k.lineTo(R, B); k.stroke();
+    if (type === 'cristal') { k.strokeStyle = 'rgba(220, 250, 255, .7)'; k.lineWidth = 1.2; k.strokeRect(L, T, R - L, B - T); k.beginPath(); k.moveTo(R, T); k.lineTo(R + DX, T - DY); k.lineTo(R + DX, B - DY); k.lineTo(R, B); k.stroke(); }
+
+    // ----- couvercle (il se soulève et bascule vers l'arrière) -----
+    k.save();
+    k.translate(0, T); k.translate(0, -open * 70); k.rotate(-open * .25); k.scale(1, 1 - open * .55); k.translate(0, -T);
+    // côté du couvercle (bout du tonneau)
+    k.fillStyle = chGrad(k, R, 0, R + DX, 0, M.cap);
+    k.beginPath(); k.moveTo(R, T); for (let u = 0; u <= 1.0001; u += 1 / 24) k.lineTo(...chPt(R, u)); k.lineTo(R + DX, T - DY); k.closePath(); k.fill();
+    // dessus bombé : sombre en bas, reflet vers la crête
+    const top = chPt(0, CH_U)[1];
+    k.fillStyle = chGrad(k, 0, T, 0, top, M.lid); chLidPath(k, L, R, 0, CH_U); k.fill();
+    if (type === 'etoile') { k.save(); chLidPath(k, L, R, 0, CH_U); k.clip(); for (const st of CH_STARS) { k.globalAlpha = .3 + .7 * Math.abs(Math.sin(t / 600 + st.p * 2)); k.fillStyle = '#fff'; k.beginPath(); k.arc(st.x, st.y - 24, st.z * .55, 0, 7); k.fill(); } k.globalAlpha = 1; k.restore(); }
+    if (type === 'cristal') { k.strokeStyle = 'rgba(255, 255, 255, .45)'; k.lineWidth = 1; k.beginPath(); for (const [a, b] of [[L + 30, .1], [L + 90, .5], [L + 140, .15]]) { k.moveTo(...chPt(a, 0)); k.lineTo(...chPt(a + 24, b)); } k.stroke(); }
+    if (type === 'cargo') { k.save(); chLidPath(k, L, R, .05, .2); k.clip(); for (let i = L - 20; i < R + 40; i += 14) { k.fillStyle = '#e8b32a'; k.beginPath(); k.moveTo(i, T); k.lineTo(i + 7, T); k.lineTo(i + 22, T - 40); k.lineTo(i + 15, T - 40); k.closePath(); k.fill(); } k.restore(); }
+    // reflet le long de la crête
+    k.globalCompositeOperation = 'lighter'; k.strokeStyle = type === 'cargo' ? 'rgba(255, 255, 255, .12)' : 'rgba(255, 255, 255, .3)'; k.lineWidth = 3;
+    k.beginPath(); k.moveTo(...chPt(L + 10, CH_U - .12)); k.lineTo(...chPt(R - 10, CH_U - .12)); k.stroke();
+    k.globalCompositeOperation = 'source-over';
+    // bord du couvercle et montants qui passent par-dessus
+    k.fillStyle = metal(0, 0, T - 8, T); chLidPath(k, L, R, 0, .07); k.fill();
+    for (const bx of posts) { k.fillStyle = metal(bx, bx + 12); chLidPath(k, bx, bx + 12, 0, CH_U); k.fill(); }
+    k.fillStyle = chGrad(k, R, 0, R + DX, 0, [M.trim[2], M.trim[4]]);
+    k.beginPath(); for (let u = 0; u <= 1.0001; u += 1 / 24) { const [a, b] = chPt(R, u); k.lineTo(a, b); } for (let u = 1; u >= -1e-4; u -= 1 / 24) { const [a, b] = chPt(R, u); k.lineTo(a - .5, b + 4); } k.closePath(); k.fill();
+    if (type === 'or' || type === 'etoile') chGem(k, ...chPt((L + R) / 2 - 6, CH_U * .55), 6, type === 'or' ? '#ff3a5a' : '#ffd86b', t);
+    if (type === 'cristal') { k.strokeStyle = 'rgba(220, 250, 255, .7)'; k.lineWidth = 1.2; chLidPath(k, L, R, 0, CH_U); k.stroke(); }
+    k.restore();
+    // serrure : plaque en métal, trou qui brille de la couleur de la rareté
+    if (open < .3) {
+      const lx = (L + R) / 2 - 6, ly = T + 2;
+      k.save(); k.translate(lx, ly); k.globalAlpha = 1 - open / .3;
+      k.fillStyle = 'rgba(0, 0, 0, .35)'; k.beginPath(); k.roundRect(-15, -14, 32, 36, 6); k.fill();
+      k.fillStyle = metal(-16, 16, -16, 20); k.beginPath(); k.roundRect(-16, -16, 32, 36, 6); k.fill();
+      k.strokeStyle = 'rgba(255, 255, 255, .35)'; k.lineWidth = 1; k.beginPath(); k.roundRect(-13, -13, 26, 30, 4); k.stroke();
+      const lit = glow > 0 || type === 'etoile' || type === 'cristal';
+      k.shadowColor = col; k.shadowBlur = lit ? 6 + glow * 16 : 0; k.fillStyle = lit ? col : '#1a1430';
+      if (type === 'etoile') { k.beginPath(); for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j * Math.PI / 5, rr = j % 2 ? 3 : 7.5; k.lineTo(Math.cos(a) * rr, 2 + Math.sin(a) * rr); } k.closePath(); k.fill(); }
+      else { k.beginPath(); k.arc(0, -1, 4.5, 0, 7); k.fill(); k.beginPath(); k.moveTo(-2.5, 1); k.lineTo(2.5, 1); k.lineTo(3.5, 11); k.lineTo(-3.5, 11); k.closePath(); k.fill(); }
+      k.shadowBlur = 0; k.restore();
     }
     // fente lumineuse entre la caisse et le couvercle
     if (glow > 0 && open === 0) {
       k.globalCompositeOperation = 'lighter'; k.globalAlpha = Math.min(1, glow);
       k.strokeStyle = col; k.lineWidth = 3; k.shadowColor = col; k.shadowBlur = 14;
-      k.beginPath(); k.moveTo(-94, -5); k.lineTo(94, -5); k.stroke(); k.shadowBlur = 0;
+      k.beginPath(); k.moveTo(L + 2, T - 1); k.lineTo(R, T - 1); k.lineTo(R + DX - 2, T - DY); k.stroke(); k.shadowBlur = 0;
+      k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
+    }
+    // poussière d'étoiles autour du coffre d'étoile
+    if (type === 'etoile' && !reduce) {
+      k.globalCompositeOperation = 'lighter';
+      for (let i = 0; i < 6; i++) { const a = t / 1400 + i * 1.05, rx = Math.cos(a) * 130, ry = Math.sin(a) * 26 - 10; k.globalAlpha = .4 + .4 * Math.sin(a * 2); k.fillStyle = '#ffe7a0'; k.beginPath(); k.arc(rx, ry, 1.6 + (Math.sin(a) > 0 ? 1 : 0), 0, 7); k.fill(); }
       k.globalAlpha = 1; k.globalCompositeOperation = 'source-over';
     }
     k.restore();
   }
-  // petit coffre qui flotte dans la Collection
+  // le coffre choisi, en grand, et les 5 petits coffres de la rangée
   function drawChestIdle(t) {
-    const cv = $('chestPv'), k = cv.getContext('2d');
+    const ch = chestOf(chestSel), cv = $('chestPv'), k = cv.getContext('2d');
     k.setTransform(1, 0, 0, 1, 0, 0); k.clearRect(0, 0, cv.width, cv.height);
-    const has = shop.chests > 0, bob = reduce ? 0 : Math.sin(t / 600) * 5;
-    drawChest(k, cv.width / 2, cv.height * .56 + bob, 1.3, 0, '#c86bff', has ? .35 + .2 * Math.sin(t / 400) : 0, t);
+    const bob = reduce ? 0 : Math.sin(t / 600) * 5, lit = chestOpenFor(ch);
+    drawChest(k, cv.width / 2 - 6, cv.height * .6 + bob, 1.45, 0, ch.col, lit ? .3 + .15 * Math.sin(t / 400) : 0, t, ch.id);
+    for (const c of $('chestRow').querySelectorAll('canvas')) {
+      const kk = c.getContext('2d'), it = chestOf(c.dataset.id), on = it.id === chestSel;
+      kk.setTransform(1, 0, 0, 1, 0, 0); kk.clearRect(0, 0, c.width, c.height);
+      drawChest(kk, c.width / 2 - 4, c.height * .64 + (on && !reduce ? Math.sin(t / 500) * 2 : 0), .56, 0, it.col, on ? .25 : 0, t, it.id);
+    }
   }
   // ----- la cinématique -----
   let cx = null; // état de la cinématique en cours
   const ccv = $('chestCv'), cctx = ccv.getContext('2d');
   const easeBack = q => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(q - 1, 3) + c1 * Math.pow(q - 1, 2); };
-  function openChest() {
-    if (cx || shop.chests <= 0) return;
+  function openChest(type = 'acier', bought = false) {
+    if (cx || (!bought && shop.chests <= 0)) return;
     initAudio();
-    shop.chests--; stats.coffres++; statsDirty = true;
-    const res = rollChest();
+    if (!bought) shop.chests--;
+    stats.coffres++; statsDirty = true;
+    const ch = chestOf(type), res = rollChest(ch);
     // on garde tout de suite le gain (si on ferme l'onglet pendant la cinématique, rien n'est perdu)
     if (res.astros) shop.credits += res.astros;
     if (res.key && !res.dup) shop.owned.push(res.key + ':' + res.id);
     saveShop(); saveStats();
-    cx = { t0: performance.now(), res, col: RARITY[res.rar].col, parts: [], opened: false, shown: false, nextRumble: 0 };
+    cx = { t0: performance.now(), res, type: ch.id, col: RARITY[res.rar].col, parts: [], opened: false, shown: false, nextRumble: 0 };
     $('chestPrize').hidden = true; $('chestSkip').hidden = false; $('chestFx').hidden = false;
     const r = ccv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1);
     ccv.width = Math.round(r.width * d); ccv.height = Math.round(r.height * d);
@@ -6202,7 +6401,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       if (e - OPEN_AT < 180) { k.globalAlpha = 1 - (e - OPEN_AT) / 180; k.fillStyle = '#ffffff'; k.fillRect(0, 0, w, h); k.globalAlpha = 1; }
       if (!cx.shown && e > OPEN_AT + 650) showPrize();
     }
-    drawChest(k, cxp + shakeX, y, S, open, cx.col, glow, now);
+    drawChest(k, cxp + shakeX, y, S, open, cx.col, glow, now, cx.type);
     // particules
     k.globalCompositeOperation = 'lighter';
     for (const p of cx.parts) {
