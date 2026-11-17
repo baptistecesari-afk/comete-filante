@@ -1795,7 +1795,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     </article>
     <article class="mcard duel">
       <div class="mcpic mvs" id="mVs" aria-hidden="true"></div>
-      <div class="mctxt"><b>Duel des Gardiens</b><p>Prends le contrôle d'un gardien déjà vaincu et affronte un ami ou l'ordinateur. Deux manches gagnantes.</p></div>
+      <div class="mctxt"><b>Duel des Gardiens</b><p>Prends le contrôle d'un gardien déjà vaincu et affronte un ami en ligne ou l'ordinateur. Deux manches gagnantes.</p></div>
       <button type="button" class="play" id="mDuel">Jouer</button>
     </article>
   </div>
@@ -2075,7 +2075,6 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     <button class="xclose" data-back="duelBack" aria-label="Fermer" title="Fermer"><svg class="ic flat" aria-hidden="true" focusable="false"><use href="#ic-close"/></svg></button>
     <header class="mphead"><small>Mode 1 contre 1</small><h2>Duel des Gardiens</h2><p class="mpcount" id="duelCount"></p></header>
     <div class="cinetabs dmodes" id="duelModes" role="tablist">
-      <button type="button" role="tab" data-mode="local"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-duo"/></svg>À deux ici</button>
       <button type="button" role="tab" data-mode="online"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-share"/></svg>En ligne</button>
       <button type="button" role="tab" data-mode="bot"><svg class="ic" aria-hidden="true" focusable="false"><use href="#ic-target"/></svg>Entraînement</button>
     </div>
@@ -3395,8 +3394,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       { tier: 3, name: 'Collection', stat: 'skins', goal: 20, pts: 2000 },
       { tier: 4, name: 'Collection', stat: 'skins', goal: 27, pts: 0, rewards: [['chest', 3]], title: 'Grande collectionneuse' },
     ] },
-    // Duel des Gardiens : les victoires en duel (à deux sur le même appareil, ou ta victoire en ligne)
-    { id: 'duel', name: 'Duel des Gardiens', desc: 'Gagne des duels de gardiens, à deux sur le même appareil ou en ligne. L\'entraînement contre l\'ordinateur ne compte pas.', items: [
+    // Duel des Gardiens : tes victoires en duel en ligne
+    { id: 'duel', name: 'Duel des Gardiens', desc: 'Gagne des duels de gardiens en ligne. L\'entraînement contre l\'ordinateur ne compte pas.', items: [
       { tier: 0, name: 'Duels gagnés', stat: 'duels', goal: 1, pts: 300 },
       { tier: 1, name: 'Duels gagnés', stat: 'duels', goal: 10, pts: 800 },
       { tier: 2, name: 'Duels gagnés', stat: 'duels', goal: 30, pts: 1500, rewards: [['chest', 1]] },
@@ -17131,8 +17130,9 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   }
 
   // ----- écran de sélection -----
-  let dMode = 'local', dActive = 0, dPick = [null, null], dLvl = 'normal';
-  try { const v = JSON.parse(localStorage.getItem('comete-duel-choix') || '{}'); if (Array.isArray(v.p)) dPick = v.p.slice(0, 2).map(x => typeof x === 'string' ? x : null); if (['local', 'online', 'bot'].includes(v.m)) dMode = v.m; if (D_LVLS[v.l]) dLvl = v.l; } catch (e) {}
+  // (le mode « À deux ici » a été retiré du menu : on joue en ligne ou contre l'ordinateur)
+  let dMode = 'bot', dActive = 0, dPick = [null, null], dLvl = 'normal';
+  try { const v = JSON.parse(localStorage.getItem('comete-duel-choix') || '{}'); if (Array.isArray(v.p)) dPick = v.p.slice(0, 2).map(x => typeof x === 'string' ? x : null); if (['online', 'bot'].includes(v.m)) dMode = v.m; if (D_LVLS[v.l]) dLvl = v.l; } catch (e) {}
   const dOpen = () => ALL_BOSSES.filter(d => beaten.includes(d.id));
   function openDuel() {
     initAudio();
