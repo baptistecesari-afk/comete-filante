@@ -1,0 +1,6 @@
+# Vercel n'envoie que ce dont le jeu a besoin pour tourner.
+# Tout le reste (captures d'écran des PR, images du README, notes)
+# reste sur GitHub mais n'est plus copié dans chaque mise en ligne.
+/*
+!index.html
+!api
