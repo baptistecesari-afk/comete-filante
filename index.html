@@ -16886,24 +16886,183 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       ctx.strokeStyle = '#bfefff'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
     }
   }
+  // ----- l'arène du duel : un plateau spatial futuriste -----
+  // le décor fixe (sol, hexagones, cercles, cadre en métal) est dessiné une seule fois dans une image cachée,
+  // puis chaque image du jeu n'ajoute que les lumières qui bougent : c'est joli et ça reste fluide sur téléphone
+  const D_ARENA = { k: '', cv: null };
+  function dHexA(c, a) { return c + Math.round(Math.max(0, Math.min(1, a)) * 255).toString(16).padStart(2, '0'); }
+  function dArenaPath(k, m, ch) {
+    k.beginPath(); k.moveTo(m + ch, m); k.lineTo(DW - m - ch, m); k.lineTo(DW - m, m + ch); k.lineTo(DW - m, DH - m - ch);
+    k.lineTo(DW - m - ch, DH - m); k.lineTo(m + ch, DH - m); k.lineTo(m, DH - m - ch); k.lineTo(m, m + ch); k.closePath();
+  }
+  function dArenaStatic(cb, ct, sc) {
+    // l'image cachée a juste la finesse de l'écran (pas plus), pour rester légère
+    const S = Math.max(.5, Math.min(2, Math.ceil(sc * 4) / 4)), key = cb + ct + S;
+    if (D_ARENA.k === key && D_ARENA.cv) return D_ARENA.cv;
+    const cv = document.createElement('canvas'); cv.width = DW * S; cv.height = DH * S;
+    const k = cv.getContext('2d'); k.scale(S, S);
+    // le sol : un bleu nuit profond, un peu plus clair au centre
+    dArenaPath(k, 4, 26); k.save(); k.clip();
+    let g = k.createRadialGradient(DW / 2, DH / 2, 40, DW / 2, DH / 2, DH * .62);
+    g.addColorStop(0, 'rgba(34, 26, 78, .9)'); g.addColorStop(.55, 'rgba(14, 10, 40, .9)'); g.addColorStop(1, 'rgba(5, 3, 16, .94)');
+    k.fillStyle = g; k.fillRect(0, 0, DW, DH);
+    // chaque camp prend doucement la couleur de son joueur, plus fort près de sa base
+    for (const [c, y0, y1] of [[cb, DH, DH / 2], [ct, 0, DH / 2]]) {
+      g = k.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, dHexA(c, .2)); g.addColorStop(.6, dHexA(c, .04)); g.addColorStop(1, dHexA(c, 0));
+      k.fillStyle = g; k.fillRect(0, Math.min(y0, y1), DW, DH / 2);
+    }
+    // les dalles hexagonales du plateau
+    const R = 24, hw = Math.sqrt(3) * R;
+    k.lineWidth = 1;
+    for (let row = -1, y = 0; y < DH + R; row++, y = row * R * 1.5) {
+      for (let x = (row & 1) ? hw / 2 : 0; x < DW + hw; x += hw) {
+        const near = Math.abs(y - DH / 2) / (DH / 2), c = y > DH / 2 ? cb : ct;
+        k.strokeStyle = dHexA(c, .05 + .09 * near);
+        k.beginPath();
+        for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3, px = x + Math.cos(a) * (R - 2), py = y + Math.sin(a) * (R - 2); i ? k.lineTo(px, py) : k.moveTo(px, py); }
+        k.closePath(); k.stroke();
+      }
+    }
+    // quelques dalles allumées, toujours aux mêmes endroits
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 26; i++) {
+      const row = Math.floor(rnd() * (DH / (R * 1.5))), y = row * R * 1.5, x = Math.floor(rnd() * (DW / hw)) * hw + ((row & 1) ? hw / 2 : 0);
+      if (Math.abs(y - DH / 2) < 60) continue;
+      k.fillStyle = dHexA(y > DH / 2 ? cb : ct, .05 + rnd() * .06); k.beginPath();
+      for (let j = 0; j < 6; j++) { const a = Math.PI / 6 + j * Math.PI / 3; k.lineTo(x + Math.cos(a) * (R - 3), y + Math.sin(a) * (R - 3)); }
+      k.closePath(); k.fill();
+    }
+    // les couloirs et les marquages au sol
+    k.strokeStyle = 'rgba(170, 190, 255, .07)'; k.lineWidth = 2;
+    for (const x of [DW * .22, DW * .78]) { k.beginPath(); k.moveTo(x, 40); k.lineTo(x, DH - 40); k.stroke(); }
+    // le grand cercle du centre
+    for (const [r, a, w] of [[118, .12, 2], [96, .06, 8], [44, .14, 1.5]]) { k.strokeStyle = `rgba(200, 210, 255, ${a})`; k.lineWidth = w; k.beginPath(); k.arc(DW / 2, DH / 2, r, 0, 7); k.stroke(); }
+    // la base de chaque joueur : des arcs et des chevrons qui montrent le chemin vers le centre
+    for (const [c, y, d] of [[cb, DH, -1], [ct, 0, 1]]) {
+      for (const [r, a] of [[90, .32], [150, .18], [210, .1]]) { k.strokeStyle = dHexA(c, a); k.lineWidth = 2; k.beginPath(); k.arc(DW / 2, y, r, 0, Math.PI * 2); k.stroke(); }
+      k.fillStyle = dHexA(c, .14); k.beginPath(); k.arc(DW / 2, y, 90, 0, Math.PI * 2); k.fill();
+      for (let i = 0; i < 3; i++) {
+        const cy = y + d * (250 + i * 26);
+        k.strokeStyle = dHexA(c, .22 - i * .06); k.lineWidth = 4; k.lineCap = 'round';
+        k.beginPath(); k.moveTo(DW / 2 - 22, cy - d * 10); k.lineTo(DW / 2, cy + d * 4); k.lineTo(DW / 2 + 22, cy - d * 10); k.stroke();
+      }
+      // petits repères sur les côtés de la base
+      k.fillStyle = dHexA(c, .3);
+      for (const x of [26, DW - 26]) for (let i = 0; i < 4; i++) k.fillRect(x - 6, y + d * (60 + i * 18) - 1.5, 12, 3);
+    }
+    k.restore();
+    // le cadre : un rail de métal biseauté, avec un liseré de néon aux couleurs des deux joueurs
+    k.save(); dArenaPath(k, 4, 26);
+    g = k.createLinearGradient(0, 0, DW, 0); g.addColorStop(0, '#3a3f66'); g.addColorStop(.5, '#7d84b8'); g.addColorStop(1, '#3a3f66');
+    k.strokeStyle = g; k.lineWidth = 7; k.stroke();
+    k.strokeStyle = 'rgba(10, 8, 30, .9)'; k.lineWidth = 2; dArenaPath(k, 8.5, 23); k.stroke();
+    for (const [c, y0] of [[cb, DH / 2], [ct, 0]]) {
+      k.save(); k.beginPath(); k.rect(0, y0, DW, DH / 2); k.clip();
+      dArenaPath(k, 11, 21); k.strokeStyle = dHexA(c, .1); k.lineWidth = 16; k.stroke();
+      k.strokeStyle = dHexA(c, .25); k.lineWidth = 6; k.stroke();
+      k.strokeStyle = dHexA(c, .85); k.lineWidth = 1.6; k.stroke();
+      k.restore();
+    }
+    // les coins renforcés
+    for (const [x, y, sx, sy, c] of [[4, 4, 1, 1, ct], [DW - 4, 4, -1, 1, ct], [4, DH - 4, 1, -1, cb], [DW - 4, DH - 4, -1, -1, cb]]) {
+      k.save(); k.translate(x, y); k.scale(sx, sy);
+      k.fillStyle = '#9aa1d6'; k.beginPath(); k.moveTo(0, 26); k.lineTo(26, 0); k.lineTo(70, 0); k.lineTo(62, 8); k.lineTo(30, 8); k.lineTo(8, 30); k.lineTo(8, 62); k.lineTo(0, 70); k.closePath(); k.fill();
+      k.fillStyle = c; k.beginPath(); k.moveTo(12, 34); k.lineTo(34, 12); k.lineTo(46, 12); k.lineTo(12, 46); k.closePath(); k.fill();
+      k.restore();
+    }
+    // les deux bornes qui produisent la barrière du milieu
+    for (const sx of [1, -1]) {
+      k.save(); k.translate(sx > 0 ? 0 : DW, DH / 2); k.scale(sx, 1);
+      g = k.createLinearGradient(0, -26, 0, 26); g.addColorStop(0, '#5a6096'); g.addColorStop(.5, '#b8bff0'); g.addColorStop(1, '#5a6096');
+      k.fillStyle = g; k.beginPath(); k.moveTo(0, -30); k.lineTo(16, -18); k.lineTo(16, 18); k.lineTo(0, 30); k.closePath(); k.fill();
+      k.fillStyle = '#1a1840'; k.fillRect(5, -9, 8, 18);
+      k.restore();
+    }
+    k.restore();
+    D_ARENA.k = key; D_ARENA.cv = cv;
+    return cv;
+  }
+  function dDrawArena(t, sideCol, sc) {
+    const D = duel, cb = sideCol(0), ct = sideCol(1), cy = DH / 2;
+    // l'ombre portée du plateau, puis le décor fixe
+    // (une ombre faite de quelques traits larges, bien moins coûteuse qu'un vrai flou sur téléphone)
+    ctx.save(); ctx.strokeStyle = 'rgba(0, 0, 0, .16)';
+    for (const w of [44, 28, 14]) { ctx.lineWidth = w; dArenaPath(ctx, 4, 26); ctx.stroke(); }
+    ctx.restore();
+    ctx.drawImage(dArenaStatic(cb, ct, sc), 0, 0, DW, DH);
+    ctx.save();
+    // un balayage lumineux qui part de chaque base et monte vers le centre
+    for (const [c, y0, d] of [[cb, DH, -1], [ct, 0, 1]]) {
+      const p = (t / 5200) % 1, y = y0 + d * p * cy;
+      const g = ctx.createLinearGradient(0, y - d * 40, 0, y);
+      g.addColorStop(0, dHexA(c, 0)); g.addColorStop(1, dHexA(c, .09 * (1 - p)));
+      ctx.fillStyle = g; ctx.fillRect(0, Math.min(y, y - d * 40), DW, 40);
+    }
+    // les lumières qui courent le long des rails, des bases vers le centre
+    for (const [c, y0, d] of [[cb, DH, -1], [ct, 0, 1]]) {
+      for (let i = 1; i < 11; i++) {
+        const y = y0 + d * (34 + i * 37), w = .5 + .5 * Math.sin(i * .9 - t / 160), a = .15 + .7 * Math.pow(w, 4);
+        ctx.fillStyle = dHexA(c, a * .35);
+        for (const x of [15, DW - 15]) ctx.fillRect(x - 3, y - 7, 6, 14);
+        ctx.fillStyle = dHexA(c, a);
+        for (const x of [15, DW - 15]) ctx.fillRect(x - 1.5, y - 4, 3, 8);
+      }
+    }
+    // des poussières d'énergie qui montent doucement de chaque base vers le centre
+    for (let i = 0; i < 24; i++) {
+      const top = i & 1, c = top ? ct : cb, p = ((t / 9000) + i * .37) % 1, x = (i * 97.3 + 40 * Math.sin(t / 2000 + i)) % (DW - 60) + 30;
+      const y = top ? p * (DH / 2 - 30) : DH - p * (DH / 2 - 30), a = Math.sin(p * Math.PI) * .5;
+      ctx.fillStyle = dHexA(c, a); ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    }
+    // le cœur des bases qui respire
+    for (const [c, y] of [[cb, DH], [ct, 0]]) {
+      const pu = .5 + .5 * Math.sin(t / 420);
+      ctx.strokeStyle = dHexA(c, .12 + .18 * pu); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(DW / 2, y, 60 + pu * 8, 0, Math.PI * 2); ctx.stroke();
+    }
+    // la barrière d'énergie du milieu : un halo, un trait qui grésille et des éclats qui filent vers le centre
+    let g = ctx.createLinearGradient(0, cy - 26, 0, cy + 26);
+    g.addColorStop(0, 'rgba(140, 120, 255, 0)'); g.addColorStop(.5, `rgba(150, 130, 255, ${.22 + .06 * Math.sin(t / 90)})`); g.addColorStop(1, 'rgba(140, 120, 255, 0)');
+    ctx.fillStyle = g; ctx.fillRect(0, cy - 26, DW, 52);
+    ctx.strokeStyle = `rgba(210, 200, 255, ${.5 + .15 * Math.sin(t / 37)})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, cy);
+    for (let x = 20; x <= DW; x += 20) ctx.lineTo(x, cy + Math.sin(x * .09 + t / 70) * 1.6 * Math.sin(t / 300 + x * .01));
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(235, 230, 255, .8)';
+    for (let i = 0; i < 6; i++) {
+      const p = ((t / 1400) + i / 6) % 1, x = p * (DW / 2 - 50);
+      ctx.fillRect(x, cy - 1.5, 18 * (1 - p) + 4, 3); ctx.fillRect(DW - x - 18 * (1 - p) - 4, cy - 1.5, 18 * (1 - p) + 4, 3);
+    }
+    // la barrière s'illumine là où un boss s'en approche
+    for (const F of D.f) {
+      const r = dReal(F, F.it.x, F.it.y), dd = Math.abs(r.y - cy);
+      if (dd > 140) continue;
+      const a = (1 - dd / 140) * .55, rg = ctx.createRadialGradient(r.x, cy, 4, r.x, cy, 90);
+      rg.addColorStop(0, `rgba(230, 220, 255, ${a})`); rg.addColorStop(1, 'rgba(160, 140, 255, 0)');
+      ctx.fillStyle = rg; ctx.fillRect(r.x - 90, cy - 30, 180, 60);
+    }
+    // les lumières des bornes
+    for (const x of [9, DW - 9]) { ctx.fillStyle = `rgba(200, 190, 255, ${.5 + .4 * Math.sin(t / 80)})`; ctx.fillRect(x - 4, cy - 9, 8, 18); }
+    // l'emblème du centre : deux anneaux qui tournent en sens inverse
+    ctx.save(); ctx.translate(DW / 2, cy);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(200, 190, 255, .55)';
+    for (let i = 0; i < 3; i++) { const a = t / 900 + i * Math.PI * 2 / 3; ctx.beginPath(); ctx.arc(0, 0, 30, a, a + 1.3); ctx.stroke(); }
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(160, 230, 255, .4)';
+    for (let i = 0; i < 4; i++) { const a = -t / 700 + i * Math.PI / 2; ctx.beginPath(); ctx.arc(0, 0, 40, a, a + .8); ctx.stroke(); }
+    ctx.rotate(t / 1600); ctx.strokeStyle = 'rgba(230, 225, 255, .6)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; ctx.lineTo(Math.cos(a) * 14, Math.sin(a) * 14); }
+    ctx.closePath(); ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
   function duelDraw(t) {
     const D = duel;
     if (!D) return;
     const A = dArena(), flip = D.view === 1;
     ctx.save(); ctx.translate(A.x, A.y); ctx.scale(A.s, A.s);
-    // l'arène : un grand plateau sombre, la ligne du milieu, deux camps aux couleurs des joueurs
-    ctx.save(); ctx.shadowColor = 'rgba(0, 0, 0, .6)'; ctx.shadowBlur = 40;
-    ctx.fillStyle = 'rgba(8, 5, 22, .58)'; ctx.fillRect(0, 0, DW, DH); ctx.restore();
-    ctx.strokeStyle = 'rgba(200, 190, 255, .18)'; ctx.lineWidth = 2; ctx.strokeRect(1, 1, DW - 2, DH - 2);
+    // l'arène : un plateau spatial futuriste, la barrière du milieu, deux camps aux couleurs des joueurs
     const sideCol = i => D_COL[flip ? 1 - i : i];
-    for (const [i, y0, y1] of [[0, DH / 2, DH], [1, 0, DH / 2]]) {
-      const g = ctx.createLinearGradient(0, y0, 0, y1);
-      const c = sideCol(i), a = i === 0 ? [0, .07] : [.07, 0];
-      g.addColorStop(0, c + Math.round(a[0] * 255).toString(16).padStart(2, '0')); g.addColorStop(1, c + Math.round(a[1] * 255).toString(16).padStart(2, '0'));
-      ctx.fillStyle = g; ctx.fillRect(0, y0, DW, y1 - y0);
-    }
-    ctx.save(); ctx.setLineDash([14, 12]); ctx.strokeStyle = 'rgba(255, 255, 255, .16)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(0, DH / 2); ctx.lineTo(DW, DH / 2); ctx.stroke(); ctx.restore();
+    dDrawArena(t, sideCol, A.s * camS * DPR);
     ctx.save();
     ctx.beginPath(); ctx.rect(0, 0, DW, DH); ctx.clip();
     if (flip) { ctx.translate(DW, DH); ctx.rotate(Math.PI); }
