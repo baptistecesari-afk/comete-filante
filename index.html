@@ -16292,7 +16292,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
   // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
-  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 1.91, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 1.5, sorciere: 3.02, mammouth: 0.85, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
+  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 2.3, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 1.5, sorciere: 3.02, mammouth: 1, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
   function dStats(def) {
     if (dStatCache[def.id]) return dStatCache[def.id];
     const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
@@ -16387,16 +16387,27 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
         if (inp.fire && !F.fireOn && it.t - (F.fireKick || -9) > 1) { F.fireKick = it.t; it.fireT = Math.min(it.fireT, .12); it.aimT = Math.min(it.aimT, .5); }
         F.fireOn = !!inp.fire;
         // une frappe lancée (rayon prisme, balayage, jet de dard, pétales…) va jusqu'au bout, même si on ne tient pas le tir
-        const busy = it.beam > 0 || it.warn > 0 || it.sweepT > 0 || it.pre > 0 || it.stream > 0 || it.aiming > 0 || it.petal > 0;
-        if ((it.beam > 0 || it.sweepT > 0 || it.stream > 0 || it.petal > 0) && it.aimT > .1) it.aimT = .1;
+        const busy = it.beam > 0 || it.warn > 0 || it.sweepT > 0 || it.pre > 0 || it.stream > 0 || it.aiming > 0 || it.petal > 0 || it.charge;
+        if ((it.beam > 0 || it.sweepT > 0 || it.stream > 0 || it.petal > 0 || it.charge) && it.aimT > .1) it.aimT = .1;
         it.fireT -= f; it.aimT -= busy && !inp.fire ? dt * D_CALM : f;
         if (!F.st.alt) it.altT -= f;
         else if (inp.s1 && F.cd1 <= 0 && it.altT >= 90) { it.altT = 0; if (d.id === 'cameleon') it.fireT = 0; } // le caméléon : sa frappe, c'est le coup de langue
-        const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y, t0 = it.trail[0];
+        const pend = F.st.alt && it.altT <= 0, px = it.x, py = it.y, t0 = it.trail[0], sl0 = it.slide > 0, ch0 = !!it.charge, bu0 = it.burrow > 0, ju0 = it.jump > 0;
+        if (!sl0) F.y0 = py;
         (d.move || moveW1)(it, dt, D_BS, dt, () => {});
-        if (pend && it.altT > 0) { F.cd1Max = Math.max(3, it.altT * 1.25); F.cd1 = F.cd1Max; it.altT = 99; F.win = 2.4; }
-        // le boss ne bouge que sous les doigts du joueur, sauf pendant une compétence qui le déplace
-        if (!(F.win > 0 && D_MOVE_SKILL.has(d.id))) { it.x = px; it.y = py; }
+        // en duel, l'autre boss n'est pas sur la même ligne : la charge du mammouth fonce aussi vers lui, la glissade du pingouin revient d'où elle est partie
+        if (it.charge && d.id === 'mammouth') {
+          // il part du côté de l'autre boss (ou vers le côté le plus long s'il est juste en face)
+          if (!ch0) { it.cdir = Math.abs(player.x - it.x) > 60 ? Math.sign(player.x - it.x) : it.x < DW / 2 ? 1 : -1; if ((it.cdir > 0 && it.x > DW - 120) || (it.cdir < 0 && it.x < 120)) it.cdir = -it.cdir; }
+          it.y += dClamp(player.y - it.y, -330 * dt, 330 * dt);
+        }
+        if (sl0 && !(it.slide > 0)) it.y = F.y0;
+        const go = pend && it.altT > 0;
+        if (go) { F.cd1Max = Math.max(3, it.altT * 1.25); F.cd1 = F.cd1Max; it.altT = 99; F.win = 2.4; }
+        // le boss ne bouge que sous les doigts du joueur, sauf pendant une compétence qui le déplace (et seulement le temps qu'elle dure :
+        // dès que la glissade, la charge, la plongée ou le saut est fini, le joueur reprend la main)
+        const act = go || sl0 || ch0 || bu0 || ju0 || it.slide > 0 || it.charge || it.burrow > 0 || it.jump > 0;
+        if (!(F.win > 0 && D_MOVE_SKILL.has(d.id) && act)) { it.x = px; it.y = py; }
         else if (it.x !== px || it.y !== py || it.burrow > 0) F.free = true;
         // le corps du Serpent de Givre et la queue du Dragon : le mode histoire y ajoute un point de SON trajet ;
         // en duel, on le remplace par la vraie place du boss (sinon la queue part loin de la tête), seulement quand il avance
@@ -16522,7 +16533,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     }
     // une glissade, une charge ou un coup de pinces qui rentre dans l'autre boss
     // (chaque boss reste dans sa moitié : la charge s'arrête à la ligne du milieu et son onde de choc touche l'autre s'il est tout près)
-    if (A.free && A.it.contactT <= 0 && Math.hypot(A.it.x - bx, A.it.y - by) < (A.it.r + B.it.r) * .75 + 70) { A.it.contactT = 1; dHurt(B, 8, A); const r = dReal(B, B.it.x, B.it.y); burst(r.x, r.y, A.def.col, 14, 220, 4); shake = Math.max(shake, .25); }
+    const P = A.it.pw, dash = P && P.kind === 'dash' && P.t >= P.warn;
+    if (A.free && A.it.contactT <= 0 && Math.hypot(A.it.x - bx, A.it.y - by) < (A.it.r + B.it.r) * .75 + 30) { A.it.contactT = 1; dHurt(B, (dash ? 12 : 8) * (A.dmgK || 1), A); const r = dReal(B, B.it.x, B.it.y); burst(r.x, r.y, A.def.col, 14, 220, 4); shake = Math.max(shake, .25); }
   }
   // déplacement du boss : clavier, doigt ou ordinateur ; la zone le garde de son côté de l'arène
   function dMove(F, O, dt) {
@@ -16553,9 +16565,14 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   }
   function dKeepIn(F) {
     const it = F.it, z = duel.zone, m = it.r * 1.3;
-    // même une glissade, une charge ou un saut ne fait jamais sortir le boss de sa moitié (sous terre, il peut juste disparaître par l'arrière)
-    if (it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, DH / 2 - it.r * .7); }
-    else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, DH / 2 - it.r * .7); }
+    // le boss reste dans sa moitié… sauf pendant une charge, une glissade ou la charge des pinces : il peut alors traverser la ligne
+    // pour aller frapper l'autre, puis il revient tout seul dans son camp (sans se téléporter)
+    const half = DH / 2 - it.r * .7;
+    let maxY = half;
+    if (F.free) maxY = DH - z.y - m;
+    else if (it.y > half) maxY = Math.max(half, it.y - 22);
+    if (it.burrow > 0) { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, -400, half); }
+    else { it.x = dClamp(it.x, z.x + m, DW - z.x - m); it.y = dClamp(it.y, z.y + m, maxY); }
   }
   // bonus qui apparaissent au milieu de l'arène : soin, bouclier, recharge instantanée
   const D_PICKS = { vie: ['Soin', '#ff7aa8'], shield: ['Bouclier', '#7ad8ff'], charge: ['Recharge', '#ffd86b'] };
