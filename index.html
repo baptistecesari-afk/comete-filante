@@ -16238,9 +16238,14 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   const D_PTR_SPD = 2.6, D_KEY_SPD = 1.35;
   const DW = 600, DH = 880, D_BS = 1.12, D_CALM = .9;
   const D_TARGET = 5.2;      // dégâts par seconde visés contre une cible qui bouge sans esquiver (sert à équilibrer les boss)
-  const D_SIG_DMG = 9;       // dégâts d'une attaque signature qui touche (laser, éclair, colonne…)
+  const D_SIG_DMG = 11;      // dégâts d'une attaque signature qui touche (laser, éclair, colonne…)
+  const D_DMG = 1.3;         // les gardiens sont plus petits (plus durs à toucher) : chaque tir fait un peu plus mal, pour que les manches ne s'éternisent pas
   const D_ROUNDS = 2;        // manches gagnantes
-  const D_ZONE_AT = 18, D_ZONE_DUR = 40, D_SUDDEN = 80;
+  const D_SUDDEN = 80;
+  // les gardiens sont dessinés plus petits en duel (et leur zone de touche aussi), pour qu'ils aient de la place pour bouger
+  const D_SIZE = .72;
+  // pluie de comètes : elle commence au bout de D_RAIN_AT secondes, puis il en arrive de plus en plus souvent (plus de zone qui rétrécit)
+  const D_RAIN_AT = 15, D_RAIN_GAP = 3.2, D_RAIN_MIN = .35, D_RAIN_K = .965, D_COMET_DMG = 6, D_COMET_WARN = .9, D_COMET_SPD = 560;
   const D_COL = ['#ffd86b', '#4fe0c8'];
   // les boss dont la compétence 1 les déplace (glissade, charge, plongée, bond…)
   const D_MOVE_SKILL = new Set(['pingouin', 'mammouth', 'ver', 'mante', 'grenouille', 'spectre']);
@@ -16303,7 +16308,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
 
   // ----- caractéristiques de chaque boss en duel (équilibrées automatiquement) -----
   // réglage fin, mesuré sur plusieurs milliers de manches ordinateur contre ordinateur : plus de 1 = un peu plus de vie et de dégâts
-  const dStatCache = {}, D_TUNE = { mere: 2.2, reine: 1.69, oeil: 0.71, crabe: 2.3, meduse: 1.38, pieuvre: 0.82, spectre: 1.4, forteresse: 0.85, dragon: 0.71, zorg: 0.47, pingouin: 4.32, yeti: 1.19, flocon: 1.41, morse: 2.55, golemglace: 0.74, hibou: 1.3, serpent: 1.5, sorciere: 3.02, mammouth: 1, glacia: 0.54, salamandre: 1.77, magmagolem: 0.98, phenix: 2.13, ver: 0.93, cyclope: 1.12, scorpion: 1.02, chauvesouris: 6.06, volcan: 1.77, hydre: 0.87, magmor: 0.43, fleur: 0.91, mante: 3.39, champignon: 1.08, araignee: 0.63, cameleon: 2.58, scarabee: 0.99, liane: 0.43, grenouille: 3.64, essaim: 1.32, ruche: 1.17, sentinelle: 0.99, miroir: 1.24, horloge: 1.39, glitch: 1.03, prisme: 1.42, jumelles: 0.73, trounoirv: 8, architecte: 0.57, oeilneant: 0.66, devoreur: 0.6 };
+  const dStatCache = {}, D_TUNE = { mere: 2.39, reine: 2.5, oeil: 0.77, crabe: 8.18, meduse: 1.75, pieuvre: 0.94, spectre: 3.05, forteresse: 0.66, dragon: 0.79, zorg: 0.66, pingouin: 10, yeti: 1.25, flocon: 2.28, morse: 2.77, golemglace: 0.92, hibou: 2.32, serpent: 1.67, sorciere: 4.48, mammouth: 3.08, glacia: 1.05, salamandre: 1.73, magmagolem: 1.54, phenix: 2.84, ver: 1.01, cyclope: 1.3, scorpion: 1.36, chauvesouris: 5.01, volcan: 3.72, hydre: 1.23, magmor: 0.39, fleur: 1.51, mante: 8.59, champignon: 1.48, araignee: 0.6, cameleon: 1.76, scarabee: 0.97, liane: 0.34, grenouille: 8.78, essaim: 1.21, ruche: 1.4, sentinelle: 1.7, miroir: 1.53, horloge: 1.72, glitch: 1.44, prisme: 1.48, jumelles: 1.53, trounoirv: 10, architecte: 0.81, oeilneant: 0.48, devoreur: 0.76 };
   function dStats(def) {
     if (dStatCache[def.id]) return dStatCache[def.id];
     const alt = dAltOf(def), sig = SIG[def.id] || ['spiral', 'Rafale', def.col];
@@ -16313,7 +16318,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const m = dMeasure(def, st);
     st.rate = m.rate; st.out = m.out;
     // un boss qui tire beaucoup fait moins de dégâts par tir : tous finissent à peu près aussi forts
-    st.dmg = Math.round(dClamp(D_TARGET / Math.max(.4, m.rate), 1.5, 12) * Math.pow(D_TUNE[def.id] || 1, .6) * 10) / 10;
+    st.dmg = Math.round(dClamp(D_TARGET / Math.max(.4, m.rate), 1.5, 12) * D_DMG * Math.pow(D_TUNE[def.id] || 1, .6) * 10) / 10;
     return (dStatCache[def.id] = st);
   }
   // on fait jouer le boss une minute en secret contre une cible qui se balance, et on compte ce qui la touche
@@ -16350,7 +16355,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       cd1: 0, cd1Max: Math.max(3, st.alt * 1.25), cd2: 3, cd2Max: 9, win: 0, free: false, hurt: 0, sigHurt: 0, guard: 0, wins: 0, inp: dNoInput(), dealt: 0 };
   }
   const dNoInput = () => ({ mx: 0, my: 0, fire: false, s1: false, s2: false, tx: null, ty: null });
-  const dHitR = F => Math.round(F.it.r * .62);
+  const dHitR = F => Math.round(F.it.r * .62 * D_SIZE);
   // un point du repère d'un boss, dans le repère de l'arène (et l'inverse : c'est la même opération)
   const dReal = (F, x, y) => F.side === 0 ? { x: DW - x, y: DH - y } : { x, y };
   function dFlipObj(p) { p.x = DW - p.x; p.y = DH - p.y; if (p.vx) p.vx = -p.vx; if (p.vy) p.vy = -p.vy; if (p.g) p.g = -p.g; if (p.rot !== undefined) p.rot += Math.PI; }
@@ -16575,10 +16580,10 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     dKeepIn(F);
   }
   function dKeepIn(F) {
-    const it = F.it, z = duel.zone, m = it.r * 1.3;
+    const it = F.it, z = duel.zone, m = it.r * 1.3 * D_SIZE;
     // le boss reste dans sa moitié… sauf pendant une charge, une glissade ou la charge des pinces : il peut alors traverser la ligne
     // pour aller frapper l'autre, puis il revient tout seul dans son camp (sans se téléporter)
-    const half = DH / 2 - it.r * .7;
+    const half = DH / 2 - it.r * .7 * D_SIZE;
     let maxY = half;
     if (F.free) maxY = DH - z.y - m;
     else if (it.y > half) maxY = Math.max(half, it.y - 22);
@@ -16612,17 +16617,43 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     }
     D.picks = D.picks.filter(k => k.life > 0);
   }
+  // l'arène ne rétrécit plus : à la place, des comètes de feu traversent les deux camps, de plus en plus souvent
+  // elles arrivent par paires (une dans chaque camp, à la même place vue de chaque boss) : c'est juste pour les deux
+  // une ligne pointillée annonce le passage, puis la comète file d'un bord de l'écran à l'autre : il faut s'écarter
+  const dRainGap = rt => Math.max(D_RAIN_MIN, D_RAIN_GAP * Math.pow(D_RAIN_K, rt - D_RAIN_AT));
+  const dCometAt = c => { const k = Math.max(0, c.t - D_COMET_WARN); return { x: c.x0 + c.vx * k, y: c.y0 + c.vy * k }; };
   function dZone(dt) {
-    const D = duel, k = dClamp((D.rt - D_ZONE_AT) / D_ZONE_DUR, 0, 1);
-    if (k > 0 && !D.zoneSaid) { D.zoneSaid = true; D.zoneMsg = 2.4; beep(160, .6, 'sawtooth', .08, -60); }
-    D.zone.x = k * DW * .27; D.zone.y = k * DH * .2;
-    // mort subite : après 80 secondes, les deux boss s'usent jusqu'à ce que l'un tombe
-    if (D.rt > D_SUDDEN) {
-      if (!D.suddenSaid) { D.suddenSaid = true; D.zoneMsg = 2.4; beep(120, .8, 'sawtooth', .1, -40); }
-      for (const F of D.f) { F.hp = F.it.hp = Math.max(0, F.hp - F.st.hp * .03 * dt); }
-      const lo = D.f.find(F => F.hp <= 0);
-      if (lo && D.phase === 'fight') dRoundOver(lo.side ? 0 : 1);
+    const D = duel;
+    D.comets = D.comets || [];
+    if (D.rt >= D_RAIN_AT) {
+      const lv = D.rt >= D_SUDDEN ? 3 : D.rt >= 50 ? 2 : 1;
+      if (lv > (D.cometLv || 0)) { D.cometLv = lv; D.zoneMsg = 2.4; beep(lv > 2 ? 120 : 160, .7, 'sawtooth', .08, -60); }
+      D.rainT = (D.rainT ?? 0) - dt;
+      if (D.rainT <= 0) {
+        D.rainT = dRainGap(D.rt);
+        // depuis le haut ou le bas de l'écran (l'arène est couchée), un peu en biais
+        const fromL = Math.random() < .5, y = DH / 2 + 50 + Math.random() * (DH / 2 - 100), vy = (Math.random() - .5) * .5 * D_COMET_SPD, vx = (fromL ? 1 : -1) * D_COMET_SPD;
+        const x0 = fromL ? -40 : DW + 40;
+        for (const [qx, qy, sx] of [[x0, y, 1], [DW - x0, DH - y, -1]]) D.comets.push({ id: D.cometN = (D.cometN || 0) + 1, x0: qx, y0: qy, vx: vx * sx, vy: vy * sx, t: 0, hit: [false, false] });
+        beep(1500, .12, 'sine', .03, -900);
+      }
     }
+    for (const c of D.comets) {
+      const a = dCometAt(c);
+      c.t += dt;
+      if (c.t < D_COMET_WARN) continue;
+      const b = dCometAt(c);
+      if (Math.random() < .6) parts.push({ x: b.x, y: b.y, vx: -c.vx * .15 + (Math.random() - .5) * 50, vy: -c.vy * .15 + (Math.random() - .5) * 50, life: .45, max: .45, color: Math.random() < .5 ? '#ff9a3c' : '#ffe2a8', size: 3 });
+      for (const F of D.f) {
+        if (c.hit[F.side]) continue;
+        const r = dReal(F, F.it.x, F.it.y);
+        if (dSegDist(a.x, a.y, b.x, b.y, r.x, r.y) < 16 + dHitR(F)) {
+          c.hit[F.side] = true; dHurt(F, D_COMET_DMG, null);
+          explode(r.x, r.y, '#ff9a3c', .5); shake = Math.max(shake, .12); beep(140, .2, 'sawtooth', .07, -60);
+        }
+      }
+    }
+    D.comets = D.comets.filter(c => c.t < D_COMET_WARN + (DW + 120) / D_COMET_SPD);
   }
   // événements de l'arène : de temps en temps, il arrive quelque chose aux deux boss en même temps (toujours pareil des deux côtés)
   const D_EVENTS = { meteor: ['Pluie de météores !', '#ff9a3c'], comet: ['Comète d\'or !', '#ffd86b'], surge: ['Surcharge !', '#7ad8ff'] };
@@ -16702,7 +16733,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   function dNextRound() {
     const D = duel;
     if (D.matchWinner !== undefined) { dEnd(); return; }
-    D.round++; D.phase = 'count'; D.pt = 0; D.rt = 0; D.zone = { x: 0, y: 0 }; D.zoneSaid = false; D.suddenSaid = false; D.picks = []; D.pickT = 7; dEvReset(D);
+    D.round++; D.phase = 'count'; D.pt = 0; D.rt = 0; D.zone = { x: 0, y: 0 }; D.cometLv = 0; D.comets = []; D.rainT = 0; D.picks = []; D.pickT = 7; dEvReset(D);
     for (const F of D.f) dPlace(F);
   }
 
@@ -16817,6 +16848,15 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       const sk = (SIG[F.def.id] || [])[0];
       if (F.cd2 <= 0 && ((['laser', 'pillars', 'sweep', 'storm'].includes(sk) ? Math.abs(ox - it.x) < 50 : Math.random() < .04) || F.hp < F.st.hp * .35)) inp.s2 = true;
     }
+    // une comète va passer sur sa ligne : il monte ou descend pour l'éviter
+    let dodgeY = 0;
+    for (const c of D.comets || []) {
+      const p = dReal(F, dCometAt(c).x, dCometAt(c).y), v = F.side === 0 ? { x: -c.vx, y: -c.vy } : { x: c.vx, y: c.vy };
+      const tt = Math.abs(v.x) > 1 ? (it.x - p.x) / v.x : -1, left = D_COMET_WARN - c.t;
+      if (tt < -.05 || tt + Math.max(0, left) > L.look + .4 || c.hit[F.side]) continue;
+      const cy = p.y + v.y * tt;
+      if (Math.abs(cy - it.y) < dHitR(F) + 30) dodgeY = cy > it.y ? -1 : 1;
+    }
     if (best !== null) inp.lx = best > 0 ? -1 : 1;
     else {
       let tx = ox + Math.sin(it.t * .9) * (L.smart ? 40 : 90), ty = 150 + Math.sin(it.t * .6) * 60;
@@ -16830,6 +16870,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       inp.ly = dClamp((ty - it.y) / 60, -1, 1) * .6;
     }
     if (best !== null) inp.ly = dClamp((150 + Math.sin(it.t * .6) * 60 - it.y) / 60, -1, 1) * .6;
+    if (dodgeY) inp.ly = dodgeY;
     inp.lx *= L.sp; inp.ly *= L.sp;
     return inp;
   }
@@ -16904,15 +16945,15 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     // le boss du bas de l'écran vit dans un repère retourné : on redresse son dessin pour qu'il ne soit pas la tête en bas
     // l'arène est aussi couchée d'un quart de tour : on le défait pour que chaque boss reste debout à l'écran
     const turn = F.side === duel.view, tr = it.trail, ang = (turn ? Math.PI : 0) - Math.PI / 2, ca = Math.cos(ang), sa = Math.sin(ang);
-    ctx.translate(it.x, it.y); ctx.rotate(ang); ctx.translate(-it.x, -it.y);
-    // le corps du serpent (la queue du dragon) est fait de vraies positions : on les tourne à l'envers, pour qu'il reste derrière la tête
-    if (tr && tr.length) it.trail = tr.map(p => { const dx = p.x - it.x, dy = p.y - it.y; return { x: it.x + dx * ca + dy * sa, y: it.y - dx * sa + dy * ca }; });
+    ctx.translate(it.x, it.y); ctx.rotate(ang); ctx.scale(D_SIZE, D_SIZE); ctx.translate(-it.x, -it.y);
+    // le corps du serpent (la queue du dragon) est fait de vraies positions : on les tourne à l'envers (et on défait la réduction), pour qu'il reste derrière la tête
+    if (tr && tr.length) it.trail = tr.map(p => { const dx = (p.x - it.x) / D_SIZE, dy = (p.y - it.y) / D_SIZE; return { x: it.x + dx * ca + dy * sa, y: it.y - dx * sa + dy * ca }; });
     shadeAt(it.x, it.y, it.r * 1.4 + 6, .3);
     try { drawBoss(it, t); } finally { it.trail = tr; }
     ctx.restore();
     if (on && (P.kind === 'bubble' || P.kind === 'mirror' || P.kind === 'heal')) {
       ctx.save(); ctx.strokeStyle = P.col; ctx.lineWidth = 3; ctx.globalAlpha = .6 + .3 * Math.sin(t / 90);
-      const rr = it.r * 1.35;
+      const rr = it.r * 1.35 * D_SIZE;
       if (P.kind === 'mirror') { for (let i = 0; i < 8; i++) { const a = t / 500 + i * Math.PI / 4; ctx.beginPath(); ctx.arc(it.x, it.y, rr, a, a + .4); ctx.stroke(); } }
       else { ctx.fillStyle = P.kind === 'heal' ? 'rgba(125, 255, 138, .18)' : 'rgba(191, 233, 255, .18)'; ctx.beginPath(); ctx.arc(it.x, it.y, rr, 0, 7); ctx.fill(); ctx.stroke(); }
       ctx.restore();
@@ -16920,7 +16961,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     // bouclier ramassé
     if (F.guard > 0) {
       ctx.save(); ctx.globalAlpha = Math.min(1, F.guard * 2) * (.55 + .25 * Math.sin(t / 70));
-      const rr = it.r * 1.25, g = ctx.createRadialGradient(it.x, it.y, rr * .6, it.x, it.y, rr);
+      const rr = it.r * 1.25 * D_SIZE, g = ctx.createRadialGradient(it.x, it.y, rr * .6, it.x, it.y, rr);
       g.addColorStop(0, 'rgba(122, 216, 255, 0)'); g.addColorStop(1, 'rgba(122, 216, 255, .35)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(it.x, it.y, rr, 0, 7); ctx.fill();
       ctx.strokeStyle = '#bfefff'; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
@@ -17121,7 +17162,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     for (const F of D.f) dInFrame(F, () => { drawSig(t); for (const b of F.bul) drawEBullet(b, t); });
     for (const p of parts) drawPart(p);
     ctx.globalAlpha = 1;
-    // la zone qui rétrécit : tout ce qui est dehors est pris dans une tempête violette
+    // (l'ancienne zone qui rétrécissait : elle reste à zéro, les comètes la remplacent)
     const z = D.zone;
     if (z.x > .5) {
       ctx.save();
@@ -17160,7 +17201,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
       else dBig('Combat !', DH / 2 + 10, 64 * (1.2 - (D.pt - 3) * .4), '#ff7aa8', 1);
     } else if (D.phase === 'fight' && D.pt < .7) dBig('Combat !', DH / 2 + 10, 64, '#ff7aa8', 1 - D.pt / .7);
     if (D.evMsg > 0 && D.ev) dBig(D_EVENTS[D.ev.kind][0], DH / 2 - 40, 28, D_EVENTS[D.ev.kind][1], Math.min(1, D.evMsg));
-    if (D.zoneMsg > 0) dBig(D.suddenSaid ? 'Mort subite !' : 'La zone rétrécit !', DH / 2 + 4, 26, D.suddenSaid ? '#ff7aa8' : '#e0a0ff', Math.min(1, D.zoneMsg));
+    if (D.zoneMsg > 0) dBig(['', 'Pluie de comètes !', 'Encore plus de comètes !', 'Tempête de comètes !'][D.cometLv || 1], DH / 2 + 4, 26, (D.cometLv || 1) > 2 ? '#ff7aa8' : '#ffb35c', Math.min(1, D.zoneMsg));
     if (D.phase === 'ko') {
       const w = D.f[D.lastWin], a = Math.min(1, D.pt * 3);
       dBig('K.O. !', DH / 2 - 20, 72, '#ff4f6d', a);
@@ -17171,6 +17212,27 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
   // météores (une cible au sol, puis le rocher qui tombe du haut de l'écran), comète d'or, halo de surcharge
   function dDrawEvents(t, flip) {
     const D = duel, blink = .35 + .35 * Math.sin(t / 60);
+    // pluie de comètes : d'abord une ligne qui clignote là où elle va passer, puis la comète et sa traînée de feu
+    for (const c of D.comets || []) {
+      const p = dCometAt(c), sp = Math.hypot(c.vx, c.vy) || 1, ux = c.vx / sp, uy = c.vy / sp;
+      ctx.save();
+      if (c.t < D_COMET_WARN + .25) {
+        const L = DW + 120, a = Math.min(1, c.t / .25) * (c.t > D_COMET_WARN ? 1 - (c.t - D_COMET_WARN) / .25 : 1);
+        ctx.globalAlpha = a * (blink + .3); ctx.strokeStyle = '#ff9a3c'; ctx.lineWidth = 3; ctx.setLineDash([14, 10]);
+        ctx.beginPath(); ctx.moveTo(c.x0, c.y0); ctx.lineTo(c.x0 + ux * L, c.y0 + uy * L); ctx.stroke(); ctx.setLineDash([]);
+      }
+      if (c.t >= D_COMET_WARN) {
+        ctx.globalAlpha = 1;
+        const tl = ctx.createLinearGradient(p.x, p.y, p.x - ux * 130, p.y - uy * 130);
+        tl.addColorStop(0, 'rgba(255, 170, 70, .85)'); tl.addColorStop(1, 'rgba(255, 90, 40, 0)');
+        ctx.fillStyle = tl; ctx.beginPath();
+        ctx.moveTo(p.x - uy * 13, p.y + ux * 13); ctx.lineTo(p.x - ux * 130, p.y - uy * 130); ctx.lineTo(p.x + uy * 13, p.y - ux * 13); ctx.closePath(); ctx.fill();
+        const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, 18);
+        g.addColorStop(0, '#fffbe8'); g.addColorStop(.45, '#ffc26b'); g.addColorStop(1, 'rgba(255, 110, 40, 0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 18, 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
     for (const q of D.rocks || []) {
       const k = Math.min(1, q.t / D_ROCK_WARN), R = 40;
       ctx.save();
@@ -17730,10 +17792,11 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     dnet.lastSt = t;
     const cl = [];
     const newPops = pops.slice(Math.max(0, pops.length - 6)).filter(p => p.life > .95).map(p => [Math.round(p.x), Math.round(p.y), p.text, p.color]);
-    const m = { t: 'ds', n: ++dnet.n, ph: D.phase, pt: Math.round(D.pt * 100) / 100, rd: D.round, z: [Math.round(D.zone.x), Math.round(D.zone.y)], zm: D.zoneMsg > 0 ? 1 : 0, sd: D.suddenSaid ? 1 : 0,
+    const m = { t: 'ds', n: ++dnet.n, ph: D.phase, pt: Math.round(D.pt * 100) / 100, rd: D.round, z: [Math.round(D.zone.x), Math.round(D.zone.y)], zm: D.zoneMsg > 0 ? 1 : 0, sd: D.cometLv || 0,
       lw: D.lastWin, mw: D.matchWinner, hit: D.hitT.map(v => v > 0 ? 1 : 0), pk: D.picks.map(k => [k.kind, Math.round(k.x), Math.round(k.y), Math.round(k.life * 10) / 10]),
       f: D.f.map(F => dSnapFighter(F, cl)), cl, pp: newPops,
       ev: D.ev ? [D.ev.kind, Math.round(D.ev.t * 10) / 10] : 0, em: D.evMsg > 0 ? 1 : 0, rk: (D.rocks || []).map(q => [q.id, Math.round(q.x), Math.round(q.y), Math.round(q.t * 100) / 100, Math.round(q.r)]),
+      cm: (D.comets || []).map(c => [c.id, Math.round(c.x0), Math.round(c.y0), Math.round(c.vx), Math.round(c.vy), Math.round(c.t * 100) / 100]),
       co: D.comet ? [Math.round(D.comet.x), Math.round(D.comet.y), D.comet.h[0], D.comet.h[1], Math.sign(D.comet.vx)] : 0 };
     dSend(m, true);
     if (D.phase === 'end' && !D.endSent) { D.endSent = true; dSend({ t: 'dend', w: D.matchWinner, s0: D.f[0].wins, s1: D.f[1].wins }); }
@@ -17747,7 +17810,8 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     }
     D.pt = +m.pt || 0; D.round = m.rd | 0;
     if (Array.isArray(m.z)) { D.zone.x = +m.z[0] || 0; D.zone.y = +m.z[1] || 0; }
-    D.zoneMsg = m.zm ? 1 : Math.max(0, D.zoneMsg - .05); D.suddenSaid = !!m.sd;
+    D.zoneMsg = m.zm ? 1 : Math.max(0, D.zoneMsg - .05); D.cometLv = Math.min(3, m.sd | 0);
+    D.comets = (Array.isArray(m.cm) ? m.cm : []).filter(c => Array.isArray(c)).map(c => ({ id: c[0], x0: +c[1], y0: +c[2], vx: +c[3] || 1, vy: +c[4] || 0, t: +c[5] || 0, hit: [true, true] }));
     if (m.lw !== undefined && m.lw !== null) D.lastWin = m.lw | 0;
     if (m.mw !== undefined && m.mw !== null) D.matchWinner = m.mw | 0;
     if (Array.isArray(m.hit)) m.hit.forEach((v, i) => { if (v) D.hitT[i] = .25; });
@@ -17793,6 +17857,7 @@ body.tabs-on #mapPanel .mappage { margin-inline: auto; }
     const D = duel, me = D.f[D.view], O = D.f[1 - D.view];
     D.hitT = D.hitT.map(v => Math.max(0, v - dt)); D.zoneMsg = Math.max(0, D.zoneMsg - dt * .2); D.evMsg = Math.max(0, (D.evMsg || 0) - dt * .2);
     for (const q of D.rocks || []) { q.t += dt; q.rot += q.vr * dt; }
+    for (const c of D.comets || []) c.t += dt;
     me.inp = dReadKeys(D.view, true);
     me.foe.x = DW - O.it.x; me.foe.y = DH - O.it.y; O.foe.x = DW - me.it.x; O.foe.y = DH - me.it.y;
     if (D.phase === 'fight' && !me.free) dMove(me, O, dt);
